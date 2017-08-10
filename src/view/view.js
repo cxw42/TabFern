@@ -1,60 +1,314 @@
 //view.js
 
+//////////////////////////////////////////////////////////////////////////
+// Constants //
+
+STORAGE_KEY='tabfern-data';
+CLOSED_WINDOW = false;      // magic flag
+
+//////////////////////////////////////////////////////////////////////////
+// Globals //
+
 var treeobj;
-var tab_by_treeid = {};
+var nodeid_by_winid = {};       // HACK
 
-/*
-function loadTree(tabarr)
+//////////////////////////////////////////////////////////////////////////
+// Internal helpers //
+
+function createNodeForTab(tab, parent_node_id)
 {
-    var windows={};
+    let node_data = {
+        'text': tab.title
+        //, 'my_crazy_field': tab.id    // <-- is thrown out
+        , 'data': tab                   // but this stays!
+        //, 'attr': 'some_attr'         // <-- also thrown out
+        , 'icon': 'fff-page'
+    };
+    let tab_node_id = treeobj.create_node(parent_node_id, node_data);
+    return tab_node_id;
+} //createNodeForTab
 
-    // Split the tabs into per-window groups
-    for(let tab in tabarr) {
-        if(!(tab.windowId in windows)) {
-            windows[tab.windowId] = {id: tab.windowId, name:'', tabs:[]};
-        }
-        windows[tab.windowId].push(tab);
-    }
-
-    // Fill in the per-window info
-    for(let win in windows) {
-        chrome.windows.get(win.id, {}, function(thewin) { });
-    }
-} //loadTree
-*/
-
-function loadTree(winarr)
+function addWindowNodeActions(win_node_id)
 {
-    let dat = {};
-    for(let win of winarr) {
-        console.log('Window ' + win.id.toString());
-        let win_node_id = treeobj.create_node(null, 'Window');
+    treeobj.add_action(win_node_id, {
+        id: 'renameWindow',
+        class: 'fff-pencil action-margin',        //'fa fa-commenting',
+        text: '&nbsp;',
+        'after': true,      // after the text, which is in an <a>
+        'selector': 'a',
+        callback: actionRenameWindow
+    });
+
+    treeobj.add_action(win_node_id, {
+        id: 'closeWindow',
+        class: 'fff-picture-delete action-margin',
+        text: '&nbsp;',
+        'after': true,      // after the text, which is in an <a>
+        'selector': 'a',
+        callback: actionCloseWindow
+    });
+
+    treeobj.add_action(win_node_id, {
+        id: 'deleteWindow',
+        class: 'fff-cross action-margin',
+        text: '&nbsp;',
+        'after': true,      // after the text, which is in an <a>
+        'selector': 'a',
+        callback: actionDeleteWindow
+    });
+} //addWindowNodeActions
+
+function createNodeForWindow(win)
+{
+    let win_node_id = treeobj.create_node(null,
+            {   'text': 'Window'
+                , 'icon': 'visible-window-icon'
+                , 'state': { 'opened': true }
+                , data: win
+            });
+
+    nodeid_by_winid[win.id] = win_node_id;
+
+    addWindowNodeActions(win_node_id);
+
+    if(typeof(win.tabs) !== 'undefined') {  // new windows may have no tabs
         for(let tab of win.tabs) {
             console.log('   ' + tab.id.toString() + ': ' + tab.title);
-            let node_data = {
-                'text': tab.title
-                //, 'my_crazy_field': tab.id    // <-- is thrown out
-            };
-            let tab_node_id = treeobj.create_node(win_node_id, node_data);
-            tab_by_treeid[tab_node_id] = tab;
+            createNodeForTab(tab, win_node_id);
         }
+    }
+
+    return win_node_id;
+} //createNodeForWindow
+
+function createNodeForClosedTab(tab_data, parent_node_id)
+{
+    let node_data = {
+        'text': tab_data.text
+        //, 'my_crazy_field': tab.id    // <-- is thrown out
+        , 'data': tab_data.url               // but this stays!
+        //, 'attr': 'some_attr'         // <-- also thrown out
+        , 'icon': 'fff-page'
+    };
+    let tab_node_id = treeobj.create_node(parent_node_id, node_data);
+    return tab_node_id;
+} //createNodeForClosedTab
+
+function createNodeForClosedWindow(win_data)
+{
+    let win_node_id = treeobj.create_node(null,
+            {   'text': win_data.text
+                //, 'icon': 'visible-window-icon'
+                , 'state': { 'opened': true }
+                , data: CLOSED_WINDOW
+            });
+
+    //nodeid_by_winid[win.id] = win_node_id;
+
+    addWindowNodeActions(win_node_id);
+
+    if(typeof(win_data.tabs) !== 'undefined') {
+        for(let tab_data of win_data.tabs) {
+            console.log('   ' + tab_data.text);
+            createNodeForClosedTab(tab_data, win_node_id);
+        }
+    }
+
+    return win_node_id;
+} //createNodeForClosedWindow
+
+//////////////////////////////////////////////////////////////////////////
+// Loading //
+
+function loadSavedWindowsIntoTree()
+{
+    chrome.storage.local.get(STORAGE_KEY, function(items) {
+        if(typeof(chrome.runtime.lastError) !== 'undefined') return;
+            // Ignore errors
+        let parsed = JSON.parse(items[STORAGE_KEY]);
+        for(let win_data of parsed) {
+            createNodeForClosedWindow(win_data);
+        }
+    });
+}
+
+function addOpenWindowsToTree(winarr)
+{
+    let dat = {};
+
+    for(let win of winarr) {
+        //console.log('Window ' + win.id.toString());
+        let win_node_id = createNodeForWindow(win);
     } //foreach window
-} //loadTree(winarr)
+} //addOpenWindowsToTree(winarr)
+
+//////////////////////////////////////////////////////////////////////////
+// Saving //
+
+function saveTree()
+{
+    // Get the raw data for the whole tree
+    let win_nodes = treeobj.get_json();
+
+    let data = [];      // our data
+
+    // Clean up the data
+    for(let win_node of win_nodes) {
+
+        let win = win_node.data;
+        let thiswin = {};       // what will hold our data
+
+        thiswin.text = win_node.text;
+        thiswin.tabs = [];
+
+        // Stash the tabs.  No recursion at this time.
+        if(typeof(win_node.children) !== 'undefined') {
+            for(let tab_node of win_node.children) {
+                let thistab = {};
+                thistab.text = tab_node.text;
+                thistab.url = tab_node.data.url;
+                thiswin.tabs.push(thistab);
+            }
+        }
+
+        data.push(thiswin);
+    } //foreach window
+
+    // Save it
+    let to_save = {};
+    to_save[STORAGE_KEY] = JSON.stringify(data);
+    chrome.storage.local.set(to_save,
+            function() {
+                if(typeof(chrome.runtime.lastError) === 'undefined') {
+                    console.log('TabFern: saved OK');
+                    return;
+                }
+                console.log("TabFern: couldn't save: " +
+                                chrome.runtime.lastError.toString());
+                alert("TabFern: Couldn't save");
+            });
+} //saveTree()
+
+//////////////////////////////////////////////////////////////////////////
+// jstree-action callbacks //
+
+function actionRenameWindow(node_id, node, action_id, action_el)
+{
+    let win_name = window.prompt('Window name?', node.text);
+    if(win_name === null) return;
+    treeobj.rename_node(node_id, win_name);
+}
+
+function actionCloseWindow(node_id, node, action_id, action_el)
+{
+    let thewin = node.data;
+    if(typeof(thewin) === 'undefined') return;
+
+    if(thewin !== CLOSED_WINDOW) {
+        chrome.windows.remove(thewin.id);
+    }
+    node.data = CLOSED_WINDOW;  // It appears this change does persist.
+    treeobj.set_icon(node_id, true);    //default icon
+} //actionCloseWindow
+
+function actionDeleteWindow(node_id, node, action_id, action_el)
+{
+    actionCloseWindow(node_id, node, action_id, action_el);
+    treeobj.delete_node(node_id);
+} //actionDeleteWindow
+
+//////////////////////////////////////////////////////////////////////////
+// jstree callbacks //
 
 function treeOnSelect(evt, data)
 {
-    console.log(data.node);
-    if(typeof(data.node) !== 'undefined') {
-        let thetab = tab_by_treeid[data.node.id];
-        if(typeof thetab !== 'undefined') {
-            chrome.tabs.highlight({
-                windowId: thetab.windowId,
-                tabs: [thetab.index]
-            });
-            chrome.windows.update(thetab.windowId, {'focused': true});
-        }
+    //console.log(data.node);
+    if(typeof(data.node) === 'undefined') return;
+
+    // TODO handle clicking on Window rows
+
+    let thetab = data.node.data;
+    let winid;
+    if(typeof thetab === 'undefined') return;
+
+    if(typeof thetab === 'string') {    // A closed tab
+        // TODO open the window and put its id in winid and the tree node
+    } else {                            // An open tab
+        chrome.tabs.highlight({
+            windowId: thetab.windowId,
+            tabs: [thetab.index]
+        });
+        winid = thetab.windowId;
+    }
+
+    if(typeof winid !== 'undefined') {
+        chrome.windows.update(thetab.windowId, {'focused': true});
     }
 } //treeOnSelect
+
+//////////////////////////////////////////////////////////////////////////
+// Chrome window/tab callbacks //
+
+function winOnCreated(win)
+{
+    createNodeForWindow(win);
+    saveTree();     // for now, brute-force save on any change.
+} //winOnCreated
+
+function winOnRemoved(win_id)
+{
+    let nodeid = nodeid_by_winid[win_id];
+    if(typeof nodeid === 'undefined') return;
+    treeobj.delete_node(nodeid);
+    saveTree();
+} //winOnRemoved
+
+function tabOnCreated(tab)
+{
+    saveTree();
+} //tabOnCreated
+
+function tabOnUpdated(tabid, changeinfo, tab)
+{
+    saveTree();
+}
+
+function tabOnMoved(tabid, moveinfo)
+{
+    saveTree();
+}
+
+function tabOnActivated(activeinfo)
+{
+}
+
+function tabOnHighlighted(highlightinfo)
+{
+}
+
+function tabOnDetached(tabid, detachinfo)
+{
+    // Don't save here?  Do we get a WindowCreated if the tab is not
+    // attached to another window?
+}
+
+function tabOnAttached(tabid, attachinfo)
+{
+    saveTree();
+}
+
+function tabOnRemoved(tabid, removeinfo)
+{
+    saveTree();
+}
+
+function tabOnReplaced(addedTabId, removedTabId)
+{
+    // Do we get this?
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Startup / shutdown //
 
 function initTree()
 {
@@ -62,23 +316,46 @@ function initTree()
     //console.log($('#maintree').toString());
 
     // Create the tree
-    $('#maintree').jstree({ 'core': {
-        'animation': false,
-        'multiple': false,  // for now
-        'check_callback': true,  // for now, allow modifications
-        themes: { 'name': 'default-dark' }
-    }});
-    //chrome.tabs.query({}, loadTree);
+    $('#maintree').jstree({
+          'plugins': ['actions', 'wholerow']
+        , 'core': {
+            'animation': false,
+            'multiple': false,          // for now
+            'check_callback': true,     // for now, allow modifications
+            themes: { 'name': 'default-dark' }
+        }
+        , 'state': {
+            'key': 'tabfern-jstree'
+        }
+    });
     treeobj = $('#maintree').jstree(true);
 
     // Load the tree
-    chrome.windows.getAll({'populate': true}, loadTree);
+    loadSavedWindowsIntoTree();
+    chrome.windows.getAll({'populate': true}, addOpenWindowsToTree);
 
     // Set event listeners
     $('#maintree').on('changed.jstree', treeOnSelect);
 
+    chrome.windows.onCreated.addListener(winOnCreated);
+    chrome.windows.onRemoved.addListener(winOnRemoved);
+    // Not doing onFocusChanged for now
+
 } //initTree()
 
+function shutdownTree()
+{
+    // Does this work?  I may need to change background from js to html
+    // From https://stackoverflow.com/a/3840852/2877364
+    // by https://stackoverflow.com/users/449477/pauan
+    let background = chrome.extension.getBackgroundPage();
+    background.console.log('popup closing');
+} //shutdownTree()
+
+//////////////////////////////////////////////////////////////////////////
+// MAIN //
+
 window.addEventListener('load', initTree, { 'once': true });
+window.addEventListener('unload', shutdownTree, { 'once': true });
 
 // vi: set ts=4 sts=4 sw=4 et ai fo-=o fo-=r: //
