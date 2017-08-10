@@ -1,4 +1,4 @@
-
+console.log('TabFern common.js loading');
 var commonViewWindowID;
 
 // Open the view
