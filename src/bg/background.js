@@ -1,6 +1,29 @@
 // CC-BY-SA 3.0
 console.log('TabFern: running background.js');
 
+var commonViewWindowID;     // the chrome.windows ID of our view
+
+//////////////////////////////////////////////////////////////////////////
+// Helpers //
+
+// Open the view
+function loadView()
+{
+    console.log("TabFern: Opening view");
+    chrome.windows.create(
+        { 'url': chrome.runtime.getURL('src/view/view.html'),
+          'type': 'popup',
+          'focused': true
+        },
+        function(win) {
+            commonViewWindowID = win.id;
+            console.log('TabFern new View ID: ' + commonViewWindowID.toString());
+        });
+} //loadView()
+
+//////////////////////////////////////////////////////////////////////////
+// Action button //
+
 // From https://stackoverflow.com/q/8984047/2877364 by
 // https://stackoverflow.com/users/930675/sean-bannister
 
@@ -9,7 +32,7 @@ chrome.browserAction.onClicked.addListener(function(tab) {
 
     // If commonViewWindowID is undefined then there isn't a popup currently open.
     if (typeof commonViewWindowID === "undefined") {        // Open the popup
-        commonLoadView();
+        loadView();
     } else {                                // There's currently a popup open
      // Bring it to the front so the user can see it
         chrome.windows.update(commonViewWindowID, { "focused": true });
@@ -28,6 +51,20 @@ chrome.windows.onRemoved.addListener(function(windowId) {
 
 // End of Sean's code
 
+//////////////////////////////////////////////////////////////////////////
+// Messages //
+
+function messageListener(request, sender, sendResponse)
+{
+    //console.log('Got message ' + request.toString());
+    if(request === MSG_GET_VIEW_WIN_ID) {
+        //console.log('Responding with window ID ' + commonViewWindowID.toString());
+        sendResponse(commonViewWindowID);
+    }
+} //messageListener
+
+chrome.runtime.onMessage.addListener(messageListener);
+
 //var settings = new Store('settings', {
 //     'sample_setting': 'This is how you use Store.js to remember values'
 //});
@@ -40,11 +77,14 @@ chrome.windows.onRemoved.addListener(function(windowId) {
 //    sendResponse();
 //  });
 
+//////////////////////////////////////////////////////////////////////////
+// MAIN //
+
 // Create the main window when Chrome starts
 window.addEventListener('load',
     function() {
         console.log('TabFern: background window loaded');
-        setTimeout(commonLoadView, 500);
+        setTimeout(loadView, 500);
     },
     { 'once': true }
 )

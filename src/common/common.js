@@ -1,18 +1,7 @@
+// common.js: Only constants and stateless helper functions should be
+// in this file.
 console.log('TabFern common.js loading');
-var commonViewWindowID;
 
-// Open the view
-function commonLoadView()
-{
-    console.log("TabFern: Opening view");
-    chrome.windows.create(
-        { 'url': chrome.runtime.getURL('src/view/view.html'),
-          'type': 'popup',
-          'focused': true
-        },
-        function(win) {
-            commonViewWindowID = win.id;
-        });
-} //loadView()
+var MSG_GET_VIEW_WIN_ID = 'getViewWindowID';
 
 // vi: set ts=4 sts=4 sw=4 et ai fo-=o: //

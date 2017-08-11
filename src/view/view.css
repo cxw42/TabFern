@@ -3,21 +3,29 @@
 }
 
 .action-margin {
-    margin-left: 0.4em;
+    padding-left: 0.4em;
 }
 
-.fff-page {
-    content: url('/assets/icons/page_white.png');
-}
-.fff-pencil {
-    content: url(/assets/icons/pencil.png);
-    float: right;
+.right-top {
 
     /* Keep the pencil above the whole-row bar.
      * Thanks to https://stackoverflow.com/a/7421805/2877364 by
      * https://stackoverflow.com/users/248129/richard-jp-le-guen */
     position:relative;
     z-index: 1;
+
+    // TODO tweak jstree-actions to use a div as below to wrap the actions.
+    // Using this on each action makes them all overlap.
+    //float: right;
+    //position:fixed;
+    //right:0;
+}
+
+.fff-page {
+    content: url(/assets/icons/page_white.png);
+}
+.fff-pencil {
+    content: url(/assets/icons/pencil.png);
 }
 
 .jstree-wholerow {
@@ -26,16 +34,10 @@
 
 .fff-cross {
     content: url(/assets/icons/cross.png);
-    float: right;
-    position:relative;
-    z-index: 1;
 }
 
 .fff-picture-delete {
     content: url(/assets/icons/picture_delete.png);
-    float: right;
-    position:relative;
-    z-index: 1;
 }
 
 /* vi: set ts=4 sts=4 sw=4 et ai: */

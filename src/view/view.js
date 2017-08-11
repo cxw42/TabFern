@@ -11,9 +11,63 @@ CLOSED_WINDOW = false;      // magic flag
 
 var treeobj;
 var nodeid_by_winid = {};       // HACK
+var my_winid;   //window ID of this popup window
 
 //////////////////////////////////////////////////////////////////////////
-// Internal helpers //
+// Node-state classes //
+
+function tabState(newIsOpen, newTabValue)
+{
+    let retval = { nodeType: 'tab', isOpen: newIsOpen };
+    if(newIsOpen) {
+        retval.tab = newTabValue;
+    } else {
+        retval.url = newTabValue;
+    }
+    return retval;
+} //tabState
+
+function winState(newIsOpen, newWinValue)
+{
+    let retval = { nodeType: 'window', isOpen: newIsOpen };
+    if(newIsOpen) {
+        retval.tab = newWinValue;
+    } else {
+        retval.url = newWinValue;
+    }
+    return retval;
+} //winState
+
+//////////////////////////////////////////////////////////////////////////
+// jstree-action callbacks //
+
+function actionRenameWindow(node_id, node, action_id, action_el)
+{
+    let win_name = window.prompt('Window name?', node.text);
+    if(win_name === null) return;
+    treeobj.rename_node(node_id, win_name);
+}
+
+function actionCloseWindow(node_id, node, action_id, action_el)
+{
+    let thewin = node.data;
+    if(typeof(thewin) === 'undefined') return;
+
+    if(thewin !== CLOSED_WINDOW) {
+        chrome.windows.remove(thewin.id);
+    }
+    node.data = CLOSED_WINDOW;  // It appears this change does persist.
+    treeobj.set_icon(node_id, true);    //default icon
+} //actionCloseWindow
+
+function actionDeleteWindow(node_id, node, action_id, action_el)
+{
+    actionCloseWindow(node_id, node, action_id, action_el);
+    treeobj.delete_node(node_id);
+} //actionDeleteWindow
+
+//////////////////////////////////////////////////////////////////////////
+// Tree-node creation //
 
 function createNodeForTab(tab, parent_node_id)
 {
@@ -28,20 +82,35 @@ function createNodeForTab(tab, parent_node_id)
     return tab_node_id;
 } //createNodeForTab
 
+function createNodeForClosedTab(tab_data, parent_node_id)
+{
+    let node_data = {
+        'text': tab_data.text
+        //, 'my_crazy_field': tab.id    // <-- is thrown out
+        , 'data': tab_data.url               // but this stays!
+        //, 'attr': 'some_attr'         // <-- also thrown out
+        , 'icon': 'fff-page'
+    };
+    let tab_node_id = treeobj.create_node(parent_node_id, node_data);
+    return tab_node_id;
+} //createNodeForClosedTab
+
 function addWindowNodeActions(win_node_id)
 {
+    // Add them R to L for now - TODO update if necessary when CSS changes
+
     treeobj.add_action(win_node_id, {
-        id: 'renameWindow',
-        class: 'fff-pencil action-margin',        //'fa fa-commenting',
+        id: 'deleteWindow',
+        class: 'fff-cross action-margin right-top',
         text: '&nbsp;',
         'after': true,      // after the text, which is in an <a>
         'selector': 'a',
-        callback: actionRenameWindow
+        callback: actionDeleteWindow
     });
 
     treeobj.add_action(win_node_id, {
         id: 'closeWindow',
-        class: 'fff-picture-delete action-margin',
+        class: 'fff-picture-delete action-margin right-top',
         text: '&nbsp;',
         'after': true,      // after the text, which is in an <a>
         'selector': 'a',
@@ -49,17 +118,24 @@ function addWindowNodeActions(win_node_id)
     });
 
     treeobj.add_action(win_node_id, {
-        id: 'deleteWindow',
-        class: 'fff-cross action-margin',
+        id: 'renameWindow',
+        class: 'fff-pencil action-margin right-top',
         text: '&nbsp;',
         'after': true,      // after the text, which is in an <a>
         'selector': 'a',
-        callback: actionDeleteWindow
+        callback: actionRenameWindow
     });
+
 } //addWindowNodeActions
 
 function createNodeForWindow(win)
 {
+    // Don't put our window in the list
+    if( (typeof(win.id) !== 'undefined') &&
+        (win.id == my_winid) ) {
+        return;
+    }
+
     let win_node_id = treeobj.create_node(null,
             {   'text': 'Window'
                 , 'icon': 'visible-window-icon'
@@ -80,19 +156,6 @@ function createNodeForWindow(win)
 
     return win_node_id;
 } //createNodeForWindow
-
-function createNodeForClosedTab(tab_data, parent_node_id)
-{
-    let node_data = {
-        'text': tab_data.text
-        //, 'my_crazy_field': tab.id    // <-- is thrown out
-        , 'data': tab_data.url               // but this stays!
-        //, 'attr': 'some_attr'         // <-- also thrown out
-        , 'icon': 'fff-page'
-    };
-    let tab_node_id = treeobj.create_node(parent_node_id, node_data);
-    return tab_node_id;
-} //createNodeForClosedTab
 
 function createNodeForClosedWindow(win_data)
 {
@@ -125,12 +188,14 @@ function loadSavedWindowsIntoTree()
     chrome.storage.local.get(STORAGE_KEY, function(items) {
         if(typeof(chrome.runtime.lastError) !== 'undefined') return;
             // Ignore errors
-        let parsed = JSON.parse(items[STORAGE_KEY]);
+        let parsed = items[STORAGE_KEY];    // auto JSON.parse
+        if(!Array.isArray(parsed)) return;
+
         for(let win_data of parsed) {
             createNodeForClosedWindow(win_data);
         }
     });
-}
+} //loadSavedWindowsIntoTree
 
 function addOpenWindowsToTree(winarr)
 {
@@ -138,7 +203,7 @@ function addOpenWindowsToTree(winarr)
 
     for(let win of winarr) {
         //console.log('Window ' + win.id.toString());
-        let win_node_id = createNodeForWindow(win);
+        createNodeForWindow(win);
     } //foreach window
 } //addOpenWindowsToTree(winarr)
 
@@ -176,7 +241,7 @@ function saveTree()
 
     // Save it
     let to_save = {};
-    to_save[STORAGE_KEY] = JSON.stringify(data);
+    to_save[STORAGE_KEY] = data;    // storage automatically does JSON.stringify
     chrome.storage.local.set(to_save,
             function() {
                 if(typeof(chrome.runtime.lastError) === 'undefined') {
@@ -188,34 +253,6 @@ function saveTree()
                 alert("TabFern: Couldn't save");
             });
 } //saveTree()
-
-//////////////////////////////////////////////////////////////////////////
-// jstree-action callbacks //
-
-function actionRenameWindow(node_id, node, action_id, action_el)
-{
-    let win_name = window.prompt('Window name?', node.text);
-    if(win_name === null) return;
-    treeobj.rename_node(node_id, win_name);
-}
-
-function actionCloseWindow(node_id, node, action_id, action_el)
-{
-    let thewin = node.data;
-    if(typeof(thewin) === 'undefined') return;
-
-    if(thewin !== CLOSED_WINDOW) {
-        chrome.windows.remove(thewin.id);
-    }
-    node.data = CLOSED_WINDOW;  // It appears this change does persist.
-    treeobj.set_icon(node_id, true);    //default icon
-} //actionCloseWindow
-
-function actionDeleteWindow(node_id, node, action_id, action_el)
-{
-    actionCloseWindow(node_id, node, action_id, action_el);
-    treeobj.delete_node(node_id);
-} //actionDeleteWindow
 
 //////////////////////////////////////////////////////////////////////////
 // jstree callbacks //
@@ -310,10 +347,15 @@ function tabOnReplaced(addedTabId, removedTabId)
 //////////////////////////////////////////////////////////////////////////
 // Startup / shutdown //
 
-function initTree()
-{
-    console.log('TabFern view.js initializing jstree');
-    //console.log($('#maintree').toString());
+function initTree(winid)
+{ //called as a callback from sendMessage
+    if(typeof(chrome.runtime.lastError) !== 'undefined') {
+        console.log("Couldn't get win ID: " + chrome.runtime.lastError);
+        return;
+    }
+    my_winid = winid;
+
+    console.log('TabFern view.js initializing tree in window ' + winid.toString());
 
     // Create the tree
     $('#maintree').jstree({
@@ -343,9 +385,18 @@ function initTree()
 
 } //initTree()
 
-function shutdownTree()
+function preInitTree()
 {
-    // Does this work?  I may need to change background from js to html
+    console.log('TabFern view.js initializing view');
+    //console.log($('#maintree').toString());
+
+    chrome.runtime.sendMessage(MSG_GET_VIEW_WIN_ID, initTree);
+
+} //preInitTree
+
+
+function shutdownTree()
+{ // this is called.  TODO? clear a "crashed" flag?
     // From https://stackoverflow.com/a/3840852/2877364
     // by https://stackoverflow.com/users/449477/pauan
     let background = chrome.extension.getBackgroundPage();
@@ -355,7 +406,7 @@ function shutdownTree()
 //////////////////////////////////////////////////////////////////////////
 // MAIN //
 
-window.addEventListener('load', initTree, { 'once': true });
+window.addEventListener('load', preInitTree, { 'once': true });
 window.addEventListener('unload', shutdownTree, { 'once': true });
 
 // vi: set ts=4 sts=4 sw=4 et ai fo-=o fo-=r: //
