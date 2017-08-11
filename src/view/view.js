@@ -4,6 +4,10 @@
 // Constants //
 
 STORAGE_KEY='tabfern-data';
+    // Store the saved windows/tabs
+LOCN_KEY='tabfern-window-location';
+    // Store where the tabfern popup is
+
 WIN_CLASS='tabfern-window';     // class on <li>s representing windows
 FOCUSED_WIN_CLASS='tf-focused-window';
 
@@ -17,6 +21,8 @@ var my_winid;   //window ID of this popup window
 
 var window_is_being_restored = false;
     // HACK to avoid creating extra tree items.
+
+var resize_save_timer_id;
 
 //////////////////////////////////////////////////////////////////////////
 // Node-state classes //
@@ -597,6 +603,45 @@ function tabOnReplaced(addedTabId, removedTabId)
 } //tabOnReplaced
 
 //////////////////////////////////////////////////////////////////////////
+// DOM event handlers //
+
+function eventOnResize(evt)
+{
+    // Clear any previous timer we may have had running
+    if(typeof resize_save_timer_id !== 'undefined') {
+        window.clearTimeout(resize_save_timer_id);
+        resize_save_timer_id = undefined;
+    }
+
+    let size_data=[];       // L, T, W, H
+    size_data.push(window.screenLeft);  //these are all guesses
+    size_data.push(window.screenTop);
+    size_data.push(window.outerWidth);
+    size_data.push(window.outerHeight);
+
+    // Save the size, but only after two seconds go by.  This is to avoid
+    // saving until the user is actually done resizing.
+    resize_save_timer_id = window.setTimeout(
+        function() {
+            console.log('Saving new size ' + size_data.toString());
+
+            let to_save = {};
+            to_save[LOCN_KEY] = size_data;
+            chrome.storage.local.set(to_save,
+                    function() {
+                        if(typeof(chrome.runtime.lastError) === 'undefined') {
+                            //console.log('TabFern: saved OK');
+                            return;
+                        }
+                        console.log("TabFern: couldn't save location: " +
+                                        chrome.runtime.lastError.toString());
+                    });
+        },
+        2000);
+
+} //eventOnResize
+
+//////////////////////////////////////////////////////////////////////////
 // Startup / shutdown //
 
 // This is done in continuation-passing style.  TODO make it cleaner.
@@ -616,6 +661,22 @@ function initTree3()
     chrome.tabs.onRemoved.addListener(tabOnRemoved);
 
     chrome.tabs.onActivated.addListener(tabOnActivated);
+
+    // Move this view to where it was, if anywhere
+    chrome.storage.local.get(LOCN_KEY, function(items) {
+        if(typeof(chrome.runtime.lastError) !== 'undefined') return;
+            // Ignore errors
+        let parsed = items[LOCN_KEY];
+        if(!Array.isArray(parsed)) return;  // L, T, W, H
+        if(parsed.length != 4) return;
+
+        chrome.windows.update(my_winid, {
+              'left': parsed[0]
+            , 'top': parsed[1]
+            , 'width': parsed[2]
+            , 'height': parsed[3]
+        });
+    });
 
 } //initTree3
 
@@ -703,7 +764,9 @@ function shutdownTree()
 
 window.addEventListener('load', initTree0, { 'once': true });
 window.addEventListener('unload', shutdownTree, { 'once': true });
-//TODO test what happens when Chrome exits.  Does this background need to
+window.addEventListener('resize', eventOnResize);
+
+//TODO test what happens when Chrome exits.  Does the background page need to
 //save anything?
 
 // vi: set ts=4 sts=4 sw=4 et ai fo-=o fo-=r: //

@@ -5,9 +5,9 @@
   "description": "Basic outline view of your tabs, including saved tabs and windows.",
   "homepage_url": "http://extensionizr.com",
   "icons": {
-    "16": "assets/icons/icon16.png",
-    "48": "assets/icons/icon48.png",
-    "128": "assets/icons/icon128.png"
+    "16": "assets/fern16.png",
+    "48": "assets/fern48.png",
+    "128": "assets/fern128.png"
   },
   "default_locale": "en",
   "background": {
