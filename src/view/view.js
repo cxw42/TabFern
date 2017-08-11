@@ -43,14 +43,15 @@ function tabState(newIsOpen, newTabValue)
     return retval;
 } //tabState
 
-function winState(newIsOpen, newWasSaved, newWinValue)
+function winState(newIsOpen, newKeep, newWinValue)
 {
     let retval = {
         nodeType: 'window'
         , isOpen: newIsOpen
-        , wasSaved: newWasSaved     // whether this window was previously
-    };                              // saved by the user (by closing it
-                                    // without deleting it).
+        , keep: newKeep
+            // whether this window is to be saved for a later session.
+    };
+
     if(newIsOpen) {
         retval.win = newWinValue;
     } else {
@@ -79,9 +80,9 @@ function saveTree(save_visible_windows = true)
         }
 
         // Don't save visible windows unless we've been asked to.
-        // However, always save windows marked as wasSaved.
+        // However, always save windows marked as keep.
         if( (!save_visible_windows) && win_node.data.isOpen &&
-            (!win_node.data.wasSaved)) {
+            (!win_node.data.keep)) {
             continue;
         }
 
@@ -127,6 +128,9 @@ function actionRenameWindow(node_id, node, unused_action_id, unused_action_el)
     let win_name = window.prompt('Window name?', node.text);
     if(win_name === null) return;
     treeobj.rename_node(node_id, win_name);
+    node.data.keep = true;  // assume that a user who bothered to rename a node
+                            // wants to keep it.
+
     saveTree();
 }
 
@@ -140,14 +144,26 @@ function actionCloseWindow(node_id, node, unused_action_id, unused_action_el)
     nodeid_by_winid[win_data.win.id] = undefined;
         // Prevents winOnRemoved() from removing the tree node
 
+    // Close the window
     if(win_data.isOpen) {
         chrome.windows.remove(win_data.win.id);
     }
+
+    // Mark the tree node closed
     node.data = winState(false, true);
         // true => the user chose to save this window
         // It appears this change does persist.
         // This leaves node.data.win undefined.
     treeobj.set_icon(node_id, true);    //default icon
+
+    // Mark the tabs in the tree node closed.
+    for(let child_node_id of node.children) {
+        let child_node = treeobj.get_node(child_node_id);
+        if(typeof child_node === undefined) continue;
+        child_node.data.isOpen = false;
+        child_node.data.tab = undefined;
+        // The url sticks around.
+    }
 } //actionCloseWindow
 
 function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el)
@@ -219,7 +235,9 @@ function addWindowNodeActions(win_node_id)
 
 } //addWindowNodeActions
 
-function createNodeForWindow(win, wasSaved)
+/// Create a tree node for open window #win.
+/// @returns the tree-node ID, or undefined on error.
+function createNodeForWindow(win, keep)
 {
     // Don't put our window in the list
     if( (typeof(win.id) !== 'undefined') &&
@@ -229,11 +247,11 @@ function createNodeForWindow(win, wasSaved)
 
     let win_node_id = treeobj.create_node(null,
             {     text: 'Window'
-                , icon: (wasSaved ? 'visible-saved-window-icon' :
+                , icon: (keep ? 'visible-saved-window-icon' :
                                     'visible-window-icon')
                 , li_attr: { class: WIN_CLASS }
                 , state: { 'opened': true }
-                , data: winState(true, wasSaved, win)
+                , data: winState(true, keep, win)
             });
 
     nodeid_by_winid[win.id] = win_node_id;
@@ -257,7 +275,7 @@ function createNodeForClosedWindow(win_data)
                 //, 'icon': 'visible-window-icon'   // use the default icon
                 , li_attr: { class: WIN_CLASS }
                 , state: { 'opened': true }
-                , data: winState(false, true)   // true => was saved
+                , data: winState(false, true)   // true => keep
             });
 
     //nodeid_by_winid[win.id] = win_node_id;
@@ -326,24 +344,40 @@ function treeOnSelect(evt, evt_data)
     treeobj.deselect_all(true);
         // Clear the selection.  True => no event due to this change.
 
-    if(node_data.nodeType == 'tab' && node_data.isOpen == false) {    // A closed tab
-        // TODO open the window and put its id in win_id and the tree node
-        console.log('TODO open tab');
-
-    } else if(node_data.nodeType == 'tab') {   // An open tab
+    if(node_data.nodeType == 'tab' && node_data.isOpen) {   // An open tab
         chrome.tabs.highlight({
             windowId: node_data.tab.windowId,
             tabs: [node_data.tab.index]
         });
         win_id = node_data.tab.windowId;
 
-    } else if(node_data.nodeType == 'window' && node_data.isOpen == false) { //closed window
-        // TODO open the window and put its id in win_id and the tree node
-        console.log('TODO open window');
+    } else if(node_data.nodeType == 'window' && node_data.isOpen) {    // An open window
+        win_id = node_data.win.id
+
+    } else if(!node_data.isOpen &&
+                (node_data.nodeType == 'window' ||
+                 node_data.nodeType == 'tab') ) {
+        // A closed window or tab.  Make sure we have the window.
+        let win_node;
+        let win_node_data;
+
+        if(node_data.nodeType == 'window') {
+            win_node = node;
+            win_node_data = node_data;
+
+        } else {    // A closed tab
+            let parent_node_id = node.parent;
+            if(typeof parent_node_id === undefined) return;
+            let parent_node = treeobj.get_node(parent_node_id);
+            if(typeof parent_node === undefined) return;
+
+            win_node = parent_node;
+            win_node_data = parent_node.data;
+        }
 
         // Grab the URLs for all the tabs
         let urls=[];
-        for(let child_id of node.children) {
+        for(let child_id of win_node.children) {
             let child_data = treeobj.get_node(child_id).data;
             urls.push(child_data.url);
         }
@@ -357,14 +391,15 @@ function treeOnSelect(evt, evt_data)
             },
             function(win) {
                 // Update the tree and node mappings
-                node_data.isOpen = true;
-                node_data.win = win;
-                treeobj.set_icon(node.id, 'visible-saved-window-icon');
+                win_node_data.isOpen = true;
+                win_node_data.keep = true;      // just in case
+                win_node_data.win = win;
+                treeobj.set_icon(win_node.id, 'visible-saved-window-icon');
 
-                nodeid_by_winid[win.id] = node.id;
+                nodeid_by_winid[win.id] = win_node.id;
 
                 for(let idx=0; idx < win.tabs.length; ++idx) {
-                    let tab_node_id = node.children[idx];
+                    let tab_node_id = win_node.children[idx];
                     let tab_data = treeobj.get_node(tab_node_id).data;
                     tab_data.isOpen = true;
                     tab_data.tab = win.tabs[idx];
@@ -373,9 +408,6 @@ function treeOnSelect(evt, evt_data)
                 }
             } //create callback
         );
-
-    } else if(node_data.nodeType == 'window') {    // An open window
-        win_id = node_data.win.id
 
     } else {    // it's a nodeType we don't know how to handle.
         console.log('treeOnSelect: Unknown node ' + node_data);
@@ -415,7 +447,7 @@ function winOnRemoved(win_id)
     winOnFocusChanged(chrome.windows.WINDOW_ID_NONE);
         // Clear the highlights.  TODO test this.
 
-    if(node.data.wasSaved) {
+    if(node.data.keep) {
         node.data.isOpen = false;   // because it's already gone
         actionCloseWindow(node_id, node, null, null);
             // Since it was saved, leave it saved.  You can only get rid

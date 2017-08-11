@@ -6,12 +6,22 @@ by Vladyslav Volovyk.
 
 # Usage
 
- - Click the icon to open the TabFern view.
+ - Click the icon to open the TabFern view.  The view will also open when
+   you start Chrome.
  - When you open windows or tabs, or rearrange windows or tabs _within a
    particular browser window_, the tree will update.
- - To mark a window to be saved, hit the middle icon
-   (![image](https://raw.githubusercontent.com/cxw42/TabFern/master/assets/icons/picture_delete.png)).  It will close.  The next time you re-open it, it
-   will have an icon showing it is saved (![image](https://raw.githubusercontent.com/cxw42/TabFern/master/assets/icons/monitor_add.png)).
+ - To mark a window to be saved, you have two choices:
+
+     1. Give the window a name using the pencil icon ().
+     1. Hit the middle icon showing a rectangle with a red dot
+   (![image](https://raw.githubusercontent.com/cxw42/TabFern/master/assets/icons/picture_delete.png)).  The window will close.  
+
+ - Folder icons are:
+
+     - Open, unsaved: a monitor ()
+     - Open, saved: a monitor with a green dot (![image](https://raw.githubusercontent.com/cxw42/TabFern/master/assets/icons/monitor_add.png)).
+     - Closed, saved (closed unsaved aren't in the tree): a file folder () 
+
  - Saved windows will be saved even if you close them manually.  To remove them
    from the tree, hit the delete icon (red X,
    ![image](https://raw.githubusercontent.com/cxw42/TabFern/master/assets/icons/cross.png)).
@@ -24,6 +34,8 @@ by Vladyslav Volovyk.
  - The tree will not update when you drag tabs between browser windows.
  - There is only a two-level hierarchy --- tabs cannot be the children
    of other tabs in the tree.
+ - You cannot open and close individual tabs --- you have to open and close
+   the window as a whole.
  - Lots of others I'm not going to list right now!
 
 # Thanks
