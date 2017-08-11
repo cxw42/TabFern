@@ -4,7 +4,6 @@
 // Constants //
 
 STORAGE_KEY='tabfern-data';
-CLOSED_WINDOW = false;      // magic flag
 
 //////////////////////////////////////////////////////////////////////////
 // Globals //
@@ -31,9 +30,9 @@ function winState(newIsOpen, newWinValue)
 {
     let retval = { nodeType: 'window', isOpen: newIsOpen };
     if(newIsOpen) {
-        retval.tab = newWinValue;
+        retval.win = newWinValue;
     } else {
-        retval.url = newWinValue;
+        retval.win = undefined;
     }
     return retval;
 } //winState
@@ -46,6 +45,7 @@ function actionRenameWindow(node_id, node, action_id, action_el)
     let win_name = window.prompt('Window name?', node.text);
     if(win_name === null) return;
     treeobj.rename_node(node_id, win_name);
+    saveTree();
 }
 
 function actionCloseWindow(node_id, node, action_id, action_el)
@@ -53,10 +53,10 @@ function actionCloseWindow(node_id, node, action_id, action_el)
     let thewin = node.data;
     if(typeof(thewin) === 'undefined') return;
 
-    if(thewin !== CLOSED_WINDOW) {
-        chrome.windows.remove(thewin.id);
+    if(thewin.isOpen) {
+        chrome.windows.remove(thewin.win.id);
     }
-    node.data = CLOSED_WINDOW;  // It appears this change does persist.
+    node.data = winState(false);  // It appears this change does persist.
     treeobj.set_icon(node_id, true);    //default icon
 } //actionCloseWindow
 
@@ -64,6 +64,7 @@ function actionDeleteWindow(node_id, node, action_id, action_el)
 {
     actionCloseWindow(node_id, node, action_id, action_el);
     treeobj.delete_node(node_id);
+    saveTree();
 } //actionDeleteWindow
 
 //////////////////////////////////////////////////////////////////////////
@@ -72,11 +73,11 @@ function actionDeleteWindow(node_id, node, action_id, action_el)
 function createNodeForTab(tab, parent_node_id)
 {
     let node_data = {
-        'text': tab.title
+          text: tab.title
         //, 'my_crazy_field': tab.id    // <-- is thrown out
-        , 'data': tab                   // but this stays!
         //, 'attr': 'some_attr'         // <-- also thrown out
-        , 'icon': 'fff-page'
+        , data: tabState(true, tab)   // but this stays!
+        , icon: 'fff-page'
     };
     let tab_node_id = treeobj.create_node(parent_node_id, node_data);
     return tab_node_id;
@@ -85,11 +86,9 @@ function createNodeForTab(tab, parent_node_id)
 function createNodeForClosedTab(tab_data, parent_node_id)
 {
     let node_data = {
-        'text': tab_data.text
-        //, 'my_crazy_field': tab.id    // <-- is thrown out
-        , 'data': tab_data.url               // but this stays!
-        //, 'attr': 'some_attr'         // <-- also thrown out
-        , 'icon': 'fff-page'
+          text: tab_data.text
+        , data: tabState(false, tab_data.url)
+        , icon: 'fff-page'
     };
     let tab_node_id = treeobj.create_node(parent_node_id, node_data);
     return tab_node_id;
@@ -103,8 +102,8 @@ function addWindowNodeActions(win_node_id)
         id: 'deleteWindow',
         class: 'fff-cross action-margin right-top',
         text: '&nbsp;',
-        'after': true,      // after the text, which is in an <a>
-        'selector': 'a',
+        after: true,      // after the text, which is in an <a>
+        selector: 'a',
         callback: actionDeleteWindow
     });
 
@@ -112,8 +111,8 @@ function addWindowNodeActions(win_node_id)
         id: 'closeWindow',
         class: 'fff-picture-delete action-margin right-top',
         text: '&nbsp;',
-        'after': true,      // after the text, which is in an <a>
-        'selector': 'a',
+        after: true,      // after the text, which is in an <a>
+        selector: 'a',
         callback: actionCloseWindow
     });
 
@@ -121,8 +120,8 @@ function addWindowNodeActions(win_node_id)
         id: 'renameWindow',
         class: 'fff-pencil action-margin right-top',
         text: '&nbsp;',
-        'after': true,      // after the text, which is in an <a>
-        'selector': 'a',
+        after: true,      // after the text, which is in an <a>
+        selector: 'a',
         callback: actionRenameWindow
     });
 
@@ -137,10 +136,10 @@ function createNodeForWindow(win)
     }
 
     let win_node_id = treeobj.create_node(null,
-            {   'text': 'Window'
-                , 'icon': 'visible-window-icon'
-                , 'state': { 'opened': true }
-                , data: win
+            {     text: 'Window'
+                , icon: 'visible-window-icon'
+                , state: { 'opened': true }
+                , data: winState(true, win)
             });
 
     nodeid_by_winid[win.id] = win_node_id;
@@ -160,10 +159,10 @@ function createNodeForWindow(win)
 function createNodeForClosedWindow(win_data)
 {
     let win_node_id = treeobj.create_node(null,
-            {   'text': win_data.text
-                //, 'icon': 'visible-window-icon'
-                , 'state': { 'opened': true }
-                , data: CLOSED_WINDOW
+            {   text: win_data.text
+                //, 'icon': 'visible-window-icon'   // use the default icon
+                , state: { 'opened': true }
+                , data: winState(false)
             });
 
     //nodeid_by_winid[win.id] = win_node_id;
@@ -220,7 +219,12 @@ function saveTree()
     // Clean up the data
     for(let win_node of win_nodes) {
 
-        let win = win_node.data;
+        // Don't save windows with no children
+        if( (typeof(win_node.children) === 'undefined') ||
+            (win_node.children.length === 0) ) {
+            continue;
+        }
+
         let thiswin = {};       // what will hold our data
 
         thiswin.text = win_node.text;
@@ -264,22 +268,32 @@ function treeOnSelect(evt, data)
 
     // TODO handle clicking on Window rows
 
-    let thetab = data.node.data;
+    let nodeState = data.node.data;
     let winid;
-    if(typeof thetab === 'undefined') return;
+    if(typeof nodeState === 'undefined') return;
 
-    if(typeof thetab === 'string') {    // A closed tab
+    if(nodeState.nodeType == 'tab' && nodeState.isOpen == false) {    // A closed tab
         // TODO open the window and put its id in winid and the tree node
-    } else {                            // An open tab
+
+    } else if(nodeState.nodeType == 'tab') {   // An open tab
         chrome.tabs.highlight({
-            windowId: thetab.windowId,
-            tabs: [thetab.index]
+            windowId: nodeState.tab.windowId,
+            tabs: [nodeState.tab.index]
         });
-        winid = thetab.windowId;
+        winid = nodeState.tab.windowId;
+
+    } else if(nodeState.nodeType == 'window' && nodeState.isOpen == false) { //closed window
+        // TODO open the window and put its id in winid and the tree node
+
+    } else if(nodeState.nodeType == 'window') {    // An open window
+        winid = nodeState.win.id
+
+    } else {    // it's a nodeType we don't know how to handle.
+        console.log('treeOnSelect: Unknown node ' + nodeState);
     }
 
     if(typeof winid !== 'undefined') {
-        chrome.windows.update(thetab.windowId, {'focused': true});
+        chrome.windows.update(winid, {'focused': true});
     }
 } //treeOnSelect
 
@@ -364,7 +378,10 @@ function initTree(winid)
             'animation': false,
             'multiple': false,          // for now
             'check_callback': true,     // for now, allow modifications
-            themes: { 'name': 'default-dark' }
+            themes: {
+                'name': 'default-dark'
+                , 'variant': 'small'
+            }
         }
         , 'state': {
             'key': 'tabfern-jstree'
@@ -408,5 +425,7 @@ function shutdownTree()
 
 window.addEventListener('load', preInitTree, { 'once': true });
 window.addEventListener('unload', shutdownTree, { 'once': true });
+//TODO test what happens when Chrome exits.  Does this background need to
+//save anything?
 
 // vi: set ts=4 sts=4 sw=4 et ai fo-=o fo-=r: //
