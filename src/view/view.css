@@ -1,5 +1,24 @@
+/* view.css */
+
+/* //////////////////////////////////////////////////////////////////// */
+/* Local styles */
+
+.tabfern-popup-footer {
+    position:fixed;
+    bottom:0px;
+}
+
+.tf-focused-window {
+    font-weight: bold;
+    color: #fff !important;    /* because it's a dark theme */
+}
+
 .visible-window-icon {
-    content: url(/assets/icons/monitor.png);    // or folder.png?
+    content: url(/assets/icons/monitor.png);    /* or folder.png? */
+}
+
+.visible-saved-window-icon {
+    content: url(/assets/icons/monitor_add.png);    /* or folder.png? */
 }
 
 .action-margin {
@@ -14,11 +33,13 @@
     position:relative;
     z-index: 1;
 
+    /*
     // TODO tweak jstree-actions to use a div as below to wrap the actions.
     // Using this on each action makes them all overlap.
     //float: right;
     //position:fixed;
     //right:0;
+    */
 }
 
 .fff-page {
@@ -38,6 +59,16 @@
 
 .fff-picture-delete {
     content: url(/assets/icons/picture_delete.png);
+}
+
+/* ////////////////////////////////////////////////////////////////////// */
+/* Tweak up jstree */
+
+.jstree-children .jstree-children .jstree-anchor .jstree-icon {
+    /* Two jstree-children: don't touch the top-level nodes, only second-level
+     * and lower. */
+    background-size: cover !important;
+        /* will shrink large icons to fit, if necessary */
 }
 
 /* vi: set ts=4 sts=4 sw=4 et ai: */
