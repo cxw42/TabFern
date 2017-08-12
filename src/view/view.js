@@ -130,6 +130,7 @@ function actionRenameWindow(node_id, node, unused_action_id, unused_action_el)
     treeobj.rename_node(node_id, win_name);
     node.data.keep = true;  // assume that a user who bothered to rename a node
                             // wants to keep it.
+    treeobj.set_icon(node, 'visible-saved-window-icon');
 
     saveTree();
 }
@@ -433,7 +434,6 @@ function winOnCreated(win)
     }
 
     createNodeForWindow(win, false);
-        // TODO figure out how to handle this when re-opening closed windows
     saveTree();     // for now, brute-force save on any change.
 } //winOnCreated
 
@@ -585,15 +585,11 @@ function tabOnActivated(activeinfo)
     // No need to save --- we don't save which tab is active.
 } //tabOnActivated
 
-function tabOnHighlighted(highlightinfo)
-{
-    // Ignore this, I think.
-} //tabOnHighlighted
-
 function tabOnDetached(tabid, detachinfo)
 {
     // Don't save here?  Do we get a WindowCreated if the tab is not
     // attached to another window?
+    //TODO
 } //tabOnDetached
 
 function tabOnAttached(tabid, attachinfo)
@@ -783,7 +779,7 @@ function initTree0()
 
 
 function shutdownTree()
-{ // this is called.  TODO? clear a "crashed" flag?
+{ // this appears to be called reliably.  TODO? clear a "crashed" flag?
     // From https://stackoverflow.com/a/3840852/2877364
     // by https://stackoverflow.com/users/449477/pauan
     let background = chrome.extension.getBackgroundPage();

@@ -12,15 +12,15 @@ by Vladyslav Volovyk.
    particular browser window_, the tree will update.
  - To mark a window to be saved, you have two choices:
 
-     1. Give the window a name using the pencil icon ().
+     1. Give the window a name using the pencil icon (![image](https://raw.githubusercontent.com/cxw42/TabFern/master/assets/icons/pencil.png)).
      1. Hit the middle icon showing a rectangle with a red dot
-   (![image](https://raw.githubusercontent.com/cxw42/TabFern/master/assets/icons/picture_delete.png)).  The window will close.  
+   (![image](https://raw.githubusercontent.com/cxw42/TabFern/master/assets/icons/picture_delete.png)).  The window will close.
 
  - Folder icons are:
 
-     - Open, unsaved: a monitor ()
+     - Open, unsaved: a monitor (![image](https://raw.githubusercontent.com/cxw42/TabFern/master/assets/icons/monitor.png))
      - Open, saved: a monitor with a green dot (![image](https://raw.githubusercontent.com/cxw42/TabFern/master/assets/icons/monitor_add.png)).
-     - Closed, saved (closed unsaved aren't in the tree): a file folder () 
+     - Closed, saved (closed unsaved aren't in the tree): a white file folder.
 
  - Saved windows will be saved even if you close them manually.  To remove them
    from the tree, hit the delete icon (red X,
@@ -45,6 +45,7 @@ by Vladyslav Volovyk.
  - [jstree-actions](https://github.com/alexandernst/jstree-actions)
  - [jquery](https://jquery.com/)
  - [Barnsley fern generator](http://www.chradams.co.uk/fern/maker.html)
+ - [famfamfam Silk icons](http://www.famfamfam.com/lab/icons/silk/)
 
 # Legal
 

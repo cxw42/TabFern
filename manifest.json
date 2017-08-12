@@ -1,9 +1,9 @@
 {
   "name": "TabFern",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "manifest_version": 2,
   "description": "Basic outline view of your tabs, including saved tabs and windows.",
-  "homepage_url": "http://extensionizr.com",
+  "homepage_url": "https://github.com/cxw42/TabFern",
   "icons": {
     "16": "assets/fern16.png",
     "48": "assets/fern48.png",
@@ -19,7 +19,11 @@
   },
   "options_page": "src/options_custom/index.html",
   "browser_action": {
-    "default_icon": "assets/icons/icon19.png",
+    "default_icon": {
+      "16": "assets/fern16.png",
+      "48": "assets/fern48.png",
+      "128": "assets/fern128.png"
+    },
     "default_title": "TabFern"
   },
   "permissions": [
