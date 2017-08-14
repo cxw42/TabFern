@@ -8,8 +8,14 @@
     bottom:0px;
 }
 
+/* The browser window that currently has focus */
 .tf-focused-window {
     font-weight: bold;
+}
+
+/* Any browser window or tab that is currently open (as opposed to closed
+ * and saved) */
+.tf-visible-window a {
     color: #fff !important;    /* because it's a dark theme */
 }
 

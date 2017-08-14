@@ -8,8 +8,9 @@ STORAGE_KEY='tabfern-data';
 LOCN_KEY='tabfern-window-location';
     // Store where the tabfern popup is
 
-WIN_CLASS='tabfern-window';     // class on <li>s representing windows
-FOCUSED_WIN_CLASS='tf-focused-window';
+WIN_CLASS='tabfern-window';     // class on all <li>s representing windows
+FOCUSED_WIN_CLASS='tf-focused-window';  // Class on the currently-focused win
+VISIBLE_WIN_CLASS='tf-visible-window';  // Class on all visible wins
 
 //////////////////////////////////////////////////////////////////////////
 // Globals //
@@ -23,6 +24,70 @@ var window_is_being_restored = false;
     // HACK to avoid creating extra tree items.
 
 var resize_save_timer_id;
+
+//////////////////////////////////////////////////////////////////////////
+// General utility routines //
+
+/// Given string #class_list, add #new_class without duplicating.
+function add_classname(class_list, new_class)
+{
+    let attrs = class_list.split(/\s+/);
+    if(attrs.indexOf(new_class) === -1) {
+        attrs.push(new_class);
+    }
+    return attrs.join(' ');
+} //add_classname()
+
+/// Given string #class_list, remove #existing_class if it is present.
+/// Will remove duplicates.
+function remove_classname(class_list, existing_class)
+{
+    let attrs = class_list.split(/\s+/);
+    let idx = attrs.indexOf(existing_class);
+    while(idx !== -1) {
+        attrs.splice(idx, 1);
+        idx = attrs.indexOf(existing_class);
+    }
+    return attrs.join(' ');
+} //remove_classname()
+
+/// Set or remove the VISIBLE_WIN_CLASS style on an existing node.
+/// TODO figure out a cleaner way to do this - it's not obvious to me from
+/// the jstree docs how to change li_attr after node creation.
+function twiddleVisibleStyle(node, shouldAdd)
+{
+    let class_str;
+    let isobj = true;
+    if(typeof(node.li_attr) === 'object') {
+                // On existing nodes, li_attr is an object.
+        class_str = node.li_attr.class;
+    } else if(typeof(node.li_attr) === 'string') {
+        isobj = false;
+        class_str = node.li_attr;
+    } else {        // we don't know how to handle it.
+        return;
+    }
+
+    if(shouldAdd) {
+        class_str = add_classname(class_str, VISIBLE_WIN_CLASS);
+    } else {
+        class_str = remove_classname(class_str, VISIBLE_WIN_CLASS);
+    }
+
+    if(isobj) {
+        node.li_attr.class = class_str;
+    } else {
+        node.li_attr = class_str;
+    }
+
+    //treeobj.redraw(); // this doesn't seem to work
+
+    if(shouldAdd) {
+        $('#'+node.id).addClass(VISIBLE_WIN_CLASS);
+    } else {
+        $('#'+node.id).removeClass(VISIBLE_WIN_CLASS);
+    }
+}
 
 //////////////////////////////////////////////////////////////////////////
 // Node-state classes //
@@ -135,6 +200,7 @@ function actionRenameWindow(node_id, node, unused_action_id, unused_action_el)
     saveTree();
 }
 
+/// Close a window, but don't delete its tree nodes.  Used for saving windows.
 function actionCloseWindow(node_id, node, unused_action_id, unused_action_el)
 {
     let win_data = node.data;
@@ -156,6 +222,7 @@ function actionCloseWindow(node_id, node, unused_action_id, unused_action_el)
         // It appears this change does persist.
         // This leaves node.data.win undefined.
     treeobj.set_icon(node_id, true);    //default icon
+    twiddleVisibleStyle(node, false);   // remove the visible style
 
     // Mark the tabs in the tree node closed.
     for(let child_node_id of node.children) {
@@ -186,6 +253,8 @@ function createNodeForTab(tab, parent_node_id)
         , data: tabState(true, tab)   // but this stays!
         , icon: tab.favIconUrl || 'fff-page'
     };
+    // TODO if the favicon doesn't load, replace the icon with the generic
+    // page icon so we don't keep hitting the favIconUrl.
     let tab_node_id = treeobj.create_node(parent_node_id, node_data);
     nodeid_by_tabid[tab.id] = tab_node_id;
     return tab_node_id;
@@ -250,7 +319,7 @@ function createNodeForWindow(win, keep)
             {     text: 'Window'
                 , icon: (keep ? 'visible-saved-window-icon' :
                                     'visible-window-icon')
-                , li_attr: { class: WIN_CLASS }
+                , li_attr: { class: WIN_CLASS + ' ' + VISIBLE_WIN_CLASS }
                 , state: { 'opened': true }
                 , data: winState(true, keep, win)
             });
@@ -392,12 +461,14 @@ function treeOnSelect(evt, evt_data)
             },
             function(win) {
                 // Update the tree and node mappings
+                nodeid_by_winid[win.id] = win_node.id;
+
                 win_node_data.isOpen = true;
                 win_node_data.keep = true;      // just in case
                 win_node_data.win = win;
                 treeobj.set_icon(win_node.id, 'visible-saved-window-icon');
 
-                nodeid_by_winid[win.id] = win_node.id;
+                twiddleVisibleStyle(win_node, true);
 
                 for(let idx=0; idx < win.tabs.length; ++idx) {
                     let tab_node_id = win_node.children[idx];
@@ -748,7 +819,7 @@ function initTree1(win_id)
 
     // Create the tree
     $('#maintree').jstree({
-          'plugins': ['actions', 'wholerow']
+          'plugins': ['actions', 'wholerow']    // TODO add state plugin
         , 'core': {
             'animation': false,
             'multiple': false,          // for now
@@ -793,6 +864,9 @@ function shutdownTree()
 window.addEventListener('load', initTree0, { 'once': true });
 window.addEventListener('unload', shutdownTree, { 'once': true });
 window.addEventListener('resize', eventOnResize);
+    // This doesn't detect window movement without a resize.  TODO implement
+    // something from https://stackoverflow.com/q/4319487/2877364 to
+    // deal with that.
 
 //TODO test what happens when Chrome exits.  Does the background page need to
 //save anything?
