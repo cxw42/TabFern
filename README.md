@@ -1,5 +1,7 @@
 # TabFern
 
+![logo](https://raw.githubusercontent.com/cxw42/TabFern/master/assets/fern128.png)
+
 Very basic extension for vertical, grouped tabs.  Inspired by
 [Tabs Outliner](https://chrome.google.com/webstore/detail/tabs-outliner/eggkanocgddhmamlbiijnphhppkpkmkl)
 by Vladyslav Volovyk.

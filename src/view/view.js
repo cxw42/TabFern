@@ -693,6 +693,8 @@ function tabOnRemoved(tabid, removeinfo)
         // nonexistent tab.
     treeobj.delete_node(tab_node);
 
+    // TODO if this was the last tab in the window, delete the window.
+
     saveTree();
 } //tabOnRemoved
 
