@@ -323,6 +323,15 @@ function addWindowNodeActions(win_node_id)
         callback: actionRenameWindow
     });
 
+    treeobj.add_action_group(win_node_id,
+        {   after: true
+          , selector: 'a'
+        },
+        {   id: 'testAction'
+          , class: 'actiongroup'
+          , text: '&nbsp;'
+        });
+
 } //addWindowNodeActions
 
 /// Create a tree node for open window #win.
