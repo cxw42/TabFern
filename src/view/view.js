@@ -195,7 +195,10 @@ function actionRenameWindow(node_id, node, unused_action_id, unused_action_el)
     treeobj.rename_node(node_id, win_name);
     node.data.keep = true;  // assume that a user who bothered to rename a node
                             // wants to keep it.
-    treeobj.set_icon(node, 'visible-saved-window-icon');
+
+    if(node.data.isOpen) {
+        treeobj.set_icon(node, 'visible-saved-window-icon');
+    }
 
     saveTree();
 }
@@ -399,6 +402,8 @@ function DBG_printSaveData()
 //////////////////////////////////////////////////////////////////////////
 // jstree callbacks //
 
+/// Process clicks on items in the tree.  Also works for keyboard navigation
+/// with arrow keys and Enter.
 function treeOnSelect(evt, evt_data)
 {
     //console.log(evt_data.node);
