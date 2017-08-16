@@ -371,17 +371,21 @@ function createNodeForClosedWindow(win_data)
 function loadSavedWindowsIntoTree(next_action)
 {
     chrome.storage.local.get(STORAGE_KEY, function(items) {
-        if(typeof(chrome.runtime.lastError) !== 'undefined') return;
-            // Ignore errors
-        let parsed = items[STORAGE_KEY];    // auto JSON.parse
-        if(!Array.isArray(parsed)) return;
+        if(typeof(chrome.runtime.lastError) === 'undefined') {
+            let parsed = items[STORAGE_KEY];    // auto JSON.parse
+            if(Array.isArray(parsed)) {
 
-        //console.log('Loading:');
-        //console.log(parsed);
+                //console.log('Loading:');
+                //console.log(parsed);
 
-        for(let win_data of parsed) {
-            createNodeForClosedWindow(win_data);
-        }
+                for(let win_data of parsed) {
+                    createNodeForClosedWindow(win_data);
+                }
+            } //endif is array
+        } //endif loaded OK
+
+        // Even if there was an error, call the next action so that
+        // the initialization can complete.
         if(typeof next_action !== 'function') return;
         next_action();
     });
@@ -391,13 +395,15 @@ function loadSavedWindowsIntoTree(next_action)
 function DBG_printSaveData()
 {
     chrome.storage.local.get(STORAGE_KEY, function(items) {
-        if(typeof(chrome.runtime.lastError) !== 'undefined') return;
-            // Ignore errors
-        let parsed = items[STORAGE_KEY];
-        console.log('Save data:');
-        console.log(parsed);
+        if(typeof(chrome.runtime.lastError) !== 'undefined') {
+            console.log(chrome.runtime.lastError);
+        } else {
+            let parsed = items[STORAGE_KEY];
+            console.log('Save data:');
+            console.log(parsed);
+        }
     });
-}
+} //DBG_printSaveData()
 
 //////////////////////////////////////////////////////////////////////////
 // jstree callbacks //
@@ -616,8 +622,8 @@ function tabOnMoved(tabid, moveinfo)
             if(typeof tab_node === 'undefined') return;
 
             // Move the tree node
-            console.log('Moving tab from ' + from_idx.toString() + ' to ' +
-                        to_idx.toString());
+            //console.log('Moving tab from ' + from_idx.toString() + ' to ' +
+            //            to_idx.toString());
 
             // As far as I can tell, in jstree, indices point between list
             // elements.  E.g., with n items, #0 is before the first and
@@ -752,6 +758,23 @@ function eventOnResize(evt)
 
 // This is done in continuation-passing style.  TODO make it cleaner.
 
+function initTree4(items)
+{ // move the popup window to its last position/size
+    if(typeof(chrome.runtime.lastError) === 'undefined') {
+        // If there was an error (e.g., nonexistent key), just
+        // accept the default size.
+        let parsed = items[LOCN_KEY];
+        if(Array.isArray(parsed) && (parsed.length == 4)) { // L, T, W, H
+            chrome.windows.update(my_winid, {
+                  'left': parsed[0]
+                , 'top': parsed[1]
+                , 'width': parsed[2]
+                , 'height': parsed[3]
+            });
+        }
+    } //endif no error
+} //initTree4()
+
 function initTree3()
 {
     // Set event listeners
@@ -769,21 +792,7 @@ function initTree3()
     chrome.tabs.onActivated.addListener(tabOnActivated);
 
     // Move this view to where it was, if anywhere
-    chrome.storage.local.get(LOCN_KEY, function(items) {
-        if(typeof(chrome.runtime.lastError) !== 'undefined') return;
-            // Ignore errors
-        let parsed = items[LOCN_KEY];
-        if(!Array.isArray(parsed)) return;  // L, T, W, H
-        if(parsed.length != 4) return;
-
-        chrome.windows.update(my_winid, {
-              'left': parsed[0]
-            , 'top': parsed[1]
-            , 'width': parsed[2]
-            , 'height': parsed[3]
-        });
-    });
-
+    chrome.storage.local.get(LOCN_KEY, initTree4);
 } //initTree3
 
 function addOpenWindowsToTree(winarr)
@@ -818,7 +827,8 @@ function initTree1(win_id)
 { //called as a callback from sendMessage
     if(typeof(chrome.runtime.lastError) !== 'undefined') {
         console.log("Couldn't get win ID: " + chrome.runtime.lastError);
-        return;
+        // TODO add a "couldn't load" message to the popup.
+        return;     // This actually is fatal.
     }
     my_winid = win_id;
 
