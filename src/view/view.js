@@ -240,7 +240,9 @@ function actionCloseWindow(node_id, node, unused_action_id, unused_action_el)
 function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el)
 {
     actionCloseWindow(node_id, node, unused_action_id, unused_action_el);
+    let scrollOffsets = [window.scrollX, window.scrollY];
     treeobj.delete_node(node_id);
+    window.scrollTo(...scrollOffsets);
     saveTree();
 } //actionDeleteWindow
 
