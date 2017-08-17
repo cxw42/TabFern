@@ -881,6 +881,12 @@ function shutdownTree()
 window.addEventListener('load', initTree0, { 'once': true });
 window.addEventListener('unload', shutdownTree, { 'once': true });
 window.addEventListener('resize', eventOnResize);
+window._tabFernShortcuts.install({
+    window: window,
+    keybindings: window._tabFernShortcuts.keybindings.default,
+    drivers: [window._tabFernShortcuts.drivers.dmaruo_keypress]
+}, function initialized(err) {
+});
     // This doesn't detect window movement without a resize.  TODO implement
     // something from https://stackoverflow.com/q/4319487/2877364 to
     // deal with that.
