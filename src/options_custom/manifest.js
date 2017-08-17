@@ -122,6 +122,13 @@ this.manifest = {
         },
         {
             "tab": "Details",
+            "group": "ContextMenu",
+            "name": "ContextMenu.Enabled",
+            "type": "checkbox",
+            "label": "Right-click Menu"
+        },
+        {
+            "tab": "Details",
             "group": "KeyBinds",
             "name": "KeyBinds.Enabled",
             "type": "checkbox",

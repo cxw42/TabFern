@@ -886,7 +886,14 @@ window._tabFernShortcuts.install({
     keybindings: window._tabFernShortcuts.keybindings.default,
     drivers: [window._tabFernShortcuts.drivers.dmaruo_keypress]
 }, function initialized(err) {
+    if ( err ) {
+        console.log('Failed loading a shortcut driver! Initializing context menu with no shortcut driver.' + err);
+        window._tabFernContextMenu.installEventHandler(window, document, null);
+    } else {
+        window._tabFernContextMenu.installEventHandler(window, document, window._tabFernShortcuts);
+    }
 });
+
     // This doesn't detect window movement without a resize.  TODO implement
     // something from https://stackoverflow.com/q/4319487/2877364 to
     // deal with that.
