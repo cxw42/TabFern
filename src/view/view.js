@@ -227,6 +227,11 @@ function actionCloseWindow(node_id, node, unused_action_id, unused_action_el)
     treeobj.set_icon(node_id, true);    //default icon
     twiddleVisibleStyle(node, false);   // remove the visible style
 
+    // Collapse the tree, if the user wants that
+    if(getBoolSetting("collapse-tree-on-window-close")) {
+        treeobj.close_node(node);
+    }
+
     // Mark the tabs in the tree node closed.
     for(let child_node_id of node.children) {
         let child_node = treeobj.get_node(child_node_id);
