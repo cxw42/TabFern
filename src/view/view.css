@@ -70,11 +70,19 @@
 /* ////////////////////////////////////////////////////////////////////// */
 /* Tweak up jstree */
 
+/* shrink large favicons to fit, if necessary */
 .jstree-children .jstree-children .jstree-anchor .jstree-icon {
     /* Two jstree-children: don't touch the top-level nodes, only second-level
      * and lower. */
     background-size: cover !important;
-        /* will shrink large icons to fit, if necessary */
+}
+
+/* Hide the action buttons except when the row is hovered.  HACK. */
+.jstree-node a.jstree-hovered ~ i {
+    visibility: visible;
+}
+.jstree-node a ~ i {
+    visibility: hidden;
 }
 
 /* vi: set ts=4 sts=4 sw=4 et ai: */
