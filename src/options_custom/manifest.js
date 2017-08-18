@@ -49,6 +49,15 @@ this.manifest = {
         {
             "tab": i18n.get("Behaviour"),
             "group": i18n.get("When I..."),
+            "name": "collapse-trees-on-startup",
+            "type": "checkbox",
+            "label": i18n.get("Start up, collapse all the saved trees")
+            //"text": i18n.get("x-characters")
+        },
+
+        {
+            "tab": i18n.get("Behaviour"),
+            "group": i18n.get("When I..."),
             "name": "collapse-tree-on-window-close",
             "type": "checkbox",
             "label": i18n.get("Close a window, collapse its tree")
