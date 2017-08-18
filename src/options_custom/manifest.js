@@ -1,8 +1,10 @@
-// SAMPLE
+// manifest.js: Settings for TabFern
+// TODO move the names into constants in common.js
 this.manifest = {
-    "name": "My Extension",
-    "icon": "icon.png",
+    "name": "TabFern Settings",
+    "icon": "/assets/fern16.png",
     "settings": [
+        // Information
         {
             "tab": i18n.get("information"),
             "group": i18n.get("login"),
@@ -42,6 +44,27 @@ this.manifest = {
             "label": i18n.get("disconnect"),
             "text": i18n.get("logout")
         },
+
+        // Behaviour.  Yeah, there's a "u" in there!
+        {
+            "tab": i18n.get("Behaviour"),
+            "group": i18n.get("When I..."),
+            "name": "collapse-trees-on-startup",
+            "type": "checkbox",
+            "label": i18n.get("Start up, collapse all the saved trees")
+            //"text": i18n.get("x-characters")
+        },
+
+        {
+            "tab": i18n.get("Behaviour"),
+            "group": i18n.get("When I..."),
+            "name": "collapse-tree-on-window-close",
+            "type": "checkbox",
+            "label": i18n.get("Close a window, collapse its tree")
+            //"text": i18n.get("x-characters")
+        },
+
+        // Details
         {
             "tab": "Details",
             "group": "Sound",
@@ -132,3 +155,4 @@ this.manifest = {
         ]
     ]
 };
+// vi: set ts=4 sts=4 sw=4 et ai: //
