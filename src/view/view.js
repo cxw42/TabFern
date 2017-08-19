@@ -21,6 +21,7 @@ LOCN_KEY='tabfern-window-location';
 WIN_CLASS='tabfern-window';     // class on all <li>s representing windows
 FOCUSED_WIN_CLASS='tf-focused-window';  // Class on the currently-focused win
 VISIBLE_WIN_CLASS='tf-visible-window';  // Class on all visible wins
+ACTION_GROUP_WIN_CLASS='tf-action-group';   // Class on action-group div
 
 //////////////////////////////////////////////////////////////////////////
 // Globals //
@@ -294,43 +295,41 @@ function createNodeForClosedTab(tab_data, parent_node_id)
 
 function addWindowNodeActions(win_node_id)
 {
-    // Add them R to L for now - TODO update if necessary when CSS changes
-
-    treeobj.add_action(win_node_id, {
-        id: 'deleteWindow',
-        class: 'fff-cross action-margin right-top',
-        text: '&nbsp;',
-        after: true,      // after the text, which is in an <a>
+    treeobj.make_group(win_node_id, {
         selector: 'a',
-        callback: actionDeleteWindow
-    });
-
-    treeobj.add_action(win_node_id, {
-        id: 'closeWindow',
-        class: 'fff-picture-delete action-margin right-top',
-        text: '&nbsp;',
-        after: true,      // after the text, which is in an <a>
-        selector: 'a',
-        callback: actionCloseWindow
+        after: true,
+        class: ACTION_GROUP_WIN_CLASS
     });
 
     treeobj.add_action(win_node_id, {
         id: 'renameWindow',
         class: 'fff-pencil action-margin right-top',
         text: '&nbsp;',
-        after: true,      // after the text, which is in an <a>
-        selector: 'a',
+        grouped: true,
+        //after: true,      // after the text, which is in an <a>
+        //selector: 'a',
         callback: actionRenameWindow
     });
 
-    treeobj.add_action_group(win_node_id,
-        {   after: true
-          , selector: 'a'
-        },
-        {   id: 'testAction'
-          , class: 'actiongroup'
-          , text: '&nbsp;'
-        });
+    treeobj.add_action(win_node_id, {
+        id: 'closeWindow',
+        class: 'fff-picture-delete action-margin right-top',
+        text: '&nbsp;',
+        grouped: true,
+        //after: true,      // after the text, which is in an <a>
+        //selector: 'a',
+        callback: actionCloseWindow
+    });
+
+    treeobj.add_action(win_node_id, {
+        id: 'deleteWindow',
+        class: 'fff-cross action-margin right-top',
+        text: '&nbsp;',
+        grouped: true,
+        //after: true,      // after the text, which is in an <a>
+        //selector: 'a',
+        callback: actionDeleteWindow
+    });
 
 } //addWindowNodeActions
 
