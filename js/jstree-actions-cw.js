@@ -16,9 +16,56 @@
 
 	$.jstree.plugins.actions = function (options, parent) {
 
-		this._actions = {};
+		this._actions = {};			// indexed by node id
+		this._group_parms = {};		// The parameters of the group divs, indexed by node id.
 
-		/**
+		/** Make a group to hold grouped actions.  Call this before calling add_action()
+		 * with grouped: true.
+		 * @param node_id  <- the ID of the pertinent node
+		 * @param opts     <- a structure with option fields.
+		 * @return the new group div's jquery object, or null
+		 *
+		 * possible opts are:
+		 * selector <- a selector that would specify where to insert the action. Note that this is a plain JavaScript selector and not a jQuery one.
+		 * after    <- bool (insert the action after (true, default) or before (false) the element matching the <selector> key
+		 * class    <- class(es) to apply to the new div
+		 * text     <- text to put in the new div
+		 */
+		this.make_group = function (node_id, opts) {
+			var after = (typeof opts.after == 'undefined') ? true : opts.after;
+			if (typeof opts.selector == 'undefined') return null;	// TODO report error?
+
+			// Note: when this is called, the DOM object may not yet exist.
+
+			// Regularize and stash the parms
+			var parms = this._group_parms[node_id] = Object.assign({}, opts);
+			parms.class = parms.class || '';
+			parms.text = parms.text || '';
+		}
+
+		/** Create the group div for a node.  Returns the DOM object, or null.
+		 * Uses the provided node_el because this.get_node(node_id, true)
+		 * doesn't always succeed.
+		 */
+		this._create_group_for = function (node_id, node_el) {
+			if(!(node_id in this._group_parms)) return null;	// TODO report error?
+
+			var opts = this._group_parms[node_id];
+			var group_el = document.createElement("div");
+			group_el.className = opts.class;
+			group_el.textContent = opts.text;
+
+			var place = node_el.querySelector(opts.selector);
+			if (opts.after) {
+				place.parentNode.insertBefore(group_el, place.nextSibling);
+			} else {
+				obj.insertBefore(node_el, place);
+			}
+
+			return group_el;
+		};
+
+		/** Add an action to a node or node(s).
 		 * @param node_id Can be a single node id or an array of node ids.
 		 * @param action An object representing the action that should be added to <node>.
 		 *
@@ -29,10 +76,14 @@
 		 * id       <- string An ID which identifies the action. The same ID can be shared across different nodes
 		 * text     <- string The action's text
 		 * class    <- string (a string containing all the classes you want to add to the action (space separated)
-		 * selector <- a selector that would specify where to insert the action. Note that this is a plain JavaScript selector and not a jQuery one.
-		 * after    <- bool (insert the action after (true) or before (false) the element matching the <selector> key
 		 * event    <- string The event on which the trigger will be called
 		 * callback <- function that will be called when the action is clicked
+		 *
+		 * The actions object can contain one of two types of location information:
+		 * 1. grouped  <- (default false) if true, put this action in a div.  Call make_group() first to set up this div.  Actions are appended as children of the div.
+		 * 2.  If grouped is not true, the following can be used:
+		 * 		selector <- a selector that would specify where to insert the action. Note that this is a plain JavaScript selector and not a jQuery one.
+		 * 		after    <- bool (insert the action after (true) or before (false) the element matching the <selector> key
 		 *
 		 * NOTES: Please keep in mind that:
 		 * - the id's are strictly compared (===)
@@ -47,9 +98,14 @@
 				var actions = self._actions[_node_id] = self._actions[_node_id] || [];
 
 				if (!self._has_action(_node_id, action.id)) {
+					if(action.grouped && !(_node_id in this._group_parms)) {
+						continue;	// TODO report error?
+					}
+
 					actions.push(action);
 					this.redraw_node(_node_id);
 				}
+
 			}
 		};
 
@@ -158,18 +214,56 @@
 			if (el) {
 				//Check if we have any specific actions for this node
 				var actions = this._actions[node_id] || [];
+				var actions_all = this._actions["all"] || [];
 
+				// Create the group if necessary
+				var group_el;
 				for (var i = 0; i < actions.length; i++) {
+					if(actions[i].grouped) {
+						group_el = this._create_group_for(node_id, el);
+						break;
+					}
+				}
+
+				for (var i = 0; (!group_el) && (i < actions_all.length); i++) {
+					if(actions_all[i].grouped) {
+						group_el = this._create_group_for(node_id, el);
+						break;
+					}
+				}
+
+				// Populate the actions
+				for (var i = 0; i < actions.length; i++) {
+					if(actions[i].grouped && !group_el) {
+						//console.log('** Skipping action of node ' + node_id);
+						//console.log(actions[i]);
+						continue;
+					}
 					var _action = self._create_action(node_id, actions[i].id);
-					self._set_action(node_id, el, _action);
+
+					if(actions[i].grouped) {
+						group_el.appendChild(_action.action_el);
+					} else {	// not grouped
+						self._set_action(node_id, el, _action);
+					}
 				}
 
-				actions = this._actions["all"] || [];
+				// Populate the "all" actions
+				for (i = 0; i < actions_all.length; i++) {
+					if(actions[i].grouped && !group_el) {
+						//console.log('** Skipping "all" action at node ' + node_id);
+						//console.log(actions[i]);
+						continue;
+					}
+					_action = self._create_action("all", actions_all[i].id);
 
-				for (i = 0; i < actions.length; i++) {
-					_action = self._create_action("all", actions[i].id);
-					self._set_action(node_id, el, _action);
+					if(actions_all[i].grouped) {
+						group_el.appendChild(_action.action_el);
+					} else {	// not grouped
+						self._set_action(node_id, el, _action);
+					}
 				}
+
 			}
 			return el;
 		};

@@ -1,5 +1,9 @@
 /* view.css */
 
+/* DEBUG */
+
+.actiongroup { background-color: #880; }
+
 /* //////////////////////////////////////////////////////////////////// */
 /* Local styles */
 
@@ -19,17 +23,40 @@
     color: #fff !important;    /* because it's a dark theme */
 }
 
-.visible-window-icon {
-    content: url(/assets/icons/monitor.png);    /* or folder.png? */
-}
-
-.visible-saved-window-icon {
-    content: url(/assets/icons/monitor_add.png);    /* or folder.png? */
-}
-
 .action-margin {
     padding-left: 0.4em;
 }
+
+/* Action buttons --------------------------------------------------------- */
+
+.jstree-wholerow {
+    z-index: 0;
+}
+
+.tf-action-group {
+    /* Sit at the right side of the screen */
+    position: fixed;
+    right: 0;
+    padding-right: 1em;
+
+    /* Keep the action icons above the whole-row bar.
+     * Thanks to https://stackoverflow.com/a/7421805/2877364 by
+     * https://stackoverflow.com/users/248129/richard-jp-le-guen */
+    z-index: 1;
+
+    /* Be on the same row as the window */
+    display: inline-block;
+}
+
+/* Hide the action buttons except when the row is hovered. */
+.jstree-node a.jstree-hovered ~ .tf-action-group {
+    visibility: visible;
+}
+.jstree-node a ~ .tf-action-group {
+    visibility: hidden;
+}
+
+/* ------------------------------------------------------------------------ */
 
 .right-top {
 
@@ -48,15 +75,21 @@
     */
 }
 
+/* Icons ------------------------------------------------------------------ */
+
+.visible-window-icon {
+    content: url(/assets/icons/monitor.png);    /* or folder.png? */
+}
+
+.visible-saved-window-icon {
+    content: url(/assets/icons/monitor_add.png);    /* or folder.png? */
+}
+
 .fff-page {
     content: url(/assets/icons/page_white.png);
 }
 .fff-pencil {
     content: url(/assets/icons/pencil.png);
-}
-
-.jstree-wholerow {
-    z-index: 0;
 }
 
 .fff-cross {
@@ -75,14 +108,6 @@
     /* Two jstree-children: don't touch the top-level nodes, only second-level
      * and lower. */
     background-size: cover !important;
-}
-
-/* Hide the action buttons except when the row is hovered.  HACK. */
-.jstree-node a.jstree-hovered ~ i {
-    visibility: visible;
-}
-.jstree-node a ~ i {
-    visibility: hidden;
 }
 
 /* vi: set ts=4 sts=4 sw=4 et ai: */
