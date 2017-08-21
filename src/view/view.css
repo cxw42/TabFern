@@ -2,14 +2,17 @@
 
 /* DEBUG */
 
-.actiongroup { background-color: #880; }
-
 /* //////////////////////////////////////////////////////////////////// */
 /* Local styles */
 
 .tabfern-popup-footer {
     position:fixed;
     bottom:0px;
+}
+
+.tabfern-popup-footer a {
+    color: #888;
+    text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);  /* from jstree */
 }
 
 /* The browser window that currently has focus */
@@ -25,6 +28,13 @@
 
 .action-margin {
     padding-left: 0.4em;
+}
+
+div#init-incomplete {
+    display: none;      /* initially */
+    font-size: large;
+    font-weight: bold;
+    color: #f33;
 }
 
 /* Action buttons --------------------------------------------------------- */
