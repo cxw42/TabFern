@@ -42,6 +42,10 @@ by Vladyslav Volovyk.
    the window as a whole.
  - Lots of others I'm not going to list right now!
 
+# Related information
+
+ - [Privacy policy](/privacy.md)
+
 # Thanks
 
  - [Extensionizr](https://extensionizr.com)
