@@ -13,28 +13,36 @@ log.setDefaultLevel(log.levels.INFO);
 //////////////////////////////////////////////////////////////////////////
 // Constants //
 
-STORAGE_KEY='tabfern-data';
+const STORAGE_KEY='tabfern-data';
     // Store the saved windows/tabs
-LOCN_KEY='tabfern-window-location';
+const LOCN_KEY='tabfern-window-location';
     // Store where the tabfern popup is
 
-WIN_CLASS='tabfern-window';     // class on all <li>s representing windows
-FOCUSED_WIN_CLASS='tf-focused-window';  // Class on the currently-focused win
-VISIBLE_WIN_CLASS='tf-visible-window';  // Class on all visible wins
-ACTION_GROUP_WIN_CLASS='tf-action-group';   // Class on action-group div
+const WIN_CLASS='tabfern-window';     // class on all <li>s representing windows
+const FOCUSED_WIN_CLASS='tf-focused-window';  // Class on the currently-focused win
+const VISIBLE_WIN_CLASS='tf-visible-window';  // Class on all visible wins
+const ACTION_GROUP_WIN_CLASS='tf-action-group';   // Class on action-group div
+
+const INIT_TIME_ALLOWED_MS = 2000;  // After this time, if init isn't done,
+                                    // display an error message.
+const INIT_MSG_SEL = 'div#init-incomplete';     // Selector for that message
 
 //////////////////////////////////////////////////////////////////////////
 // Globals //
 
-var treeobj;
-var nodeid_by_winid = {};       // Window ID (integer) to tree-node id (string)
-var nodeid_by_tabid = {};       // Tab ID (int) to tree-node id (string)
-var my_winid;   //window ID of this popup window
+let treeobj;
+let nodeid_by_winid = {};       // Window ID (integer) to tree-node id (string)
+let nodeid_by_tabid = {};       // Tab ID (int) to tree-node id (string)
+let my_winid;   //window ID of this popup window
 
-var window_is_being_restored = false;
+let window_is_being_restored = false;
     // HACK to avoid creating extra tree items.
 
-var resize_save_timer_id;
+/// ID of a timer to save the new window size after a resize event
+let resize_save_timer_id;
+
+/// Did initialization complete successfully?
+let did_init_complete = false;
 
 //////////////////////////////////////////////////////////////////////////
 // General utility routines //
@@ -805,7 +813,17 @@ function eventOnResize(evt)
 //////////////////////////////////////////////////////////////////////////
 // Startup / shutdown //
 
-// This is done in continuation-passing style.  TODO make it cleaner.
+// This is done in vaguely continuation-passing style.  TODO make it cleaner.
+// Maybe use promises?
+
+/// The last function to be called after all other initialization has
+/// completed successfully.
+function initTreeFinal()
+{
+    did_init_complete = true;
+    // Assume the document is loaded by this point.
+    $(INIT_MSG_SEL).css('display','none');    // just in case
+} //initTreeFinal()
 
 function initTree4(items)
 { // move the popup window to its last position/size
@@ -814,14 +832,19 @@ function initTree4(items)
         // accept the default size.
         let parsed = items[LOCN_KEY];
         if(Array.isArray(parsed) && (parsed.length == 4)) { // L, T, W, H
+            // + and || are to provide some sensible defaults - thanks to
+            // https://stackoverflow.com/a/7540412/2877364 by
+            // https://stackoverflow.com/users/113716/user113716
             chrome.windows.update(my_winid, {
-                  'left': parsed[0]
-                , 'top': parsed[1]
-                , 'width': parsed[2]
-                , 'height': parsed[3]
+                  'left': +parsed[0] || 0
+                , 'top': +parsed[1] || 0
+                , 'width': +parsed[2] || 300
+                , 'height': +parsed[3] || 600
             });
         }
     } //endif no error
+
+    initTreeFinal();
 } //initTree4()
 
 function initTree3()
@@ -908,25 +931,44 @@ function initTree1(win_id)
 function initTree0()
 {
     log.info('TabFern view.js initializing view');
-    //log.info($('#maintree').toString());
 
+    // Get our Chrome-extensions-API window ID from the background page.
+    // I don't know a way to get this directly from the JS window object.
     chrome.runtime.sendMessage(MSG_GET_VIEW_WIN_ID, initTree1);
-
 } //initTree0
 
 
 function shutdownTree()
 { // this appears to be called reliably.  TODO? clear a "crashed" flag?
-    // From https://stackoverflow.com/a/3840852/2877364
-    // by https://stackoverflow.com/users/449477/pauan
-    let background = chrome.extension.getBackgroundPage();
-    background.console.log('popup closing');
-    saveTree(false);    // false => don't save visible, non-saved windows
+
+    // // A bit of logging -
+    // // from https://stackoverflow.com/a/3840852/2877364
+    // // by https://stackoverflow.com/users/449477/pauan
+    // let background = chrome.extension.getBackgroundPage();
+    // background.console.log('popup closing');
+
+    if(did_init_complete) {
+        saveTree(false);    // false => don't save visible, non-saved windows
+    }
 } //shutdownTree()
+
+/// Show a warning if initialization hasn't completed.
+function initIncompleteWarning()
+{
+    if(!did_init_complete) {
+        // Assume the document is loaded by this point.
+        $(INIT_MSG_SEL).css('display','block');
+    }
+} //initIncompleteWarning()
 
 //////////////////////////////////////////////////////////////////////////
 // MAIN //
 
+// Timer to display the warning message if initialization doesn't complete
+// quickly enough.
+window.setTimeout(initIncompleteWarning, INIT_TIME_ALLOWED_MS);
+
+// Main events
 window.addEventListener('load', initTree0, { 'once': true });
 window.addEventListener('unload', shutdownTree, { 'once': true });
 window.addEventListener('resize', eventOnResize);
