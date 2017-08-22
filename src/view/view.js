@@ -751,23 +751,6 @@ function tabOnActivated(activeinfo)
     // No need to save --- we don't save which tab is active.
 } //tabOnActivated
 
-function tabOnDetached(tabid, detachinfo)
-{
-    // Don't save here?  Do we get a WindowCreated if the tab is not
-    // attached to another window?
-    log.info('Tab being detached: ' + tabid);
-    log.info(detachinfo);
-    //TODO
-} //tabOnDetached
-
-function tabOnAttached(tabid, attachinfo)
-{
-    //TODO
-    log.info('Tab being attached: ' + tabid);
-    log.info(attachinfo);
-    //saveTree();
-} //tabOnAttached
-
 function tabOnRemoved(tabid, removeinfo)
 {
     // If the window is closing, do not remove the tab records.
@@ -807,7 +790,10 @@ function tabOnRemoved(tabid, removeinfo)
                 let rtab_node_id = nodeid_by_tabid[remaining_tab.id];
                 if(typeof rtab_node_id === 'undefined') continue;
                 let rtab_node = treeobj.get_node(rtab_node_id);
-                if(typeof rtab_node === 'undefined') continue;
+                if(typeof rtab_node !== 'undefined') continue;
+                    // TODO check for an object here and throughout -
+                    // get_node returns false if the given node ID
+                    // doesn't exist.
 
                 rtab_node.data.tab.index = remaining_tab.index;
             }
@@ -816,6 +802,34 @@ function tabOnRemoved(tabid, removeinfo)
 
     saveTree();
 } //tabOnRemoved
+
+function tabOnDetached(tabid, detachinfo)
+{
+    // Don't save here?  Do we get a WindowCreated if the tab is not
+    // attached to another window?
+    log.info('Tab being detached: ' + tabid);
+    log.info(detachinfo);
+
+    // Rather than stashing the tab's data, for now, just trash it and
+    // re-create it when it lands in its new home.
+    tabOnRemoved(tabid,
+            {isWindowClosing: false, windowId:detachinfo.oldWindowId}
+    );
+    //TODO see if this does the Right Thing
+} //tabOnDetached
+
+function tabOnAttached(tabid, attachinfo)
+{
+    //TODO
+    log.info('Tab being attached: ' + tabid);
+    log.info(attachinfo);
+    // Since we forgot about the tab in tabOnDetached, re-create it
+    // now that it's back.
+    chrome.tabs.get(tabid, tabOnCreated);
+        // TODO RESUME HERE - quickly attaching and detaching a tab can create
+        // extra tree nodes for that tab.  Fix that.  Have a lookup from
+        // tab ID to tree node, perhaps?
+} //tabOnAttached
 
 function tabOnReplaced(addedTabId, removedTabId)
 {
