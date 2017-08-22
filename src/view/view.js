@@ -35,7 +35,7 @@ let nodeid_by_winid = {};       // Window ID (integer) to tree-node id (string)
 let nodeid_by_tabid = {};       // Tab ID (int) to tree-node id (string)
 let my_winid;   //window ID of this popup window
 
-let currently_focused_winid = chrome.windows.WINDOW_ID_NONE;
+let currently_focused_winid = null;
     // Window ID of the currently-focused window, as best we understand it.
 
 let window_is_being_restored = false;
@@ -584,48 +584,50 @@ function winOnRemoved(win_id)
 } //winOnRemoved
 
 /// Update the highlight for the current window.  Note: this does not always
-/// seem to fire when switching to a non-Chrome window.  Also, sometimes
-/// we get a -1 when attaching a tab to a window.
+/// seem to fire when switching to a non-Chrome window.
 /// See https://stackoverflow.com/q/24307465/2877364 - onFocusChanged
 /// is known to be a bit flaky.
 function winOnFocusChanged(win_id)
 {
-    log.info('Window focus: ' + win_id);
-    chrome.windows.getLastFocused({}, function(win){log.info(win);}); //DEBUG
-        // TODO? If we get win_id == -1, check getLastFocused?  It seems
-        // to do OK --- if win.focused is true, assume win.id is focused.
+    log.info('Window focus-change triggered: ' + win_id);
 
-    // Clear the focus highlights if we are changing windows.
-    // Avoid flicker if the selection is staying in the same window.
-    if(win_id == currently_focused_winid) return;
+    chrome.windows.getLastFocused({}, function(win){
+        let new_win_id;
+        if(!win.focused) {
+            new_win_id = -1;
+        } else {
+            new_win_id = win.id;
+        }
 
-    //setTimeout(function() {       // DEBUG
-    //log.info('Clearing focus classes');
-    $('.' + WIN_CLASS + ' > a').removeClass(FOCUSED_WIN_CLASS);
-    //setTimeout(function() {       // DEBUG
+        // Clear the focus highlights if we are changing windows.
+        // Avoid flicker if the selection is staying in the same window.
+        if(new_win_id === currently_focused_winid) return;
 
-    currently_focused_winid = win_id;
+        //log.info('Clearing focus classes');
+        $('.' + WIN_CLASS + ' > a').removeClass(FOCUSED_WIN_CLASS);
 
-    if(win_id == chrome.windows.WINDOW_ID_NONE) return;
+        currently_focused_winid = new_win_id;
 
-    // Get the window
-    let window_node_id = nodeid_by_winid[win_id];
-    log.info('Window node ID: ' + window_node_id);
-    if(typeof window_node_id === 'undefined') return;
-        // E.g., if win_id corresponds to this view.
+        if(new_win_id == chrome.windows.WINDOW_ID_NONE) return;
 
-    // Make the window's entry bold, but no other entries.
-    // This seems to need to run after a yield when dragging
-    // tabs between windows, or else the FOCUSED_WIN_CLASS
-    // doesn't seem to stick.
+        // Get the window
+        let window_node_id = nodeid_by_winid[new_win_id];
+        log.info('Window node ID: ' + window_node_id);
+        if(typeof window_node_id === 'undefined') return;
+            // E.g., if new_win_id corresponds to this view.
 
-    setTimeout(function(){
-        log.info('Setting focus class');
-        $('#' + window_node_id + ' > a').addClass(FOCUSED_WIN_CLASS);
-        log.info($('#' + window_node_id + ' > a'));
-    },1);   // 1 is empirical :((
-    //},1000);
-    //},1000);
+        // Make the window's entry bold, but no other entries.
+        // This seems to need to run after a yield when dragging
+        // tabs between windows, or else the FOCUSED_WIN_CLASS
+        // doesn't seem to stick.
+
+        setTimeout(function(){
+            log.info('Setting focus class');
+            $('#' + window_node_id + ' > a').addClass(FOCUSED_WIN_CLASS);
+            log.info($('#' + window_node_id + ' > a'));
+        },0);
+    });
+
 } //winOnFocusChanged
 
 function tabOnCreated(tab)
