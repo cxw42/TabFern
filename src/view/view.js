@@ -5,7 +5,7 @@
 //////////////////////////////////////////////////////////////////////////
 // Setup //
 
-// NOTE: as of writing, log.debug() is a no-op - see
+// NOTE: as of writing, log.info() is a no-op - see
 // https://github.com/pimterry/loglevel/issues/111
 log.setDefaultLevel(log.levels.INFO);
     // TODO change the default to ERROR or SILENT for production.
@@ -34,6 +34,9 @@ let treeobj;
 let nodeid_by_winid = {};       // Window ID (integer) to tree-node id (string)
 let nodeid_by_tabid = {};       // Tab ID (int) to tree-node id (string)
 let my_winid;   //window ID of this popup window
+
+let currently_focused_winid = chrome.windows.WINDOW_ID_NONE;
+    // Window ID of the currently-focused window, as best we understand it.
 
 let window_is_being_restored = false;
     // HACK to avoid creating extra tree items.
@@ -230,6 +233,7 @@ function actionCloseWindow(node_id, node, unused_action_id, unused_action_el)
     if(typeof(win_data.win) === 'undefined') return;
         // don't try to close an already-closed window.
 
+    log.info('Removing nodeid map for winid ' + win_data.win.id);
     nodeid_by_winid[win_data.win.id] = undefined;
         // Prevents winOnRemoved() from removing the tree node
 
@@ -360,6 +364,7 @@ function createNodeForWindow(win, keep)
                 , data: winState(true, keep, win)
             });
 
+    log.info('Adding nodeid map for winid ' + win.id);
     nodeid_by_winid[win.id] = win_node_id;
 
     addWindowNodeActions(win_node_id);
@@ -384,8 +389,6 @@ function createNodeForClosedWindow(win_data)
                 , state: { 'opened': !shouldCollapse }
                 , data: winState(false, true)   // true => keep
             });
-
-    //nodeid_by_winid[win.id] = win_node_id;
 
     addWindowNodeActions(win_node_id);
 
@@ -506,6 +509,7 @@ function treeOnSelect(evt, evt_data)
             },
             function(win) {
                 // Update the tree and node mappings
+                log.info('Adding nodeid map for winid ' + win.id);
                 nodeid_by_winid[win.id] = win_node.id;
 
                 win_node_data.isOpen = true;
@@ -579,24 +583,56 @@ function winOnRemoved(win_id)
     saveTree();     // TODO figure out if we need this.
 } //winOnRemoved
 
+/// Update the highlight for the current window.  Note: this does not always
+/// seem to fire when switching to a non-Chrome window.  Also, sometimes
+/// we get a -1 when attaching a tab to a window.
+/// See https://stackoverflow.com/q/24307465/2877364 - onFocusChanged
+/// is known to be a bit flaky.
 function winOnFocusChanged(win_id)
 {
-    // Clear the focus highlights
+    log.info('Window focus: ' + win_id);
+    chrome.windows.getLastFocused({}, function(win){log.info(win);}); //DEBUG
+        // TODO? If we get win_id == -1, check getLastFocused?  It seems
+        // to do OK --- if win.focused is true, assume win.id is focused.
+
+    // Clear the focus highlights if we are changing windows.
+    // Avoid flicker if the selection is staying in the same window.
+    if(win_id == currently_focused_winid) return;
+
+    //setTimeout(function() {       // DEBUG
+    //log.info('Clearing focus classes');
     $('.' + WIN_CLASS + ' > a').removeClass(FOCUSED_WIN_CLASS);
+    //setTimeout(function() {       // DEBUG
+
+    currently_focused_winid = win_id;
 
     if(win_id == chrome.windows.WINDOW_ID_NONE) return;
 
     // Get the window
     let window_node_id = nodeid_by_winid[win_id];
+    log.info('Window node ID: ' + window_node_id);
     if(typeof window_node_id === 'undefined') return;
         // E.g., if win_id corresponds to this view.
 
     // Make the window's entry bold, but no other entries.
-    $('#' + window_node_id + ' > a').addClass(FOCUSED_WIN_CLASS);
+    // This seems to need to run after a yield when dragging
+    // tabs between windows, or else the FOCUSED_WIN_CLASS
+    // doesn't seem to stick.
+
+    setTimeout(function(){
+        log.info('Setting focus class');
+        $('#' + window_node_id + ' > a').addClass(FOCUSED_WIN_CLASS);
+        log.info($('#' + window_node_id + ' > a'));
+    },1);   // 1 is empirical :((
+    //},1000);
+    //},1000);
 } //winOnFocusChanged
 
 function tabOnCreated(tab)
 {
+    log.info('Tab created:');
+    log.info(tab);
+
     let win_node_id = nodeid_by_winid[tab.windowId];
     if(typeof win_node_id === 'undefined') return;
 
@@ -610,6 +646,10 @@ function tabOnCreated(tab)
 
 function tabOnUpdated(tabid, changeinfo, tab)
 {
+    log.info('Tab updated: ' + tabid);
+    log.info(changeinfo);
+    log.info(tab);
+
     let tab_node_id = nodeid_by_tabid[tabid];
     if(typeof tab_node_id === 'undefined') return;
 
@@ -628,10 +668,11 @@ function tabOnUpdated(tabid, changeinfo, tab)
 
 function tabOnMoved(tabid, moveinfo)
 {
+    log.info('Tab moved: ' + tabid);
+    log.info(moveinfo);
+
     let from_idx = moveinfo.fromIndex;
     let to_idx = moveinfo.toIndex;
-
-    log.info('Tab being moved: ' + tabid);
 
     // Get the parent (window)
     let parent_node_id = nodeid_by_winid[moveinfo.windowId];
@@ -687,6 +728,9 @@ function tabOnMoved(tabid, moveinfo)
 
 function tabOnActivated(activeinfo)
 {
+    log.info('Tab activated:');
+    log.info(activeinfo);
+
     winOnFocusChanged(activeinfo.windowId);
 
     // Use this if you want the selection to track the open tab.
@@ -710,6 +754,7 @@ function tabOnDetached(tabid, detachinfo)
     // Don't save here?  Do we get a WindowCreated if the tab is not
     // attached to another window?
     log.info('Tab being detached: ' + tabid);
+    log.info(detachinfo);
     //TODO
 } //tabOnDetached
 
@@ -717,6 +762,7 @@ function tabOnAttached(tabid, attachinfo)
 {
     //TODO
     log.info('Tab being attached: ' + tabid);
+    log.info(attachinfo);
     //saveTree();
 } //tabOnAttached
 
@@ -725,6 +771,8 @@ function tabOnRemoved(tabid, removeinfo)
     // If the window is closing, do not remove the tab records.
     // The cleanup will be handled by winOnRemoved().
     log.info('Tab being removed: ' + tabid);
+    log.info(removeinfo);
+
     if(removeinfo.isWindowClosing) return;
 
     {   // Keep the locals here out of the scope of the closure below.
@@ -770,6 +818,8 @@ function tabOnRemoved(tabid, removeinfo)
 function tabOnReplaced(addedTabId, removedTabId)
 {
     // Do we get this?
+    log.info('Tab being replaced: added ' + addedTabId + '; removed ' +
+            removedTabId);
 } //tabOnReplaced
 
 //////////////////////////////////////////////////////////////////////////
@@ -856,12 +906,21 @@ function initTree3()
     chrome.windows.onRemoved.addListener(winOnRemoved);
     chrome.windows.onFocusChanged.addListener(winOnFocusChanged);
 
+    // Chrome tabs API, listed in the order given in the API docs at
+    // https://developer.chrome.com/extensions/tabs
     chrome.tabs.onCreated.addListener(tabOnCreated);
     chrome.tabs.onUpdated.addListener(tabOnUpdated);
     chrome.tabs.onMoved.addListener(tabOnMoved);
-    chrome.tabs.onRemoved.addListener(tabOnRemoved);
-
+    //onSelectionChanged: deprecated
+    //onActiveChanged: deprecated
     chrome.tabs.onActivated.addListener(tabOnActivated);
+    //onHighlightChanged: deprecated
+    //onHighlighted: not yet implemented
+    chrome.tabs.onDetached.addListener(tabOnDetached);
+    chrome.tabs.onAttached.addListener(tabOnAttached);
+    chrome.tabs.onRemoved.addListener(tabOnRemoved);
+    chrome.tabs.onReplaced.addListener(tabOnReplaced);
+    //onZoomChange: not yet implemented, and we probably won't ever need it.
 
     // Move this view to where it was, if anywhere
     chrome.storage.local.get(LOCN_KEY, initTree4);
