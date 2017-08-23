@@ -3,14 +3,6 @@
 // loaded by view.html.
 
 //////////////////////////////////////////////////////////////////////////
-// Setup //
-
-// NOTE: as of writing, log.info() is a no-op - see
-// https://github.com/pimterry/loglevel/issues/111
-log.setDefaultLevel(log.levels.INFO);
-    // TODO change the default to ERROR or SILENT for production.
-
-//////////////////////////////////////////////////////////////////////////
 // Constants //
 
 const STORAGE_KEY='tabfern-data';
@@ -30,7 +22,8 @@ const INIT_MSG_SEL = 'div#init-incomplete';     // Selector for that message
 //////////////////////////////////////////////////////////////////////////
 // Globals //
 
-let treeobj;
+let treeobj;                    // The jstree instance
+let mainStore;                  // Map between tab ids, node IDs, ...
 let nodeid_by_winid = {};       // Window ID (integer) to tree-node id (string)
 let nodeid_by_tabid = {};       // Tab ID (int) to tree-node id (string)
 let my_winid;   //window ID of this popup window
@@ -46,6 +39,24 @@ let resize_save_timer_id;
 
 /// Did initialization complete successfully?
 let did_init_complete = false;
+
+//////////////////////////////////////////////////////////////////////////
+// Initialization //
+
+// NOTE: as of writing, log.debug() is a no-op - see
+// https://github.com/pimterry/loglevel/issues/111
+log.setDefaultLevel(log.levels.INFO);
+    // TODO change the default to ERROR or SILENT for production.
+
+mainStore = Multikey(
+    [ //keys
+        'tab_id'    // from Chrome
+      , 'node_id'   // from jstree
+    ],
+    [ //other data
+        'win_id'    // from Chrome
+      , 'index'     // in the current window
+    ]);
 
 //////////////////////////////////////////////////////////////////////////
 // General utility routines //
