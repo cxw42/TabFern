@@ -1,15 +1,16 @@
-/// Tiny key-value store supporting access by multiple keys.
+/// Multidex: Tiny key-value store supporting fast access by multiple keys.
 /// Copyright (c) 2017 Chris White.  CC-BY 4.0 International.
 
-// The store holds uniform values, each of which is a POD having the same
+// The multidex holds uniform values, each of which is a POD having the same
 // fields as all other values.  Fields can be keys or other fields.  Each
 // key field is indexed.  For example:
 //
-//     let store = Multikey(['key1','key2'],['other1','other2']);
+//     let store = Multidex(['key1','key2'],['other1','other2']);
 //     store.add({key1: 42, key2: 'foo', other1: "Don't Panic"});
 //          // returns the new POD
 //     store.by_key1(42);       // <-- returns the POD we just added
 //     store.by_key2('foo');    // <-- ditto
+//     store.by_key1(42,'other1')   // <-- "Don't Panic" --- a shorthand
 //     let foo = store.by_key1(42);
 //     foo.key1 === 42;     // true
 //     foo.key2 === 'foo'   // true
@@ -27,7 +28,7 @@
         module.exports = factory(require('jquery'));
     } else {
         // Browser globals (root is window)
-        root.Multikey = factory(root.jQuery);
+        root.Multidex = factory(root.jQuery);
     }
 }(this, function ($) {
 
@@ -66,7 +67,7 @@
         return Object.seal(retval);     // No new keys can be added.
     } //make_pod
 
-    /// Make a new store and return it.
+    /// Make a new multidex and return it.
     function ctor(key_names, other_names=[])
     {
         if(!Array.isArray(key_names)) return null;   //TODO better error reporting
@@ -79,11 +80,11 @@
         if(!(proto_key in Protos)) {    // Need to make the instance functions
 
             /// Make a new value for storage.  Does not add the value
-            /// to the store.
+            /// to the multidex.
             function new_value() { return make_pod(all_names); }
 
             /// Copy the fields of an existing value.  Does not add the new
-            /// value to the store.
+            /// value to the multidex.
             function clone_value(other)
             {
                 let retval = this.new_value();
@@ -93,7 +94,7 @@
                 return retval;
             }  //clone_value
 
-            /// Remove a value from the store.
+            /// Remove a value from the multidex.
             function remove_value(val)
             {
                 if(!(val in this.all_values)) return;
@@ -103,8 +104,8 @@
                 }
             } //remove_value
 
-            /// Add a value created with new_value or clone_value to the store.
-            /// Overwrites index entries for any key fields.
+            /// Add a value created with new_value or clone_value to the
+            /// multidex.  Overwrites index entries for any key fields.
             function add_value(val)
             {
                 this.remove_value(val);  // just in case
@@ -115,7 +116,7 @@
             } //add_value
 
             /// Create a new value using the given data and add the new
-            /// value to the store.  Returns the new value.
+            /// value to the multidex.  Returns the new value.
             function add(new_data)
             {
                 let val = this.new_value();
@@ -136,12 +137,29 @@
               , add
             }; //fns
 
-            // by_* accessors for the keys
+            // by_* accessors for the keys.
+            //  - With one argument, returns the value if the key is in the
+            //      pertinent index, else returns undefined.
+            //  - With two arguments, returns the value if the key is in the
+            //      pertinent index and the field named in the second argument
+            //      exists in the value, else undefined.
             for(let key_name of key_names) {
                 fns[ACC + key_name] =
-                    (function(key_val) {
+                    (function(key_val, field_name=null) {
                         let idx = this[IDX+key_name];
-                        return idx[key_val];
+                        if(!(key_val in idx)) {
+                            return undefined;
+                        }
+                        let val = idx[key_val];
+
+                        if( (field_name===null) ||
+                            (typeof field_name === 'undefined') ) {
+                            return val;
+                        } else if(field_name in val) {
+                            return val[field_name];
+                        } else {
+                            return undefined;
+                        }
                     });
             }
 
@@ -159,7 +177,7 @@
             retval[IDX + key_name] = {};
         }
 
-        return Object.seal(retval);  // the new store
+        return Object.seal(retval);  // the new multidex
 
     } //ctor
 

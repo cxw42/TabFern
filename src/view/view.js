@@ -23,9 +23,10 @@ const INIT_MSG_SEL = 'div#init-incomplete';     // Selector for that message
 // Globals //
 
 let treeobj;                    // The jstree instance
-let mainStore;                  // Map between tab ids, node IDs, ...
-let nodeid_by_winid = {};       // Window ID (integer) to tree-node id (string)
-let nodeid_by_tabid = {};       // Tab ID (int) to tree-node id (string)
+let mdTabs;                     // Map between open-tab IDs and node IDs
+let mdWindows;                  // Map between open-window IDs and node IDs
+//let nodeid_by_winid = {};       // Window ID (integer) to tree-node id (string)
+//let nodeid_by_tabid = {};       // Tab ID (int) to tree-node id (string)
 let my_winid;   //window ID of this popup window
 
 let currently_focused_winid = null;
@@ -48,7 +49,7 @@ let did_init_complete = false;
 log.setDefaultLevel(log.levels.INFO);
     // TODO change the default to ERROR or SILENT for production.
 
-mainStore = Multikey(
+mdTabs = Multidex(
     [ //keys
         'tab_id'    // from Chrome
       , 'node_id'   // from jstree
@@ -56,6 +57,17 @@ mainStore = Multikey(
     [ //other data
         'win_id'    // from Chrome
       , 'index'     // in the current window
+      , 'tab'       // the actual Tab record from Chrome
+    ]);
+
+mdWindows = Multidex(
+    [ //keys
+        'win_id'    // from Chrome
+      , 'node_id'   // from jstree
+    ],
+    [ //other data
+        'win'       // the actual Window record from chrome
+        // TODO a list of tabs?
     ]);
 
 //////////////////////////////////////////////////////////////////////////
@@ -245,8 +257,10 @@ function actionCloseWindow(node_id, node, unused_action_id, unused_action_el)
         // don't try to close an already-closed window.
 
     log.info('Removing nodeid map for winid ' + win_data.win.id);
-    nodeid_by_winid[win_data.win.id] = undefined;
+    //nodeid_by_winid[win_data.win.id] = undefined;
         // Prevents winOnRemoved() from removing the tree node
+    let win_val = mdWindows.by_win_id(win_data.win.id);
+    mdWindows.remove_value(win_val);
 
     // Close the window
     if(win_data.isOpen) {
@@ -300,7 +314,8 @@ function createNodeForTab(tab, parent_node_id)
     // TODO if the favicon doesn't load, replace the icon with the generic
     // page icon so we don't keep hitting the favIconUrl.
     let tab_node_id = treeobj.create_node(parent_node_id, node_data);
-    nodeid_by_tabid[tab.id] = tab_node_id;
+    //nodeid_by_tabid[tab.id] = tab_node_id;
+    mdTabs.add({tab_id: tab.id, node_id: tab_node_id, tab: tab});
     return tab_node_id;
 } //createNodeForTab
 
@@ -312,7 +327,7 @@ function createNodeForClosedTab(tab_data, parent_node_id)
         , icon: 'fff-page'
     };
     let tab_node_id = treeobj.create_node(parent_node_id, node_data);
-    //nodeid_by_tabid[tab.id] = tab_node_id;    // can't --- it's closed
+    // Not stored in mdTabs since it isn't open.
     return tab_node_id;
 } //createNodeForClosedTab
 
@@ -360,7 +375,7 @@ function addWindowNodeActions(win_node_id)
 /// @returns the tree-node ID, or undefined on error.
 function createNodeForWindow(win, keep)
 {
-    // Don't put our window in the list
+    // Don't put this popup window (view.html) in the list
     if( (typeof(win.id) !== 'undefined') &&
         (win.id == my_winid) ) {
         return;
@@ -376,7 +391,8 @@ function createNodeForWindow(win, keep)
             });
 
     log.info('Adding nodeid map for winid ' + win.id);
-    nodeid_by_winid[win.id] = win_node_id;
+    //nodeid_by_winid[win.id] = win_node_id;
+    mdWindows.add({ win_id: win.id, node_id: win_node_id, win:win });
 
     addWindowNodeActions(win_node_id);
 
@@ -521,7 +537,8 @@ function treeOnSelect(evt, evt_data)
             function(win) {
                 // Update the tree and node mappings
                 log.info('Adding nodeid map for winid ' + win.id);
-                nodeid_by_winid[win.id] = win_node.id;
+                //nodeid_by_winid[win.id] = win_node.id;
+                mdWindows.add({win_id: win.id, node_id: win_node.id, win:win});
 
                 win_node_data.isOpen = true;
                 win_node_data.keep = true;      // just in case
@@ -538,7 +555,9 @@ function treeOnSelect(evt, evt_data)
                     tab_data.isOpen = true;
                     tab_data.tab = win.tabs[idx];
 
-                    nodeid_by_tabid[tab_data.tab.id] = tab_node_id;
+                    //nodeid_by_tabid[tab_data.tab.id] = tab_node_id;
+                    mdTabs.add({tab_id: tab_data.tab.id, node_id: tab_node_id,
+                        tab: win.tabs[idx]});
                 }
             } //create callback
         );
@@ -572,8 +591,10 @@ function winOnCreated(win)
 
 function winOnRemoved(win_id)
 {
-    let node_id = nodeid_by_winid[win_id];
+    //let node_id = nodeid_by_winid[win_id];
+    let node_id = mdWindows.by_win_id(win_id, 'node_id');
     if(typeof node_id === 'undefined') return;
+
     let node = treeobj.get_node(node_id);
     if(typeof node === 'undefined') return;
 
@@ -622,7 +643,8 @@ function winOnFocusChanged(win_id)
         if(new_win_id == chrome.windows.WINDOW_ID_NONE) return;
 
         // Get the window
-        let window_node_id = nodeid_by_winid[new_win_id];
+        //let window_node_id = nodeid_by_winid[new_win_id];
+        let window_node_id = mdWindows.by_win_id(new_win_id, 'node_id');
         log.info('Window node ID: ' + window_node_id);
         if(typeof window_node_id === 'undefined') return;
             // E.g., if new_win_id corresponds to this view.
@@ -646,7 +668,8 @@ function tabOnCreated(tab)
     log.info('Tab created:');
     log.info(tab);
 
-    let win_node_id = nodeid_by_winid[tab.windowId];
+    //let win_node_id = nodeid_by_winid[tab.windowId];
+    let win_node_id = mdWindows.by_win_id(tab.windowId, 'node_id')
     if(typeof win_node_id === 'undefined') return;
 
     let tab_node_id = createNodeForTab(tab, win_node_id);
@@ -663,7 +686,8 @@ function tabOnUpdated(tabid, changeinfo, tab)
     log.info(changeinfo);
     log.info(tab);
 
-    let tab_node_id = nodeid_by_tabid[tabid];
+    //let tab_node_id = nodeid_by_tabid[tabid];
+    let tab_node_id = mdTabs.by_tab_id(tabid, 'node_id');
     if(typeof tab_node_id === 'undefined') return;
 
     let node = treeobj.get_node(tab_node_id);
@@ -688,11 +712,13 @@ function tabOnMoved(tabid, moveinfo)
     let to_idx = moveinfo.toIndex;
 
     // Get the parent (window)
-    let parent_node_id = nodeid_by_winid[moveinfo.windowId];
+    //let parent_node_id = nodeid_by_winid[moveinfo.windowId];
+    let parent_node_id = mdWindows.by_win_id(moveinfo.windowId, 'node_id');
     if(typeof parent_node_id === 'undefined') return;
 
     // Get the tab's node
-    let tab_node_id = nodeid_by_tabid[tabid];
+    //let tab_node_id = nodeid_by_tabid[tabid];
+    let tab_node_id = mdTabs.by_tab_id(tabid, 'node_id');
     if(typeof tab_node_id === 'undefined') return;
 
     // Get the existing tab's node so we can swap them
@@ -705,7 +731,8 @@ function tabOnMoved(tabid, moveinfo)
             // Get the two tabs in question
             let other_tab = tabs[0];
             if(typeof other_tab.id === 'undefined') return;
-            let other_tab_node_id = nodeid_by_tabid[other_tab.id];
+            //let other_tab_node_id = nodeid_by_tabid[other_tab.id];
+            let other_tab_node_id = mdTabs.by_tab_id(other_tab.id, 'node_id');
             if(typeof other_tab_node_id === 'undefined') return;
             let other_tab_node = treeobj.get_node(other_tab_node_id);
             if(typeof other_tab_node === 'undefined') return;
@@ -749,7 +776,8 @@ function tabOnActivated(activeinfo)
     // Use this if you want the selection to track the open tab.
     if(false) {
         // Get the tab's node
-        let tab_node_id = nodeid_by_tabid[activeinfo.tabId];
+        //let tab_node_id = nodeid_by_tabid[activeinfo.tabId];
+        let tab_node_id = mdTabs.by_tab_id(activeinfo.tabId, 'node_id');
         if(typeof tab_node_id === 'undefined') return;
 
         treeobj.deselect_all();
@@ -773,19 +801,23 @@ function tabOnRemoved(tabid, removeinfo)
 
     {   // Keep the locals here out of the scope of the closure below.
         // Get the parent (window)
-        let parent_node_id = nodeid_by_winid[removeinfo.windowId];
+        //let parent_node_id = nodeid_by_winid[removeinfo.windowId];
+        let parent_node_id = mdWindows.by_win_id(removeinfo.windowId, 'node_id');
         if(typeof parent_node_id === 'undefined') return;
         let parent_node = treeobj.get_node(parent_node_id);
         if(typeof parent_node === 'undefined') return;
 
         // Get the tab's node
-        let tab_node_id = nodeid_by_tabid[tabid];
+        //let tab_node_id = nodeid_by_tabid[tabid];
+        let tab_node_id = mdTabs.by_tab_id(tabid, 'node_id');
         if(typeof tab_node_id === 'undefined') return;
         let tab_node = treeobj.get_node(tab_node_id);
         if(typeof tab_node === 'undefined') return;
 
         // Remove the node
-        nodeid_by_tabid[tabid] = undefined;
+        //nodeid_by_tabid[tabid] = undefined;
+        let tab_val = mdTabs.by_tab_id(tabid);
+        mdTabs.remove_value(tab_val);
             // So any events that are triggered won't try to look for a
             // nonexistent tab.
         treeobj.delete_node(tab_node);
@@ -798,7 +830,8 @@ function tabOnRemoved(tabid, removeinfo)
 
             for(let remaining_tab of win.tabs) {
 
-                let rtab_node_id = nodeid_by_tabid[remaining_tab.id];
+                //let rtab_node_id = nodeid_by_tabid[remaining_tab.id];
+                let rtab_node_id = mdTabs.by_tab_id(remaining_tab.id, 'node_id');
                 if(typeof rtab_node_id === 'undefined') continue;
                 let rtab_node = treeobj.get_node(rtab_node_id);
                 if(typeof rtab_node !== 'undefined') continue;
