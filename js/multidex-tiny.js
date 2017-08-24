@@ -36,24 +36,44 @@
     const IDX = '_idx_';
     const ACC = 'by_';      // accessor
 
+    // Key to hold a value's "name," i.e., unique id
+    const VNAME = Symbol('value_name');
+
+    // Current value name
+    let Value_name = 0;
+
     // Cache for prototypes, one per set of key names.
     let Protos = {};
 
     // --- General helpers ---
 
+    // Give a value a meaningful toString so we can use it as a hash key.
+    function value_toString()
+    {
+        if(VNAME in this) {
+            return this[VNAME];                 // Normal case
+        } else {
+            console.log('No value_name!');
+            console.log(this);
+            return JSON.stringify(this);        // Fallback
+        }
+    } //value_toString
+
     /// Make a plain-old-data hash with the given keys.  Each key initially
     /// has the value null.
-    function make_pod(field_names)
+    function make_value(field_names)
     {
         let retval = Object.create(null);
 
-        // Give it a meaningful toString so we can use it as a hash key.
-        // TODO FIXME this implies that values are immutable when stored in
-        // a Multidex.  Instead, use a unique serial number or the like.
+        // Name the value
+        retval[VNAME] = Value_name.toString();
+        ++Value_name;
+
+        // toString so it can be used as a hash key
         Object.defineProperty(retval, 'toString', {
             configurable: false
           , enumerable: false
-          , value: function() { return JSON.stringify(this); }
+          , value: value_toString
           , writable: false
         });
 
@@ -67,7 +87,7 @@
             });
         }
         return Object.seal(retval);     // No new keys can be added.
-    } //make_pod
+    } //make_value
 
     /// Make a new multidex and return it.
     function ctor(key_names, other_names=[])
@@ -83,7 +103,7 @@
 
             /// Make a new value for storage.  Does not add the value
             /// to the multidex.
-            function new_value() { return make_pod(all_names); }
+            function new_value() { return make_value(all_names); }
 
             /// Copy the fields of an existing value.  Does not add the new
             /// value to the multidex.

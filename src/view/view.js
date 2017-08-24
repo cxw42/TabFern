@@ -247,6 +247,7 @@ function actionRenameWindow(node_id, node, unused_action_id, unused_action_el)
 }
 
 /// Close a window, but don't delete its tree nodes.  Used for saving windows.
+/// ** The caller must call saveTree() --- actionCloseWindow() does not.
 function actionCloseWindow(node_id, node, unused_action_id, unused_action_el)
 {
     let win_data = node.data;
@@ -261,7 +262,11 @@ function actionCloseWindow(node_id, node, unused_action_id, unused_action_el)
 
     // Close the window
     if(win_data.isOpen) {
-        chrome.windows.remove(win_data.win.id);
+        chrome.windows.remove(win_data.win.id,
+                function ignore_error() { void chrome.runtime.lastError; } );
+        // ignore exceptions - when we are called from winOnRemoved,
+        // the window is already gone, so the remove() throws.
+        // See https://stackoverflow.com/a/45871870/2877364 by cxw
     }
 
     // Mark the tree node closed
@@ -284,6 +289,9 @@ function actionCloseWindow(node_id, node, unused_action_id, unused_action_el)
         child_node.data.isOpen = false;
         child_node.data.tab = undefined;
         // The url sticks around.
+
+        let child_node_val = mdTabs.by_node_id(child_node_id);
+        mdTabs.remove_value(child_node_val);
     }
 } //actionCloseWindow
 
@@ -598,13 +606,13 @@ function winOnRemoved(win_id)
         actionCloseWindow(node_id, node, null, null);
             // Since it was saved, leave it saved.  You can only get rid
             // of saved sessions by X-ing them expressly (actionDeleteWindow).
+        saveTree();     // TODO figure out if we need this.
     } else {
         // Not saved - just toss it.
-        treeobj.delete_node(node);
+        actionDeleteWindow(node_id, node, null, null);
             // This removes the node's children also.
+            // actionDeleteWindow also saves the tree, so we don't need to.
     }
-
-    saveTree();     // TODO figure out if we need this.
 } //winOnRemoved
 
 /// Update the highlight for the current window.  Note: this does not always
