@@ -48,6 +48,8 @@
         let retval = Object.create(null);
 
         // Give it a meaningful toString so we can use it as a hash key.
+        // TODO FIXME this implies that values are immutable when stored in
+        // a Multidex.  Instead, use a unique serial number or the like.
         Object.defineProperty(retval, 'toString', {
             configurable: false
           , enumerable: false
