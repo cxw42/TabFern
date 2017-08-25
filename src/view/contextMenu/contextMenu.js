@@ -63,7 +63,7 @@ window._tabFernContextMenu = window._tabFernContextMenu || {};
         };
 
         if ( bypass.isBypassDisengaged() ) {
-            //e.preventDefault();
+            e.preventDefault();
         } else {
             return false;
         }
@@ -226,9 +226,11 @@ window._tabFernContextMenu = window._tabFernContextMenu || {};
             },
             disengageBypass: function () {
                 this.engaged = false;
+                treeobj._data.contextmenu.bypass = false;
             },
             engageBypass: function () {
                 this.engaged = true;
+                treeobj._data.contextmenu.bypass = true;
             }
         };
 
