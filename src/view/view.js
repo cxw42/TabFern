@@ -834,9 +834,8 @@ function initTree1(win_id)
 
     console.log('TabFern view.js initializing tree in window ' + win_id.toString());
 
-    // Create the tree
-    $('#maintree').jstree({
-          'plugins': ['actions', 'wholerow']    // TODO add state plugin
+    let jstreeConfig = {
+        'plugins': ['actions', 'wholerow'] // TODO add state plugin
         , 'core': {
             'animation': false,
             'multiple': false,          // for now
@@ -849,7 +848,19 @@ function initTree1(win_id)
         , 'state': {
             'key': 'tabfern-jstree'
         }
-    });
+    };
+
+    if ( getBoolSetting('ContextMenu.Enabled', false) ) {
+        jstreeConfig.plugins.push('contextmenu');
+        jstreeConfig.contextmenu = {
+            items: window._tabFernContextMenu.generateJsTreeMenuItems
+        };
+        $.jstree.defaults.contextmenu.select_node = false;
+        $.jstree.defaults.contextmenu.show_at_node = false;
+    }
+
+    // Create the tree
+    $('#maintree').jstree(jstreeConfig);
     treeobj = $('#maintree').jstree(true);
 
     // Load the tree

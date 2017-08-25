@@ -42,6 +42,45 @@ window._tabFernContextMenu = window._tabFernContextMenu || {};
         resizeListener(win);
     };
 
+    /**
+     *
+     * @param node
+     * @returns {{renameItem: {label: string, action: action}, deleteItem: {label: string, action: action}}}
+     */
+    _tabFernContextMenu.generateJsTreeMenuItems = function(node, proxyfunc, e) {
+
+        // The default set of all items
+        var items = {
+            renameItem: { // The "rename" menu item
+                label: "Rename",
+                action: function () {
+                    debugger;
+                }
+            },
+            deleteItem: { // The "delete" menu item
+                label: "Delete",
+                action: function () {
+                    debugger;
+                }
+            }
+        };
+
+        if ( bypass.isBypassDisengaged() ) {
+            //e.preventDefault();
+        } else {
+            return false;
+        }
+
+        log('rawr', node.data.nodeType);
+
+        if ($(node).hasClass("folder")) {
+            // Delete the "delete" menu item
+            delete items.deleteItem;
+        }
+
+        return items;
+
+    };
 
     // <span class="contextMenu-entryTitle">Tip: Native Chrome context menu can be opened by Right Click with <span class="shortCutKey">Shift</span> pressed</span></il></il></ul>
 
