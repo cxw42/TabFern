@@ -4,21 +4,9 @@ window._tabFernShortcuts = window._tabFernShortcuts || {};
 
     var log = console.log.bind(console, 'TabFern _tabFernShortcuts.js:');
 
-    function getEnabledValueFromLocalStorage() {
-        let locStorageValue = localStorage.getItem('store.settings.KeyBinds.Enabled');
-        if (
-             locStorageValue === null
-            || locStorageValue === "false"
-        ) {
-            return false;
-        } else if ( locStorageValue === "true" ) {
-            return true;
-        }
-    }
-
     _tabFernShortcuts.isEnabled = function isEnabled() {
         // TODO improve this so it is reactive to disabling it in options
-        return getEnabledValueFromLocalStorage();
+        return getBoolSetting('KeyBinds.Enabled', false);
     };
 
     function driverLoaded(err) {
