@@ -30,8 +30,6 @@ window._tabFernContextMenu = window._tabFernContextMenu || {};
     _tabFernContextMenu.installEventHandler = function (win, doc, _shortcutNs = false) {
         shortcutNs = _shortcutNs;
 
-        contextListener(doc);
-        clickListener(doc);
         if ( shortcutNs ) {
             log("installing event handlers using Shortcuts module");
             keyupListenerFromShortcuts(shortcutNs);
@@ -39,7 +37,6 @@ window._tabFernContextMenu = window._tabFernContextMenu || {};
             log("installing event handlers using internal");
             keyupListener(win);
         }
-        resizeListener(win);
     };
 
     /**
@@ -193,44 +190,7 @@ window._tabFernContextMenu = window._tabFernContextMenu || {};
         var windowWidth;
         var windowHeight;
 
-        /**
-         * Listens for contextmenu events.
-         * @param {Document} doc
-         */
-        function contextListener(doc) {
-            doc.addEventListener( "contextmenu", function(e) {
-                taskItemInContext = clickInsideElement( e, taskItemClassName );
 
-                if ( taskItemInContext && bypass.isBypassDisengaged() ) {
-                    e.preventDefault();
-                    toggleMenuOn();
-                    positionMenu(e);
-                } else {
-                    taskItemInContext = null;
-                    toggleMenuOff();
-                }
-            });
-        }
-
-        /**
-         * Listens for click events.
-         * @param {Document} doc
-         */
-        function clickListener(doc) {
-            doc.addEventListener( "click", function(e) {
-                var clickeElIsLink = clickInsideElement( e, contextMenuLinkClassName );
-
-                if ( clickeElIsLink ) {
-                    e.preventDefault();
-                    menuItemListener( clickeElIsLink );
-                } else {
-                    var button = e.which || e.button;
-                    if ( button === 1 ) {
-                        toggleMenuOff();
-                    }
-                }
-            });
-        }
 
         /**
          * Listens for keyup events.
@@ -280,7 +240,6 @@ window._tabFernContextMenu = window._tabFernContextMenu || {};
                 key.signal.add(function (direction, args) {
                     if (direction === 'keydown') {
                         log('bypassing context menu START', args[1]);
-                        toggleMenuOff();
                         bypass.engageBypass();
                     }
                     if (direction === 'keyup') {
@@ -295,78 +254,11 @@ window._tabFernContextMenu = window._tabFernContextMenu || {};
                 throw new Error('Unexpected ESC key bind unavailable?');
             }
             key.signal.add(function(direction, args) {
-                toggleMenuOff();
+                // TODO jstree close context menu
             });
         }
 
-        /**
-         * Window resize event listener
-         * @param {Window} win
-         */
-        function resizeListener(win) {
-            win.onresize = function(e) {
-                toggleMenuOff();
-            };
-        }
 
-        /**
-         * Turns the custom context menu on.
-         */
-        function toggleMenuOn() {
-            if ( menuState !== 1 ) {
-                menuState = 1;
-                menu.classList.add( contextMenuActive );
-            }
-        }
-
-        /**
-         * Turns the custom context menu off.
-         */
-        function toggleMenuOff() {
-            if ( menuState !== 0 ) {
-                menuState = 0;
-                menu.classList.remove( contextMenuActive );
-            }
-        }
-
-        /**
-         * Positions the menu properly.
-         *
-         * @param {Object} e The event
-         */
-        function positionMenu(e) {
-            clickCoords = getPosition(e);
-            clickCoordsX = clickCoords.x;
-            clickCoordsY = clickCoords.y;
-
-            menuWidth = menu.offsetWidth + 4;
-            menuHeight = menu.offsetHeight + 4;
-
-            windowWidth = window.innerWidth;
-            windowHeight = window.innerHeight;
-
-            if ( (windowWidth - clickCoordsX) < menuWidth ) {
-                menu.style.left = windowWidth - menuWidth + "px";
-            } else {
-                menu.style.left = clickCoordsX + "px";
-            }
-
-            if ( (windowHeight - clickCoordsY) < menuHeight ) {
-                menu.style.top = windowHeight - menuHeight + "px";
-            } else {
-                menu.style.top = clickCoordsY + "px";
-            }
-        }
-
-        /**
-         * Dummy action function that logs an action when a menu item link is clicked
-         *
-         * @param {HTMLElement} link The link that was clicked
-         */
-        function menuItemListener( link ) {
-            console.log( "Task ID - " + taskItemInContext.innerHTML + ", Task action - " + link.getAttribute("data-action"));
-            toggleMenuOff();
-        }
 
 
     })(window._tabFernContextMenu);
