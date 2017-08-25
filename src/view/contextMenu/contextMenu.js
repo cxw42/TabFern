@@ -197,23 +197,23 @@ window._tabFernContextMenu = window._tabFernContextMenu || {};
          * @param {Window} win
          */
         function keyupListener(win) {
-            win.onkeydown = function(e) {
+            $(win).on('keydown', function(e) {
                 // Shift
-                if ( e.keyCode === 16 ) {
+                if ( e.which === 16 ) {
                     bypass.engageBypass();
                 }
-            }
-            win.onkeyup = function(e) {
+            });
+            $(win).on('keyup',function(e) {
                 // Shift
-                if ( e.keyCode === 16 ) {
+                if ( e.which === 16 ) {
                     bypass.disengageBypass();
                 }
 
                 // Escape
-                if ( e.keyCode === 27 ) {
+                if ( e.which === 27 ) {
                     toggleMenuOff();
                 }
-            }
+            });
         }
 
         var bypass = {
