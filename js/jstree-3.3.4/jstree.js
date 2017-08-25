@@ -6012,7 +6012,7 @@
 						if (e.target.tagName.toLowerCase() === 'input') {
 							return;
 						}
-						e.preventDefault();
+						//e.preventDefault();
 						last_ts = e.ctrlKey ? +new Date() : 0;
 						if(data || cto) {
 							last_ts = (+new Date()) + 10000;
@@ -6021,7 +6021,7 @@
 							clearTimeout(cto);
 						}
 						if(!this.is_loading(e.currentTarget)) {
-							this.show_contextmenu(e.currentTarget, e.pageX, e.pageY, e);
+							return this.show_contextmenu(e.currentTarget, e.pageX, e.pageY, e);
 						}
 					}, this))
 				.on("click.jstree", ".jstree-anchor", $.proxy(function (e) {
@@ -6115,10 +6115,10 @@
 			if($.isFunction(i)) {
 				i = i.call(this, obj, $.proxy(function (i) {
 					this._show_contextmenu(obj, x, y, i);
-				}, this));
+				}, this), e);
 			}
 			if($.isPlainObject(i)) {
-				this._show_contextmenu(obj, x, y, i);
+				return this._show_contextmenu(obj, x, y, i);
 			}
 		};
 		/**
@@ -8335,9 +8335,11 @@
 					}, this))
 				.on("contextmenu.jstree", ".jstree-wholerow", $.proxy(function (e) {
 						if (this._data.contextmenu) {
-							e.preventDefault();
+							if ( ! this._data.contextmenu.bypass ) {
+                                e.preventDefault();
+                            }
 							var tmp = $.Event('contextmenu', { metaKey : e.metaKey, ctrlKey : e.ctrlKey, altKey : e.altKey, shiftKey : e.shiftKey, pageX : e.pageX, pageY : e.pageY });
-							$(e.currentTarget).closest(".jstree-node").children(".jstree-anchor").first().trigger(tmp);
+							return $(e.currentTarget).closest(".jstree-node").children(".jstree-anchor").first().trigger(tmp);
 						}
 					}, this))
 				/*!
