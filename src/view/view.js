@@ -309,6 +309,13 @@ function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el)
 
 function createNodeForTab(tab, parent_node_id)
 {
+    { //  debug
+        let tab_val = mdTabs.by_tab_id(tab.id);
+        if(tab_val !== undefined) {
+            console.log('About to create node for existing tab ' + tab.id);
+        }
+    } // /debug
+
     let node_data = {
           text: tab.title
         //, 'my_crazy_field': tab.id    // <-- is thrown out
@@ -557,6 +564,12 @@ function treeOnSelect(evt, evt_data)
                     tab_data.isOpen = true;
                     tab_data.tab = win.tabs[idx];
 
+                    { //debug
+                        if(mdTabs.by_tab_id(tab_data.tab.id)!==undefined) {
+                            console.log('About to create extra record for tab '
+                                    + tab_data.tab.id);
+                        }
+                    }
                     mdTabs.add({tab_id: tab_data.tab.id, node_id: tab_node_id,
                         tab: win.tabs[idx]});
                 }
@@ -662,6 +675,9 @@ function winOnFocusChanged(win_id)
 
 } //winOnFocusChanged
 
+/// Process creation of a tab.  NOTE: in Chrome 60.0.3112.101, we sometimes
+/// get two consecutive tabs.onCreated events for the same tab.  Therefore,
+/// we check for that here.
 function tabOnCreated(tab)
 {
     log.info('Tab created:');
@@ -670,10 +686,21 @@ function tabOnCreated(tab)
     let win_node_id = mdWindows.by_win_id(tab.windowId, 'node_id')
     if(typeof win_node_id === 'undefined') return;
 
-    let tab_node_id = createNodeForTab(tab, win_node_id);
-        // Adds at end
-    treeobj.move_node(tab_node_id, win_node_id, tab.index);
-        // Put it in the right place
+    let tab_node_id;
+
+    // See if this is a duplicate of an existing tab
+    let tab_val = mdTabs.by_tab_id(tab.id);
+
+    if(tab_val === undefined) {     // If not, create the tab
+        let tab_node_id = createNodeForTab(tab, win_node_id);   // Adds at end
+        treeobj.move_node(tab_node_id, win_node_id, tab.index);
+            // Put it in the right place
+    } else {
+        console.log('   - That tab already exists.');
+        treeobj.move_node(tab_val.node_id, win_node_id, tab.index);
+            // Just put it where it now belongs.
+        // TODO update the tab.index values of the other tabs in this window.
+    }
 
     saveTree();
 } //tabOnCreated
@@ -1026,14 +1053,14 @@ function initTree1(win_id)
             'check_callback': true,     // for now, allow modifications
             themes: {
                 'name': 'default-dark'
-                , 'variant': 'small'
+              , 'variant': 'small'
             }
         }
         , 'state': {
             'key': 'tabfern-jstree'
         }
     });
-    treeobj = $('#maintree').jstree(true);
+    treeobj = $('#maintree').jstree(true);  // true => grab the existing one
 
     // Load the tree
     loadSavedWindowsIntoTree(initTree2);
@@ -1050,7 +1077,9 @@ function initTree0()
 
 
 function shutdownTree()
-{ // this appears to be called reliably.  TODO? clear a "crashed" flag?
+{   // This appears to be called reliably.  This will also remove any open,
+    // unsaved windows from the save data so they won't be reported as crashed
+    // once #23 is implemented.
 
     // // A bit of logging -
     // // from https://stackoverflow.com/a/3840852/2877364
