@@ -19,6 +19,10 @@ const INIT_TIME_ALLOWED_MS = 2000;  // After this time, if init isn't done,
                                     // display an error message.
 const INIT_MSG_SEL = 'div#init-incomplete';     // Selector for that message
 
+// Syntactic sugar
+const WIN_KEEP = true;
+const WIN_NOKEEP = false;
+
 //////////////////////////////////////////////////////////////////////////
 // Globals //
 
@@ -131,6 +135,25 @@ function twiddleVisibleStyle(node, shouldAdd)
         $('#'+node.id).removeClass(VISIBLE_WIN_CLASS);
     }
 }
+
+/// Set the tab.index values of the tab nodes in a window.  Assumes that
+/// the nodes are in the proper order in the tree.
+/// \pre    #win_node_id is the id of a node that both exists and represents
+///         a window.
+function updateTabIndexValues(win_node_id)
+{
+    // NOTE: later, when adding nested trees, see
+    // https://stackoverflow.com/a/10823248/2877364 by
+    // https://stackoverflow.com/users/106224/boltclock
+
+    $('#'+win_node_id).find('li.jstree-leaf').each(
+        function(idx, dom_node) {
+            let tree_node = treeobj.get_node(dom_node);
+            if(tree_node !== false)
+                tree_node.data.tab.index = idx;
+        }
+    );
+} //updateTabIndexValues
 
 //////////////////////////////////////////////////////////////////////////
 // Node-state classes //
@@ -270,7 +293,7 @@ function actionCloseWindow(node_id, node, unused_action_id, unused_action_el)
     }
 
     // Mark the tree node closed
-    node.data = winState(false, true);
+    node.data = winState(false, WIN_KEEP);
         // true => the user chose to save this window
         // It appears this change does persist.
         // This leaves node.data.win undefined.
@@ -424,7 +447,7 @@ function createNodeForClosedWindow(win_data)
                 //, 'icon': 'visible-window-icon'   // use the default icon
                 , li_attr: { class: WIN_CLASS }
                 , state: { 'opened': !shouldCollapse }
-                , data: winState(false, true)   // true => keep
+                , data: winState(false, WIN_KEEP)
             });
 
     addWindowNodeActions(win_node_id);
@@ -599,12 +622,15 @@ function winOnCreated(win)
         return;     // don't create an extra copy
     }
 
-    createNodeForWindow(win, false);
+    createNodeForWindow(win, WIN_NOKEEP);
     saveTree();     // for now, brute-force save on any change.
 } //winOnCreated
 
 function winOnRemoved(win_id)
 {
+    // TODO stash the size of the window being closed as the size for
+    // reopened windows
+
     let node_id = mdWindows.by_win_id(win_id, 'node_id');
     if(typeof node_id === 'undefined') return;
 
@@ -699,8 +725,9 @@ function tabOnCreated(tab)
         console.log('   - That tab already exists.');
         treeobj.move_node(tab_val.node_id, win_node_id, tab.index);
             // Just put it where it now belongs.
-        // TODO update the tab.index values of the other tabs in this window.
     }
+
+    updateTabIndexValues(win_node_id);
 
     saveTree();
 } //tabOnCreated
@@ -819,12 +846,13 @@ function tabOnRemoved(tabid, removeinfo)
 
     if(removeinfo.isWindowClosing) return;
 
+    let window_node_id = mdWindows.by_win_id(removeinfo.windowId, 'node_id');
+    if(typeof window_node_id === 'undefined') return;
+
     {   // Keep the locals here out of the scope of the closure below.
         // Get the parent (window)
-        let parent_node_id = mdWindows.by_win_id(removeinfo.windowId, 'node_id');
-        if(typeof parent_node_id === 'undefined') return;
-        let parent_node = treeobj.get_node(parent_node_id);
-        if(typeof parent_node === 'undefined') return;
+        let window_node = treeobj.get_node(window_node_id);
+        if(typeof window_node === 'undefined') return;
 
         // Get the tab's node
         let tab_node_id = mdTabs.by_tab_id(tabid, 'node_id');
@@ -841,27 +869,7 @@ function tabOnRemoved(tabid, removeinfo)
     }
 
     // Refresh the tab.index values for the remaining tabs
-    chrome.windows.get(removeinfo.windowId, {populate: true},
-        function(win) {
-            if( (typeof win === 'undefined') ||
-                (typeof win.tabs === 'undefined') ||
-                (!Array.isArray(win.tabs)) ||
-                (win.tabs.length==0)) return;
-
-            for(let remaining_tab of win.tabs) {
-
-                let rtab_node_id = mdTabs.by_tab_id(remaining_tab.id, 'node_id');
-                if(typeof rtab_node_id === 'undefined') continue;
-                let rtab_node = treeobj.get_node(rtab_node_id);
-                if(typeof rtab_node === 'undefined') continue;
-                    // TODO also check for an object here and on other returns
-                    // from get_node() --- get_node returns false if the given
-                    // node ID doesn't exist.
-
-                rtab_node.data.tab.index = remaining_tab.index;
-            }
-        }
-    );
+    updateTabIndexValues(window_node_id);
 
     saveTree();
 } //tabOnRemoved
@@ -889,9 +897,6 @@ function tabOnAttached(tabid, attachinfo)
     // Since we forgot about the tab in tabOnDetached, re-create it
     // now that it's back.
     chrome.tabs.get(tabid, tabOnCreated);
-        // TODO RESUME HERE - quickly attaching and detaching a tab can create
-        // extra tree nodes for that tab.  Fix that.  Have a lookup from
-        // tab ID to tree node, perhaps?
 } //tabOnAttached
 
 function tabOnReplaced(addedTabId, removedTabId)
@@ -913,8 +918,8 @@ function eventOnResize(evt)
     }
 
     let size_data=[];       // L, T, W, H
-    size_data.push(window.screenLeft);  //these are all guesses
-    size_data.push(window.screenTop);
+    size_data.push(window.screenLeft);  // Are these the right fields of
+    size_data.push(window.screenTop);   // #window to use?  They seem to work.
     size_data.push(window.outerWidth);
     size_data.push(window.outerHeight);
 
@@ -1015,7 +1020,7 @@ function addOpenWindowsToTree(winarr)
         if(win.focused) {
             focused_win_id = win.id;
         }
-        createNodeForWindow(win, false);
+        createNodeForWindow(win, WIN_NOKEEP);
     } //foreach window
 
     // Highlight the focused window.
@@ -1069,6 +1074,8 @@ function initTree1(win_id)
 function initTree0()
 {
     log.info('TabFern view.js initializing view');
+
+    // TODO stash our current size, which is the default window size.
 
     // Get our Chrome-extensions-API window ID from the background page.
     // I don't know a way to get this directly from the JS window object.
