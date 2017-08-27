@@ -26,22 +26,34 @@ const WIN_NOKEEP = false;
 //////////////////////////////////////////////////////////////////////////
 // Globals //
 
-let treeobj;                    // The jstree instance
-let mdTabs;                     // Map between open-tab IDs and node IDs
-let mdWindows;                  // Map between open-window IDs and node IDs
-let my_winid;   //window ID of this popup window
+let treeobj;                    ///< The jstree instance
+let mdTabs;                     ///< Map between open-tab IDs and node IDs
+let mdWindows;                  ///< Map between open-window IDs and node IDs
+let my_winid;                   ///< window ID of this popup window
 
+/// Window ID of the currently-focused window, as best we understand it.
 let currently_focused_winid = null;
-    // Window ID of the currently-focused window, as best we understand it.
 
+/// HACK to avoid creating extra tree items.
 let window_is_being_restored = false;
-    // HACK to avoid creating extra tree items.
 
 /// ID of a timer to save the new window size after a resize event
 let resize_save_timer_id;
 
 /// Did initialization complete successfully?
 let did_init_complete = false;
+
+/// The size of the last-closed window, to be used as the
+/// size of newly-opened windows (whence the name).
+/// Should always have a valid value.
+let newWinSize = {left: 0, top: 0, width: 300, height: 600};
+
+/// The sizes of the currently-open windows, for use in setting #newWinSize.
+/// The size of this popup, and other non-normal windows, is not tracked here.
+let winSizes={};
+
+// TODO use content scripts to catch window resizing, a la
+// https://stackoverflow.com/q/13141072/2877364
 
 //////////////////////////////////////////////////////////////////////////
 // Initialization //
@@ -51,6 +63,7 @@ let did_init_complete = false;
 log.setDefaultLevel(log.levels.INFO);
     // TODO change the default to ERROR or SILENT for production.
 
+// TODO move more of the tab data out of tree_node.data and into the multidex.
 mdTabs = Multidex(
     [ //keys
         'tab_id'    // from Chrome
@@ -154,6 +167,35 @@ function updateTabIndexValues(win_node_id)
         }
     );
 } //updateTabIndexValues
+
+/// Get the size of a window, as an object
+function getWindowSize(win)
+{
+    // || is to provide some sensible defaults - thanks to
+    // https://stackoverflow.com/a/7540412/2877364 by
+    // https://stackoverflow.com/users/113716/user113716
+
+    // Are these the right fields of #win to use?  They seem to work.
+
+    return {
+          'left': win.screenLeft || 0
+        , 'top': win.screenTop || 0
+        , 'width': win.outerWidth || 300
+        , 'height': win.outerHeight || 600
+    };
+} //getWindowSize
+
+/// Get the size of a window, as an object, from a Chrome window record.
+/// See comments in getWindowSize().
+function getWindowSizeFromWindowRecord(win)
+{
+    return {
+          'left': win.left || 0
+        , 'top': win.top || 0
+        , 'width': win.width || 300
+        , 'height': win.height || 600
+    };
+} //getWindowSize
 
 //////////////////////////////////////////////////////////////////////////
 // Node-state classes //
@@ -564,8 +606,12 @@ function treeOnSelect(evt, evt_data)
         window_is_being_restored = true;
         chrome.windows.create(
             {
-                url: urls,
-                focused: true
+                url: urls
+              , focused: true
+              , left: newWinSize.left
+              , top: newWinSize.top
+              , width: newWinSize.width
+              , height: newWinSize.height
             },
             function(win) {
                 // Update the tree and node mappings
@@ -622,14 +668,28 @@ function winOnCreated(win)
         return;     // don't create an extra copy
     }
 
+    // Save the window's size
+    if(win.type === 'normal') {
+        winSizes[win.id] = getWindowSizeFromWindowRecord(win);
+        newWinSize = winSizes[win.id];
+            // Chrome appears to use the last-resized window as its size
+            // template even when you haven't closed it, so do similarly.
+            // ... Well, maybe the last-resized window with a non-blank tab ---
+            // not entirely sure.
+    }
+
     createNodeForWindow(win, WIN_NOKEEP);
     saveTree();     // for now, brute-force save on any change.
 } //winOnCreated
 
 function winOnRemoved(win_id)
 {
-    // TODO stash the size of the window being closed as the size for
-    // reopened windows
+    // Stash the size of the window being closed as the size for
+    // reopened windows.
+    if(win_id in winSizes) {
+        newWinSize = winSizes[win_id];
+        delete winSizes[win_id];
+    }
 
     let node_id = mdWindows.by_win_id(win_id, 'node_id');
     if(typeof node_id === 'undefined') return;
@@ -637,8 +697,7 @@ function winOnRemoved(win_id)
     let node = treeobj.get_node(node_id);
     if(typeof node === 'undefined') return;
 
-    winOnFocusChanged(chrome.windows.WINDOW_ID_NONE);
-        // Clear the highlights.  TODO test this.
+    winOnFocusChanged(chrome.windows.WINDOW_ID_NONE);   // Clear the highlights.
 
     if(node.data.keep) {
         node.data.isOpen = false;   // because it's already gone
@@ -863,16 +922,14 @@ function tabOnDetached(tabid, detachinfo)
     log.info(detachinfo);
 
     // Rather than stashing the tab's data, for now, just trash it and
-    // re-create it when it lands in its new home.
+    // re-create it when it lands in its new home.  This seems to work OK.
     tabOnRemoved(tabid,
             {isWindowClosing: false, windowId:detachinfo.oldWindowId}
     );
-    //TODO see if this does the Right Thing
 } //tabOnDetached
 
 function tabOnAttached(tabid, attachinfo)
 {
-    //TODO
     log.info('Tab being attached: ' + tabid);
     log.info(attachinfo);
     // Since we forgot about the tab in tabOnDetached, re-create it
@@ -898,11 +955,7 @@ function eventOnResize(evt)
         resize_save_timer_id = undefined;
     }
 
-    let size_data=[];       // L, T, W, H
-    size_data.push(window.screenLeft);  // Are these the right fields of
-    size_data.push(window.screenTop);   // #window to use?  They seem to work.
-    size_data.push(window.outerWidth);
-    size_data.push(window.outerHeight);
+    let size_data = getWindowSize(window);
 
     // Save the size, but only after two seconds go by.  This is to avoid
     // saving until the user is actually done resizing.
@@ -946,15 +999,15 @@ function initTree4(items)
         // If there was an error (e.g., nonexistent key), just
         // accept the default size.
         let parsed = items[LOCN_KEY];
-        if(Array.isArray(parsed) && (parsed.length == 4)) { // L, T, W, H
+        if( (parsed !== null) && (typeof parsed === 'object') ) {
             // + and || are to provide some sensible defaults - thanks to
             // https://stackoverflow.com/a/7540412/2877364 by
             // https://stackoverflow.com/users/113716/user113716
             chrome.windows.update(my_winid, {
-                  'left': +parsed[0] || 0
-                , 'top': +parsed[1] || 0
-                , 'width': +parsed[2] || 300
-                , 'height': +parsed[3] || 600
+                  'left': +parsed.left || 0
+                , 'top': +parsed.top|| 0
+                , 'width': +parsed.width || 300
+                , 'height': +parsed.height || 600
             });
         }
     } //endif no error
@@ -1056,7 +1109,8 @@ function initTree0()
 {
     log.info('TabFern view.js initializing view');
 
-    // TODO stash our current size, which is the default window size.
+    // Stash our current size, which is the default window size.
+    newWinSize = getWindowSize(window);
 
     // Get our Chrome-extensions-API window ID from the background page.
     // I don't know a way to get this directly from the JS window object.
