@@ -8,6 +8,19 @@ Very basic extension for vertical, grouped tabs.  Inspired by
 [Tabs Outliner](https://chrome.google.com/webstore/detail/tabs-outliner/eggkanocgddhmamlbiijnphhppkpkmkl)
 by Vladyslav Volovyk.
 
+# Call for alpha testers!
+
+If you are willing, please try TabFern and let us know how it goes!
+
+ - Download the ZIP from [here](https://github.com/cxw42/TabFern/archive/pr/win-size.zip).
+ - Unzip it
+ - Switch Chrome to developer mode via `chrome://extensions`
+ - Load unpacked extension
+ - Restart Chrome
+ - When Chrome starts, you will get a prompt asking whether you want to disable
+   developer-mode extensions.  Hit "Cancel."
+ - Open issues or email <mailto:tabfern@zoho.com> with feedback!
+
 # Usage
 
  - Click the icon to open the TabFern view.  The view will also open when
@@ -35,11 +48,12 @@ by Vladyslav Volovyk.
 
 # Limitations
 
- - The tree will not update when you drag tabs between browser windows.
  - There is only a two-level hierarchy --- tabs cannot be the children
    of other tabs in the tree.
  - You cannot open and close individual tabs --- you have to open and close
    the window as a whole.
+ - Windows will not necessarily open at the size of the last-closed window,
+   like they do normally in Chrome.
  - Lots of others I'm not going to list right now!
 
 # Related information
@@ -57,7 +71,7 @@ by Vladyslav Volovyk.
 
 # Legal
 
-Copyright (c) 2017 Chris White.  CC-BY-SA 4.0 International.
+Copyright (c) 2017 Chris White, Jasmine Hegman.  CC-BY-SA 4.0 International.
 
 ![logo](https://raw.githubusercontent.com/cxw42/TabFern/master/assets/fern128.png)
 
