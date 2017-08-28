@@ -3,14 +3,6 @@
 // loaded by view.html.
 
 //////////////////////////////////////////////////////////////////////////
-// Setup //
-
-// NOTE: as of writing, log.debug() is a no-op - see
-// https://github.com/pimterry/loglevel/issues/111
-log.setDefaultLevel(log.levels.INFO);
-    // TODO change the default to ERROR or SILENT for production.
-
-//////////////////////////////////////////////////////////////////////////
 // Constants //
 
 const STORAGE_KEY='tabfern-data';
@@ -27,13 +19,20 @@ const INIT_TIME_ALLOWED_MS = 2000;  // After this time, if init isn't done,
                                     // display an error message.
 const INIT_MSG_SEL = 'div#init-incomplete';     // Selector for that message
 
+// Syntactic sugar
+const WIN_KEEP = true;
+const WIN_NOKEEP = false;
+
 //////////////////////////////////////////////////////////////////////////
 // Globals //
 
-let treeobj;
-let nodeid_by_winid = {};       // Window ID (integer) to tree-node id (string)
-let nodeid_by_tabid = {};       // Tab ID (int) to tree-node id (string)
+let treeobj;                    // The jstree instance
+let mdTabs;                     // Map between open-tab IDs and node IDs
+let mdWindows;                  // Map between open-window IDs and node IDs
 let my_winid;   //window ID of this popup window
+
+let currently_focused_winid = null;
+    // Window ID of the currently-focused window, as best we understand it.
 
 let window_is_being_restored = false;
     // HACK to avoid creating extra tree items.
@@ -43,6 +42,35 @@ let resize_save_timer_id;
 
 /// Did initialization complete successfully?
 let did_init_complete = false;
+
+//////////////////////////////////////////////////////////////////////////
+// Initialization //
+
+// NOTE: as of writing, log.debug() is a no-op - see
+// https://github.com/pimterry/loglevel/issues/111
+log.setDefaultLevel(log.levels.INFO);
+    // TODO change the default to ERROR or SILENT for production.
+
+mdTabs = Multidex(
+    [ //keys
+        'tab_id'    // from Chrome
+      , 'node_id'   // from jstree
+    ],
+    [ //other data
+        'win_id'    // from Chrome
+      , 'index'     // in the current window
+      , 'tab'       // the actual Tab record from Chrome
+    ]);
+
+mdWindows = Multidex(
+    [ //keys
+        'win_id'    // from Chrome
+      , 'node_id'   // from jstree
+    ],
+    [ //other data
+        'win'       // the actual Window record from chrome
+        // TODO a list of tabs?
+    ]);
 
 //////////////////////////////////////////////////////////////////////////
 // General utility routines //
@@ -107,6 +135,25 @@ function twiddleVisibleStyle(node, shouldAdd)
         $('#'+node.id).removeClass(VISIBLE_WIN_CLASS);
     }
 }
+
+/// Set the tab.index values of the tab nodes in a window.  Assumes that
+/// the nodes are in the proper order in the tree.
+/// \pre    #win_node_id is the id of a node that both exists and represents
+///         a window.
+function updateTabIndexValues(win_node_id)
+{
+    // NOTE: later, when adding nested trees, see
+    // https://stackoverflow.com/a/10823248/2877364 by
+    // https://stackoverflow.com/users/106224/boltclock
+
+    $('#'+win_node_id).find('li.jstree-leaf').each(
+        function(idx, dom_node) {
+            let tree_node = treeobj.get_node(dom_node);
+            if(tree_node !== false)
+                tree_node.data.tab.index = idx;
+        }
+    );
+} //updateTabIndexValues
 
 //////////////////////////////////////////////////////////////////////////
 // Node-state classes //
@@ -223,6 +270,7 @@ function actionRenameWindow(node_id, node, unused_action_id, unused_action_el)
 }
 
 /// Close a window, but don't delete its tree nodes.  Used for saving windows.
+/// ** The caller must call saveTree() --- actionCloseWindow() does not.
 function actionCloseWindow(node_id, node, unused_action_id, unused_action_el)
 {
     let win_data = node.data;
@@ -230,16 +278,22 @@ function actionCloseWindow(node_id, node, unused_action_id, unused_action_el)
     if(typeof(win_data.win) === 'undefined') return;
         // don't try to close an already-closed window.
 
-    nodeid_by_winid[win_data.win.id] = undefined;
+    log.info('Removing nodeid map for winid ' + win_data.win.id);
+    let win_val = mdWindows.by_win_id(win_data.win.id);
+    mdWindows.remove_value(win_val);
         // Prevents winOnRemoved() from removing the tree node
 
     // Close the window
     if(win_data.isOpen) {
-        chrome.windows.remove(win_data.win.id);
+        chrome.windows.remove(win_data.win.id,
+                function ignore_error() { void chrome.runtime.lastError; } );
+        // ignore exceptions - when we are called from winOnRemoved,
+        // the window is already gone, so the remove() throws.
+        // See https://stackoverflow.com/a/45871870/2877364 by cxw
     }
 
     // Mark the tree node closed
-    node.data = winState(false, true);
+    node.data = winState(false, WIN_KEEP);
         // true => the user chose to save this window
         // It appears this change does persist.
         // This leaves node.data.win undefined.
@@ -258,6 +312,9 @@ function actionCloseWindow(node_id, node, unused_action_id, unused_action_el)
         child_node.data.isOpen = false;
         child_node.data.tab = undefined;
         // The url sticks around.
+
+        let child_node_val = mdTabs.by_node_id(child_node_id);
+        mdTabs.remove_value(child_node_val);
     }
 } //actionCloseWindow
 
@@ -275,6 +332,13 @@ function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el)
 
 function createNodeForTab(tab, parent_node_id)
 {
+    { //  debug
+        let tab_val = mdTabs.by_tab_id(tab.id);
+        if(tab_val !== undefined) {
+            console.log('About to create node for existing tab ' + tab.id);
+        }
+    } // /debug
+
     let node_data = {
           text: tab.title
         //, 'my_crazy_field': tab.id    // <-- is thrown out
@@ -285,7 +349,7 @@ function createNodeForTab(tab, parent_node_id)
     // TODO if the favicon doesn't load, replace the icon with the generic
     // page icon so we don't keep hitting the favIconUrl.
     let tab_node_id = treeobj.create_node(parent_node_id, node_data);
-    nodeid_by_tabid[tab.id] = tab_node_id;
+    mdTabs.add({tab_id: tab.id, node_id: tab_node_id, tab: tab});
     return tab_node_id;
 } //createNodeForTab
 
@@ -297,7 +361,7 @@ function createNodeForClosedTab(tab_data, parent_node_id)
         , icon: 'fff-page'
     };
     let tab_node_id = treeobj.create_node(parent_node_id, node_data);
-    //nodeid_by_tabid[tab.id] = tab_node_id;    // can't --- it's closed
+    // Not stored in mdTabs since it isn't open.
     return tab_node_id;
 } //createNodeForClosedTab
 
@@ -345,7 +409,7 @@ function addWindowNodeActions(win_node_id)
 /// @returns the tree-node ID, or undefined on error.
 function createNodeForWindow(win, keep)
 {
-    // Don't put our window in the list
+    // Don't put this popup window (view.html) in the list
     if( (typeof(win.id) !== 'undefined') &&
         (win.id == my_winid) ) {
         return;
@@ -360,7 +424,8 @@ function createNodeForWindow(win, keep)
                 , data: winState(true, keep, win)
             });
 
-    nodeid_by_winid[win.id] = win_node_id;
+    log.info('Adding nodeid map for winid ' + win.id);
+    mdWindows.add({ win_id: win.id, node_id: win_node_id, win:win });
 
     addWindowNodeActions(win_node_id);
 
@@ -382,10 +447,8 @@ function createNodeForClosedWindow(win_data)
                 //, 'icon': 'visible-window-icon'   // use the default icon
                 , li_attr: { class: WIN_CLASS }
                 , state: { 'opened': !shouldCollapse }
-                , data: winState(false, true)   // true => keep
+                , data: winState(false, WIN_KEEP)
             });
-
-    //nodeid_by_winid[win.id] = win_node_id;
 
     addWindowNodeActions(win_node_id);
 
@@ -506,7 +569,8 @@ function treeOnSelect(evt, evt_data)
             },
             function(win) {
                 // Update the tree and node mappings
-                nodeid_by_winid[win.id] = win_node.id;
+                log.info('Adding nodeid map for winid ' + win.id);
+                mdWindows.add({win_id: win.id, node_id: win_node.id, win:win});
 
                 win_node_data.isOpen = true;
                 win_node_data.keep = true;      // just in case
@@ -523,7 +587,14 @@ function treeOnSelect(evt, evt_data)
                     tab_data.isOpen = true;
                     tab_data.tab = win.tabs[idx];
 
-                    nodeid_by_tabid[tab_data.tab.id] = tab_node_id;
+                    { //debug
+                        if(mdTabs.by_tab_id(tab_data.tab.id)!==undefined) {
+                            console.log('About to create extra record for tab '
+                                    + tab_data.tab.id);
+                        }
+                    }
+                    mdTabs.add({tab_id: tab_data.tab.id, node_id: tab_node_id,
+                        tab: win.tabs[idx]});
                 }
             } //create callback
         );
@@ -551,14 +622,18 @@ function winOnCreated(win)
         return;     // don't create an extra copy
     }
 
-    createNodeForWindow(win, false);
+    createNodeForWindow(win, WIN_NOKEEP);
     saveTree();     // for now, brute-force save on any change.
 } //winOnCreated
 
 function winOnRemoved(win_id)
 {
-    let node_id = nodeid_by_winid[win_id];
+    // TODO stash the size of the window being closed as the size for
+    // reopened windows
+
+    let node_id = mdWindows.by_win_id(win_id, 'node_id');
     if(typeof node_id === 'undefined') return;
+
     let node = treeobj.get_node(node_id);
     if(typeof node === 'undefined') return;
 
@@ -570,47 +645,100 @@ function winOnRemoved(win_id)
         actionCloseWindow(node_id, node, null, null);
             // Since it was saved, leave it saved.  You can only get rid
             // of saved sessions by X-ing them expressly (actionDeleteWindow).
+        saveTree();     // TODO figure out if we need this.
     } else {
         // Not saved - just toss it.
-        treeobj.delete_node(node);
+        actionDeleteWindow(node_id, node, null, null);
             // This removes the node's children also.
+            // actionDeleteWindow also saves the tree, so we don't need to.
     }
-
-    saveTree();     // TODO figure out if we need this.
 } //winOnRemoved
 
+/// Update the highlight for the current window.  Note: this does not always
+/// seem to fire when switching to a non-Chrome window.
+/// See https://stackoverflow.com/q/24307465/2877364 - onFocusChanged
+/// is known to be a bit flaky.
 function winOnFocusChanged(win_id)
 {
-    // Clear the focus highlights
-    $('.' + WIN_CLASS + ' > a').removeClass(FOCUSED_WIN_CLASS);
+    //log.info('Window focus-change triggered: ' + win_id);
 
-    if(win_id == chrome.windows.WINDOW_ID_NONE) return;
+    chrome.windows.getLastFocused({}, function(win){
+        let new_win_id;
+        if(!win.focused) {
+            new_win_id = -1;
+        } else {
+            new_win_id = win.id;
+        }
 
-    // Get the window
-    let window_node_id = nodeid_by_winid[win_id];
-    if(typeof window_node_id === 'undefined') return;
-        // E.g., if win_id corresponds to this view.
+        // Clear the focus highlights if we are changing windows.
+        // Avoid flicker if the selection is staying in the same window.
+        if(new_win_id === currently_focused_winid) return;
 
-    // Make the window's entry bold, but no other entries.
-    $('#' + window_node_id + ' > a').addClass(FOCUSED_WIN_CLASS);
+        //log.info('Clearing focus classes');
+        $('.' + WIN_CLASS + ' > a').removeClass(FOCUSED_WIN_CLASS);
+
+        currently_focused_winid = new_win_id;
+
+        if(new_win_id == chrome.windows.WINDOW_ID_NONE) return;
+
+        // Get the window
+        let window_node_id = mdWindows.by_win_id(new_win_id, 'node_id');
+        //log.info('Window node ID: ' + window_node_id);
+        if(typeof window_node_id === 'undefined') return;
+            // E.g., if new_win_id corresponds to this view.
+
+        // Make the window's entry bold, but no other entries.
+        // This seems to need to run after a yield when dragging
+        // tabs between windows, or else the FOCUSED_WIN_CLASS
+        // doesn't seem to stick.
+
+        setTimeout(function(){
+            //log.info('Setting focus class');
+            $('#' + window_node_id + ' > a').addClass(FOCUSED_WIN_CLASS);
+            //log.info($('#' + window_node_id + ' > a'));
+        },0);
+    });
+
 } //winOnFocusChanged
 
+/// Process creation of a tab.  NOTE: in Chrome 60.0.3112.101, we sometimes
+/// get two consecutive tabs.onCreated events for the same tab.  Therefore,
+/// we check for that here.
 function tabOnCreated(tab)
 {
-    let win_node_id = nodeid_by_winid[tab.windowId];
+    log.info('Tab created:');
+    log.info(tab);
+
+    let win_node_id = mdWindows.by_win_id(tab.windowId, 'node_id')
     if(typeof win_node_id === 'undefined') return;
 
-    let tab_node_id = createNodeForTab(tab, win_node_id);
-        // Adds at end
-    treeobj.move_node(tab_node_id, win_node_id, tab.index);
-        // Put it in the right place
+    let tab_node_id;
+
+    // See if this is a duplicate of an existing tab
+    let tab_val = mdTabs.by_tab_id(tab.id);
+
+    if(tab_val === undefined) {     // If not, create the tab
+        let tab_node_id = createNodeForTab(tab, win_node_id);   // Adds at end
+        treeobj.move_node(tab_node_id, win_node_id, tab.index);
+            // Put it in the right place
+    } else {
+        console.log('   - That tab already exists.');
+        treeobj.move_node(tab_val.node_id, win_node_id, tab.index);
+            // Just put it where it now belongs.
+    }
+
+    updateTabIndexValues(win_node_id);
 
     saveTree();
 } //tabOnCreated
 
 function tabOnUpdated(tabid, changeinfo, tab)
 {
-    let tab_node_id = nodeid_by_tabid[tabid];
+    log.info('Tab updated: ' + tabid);
+    log.info(changeinfo);
+    log.info(tab);
+
+    let tab_node_id = mdTabs.by_tab_id(tabid, 'node_id');
     if(typeof tab_node_id === 'undefined') return;
 
     let node = treeobj.get_node(tab_node_id);
@@ -628,17 +756,18 @@ function tabOnUpdated(tabid, changeinfo, tab)
 
 function tabOnMoved(tabid, moveinfo)
 {
+    log.info('Tab moved: ' + tabid);
+    log.info(moveinfo);
+
     let from_idx = moveinfo.fromIndex;
     let to_idx = moveinfo.toIndex;
 
-    log.info('Tab being moved: ' + tabid);
-
     // Get the parent (window)
-    let parent_node_id = nodeid_by_winid[moveinfo.windowId];
+    let parent_node_id = mdWindows.by_win_id(moveinfo.windowId, 'node_id');
     if(typeof parent_node_id === 'undefined') return;
 
     // Get the tab's node
-    let tab_node_id = nodeid_by_tabid[tabid];
+    let tab_node_id = mdTabs.by_tab_id(tabid, 'node_id');
     if(typeof tab_node_id === 'undefined') return;
 
     // Get the existing tab's node so we can swap them
@@ -651,7 +780,7 @@ function tabOnMoved(tabid, moveinfo)
             // Get the two tabs in question
             let other_tab = tabs[0];
             if(typeof other_tab.id === 'undefined') return;
-            let other_tab_node_id = nodeid_by_tabid[other_tab.id];
+            let other_tab_node_id = mdTabs.by_tab_id(other_tab.id, 'node_id');
             if(typeof other_tab_node_id === 'undefined') return;
             let other_tab_node = treeobj.get_node(other_tab_node_id);
             if(typeof other_tab_node === 'undefined') return;
@@ -687,12 +816,15 @@ function tabOnMoved(tabid, moveinfo)
 
 function tabOnActivated(activeinfo)
 {
+    log.info('Tab activated:');
+    log.info(activeinfo);
+
     winOnFocusChanged(activeinfo.windowId);
 
     // Use this if you want the selection to track the open tab.
     if(false) {
         // Get the tab's node
-        let tab_node_id = nodeid_by_tabid[activeinfo.tabId];
+        let tab_node_id = mdTabs.by_tab_id(activeinfo.tabId, 'node_id');
         if(typeof tab_node_id === 'undefined') return;
 
         treeobj.deselect_all();
@@ -705,71 +837,73 @@ function tabOnActivated(activeinfo)
     // No need to save --- we don't save which tab is active.
 } //tabOnActivated
 
-function tabOnDetached(tabid, detachinfo)
-{
-    // Don't save here?  Do we get a WindowCreated if the tab is not
-    // attached to another window?
-    log.info('Tab being detached: ' + tabid);
-    //TODO
-} //tabOnDetached
-
-function tabOnAttached(tabid, attachinfo)
-{
-    //TODO
-    log.info('Tab being attached: ' + tabid);
-    //saveTree();
-} //tabOnAttached
-
 function tabOnRemoved(tabid, removeinfo)
 {
     // If the window is closing, do not remove the tab records.
     // The cleanup will be handled by winOnRemoved().
     log.info('Tab being removed: ' + tabid);
+    log.info(removeinfo);
+
     if(removeinfo.isWindowClosing) return;
+
+    let window_node_id = mdWindows.by_win_id(removeinfo.windowId, 'node_id');
+    if(typeof window_node_id === 'undefined') return;
 
     {   // Keep the locals here out of the scope of the closure below.
         // Get the parent (window)
-        let parent_node_id = nodeid_by_winid[removeinfo.windowId];
-        if(typeof parent_node_id === 'undefined') return;
-        let parent_node = treeobj.get_node(parent_node_id);
-        if(typeof parent_node === 'undefined') return;
+        let window_node = treeobj.get_node(window_node_id);
+        if(typeof window_node === 'undefined') return;
 
         // Get the tab's node
-        let tab_node_id = nodeid_by_tabid[tabid];
+        let tab_node_id = mdTabs.by_tab_id(tabid, 'node_id');
         if(typeof tab_node_id === 'undefined') return;
         let tab_node = treeobj.get_node(tab_node_id);
         if(typeof tab_node === 'undefined') return;
 
         // Remove the node
-        nodeid_by_tabid[tabid] = undefined;
+        let tab_val = mdTabs.by_tab_id(tabid);
+        mdTabs.remove_value(tab_val);
             // So any events that are triggered won't try to look for a
             // nonexistent tab.
         treeobj.delete_node(tab_node);
     }
 
     // Refresh the tab.index values for the remaining tabs
-    chrome.windows.get(removeinfo.windowId, {populate: true},
-        function(win) {
-            if((!Array.isArray(win.tabs)) || (win.tabs.length==0)) return;
-
-            for(let remaining_tab of win.tabs) {
-
-                let rtab_node_id = nodeid_by_tabid[remaining_tab.id];
-                if(typeof rtab_node_id === 'undefined') continue;
-                let rtab_node = treeobj.get_node(rtab_node_id);
-                if(typeof rtab_node === 'undefined') continue;
-
-                rtab_node.data.tab.index = remaining_tab.index;
-            }
-        }
-    );
+    updateTabIndexValues(window_node_id);
 
     saveTree();
 } //tabOnRemoved
 
+function tabOnDetached(tabid, detachinfo)
+{
+    // Don't save here?  Do we get a WindowCreated if the tab is not
+    // attached to another window?
+    log.info('Tab being detached: ' + tabid);
+    log.info(detachinfo);
+
+    // Rather than stashing the tab's data, for now, just trash it and
+    // re-create it when it lands in its new home.
+    tabOnRemoved(tabid,
+            {isWindowClosing: false, windowId:detachinfo.oldWindowId}
+    );
+    //TODO see if this does the Right Thing
+} //tabOnDetached
+
+function tabOnAttached(tabid, attachinfo)
+{
+    //TODO
+    log.info('Tab being attached: ' + tabid);
+    log.info(attachinfo);
+    // Since we forgot about the tab in tabOnDetached, re-create it
+    // now that it's back.
+    chrome.tabs.get(tabid, tabOnCreated);
+} //tabOnAttached
+
 function tabOnReplaced(addedTabId, removedTabId)
 {
     // Do we get this?
+    log.info('Tab being replaced: added ' + addedTabId + '; removed ' +
+            removedTabId);
 } //tabOnReplaced
 
 //////////////////////////////////////////////////////////////////////////
@@ -784,8 +918,8 @@ function eventOnResize(evt)
     }
 
     let size_data=[];       // L, T, W, H
-    size_data.push(window.screenLeft);  //these are all guesses
-    size_data.push(window.screenTop);
+    size_data.push(window.screenLeft);  // Are these the right fields of
+    size_data.push(window.screenTop);   // #window to use?  They seem to work.
     size_data.push(window.outerWidth);
     size_data.push(window.outerHeight);
 
@@ -856,12 +990,21 @@ function initTree3()
     chrome.windows.onRemoved.addListener(winOnRemoved);
     chrome.windows.onFocusChanged.addListener(winOnFocusChanged);
 
+    // Chrome tabs API, listed in the order given in the API docs at
+    // https://developer.chrome.com/extensions/tabs
     chrome.tabs.onCreated.addListener(tabOnCreated);
     chrome.tabs.onUpdated.addListener(tabOnUpdated);
     chrome.tabs.onMoved.addListener(tabOnMoved);
-    chrome.tabs.onRemoved.addListener(tabOnRemoved);
-
+    //onSelectionChanged: deprecated
+    //onActiveChanged: deprecated
     chrome.tabs.onActivated.addListener(tabOnActivated);
+    //onHighlightChanged: deprecated
+    //onHighlighted: not yet implemented
+    chrome.tabs.onDetached.addListener(tabOnDetached);
+    chrome.tabs.onAttached.addListener(tabOnAttached);
+    chrome.tabs.onRemoved.addListener(tabOnRemoved);
+    chrome.tabs.onReplaced.addListener(tabOnReplaced);
+    //onZoomChange: not yet implemented, and we probably won't ever need it.
 
     // Move this view to where it was, if anywhere
     chrome.storage.local.get(LOCN_KEY, initTree4);
@@ -877,7 +1020,7 @@ function addOpenWindowsToTree(winarr)
         if(win.focused) {
             focused_win_id = win.id;
         }
-        createNodeForWindow(win, false);
+        createNodeForWindow(win, WIN_NOKEEP);
     } //foreach window
 
     // Highlight the focused window.
@@ -915,14 +1058,14 @@ function initTree1(win_id)
             'check_callback': true,     // for now, allow modifications
             themes: {
                 'name': 'default-dark'
-                , 'variant': 'small'
+              , 'variant': 'small'
             }
         }
         , 'state': {
             'key': 'tabfern-jstree'
         }
     });
-    treeobj = $('#maintree').jstree(true);
+    treeobj = $('#maintree').jstree(true);  // true => grab the existing one
 
     // Load the tree
     loadSavedWindowsIntoTree(initTree2);
@@ -932,6 +1075,8 @@ function initTree0()
 {
     log.info('TabFern view.js initializing view');
 
+    // TODO stash our current size, which is the default window size.
+
     // Get our Chrome-extensions-API window ID from the background page.
     // I don't know a way to get this directly from the JS window object.
     chrome.runtime.sendMessage(MSG_GET_VIEW_WIN_ID, initTree1);
@@ -939,7 +1084,9 @@ function initTree0()
 
 
 function shutdownTree()
-{ // this appears to be called reliably.  TODO? clear a "crashed" flag?
+{   // This appears to be called reliably.  This will also remove any open,
+    // unsaved windows from the save data so they won't be reported as crashed
+    // once #23 is implemented.
 
     // // A bit of logging -
     // // from https://stackoverflow.com/a/3840852/2877364
