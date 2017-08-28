@@ -754,6 +754,7 @@ function tabOnUpdated(tabid, changeinfo, tab)
     saveTree();
 } //tabOnUpdated
 
+/// Handle movements of tabs or tab groups within a window.
 function tabOnMoved(tabid, moveinfo)
 {
     log.info('Tab moved: ' + tabid);
@@ -763,55 +764,35 @@ function tabOnMoved(tabid, moveinfo)
     let to_idx = moveinfo.toIndex;
 
     // Get the parent (window)
-    let parent_node_id = mdWindows.by_win_id(moveinfo.windowId, 'node_id');
-    if(typeof parent_node_id === 'undefined') return;
+    let window_node_id = mdWindows.by_win_id(moveinfo.windowId, 'node_id');
+    if(typeof window_node_id === 'undefined') return;
 
     // Get the tab's node
     let tab_node_id = mdTabs.by_tab_id(tabid, 'node_id');
     if(typeof tab_node_id === 'undefined') return;
 
-    // Get the existing tab's node so we can swap them
-    chrome.tabs.query(
-        {
-            windowId: moveinfo.windowId
-            , index: from_idx
-        },
-        function(tabs) {
-            // Get the two tabs in question
-            let other_tab = tabs[0];
-            if(typeof other_tab.id === 'undefined') return;
-            let other_tab_node_id = mdTabs.by_tab_id(other_tab.id, 'node_id');
-            if(typeof other_tab_node_id === 'undefined') return;
-            let other_tab_node = treeobj.get_node(other_tab_node_id);
-            if(typeof other_tab_node === 'undefined') return;
+    // Move the tree node
+    //log.info('Moving tab from ' + from_idx.toString() + ' to ' +
+    //            to_idx.toString());
 
-            let tab_node = treeobj.get_node(tab_node_id);
-            if(typeof tab_node === 'undefined') return;
+    // As far as I can tell, in jstree, indices point between list
+    // elements.  E.g., with n items, index 0 is before the first and
+    // index n is after the last.  However, Chrome tab indices point to
+    // the tabs themselves, 0..(n-1).  Therefore, if we are moving
+    // right, bump the index by 1 so we will be _after_ that item
+    // rather than _before_ it.
+    // See the handling of `pos` values of "before" and "after"
+    // in the definition of move_node() in jstree.js.
+    let jstree_new_index =
+            to_idx+(to_idx>from_idx ? 1 : 0);
 
-            // Move the tree node
-            //log.info('Moving tab from ' + from_idx.toString() + ' to ' +
-            //            to_idx.toString());
+    treeobj.move_node(tab_node_id, window_node_id, jstree_new_index);
 
-            // As far as I can tell, in jstree, indices point between list
-            // elements.  E.g., with n items, #0 is before the first and
-            // #n is after the last.  However, Chrome tab indices point to
-            // the tabs themselves, #0.. #(n-1).  Therefore, if we are moving
-            // right, bump the index by 1 so we will be _after_ that item
-            // rather than _before_ it.
-            // See the handling of `pos` values of "before" and "after"
-            // in the definition of move_node() in jstree.js.
-            let jstree_new_index =
-                    to_idx+(to_idx>from_idx ? 1 : 0);
+    // Update the indices of all the tabs in this window.  This will update
+    // the old tab and the new tab.
+    updateTabIndexValues(window_node_id);
 
-            treeobj.move_node(tab_node_id, parent_node_id, jstree_new_index);
-
-            // Update the indices so the nodes know where they are now
-            tab_node.data.tab.index = to_idx;
-            other_tab_node.data.tab.index = from_idx;
-
-            saveTree();
-        } //inner function to do the move
-    );
+    saveTree();
 } //tabOnMoved
 
 function tabOnActivated(activeinfo)
