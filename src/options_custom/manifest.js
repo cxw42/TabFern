@@ -37,7 +37,7 @@ this.manifest = {
             "group": "KeyBinds",
             "name": "KeyBinds.Enabled",
             "type": "checkbox",
-            "label": "KeyBinding Functionality"
+            "label": "KeyBinding Functionality (refresh the TabFern window after you change this to make the change take effect)"
         },
 
         {

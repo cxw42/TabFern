@@ -40,8 +40,6 @@ window._tabFernContextMenu = window._tabFernContextMenu || {};
     };
 
     _tabFernContextMenu.installTreeEventHandler = function(treeobj, _shortcutNs = false) {
-        if(shortcutNs) return;  // nothing to do
-
         // The standard right-click menu swallows the keyup, so we need
         // to track disengagement of the bypass a different way.
         $(treeobj.element).on('bypass_contextmenu.jstree', function(e, data) {
@@ -67,22 +65,6 @@ window._tabFernContextMenu = window._tabFernContextMenu || {};
      */
     _tabFernContextMenu.generateJsTreeMenuItems = function(node, proxyfunc, e) {
 
-        // The default set of all items
-        var items = {
-            renameItem: { // The "rename" menu item
-                label: "Rename",
-                action: function () {
-                    debugger;
-                }
-            },
-            deleteItem: { // The "delete" menu item
-                label: "Delete",
-                action: function () {
-                    debugger;
-                }
-            }
-        };
-
         if ( bypass.isBypassDisengaged() ) {
             e.preventDefault();
         } else {
@@ -91,12 +73,40 @@ window._tabFernContextMenu = window._tabFernContextMenu || {};
 
         log('rawr', node.data.nodeType);
 
-        if ($(node).hasClass("folder")) {
-            // Delete the "delete" menu item
-            delete items.deleteItem;
+        // The default set of all items
+        var items = {
+            grabWindowItem: {
+                label: "Move window to here (not yet implemented)",
+                action: function () {
+                    // debugger;    // <-- a manual breakpoint
+                    return;
+                    let win_id;
+                    if(node.data.nodeType === 'window') {
+                        if(node.data.win) {
+                            win_id = node.data.win.id;
+                        }
+                    } else if(node.data.nodeType === 'tab') {
+                        // TODO get the tab ID, then the window ID.
+                    } else {
+                        return;
+                    }
+
+                    if(win_id) {
+                        //TODO
+                    }
+                } //grabWindowItem action()
+            }
+        };
+
+        if(!node.data.isOpen) {
+            delete items.grabWindowItem;
         }
 
-        return items;
+        // Don't return {} --- that seems to cause jstree to not properly
+        // remove the jstree-context style.
+        return Object.keys(items).length > 0 ? items : false ;
+            // https://stackoverflow.com/a/4889658/2877364 by
+            // https://stackoverflow.com/users/7012/avi-flax
 
     };
 
