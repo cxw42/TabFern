@@ -32,12 +32,33 @@ window._tabFernContextMenu = window._tabFernContextMenu || {};
 
         if ( shortcutNs ) {
             log("installing event handlers using Shortcuts module");
-            keyupListenerFromShortcuts(shortcutNs);
+            installKeyListenerFromShortcuts(shortcutNs);
         } else {
             log("installing event handlers using internal");
-            keyupListener(win);
+            installKeyListener(win);
         }
     };
+
+    _tabFernContextMenu.installTreeEventHandler = function(treeobj, _shortcutNs = false) {
+        if(shortcutNs) return;  // nothing to do
+
+        // The standard right-click menu swallows the keyup, so we need
+        // to track disengagement of the bypass a different way.
+        $(treeobj.element).on('bypass_contextmenu.jstree', function(e, data) {
+            // Thanks to https://stackoverflow.com/questions/12801898#comment67451213_12802008
+            // by https://stackoverflow.com/users/1543318/brant-sterling-wedel for this idea
+            $(window).one('mousemove', function(e) {
+                if(e.shiftKey) {
+                    bypass.engageBypass();
+                    log('bypass engaged when leaving built-in context menu');
+                } else {
+                    bypass.disengageBypass();
+                    log('bypass disengaged when leaving built-in context menu');
+                }
+            });
+        });
+
+    } //installTreeEventHandler()
 
     /**
      *
@@ -91,30 +112,7 @@ window._tabFernContextMenu = window._tabFernContextMenu || {};
         //////////////////////////////////////////////////////////////////////////////
         //////////////////////////////////////////////////////////////////////////////
 
-        /**
-         * Listens for keyup events.
-         * @param {Window} win
-         */
-        function keyupListener(win) {
-            $(win).on('keydown', function(e) {
-                // Shift
-                if ( e.which === 16 ) {
-                    bypass.engageBypass();
-                }
-            });
-            $(win).on('keyup',function(e) {
-                // Shift
-                if ( e.which === 16 ) {
-                    bypass.disengageBypass();
-                }
-
-                // Escape
-                if ( e.which === 27 ) {
-                    toggleMenuOff();
-                }
-            });
-        }
-
+        /// State tracker for the bypass
         var bypass = {
             engaged: false,
             isBypassDisengaged: function () {
@@ -125,15 +123,47 @@ window._tabFernContextMenu = window._tabFernContextMenu || {};
             },
             disengageBypass: function () {
                 this.engaged = false;
-                treeobj._data.contextmenu.bypass = false;
+                if(treeobj._data.contextmenu) {
+                    // not loaded if context menu is disabled
+                    treeobj._data.contextmenu.bypass = false;
+                }
             },
             engageBypass: function () {
                 this.engaged = true;
-                treeobj._data.contextmenu.bypass = true;
+                if(treeobj._data.contextmenu) {
+                    treeobj._data.contextmenu.bypass = true;
+                }
             }
         };
 
-        function keyupListenerFromShortcuts(shortcutNs) {
+        /// Listens for keyup events using jquery events.
+        /// @param {Window} win
+        function installKeyListener(win) {
+            $(win).on('keydown', function(e) {
+                // Shift
+                if ( e.which === 16 ) {
+                    log('engage bypass');
+                    bypass.engageBypass();
+                }
+            });
+            $(win).on('keyup',function(e) {
+                // Shift
+                if ( e.which === 16 ) {
+                    log('disengage bypass');
+                    bypass.disengageBypass();
+                }
+
+                // Escape
+                //if ( e.which === 27 ) {
+                //    //toggleMenuOff();      // This seems to be a fossil - toggleMenuOff() is not defined anywhere I can see
+                //}
+            });
+
+        } //installKeyListener()
+
+        /// Listens for keyup events using shortcut driver
+        /// @param {_tabFernShortcuts} shortcutNs
+        function installKeyListenerFromShortcuts(shortcutNs) {
             var key;
 
             key = shortcutNs.getKeyBindingFor('BYPASS_CONTEXT_MENU_MOMENTARY_LATCH');
@@ -159,7 +189,5 @@ window._tabFernContextMenu = window._tabFernContextMenu || {};
             });
         }
 
-
-
-
-    })(window._tabFernContextMenu);
+})(window._tabFernContextMenu);
+// vi: set ts=4 sts=4 sw=4 et ai fo-=o fo-=r: //

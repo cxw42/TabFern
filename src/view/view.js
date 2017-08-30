@@ -55,6 +55,9 @@ let winSizes={};
 // TODO use content scripts to catch window resizing, a la
 // https://stackoverflow.com/q/13141072/2877364
 
+/// The keyboard shortcuts handler, if any.
+let Shortcuts;
+
 //////////////////////////////////////////////////////////////////////////
 // Initialization //
 
@@ -1112,6 +1115,8 @@ function initTree1(win_id)
     $('#maintree').jstree(jstreeConfig);
     treeobj = $('#maintree').jstree(true);
 
+    window._tabFernContextMenu.installTreeEventHandler(treeobj, Shortcuts);
+
     // Load the tree
     loadSavedWindowsIntoTree(initTree2);
 } //initTree1()
@@ -1165,18 +1170,25 @@ window.setTimeout(initIncompleteWarning, INIT_TIME_ALLOWED_MS);
 window.addEventListener('load', initTree0, { 'once': true });
 window.addEventListener('unload', shutdownTree, { 'once': true });
 window.addEventListener('resize', eventOnResize);
-window._tabFernShortcuts.install({
-    window: window,
-    keybindings: window._tabFernShortcuts.keybindings.default,
-    drivers: [window._tabFernShortcuts.drivers.dmaruo_keypress]
-}, function initialized(err) {
-    if ( err ) {
-        console.log('Failed loading a shortcut driver! Initializing context menu with no shortcut driver.' + err);
-        window._tabFernContextMenu.installEventHandler(window, document, null);
-    } else {
-        window._tabFernContextMenu.installEventHandler(window, document, window._tabFernShortcuts);
+
+// Install keyboard shortcuts.  This includes the keyboard listener for
+// context menus.
+window._tabFernShortcuts.install(
+    {
+        window: window,
+        keybindings: window._tabFernShortcuts.keybindings.default,
+        drivers: [window._tabFernShortcuts.drivers.dmaruo_keypress]
+    },
+    function initialized(err) {
+        if ( err ) {
+            console.log('Failed loading a shortcut driver!  Initializing context menu with no shortcut driver.  ' + err);
+            window._tabFernContextMenu.installEventHandler(window, document, null);
+        } else {
+            Shortcuts = window._tabFernShortcuts;
+            window._tabFernContextMenu.installEventHandler(window, document, window._tabFernShortcuts);
+        }
     }
-});
+);
 
     // This doesn't detect window movement without a resize.  TODO implement
     // something from https://stackoverflow.com/q/4319487/2877364 to
