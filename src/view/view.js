@@ -1083,9 +1083,8 @@ function initTree1(win_id)
 
     log.info('TabFern view.js initializing tree in window ' + win_id.toString());
 
-    // Create the tree
-    $('#maintree').jstree({
-          'plugins': ['actions', 'wholerow']    // TODO add state plugin
+    let jstreeConfig = {
+        'plugins': ['actions', 'wholerow'] // TODO add state plugin
         , 'core': {
             'animation': false,
             'multiple': false,          // for now
@@ -1098,8 +1097,20 @@ function initTree1(win_id)
         , 'state': {
             'key': 'tabfern-jstree'
         }
-    });
-    treeobj = $('#maintree').jstree(true);  // true => grab the existing one
+    };
+
+    if ( getBoolSetting('ContextMenu.Enabled', false) ) {
+        jstreeConfig.plugins.push('contextmenu');
+        jstreeConfig.contextmenu = {
+            items: window._tabFernContextMenu.generateJsTreeMenuItems
+        };
+        $.jstree.defaults.contextmenu.select_node = false;
+        $.jstree.defaults.contextmenu.show_at_node = false;
+    }
+
+    // Create the tree
+    $('#maintree').jstree(jstreeConfig);
+    treeobj = $('#maintree').jstree(true);
 
     // Load the tree
     loadSavedWindowsIntoTree(initTree2);
@@ -1154,6 +1165,19 @@ window.setTimeout(initIncompleteWarning, INIT_TIME_ALLOWED_MS);
 window.addEventListener('load', initTree0, { 'once': true });
 window.addEventListener('unload', shutdownTree, { 'once': true });
 window.addEventListener('resize', eventOnResize);
+window._tabFernShortcuts.install({
+    window: window,
+    keybindings: window._tabFernShortcuts.keybindings.default,
+    drivers: [window._tabFernShortcuts.drivers.dmaruo_keypress]
+}, function initialized(err) {
+    if ( err ) {
+        console.log('Failed loading a shortcut driver! Initializing context menu with no shortcut driver.' + err);
+        window._tabFernContextMenu.installEventHandler(window, document, null);
+    } else {
+        window._tabFernContextMenu.installEventHandler(window, document, window._tabFernShortcuts);
+    }
+});
+
     // This doesn't detect window movement without a resize.  TODO implement
     // something from https://stackoverflow.com/q/4319487/2877364 to
     // deal with that.

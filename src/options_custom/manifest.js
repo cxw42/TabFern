@@ -142,7 +142,67 @@ this.manifest = {
                 ["hot", "Hot and yummy"],
                 ["cold"]
             ]
+        },
+        {
+            "tab": "Details",
+            "group": "ContextMenu",
+            "name": "ContextMenu.Enabled",
+            "type": "checkbox",
+            "label": "Right-click Menu"
+        },
+        {
+            "tab": "Details",
+            "group": "KeyBinds",
+            "name": "KeyBinds.Enabled",
+            "type": "checkbox",
+            "label": "KeyBinding Functionality"
+        },
+
+        {
+            "tab": "Key Mappings",
+            "group": "KeyMappings.PersistenceControl",
+            "name": "KeyMappings.PersistenceControl.SaveButton",
+            "type": "button",
+            "text": "Save"
+        },
+        {
+            "tab": "Key Mappings",
+            "group": "KeyMappings.PersistenceControl",
+            "name": "KeyMappings.PersistenceControl.RevertButton",
+            "type": "button",
+            "text": "Revert"
+        },
+
+        // TODO Generate these from code
+        {
+            "tab": "Key Mappings",
+            "group": "KeyMappings.KeyBinds",
+            "name": "KeyMappings.KeyBinds.IgnoreContextMenu.KeyBind",
+            "type": "text",
+            "text": "IgnoreContextMenu"
+        },
+        {
+            "tab": "Key Mappings",
+            "group": "KeyMappings.KeyBinds",
+            "name": "KeyMappings.KeyBinds.IgnoreContextMenu.ClearButton",
+            "type": "button",
+            "text": "Clear"
+        },
+        {
+            "tab": "Key Mappings",
+            "group": "KeyMappings.KeyBinds",
+            "name": "KeyMappings.KeyBinds.IgnoreContextMenu.EnterBindModeButton",
+            "type": "button",
+            "text": "Bind"
+        },
+        {
+            "tab": "Key Mappings",
+            "group": "KeyMappings.KeyBinds",
+            "name": "KeyMappings.KeyBinds.IgnoreContextMenu.AdditionalBindButton",
+            "type": "button",
+            "text": "X or + or don't show when these are dynamic"
         }
+
     ],
     "alignment": [
         [
