@@ -75,7 +75,7 @@ window._tabFernHamburgerMenu = window._tabFernHamburgerMenu || {};
     {
         log.info('TabFern hamburger.js initializing view');
         let jstreeConfig = {
-            'plugins': ['contextmenu', 'wholerow']
+            'plugins': ['contextmenu']
           , 'core': {
                 'animation': false,
                 'multiple': false,          // for now
@@ -83,6 +83,7 @@ window._tabFernHamburgerMenu = window._tabFernHamburgerMenu || {};
                 themes: {
                     'name': 'default-dark'
                   , 'variant': 'small'
+                  , 'dots': false       // No connecting lines between nodes
                 }
             }
           , 'contextmenu': {
