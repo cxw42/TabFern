@@ -1,13 +1,12 @@
 /* view.css */
 
-/* DEBUG */
-
 /* //////////////////////////////////////////////////////////////////// */
 /* Local styles */
 
 .tabfern-popup-footer {
     position:fixed;
     bottom:0px;
+    padding-bottom: 0.5em;
 }
 
 .tabfern-popup-footer a {
@@ -65,6 +64,27 @@ div#init-incomplete {
 .jstree-node a ~ .tf-action-group {
     visibility: hidden;
 }
+
+/* --- Menu --------------------------------------------------------------- */
+div#hamburger-menu {
+    position: fixed;
+    right: 0;
+    padding-right: 0.5em;
+    bottom: 0;
+    padding-bottom: 0.5em;
+};
+
+/* This doesn't work and I don't know why.  However, the wholerow plugin
+ * does the same job. */
+/* Hide the down-left tree decoration on the hamburger menu. */
+/*
+.jstree-default-dark .hamburger-menu.jstree-default-dark-small .jstree-leaf > .jstree-icon.jstree-ocl {
+    display: none !important;
+    visibility: hidden !important;
+    background-image: none !important;
+    border: 1px red !important;
+};
+*/
 
 /* ------------------------------------------------------------------------ */
 

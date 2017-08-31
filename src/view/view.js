@@ -1106,7 +1106,7 @@ function initTree1(win_id)
         jstreeConfig.plugins.push('contextmenu');
         jstreeConfig.contextmenu = {
             items: window._tabFernContextMenu.generateJsTreeMenuItems
-        };
+        };          // TODO put that in our context since we have mdTabs and mdWindows
         $.jstree.defaults.contextmenu.select_node = false;
         $.jstree.defaults.contextmenu.show_at_node = false;
     }

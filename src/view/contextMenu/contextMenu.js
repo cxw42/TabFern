@@ -59,11 +59,13 @@ window._tabFernContextMenu = window._tabFernContextMenu || {};
     } //installTreeEventHandler()
 
     /**
-     *
+     * You can call proxyfunc with the items or just return them, so we just
+     * return them.
      * @param node
-     * @returns {{renameItem: {label: string, action: action}, deleteItem: {label: string, action: action}}}
+     * @returns {actionItemId: {label: string, action: function}, ...}, or
+     *          false for no menu.
      */
-    _tabFernContextMenu.generateJsTreeMenuItems = function(node, proxyfunc, e) {
+    _tabFernContextMenu.generateJsTreeMenuItems = function(node, UNUSED_proxyfunc, e) {
 
         if ( bypass.isBypassDisengaged() ) {
             e.preventDefault();
@@ -74,6 +76,7 @@ window._tabFernContextMenu = window._tabFernContextMenu || {};
         log('rawr', node.data.nodeType);
 
         // The default set of all items
+        // TODO move this out to a function in view.js
         var items = {
             grabWindowItem: {
                 label: "Move window to here (not yet implemented)",
@@ -114,13 +117,13 @@ window._tabFernContextMenu = window._tabFernContextMenu || {};
 
         "use strict";
 
-        //////////////////////////////////////////////////////////////////////////////
-        //////////////////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////
         //
         // H E L P E R    F U N C T I O N S
         //
-        //////////////////////////////////////////////////////////////////////////////
-        //////////////////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////
 
         /// State tracker for the bypass
         var bypass = {
@@ -133,14 +136,16 @@ window._tabFernContextMenu = window._tabFernContextMenu || {};
             },
             disengageBypass: function () {
                 this.engaged = false;
-                if(treeobj._data.contextmenu) {
-                    // not loaded if context menu is disabled
+                if(treeobj && treeobj._data && treeobj._data.contextmenu) {
+                    // not loaded if context menu is disabled.
+                    // TODO? update this so it can be used to bypass other
+                    // menus?  E.g., the hamburger menu.
                     treeobj._data.contextmenu.bypass = false;
                 }
             },
             engageBypass: function () {
                 this.engaged = true;
-                if(treeobj._data.contextmenu) {
+                if(treeobj && treeobj._data && treeobj._data.contextmenu) {
                     treeobj._data.contextmenu.bypass = true;
                 }
             }
