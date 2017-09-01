@@ -1218,7 +1218,7 @@ function getMenuItems(node, UNUSED_proxyfunc, e)
 {
     return {
         backupItem: {
-            label: "Backup now",
+            label: "Backup <b>saved windows</b> now",
             action: hamBackup
         }
         , infoItem: {
