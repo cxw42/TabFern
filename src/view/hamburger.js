@@ -3,58 +3,31 @@
 // loaded by view.html.
 // The actual worker code is in view.js.
 
-window._tabFernHamburgerMenu = window._tabFernHamburgerMenu || {};
+(function (root, factory) {
+    if (typeof define === 'function' && define.amd) {
+        // AMD
+        define(['jquery'], factory);
+    } else if (typeof exports === 'object') {
+        // Node, CommonJS-like
+        module.exports = factory(require('jquery'));
+    } else {
+        // Browser globals (root is window)
+        root.HamburgerMenuMaker = factory(root.jQuery);
+    }
+}(this, function ($) {
 
-/// Set up functions usable by view.js
-(function(ham) {
+    /// The prototype for a hamburger-menu object
+    let Proto = {};
 
     //////////////////////////////////////////////////////////////////////////
     // EVENTS //
 
-    /// Open a new window with the TabFern homepage.  Also remove the default
-    /// tab that appears because we are letting the window open at the
-    /// default size.  Yes, this is quite ugly.
-    function openAboutWindow()
-    {
-        chrome.windows.create(
-            function(win) {
-                if(typeof(chrome.runtime.lastError) === 'undefined') {
-                    chrome.tabs.create({windowId: win.id, url: 'https://cxw42.github.io/TabFern/'},
-                        function(keep_tab) {
-                            if(typeof(chrome.runtime.lastError) === 'undefined') {
-                                chrome.tabs.query({windowId: win.id, index: 0},
-                                    function(tabs) {
-                                        if(typeof(chrome.runtime.lastError) === 'undefined') {
-                                            chrome.tabs.remove(tabs[0].id,
-                                                function ignore_error() { void chrome.runtime.lastError; }
-                                            ); //tabs.remove
-                                        }
-                                    } //function(tabs)
-                                ); //tabs.query
-                            }
-                        } //function(keep_tab)
-                    ); //tabs.create
-                }
-            } //function(win)
-        ); //windows.create
-    }
-
-    function getMenuItems(node, UNUSED_proxyfunc, e)
-    {
-        return {
-            infoItem: {
-                label: "About, help, and credits",
-                action: openAboutWindow
-            }
-        };
-    } //getMenuItems()
-
     /// Replace left clicks with right clicks.
     ///     - There is only one item, so whenever it is selected, deselect it.
     ///     - Also, make left click trigger a context menu.
-    function hamOnSelect(evt, evt_data)
+    Proto.hamOnSelect = function(evt, evt_data)
     {
-        ham.treeobj.deselect_all(true);
+        this.treeobj.deselect_all(true);    // `this` is the Hamburger object
         console.log(evt_data);
         if(typeof(evt_data.node) === 'undefined' ||
             typeof(evt_data.instance) === 'undefined') return;
@@ -67,13 +40,17 @@ window._tabFernHamburgerMenu = window._tabFernHamburgerMenu || {};
                 // reselect the node.  If it did, it would trigger an
                 // infinite loop.
         }, 100);
-    } //hamOnSelect
+    } //Proto.hamOnSelect
 
     //////////////////////////////////////////////////////////////////////////
     // INIT //
-    function initHamburger()
+
+    /// Create a hamburger menu at the DOM object identified by #selector.
+    /// Menu items should be returned by function #getMenuItems.
+    function ctor(selector, getMenuItems)
     {
-        log.info('TabFern hamburger.js initializing view');
+        let retval = Object.create(Proto);
+        log.info('TabFern hamburger.js initializing view at ' + selector);
         let jstreeConfig = {
             'plugins': ['contextmenu']
           , 'core': {
@@ -93,24 +70,26 @@ window._tabFernHamburgerMenu = window._tabFernHamburgerMenu || {};
         };
 
         // Create the tree
-        $('#hamburger-menu').jstree(jstreeConfig);
-        ham.treeobj = $('#hamburger-menu').jstree(true);
+        $(selector).jstree(jstreeConfig);
+        retval.treeobj = $(selector).jstree(true);
 
         // Add the single item
-        ham.tree_node = ham.treeobj.create_node(null,
+        retval.tree_node = retval.treeobj.create_node(null,
                 {   text: ''
                     , 'icon': 'fa fa-bars'
                     , state: { 'opened': false }
                 });
 
-        $('#hamburger-menu').on('changed.jstree', hamOnSelect);
-    }
+        $(selector).on('changed.jstree', retval.hamOnSelect.bind(retval));
 
-    //////////////////////////////////////////////////////////////////////////
-    // MAIN //
+        return Object.seal(retval);
+    } //ctor
 
-    window.addEventListener('load', initHamburger, { 'once': true });
+    return ctor;
 
-})(window._tabFernHamburgerMenu);
+}));
+
+// Module-loader template thanks to
+// http://davidbcalhoun.com/2014/what-is-amd-commonjs-and-umd/
 
 // vi: set ts=4 sts=4 sw=4 et ai fo-=o fo-=r: //

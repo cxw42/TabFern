@@ -58,6 +58,9 @@ let winSizes={};
 /// The keyboard shortcuts handler, if any.
 let Shortcuts;
 
+/// The hamburger menu
+let Hamburger;
+
 //////////////////////////////////////////////////////////////////////////
 // Initialization //
 
@@ -90,6 +93,10 @@ mdWindows = Multidex(
 
 //////////////////////////////////////////////////////////////////////////
 // General utility routines //
+
+/// Ignore a Chrome callback error, and suppress Chrome's "runtime.lastError"
+/// diagnostic.
+function ignore_chrome_error() { void chrome.runtime.lastError; }
 
 /// Given string #class_list, add #new_class without duplicating.
 function add_classname(class_list, new_class)
@@ -330,8 +337,7 @@ function actionCloseWindow(node_id, node, unused_action_id, unused_action_el)
 
     // Close the window
     if(win_data.isOpen) {
-        chrome.windows.remove(win_data.win.id,
-                function ignore_error() { void chrome.runtime.lastError; } );
+        chrome.windows.remove(win_data.win.id, ignore_chrome_error);
         // ignore exceptions - when we are called from winOnRemoved,
         // the window is already gone, so the remove() throws.
         // See https://stackoverflow.com/a/45871870/2877364 by cxw
@@ -1160,6 +1166,74 @@ function initIncompleteWarning()
 } //initIncompleteWarning()
 
 //////////////////////////////////////////////////////////////////////////
+// Hamburger menu //
+
+/// Open a new window with the TabFern homepage.  Also remove the default
+/// tab that appears because we are letting the window open at the
+/// default size.  Yes, this is quite ugly.
+function hamAboutWindow()
+{
+    chrome.windows.create(
+        function(win) {
+            if(typeof(chrome.runtime.lastError) === 'undefined') {
+                chrome.tabs.create({windowId: win.id, url: 'https://cxw42.github.io/TabFern/'},
+                    function(keep_tab) {
+                        if(typeof(chrome.runtime.lastError) === 'undefined') {
+                            chrome.tabs.query({windowId: win.id, index: 0},
+                                function(tabs) {
+                                    if(typeof(chrome.runtime.lastError) === 'undefined') {
+                                        chrome.tabs.remove(tabs[0].id,
+                                            ignore_chrome_error
+                                        ); //tabs.remove
+                                    }
+                                } //function(tabs)
+                            ); //tabs.query
+                        }
+                    } //function(keep_tab)
+                ); //tabs.create
+            }
+        } //function(win)
+    ); //windows.create
+} //hamAboutWindow()
+
+function hamBackup()
+{
+    let date_tag = new Date().toISOString().replace(/:/g,'.');
+        // DOS filenames can't include colons.
+        // TODO use local time - maybe
+        // https://www.npmjs.com/package/dateformat ?
+    let filename = 'TabFern backup ' + date_tag + '.json';
+
+    chrome.storage.local.get(STORAGE_KEY, function(items) {
+        if(typeof(chrome.runtime.lastError) === 'undefined') {
+            let parsed = items[STORAGE_KEY];    // auto JSON.parse
+            if(Array.isArray(parsed)) {
+                Fileops.Export(document, JSON.stringify(parsed), filename);
+            } //endif is array
+        } //endif loaded OK
+    });
+} //hamBackup()
+
+function getMenuItems(node, UNUSED_proxyfunc, e)
+{
+    return {
+        backupItem: {
+            label: "Backup now",
+            action: hamBackup
+        }
+        , infoItem: {
+            label: "About, help, and credits",
+            action: hamAboutWindow
+        }
+    };
+} //getMenuItems()
+
+function initHamburger()
+{
+    Hamburger = HamburgerMenuMaker('#hamburger-menu', getMenuItems);
+} //initHamburger
+
+//////////////////////////////////////////////////////////////////////////
 // MAIN //
 
 // Timer to display the warning message if initialization doesn't complete
@@ -1170,6 +1244,12 @@ window.setTimeout(initIncompleteWarning, INIT_TIME_ALLOWED_MS);
 window.addEventListener('load', initTree0, { 'once': true });
 window.addEventListener('unload', shutdownTree, { 'once': true });
 window.addEventListener('resize', eventOnResize);
+    // This doesn't detect window movement without a resize.  TODO implement
+    // something from https://stackoverflow.com/q/4319487/2877364 to
+    // deal with that.
+
+// Hamburger menu
+window.addEventListener('load', initHamburger, { 'once': true });
 
 // Install keyboard shortcuts.  This includes the keyboard listener for
 // context menus.
@@ -1189,10 +1269,6 @@ window._tabFernShortcuts.install(
         }
     }
 );
-
-    // This doesn't detect window movement without a resize.  TODO implement
-    // something from https://stackoverflow.com/q/4319487/2877364 to
-    // deal with that.
 
 //TODO test what happens when Chrome exits.  Does the background page need to
 //save anything?
