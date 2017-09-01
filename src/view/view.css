@@ -118,6 +118,11 @@ div#hamburger-menu {
     */
 }
 
+/* Keep the "delete" button farther from the others */
+.tf-action-group .fff-cross {
+    margin-left:0.5em;
+}
+
 /* Icons ------------------------------------------------------------------ */
 
 .visible-window-icon {

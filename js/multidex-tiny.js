@@ -22,15 +22,15 @@
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD
-        define(['jquery'], factory);
+        define(factory);
     } else if (typeof exports === 'object') {
         // Node, CommonJS-like
-        module.exports = factory(require('jquery'));
+        module.exports = factory();
     } else {
         // Browser globals (root is window)
-        root.Multidex = factory(root.jQuery);
+        root.Multidex = factory();
     }
-}(this, function ($) {
+}(this, function () {
 
     // Prefixes for field names
     const IDX = '_idx_';
