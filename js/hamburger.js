@@ -1,7 +1,5 @@
 // hamburger.js: Hamburger menu for jstree.
-// Uses jquery, jstree, jstree-actions, loglevel, common.js, all of which are
-// loaded by view.html.
-// The actual worker code is in view.js.
+// Uses jquery, jstree, loglevel, all of which must be loaded beforehand.
 
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
@@ -28,7 +26,7 @@
     Proto.hamOnSelect = function(evt, evt_data)
     {
         this.treeobj.deselect_all(true);    // `this` is the Hamburger object
-        console.log(evt_data);
+        //console.log(evt_data);
         if(typeof(evt_data.node) === 'undefined' ||
             typeof(evt_data.instance) === 'undefined') return;
 
