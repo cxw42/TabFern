@@ -21,9 +21,10 @@
 
     /// Prompt the user for a filename and provide its contents as a string,
     /// assuming UTF-8 encoding.
-    /// @param {function} cbk   Callback called with the contents.
+    /// @param {function} cbk   Callback called with (contents, filename)
     /// Note: I don't know what will happen if the user picks a non-text file.
-    /// Note also there is currently no error reporting.
+    /// Note also there is currently no error reporting, and the callback
+    /// may never be invoked.
 
     Proto.getFileAsString = function(cbk) {
         this.loader.addEventListener('change', function(evt){
@@ -31,11 +32,12 @@
             let fileToLoad = evt.target.files[0];
             if(!fileToLoad) return;
 
-            console.log('Reading file ' + evt.target.files[0].name);
+            let filename = evt.target.files[0].name;
+            console.log('Reading file ' + filename);
             let reader = new FileReader();
             reader.addEventListener('load', function(fileLoadedEvent) {
                 let textFromFileLoaded = fileLoadedEvent.target.result;
-                cbk(textFromFileLoaded);
+                cbk(textFromFileLoaded, filename);
             });
 
             reader.readAsText(fileToLoad, 'UTF-8');
@@ -56,6 +58,8 @@
 
         let loader = retval.loader = doc.createElement('input');
         // Chrome doesn't seem to require us to add this to the DOM.
+        // Also, we don't set an ID, so multiple importers can be created
+        // for the same document.
         loader.type = 'file';
         loader.style.display = 'none';
 

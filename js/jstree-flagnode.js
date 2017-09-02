@@ -69,10 +69,11 @@
 		 * @name flag_node(obj [, should_flag])
 		 * @param {mixed} obj the node to flag, or an array of nodes to flag
 		 * @param {Boolean} should_flag (default true) if true, flag the node; if false, unflag.
+		 * @param {Boolean} suppress_event If true, don't trigger an event
 		 * @plugin flagnode
 		 * @trigger flagnode.jstree
 		 */
-		this.flag_node = function (obj, should_flag) {
+		this.flag_node = function (obj, should_flag, suppress_event) {
 			if(should_flag==null) should_flag = true;		//undefined or null => set it
 			if(!Array.isArray(obj)) {
 				obj = [obj];
@@ -93,17 +94,20 @@
 			 * @param {Array} res IDs of the flagged nodes
 			 * @plugin flagnode
 			 */
-			this.trigger('flagnode',
-					{ res : Object.keys(this._data.flagnode.flagged_nodes)});
+			if(!suppress_event) {
+				this.trigger('flagnode',
+						{ res : Object.keys(this._data.flagnode.flagged_nodes)});
+			}
 		}; //flag()
 
 		/**
 		 * clear all flags
 		 * @name clear_flags()
+		 * @param {Boolean} suppress_event If true, don't trigger an event
 		 * @plugin flagnode
 		 * @trigger clear_flagnode.jstree
 		 */
-		this.clear_flags = function () {
+		this.clear_flags = function (suppress_event) {
 			var cls = this.settings.flagnode.css_class;
 			$('.jstree-anchor.'+cls).removeClass(cls);
 			this._data.flagnode.flagged_nodes = {};
@@ -113,7 +117,9 @@
 			 * @name clear_flagnode.jstree
 			 * @plugin flagnode
 			 */
-			this.trigger('clear_flagnode', {});
+			if(!suppress_event) {
+				this.trigger('clear_flagnode', {});
+			}
 		};
 
 		/// Redraw.

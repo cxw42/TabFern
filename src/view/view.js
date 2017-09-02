@@ -521,9 +521,10 @@ function createNodeForClosedWindow(win_data)
 /// Did we have a problem loading save data?
 let was_loading_error = false;
 
-
 /// Populate the tree from the save data, then call next_action.
-let loadSavedWindowsIntoTree = (function(){
+/// @param {mixed} data The save data, parsed (i.e., not a JSON string)
+/// @return {Boolean} true on success, false on failure.
+let loadSavedWindowsFromData = (function(){
 
     /// Populate the tree from version-0 save data in #data, then call #next_action.
     /// Assumes the caller has confirmed that the data is indeed V0 data.
@@ -540,65 +541,77 @@ let loadSavedWindowsIntoTree = (function(){
     let versionLoaders = { 0: loadSaveDataV0 };
 
     /// Populate the tree from the save data, then call next_action.
-    return function(next_action)
+    return function(data)
     {
-        chrome.storage.local.get(STORAGE_KEY, function(items) {
+        let succeeded = false;
+        READIT: {
+            // Figure out the version number
+            let vernum;
+            if(Array.isArray(data)) {         // version 0
+                vernum = 0;
+            } else if( (typeof data === 'object') &&
+                    ('tabfern' in data) &&
+                    (data['tabfern'] == 42) &&
+                    ('version' in data)) {    // a specific version
+                vernum = data['version']
+            } else {
+                log.error('Could not identify the version number of the save data');
+                break READIT;
+            }
 
-            READIT:
-            if(typeof(chrome.runtime.lastError) !== 'undefined') {
-                //Chrome couldn't load the data
-                log.error("Chrome couldn't load save data: " + chrome.runtime.lastError +
-                        "\nHowever, if you didn't have any save data, this isn't " +
-                        "a problem!");
+            // Load it
+            let loaded_ok;
+            if(vernum in versionLoaders) {
+                loaded_ok = versionLoaders[vernum](data);
+            } else {
+                log.error("I don't know how to load save data from version " + vernum);
+                break READIT;
+            }
 
-                // If Chrome didn't load the data, don't treat it as a reading
-                // error, since it might simply not have existed.  Therefore,
-                // we don't set was_loading_error here.  TODO figure out if
-                // this makes sense.  Maybe check the specific error returned.
+            if(!loaded_ok) {
+                log.error("There was a problem loading save data of version " + vernum);
+                break READIT;
+            }
 
-            } else {    // Chrome did load the data
-                let parsed = items[STORAGE_KEY];    // auto JSON.parse
+            succeeded = true;
+        }
+        return succeeded;
+    }
+})(); //loadSavedWindowsFromData
 
-                // Figure out the version number
-                let vernum;
-                if(Array.isArray(parsed)) {         // version 0
-                    vernum = 0;
-                } else if( (typeof parsed === 'object') &&
-                        ('tabfern' in parsed) &&
-                        (parsed['tabfern'] == 42) &&
-                        ('version' in parsed)) {    // a specific version
-                    vernum = parsed['version']
-                } else {
-                    log.error('Could not identify the version number of the save data');
-                    was_loading_error = true;
-                    break READIT;
-                }
+/// Load the saved windows from local storage - used as part of initialization.
+/// @param {function} next_action If provided, will be called when loading
+///                     is complete.
+function loadSavedWindowsIntoTree(next_action) {
+    chrome.storage.local.get(STORAGE_KEY, function(items) {
 
-                // Load it
-                let loaded_ok;
-                if(vernum in versionLoaders) {
-                    loaded_ok = versionLoaders[vernum](parsed);
-                } else {
-                    log.error("I don't know how to load save data from version " + vernum);
-                    was_loading_error = true;
-                    break READIT;
-                }
+        READIT:
+        if(typeof(chrome.runtime.lastError) !== 'undefined') {
+            //Chrome couldn't load the data
+            log.error("Chrome couldn't load save data: " + chrome.runtime.lastError +
+                    "\nHowever, if you didn't have any save data, this isn't " +
+                    "a problem!");
 
-                if(!loaded_ok) {
-                    log.error("There was a problem loading save data of version " + vernum);
-                    was_loading_error = true;
-                    break READIT;
-                }
+            // If Chrome didn't load the data, don't treat it as a reading
+            // error, since it might simply not have existed.  Therefore,
+            // we don't set was_loading_error here.  TODO figure out if
+            // this makes sense.  Maybe check the specific error returned.
 
-            } //endif data loaded OK
+        } else {    // Chrome did load the data
+            let parsed = items[STORAGE_KEY];    // auto JSON.parse
+            if(!loadSavedWindowsFromData(parsed)) {
+                was_loading_error = true;
+                // HACK - we only use this during init, so
+                // set the init-specific variable.
+            }
+        }
 
-            // Even if there was an error, call the next action so that
-            // the initialization can complete.
-            if(typeof next_action !== 'function') return;
-            next_action();
-        });
-    } //loadSavedWindowsIntoTree
-})();
+        // Even if there was an error, call the next action so that
+        // the initialization can complete.
+        if(typeof next_action !== 'function') return;
+        next_action();
+    }); //storage.local.get
+} //loadSavedWindowsIntoTree
 
 // Debug helper, so uses console.log() directly.
 function DBG_printSaveData()
@@ -633,12 +646,16 @@ function treeOnSelect(evt, evt_data)
     // TODO figure out why this doesn't work: treeobj.deselect_node(node, true);
     treeobj.deselect_all(true);
         // Clear the selection.  True => no event due to this change.
+    //log.info('Clearing flags treeonselect');
+    treeobj.clear_flags(true);
 
     if(node_data.nodeType == 'tab' && node_data.isOpen) {   // An open tab
         chrome.tabs.highlight({
             windowId: node_data.tab.windowId,
             tabs: [node_data.tab.index]     // Jump to the clicked-on tab
         });
+        //log.info('flagging treeonselect' + node.id);
+        treeobj.flag_node(node);
         win_id = node_data.tab.windowId;
 
     } else if(node_data.nodeType == 'window' && node_data.isOpen) {    // An open window
@@ -733,6 +750,7 @@ function treeOnSelect(evt, evt_data)
 
 function winOnCreated(win)
 {
+    //log.info('clearing flags winoncreated');
     treeobj.clear_flags();
     if(window_is_being_restored) {
         window_is_being_restored = false;
@@ -792,7 +810,10 @@ function winOnFocusChanged(win_id)
 {
     //log.info('Window focus-change triggered: ' + win_id);
 
-    treeobj.clear_flags();
+    if(win_id == my_winid) {
+        //log.info('Clearing flags winonfocuschanged to popup');
+        treeobj.clear_flags();
+    }
 
     chrome.windows.getLastFocused({}, function(win){
         let new_win_id;
@@ -801,6 +822,8 @@ function winOnFocusChanged(win_id)
         } else {
             new_win_id = win.id;
         }
+
+        log.info('Focus change to ' + win_id + '; lastfocused ' + win.id);
 
         // Clear the focus highlights if we are changing windows.
         // Avoid flicker if the selection is staying in the same window.
@@ -946,7 +969,9 @@ function tabOnActivated(activeinfo)
         let tab_node_id = mdTabs.by_tab_id(activeinfo.tabId, 'node_id');
         if(typeof tab_node_id === 'undefined') break SELTAB;
 
+        //log.info('Clearing flags tabonactivate');
         treeobj.clear_flags();
+        //log.info('flagging ' +tab_node_id);
         treeobj.flag_node(tab_node_id);
     }
 
@@ -1289,12 +1314,29 @@ function hamBackup()
     });
 } //hamBackup()
 
+/// Restore tabs from a saved backup
+function hamRestoreFromBackup()
+{
+    let importer = new Fileops.Importer(document);
+    importer.getFileAsString(function(text, filename){
+        try {
+            let parsed = JSON.parse(text);
+        } catch(e) {
+            window.alert("I couldn't load the file " + filename + ': ' + e);
+        }
+    });
+}
+
 function getMenuItems(node, UNUSED_proxyfunc, e)
 {
     return {
         backupItem: {
             label: "Backup <b>saved windows</b> now",
             action: hamBackup
+        }
+        , restoreItem: {
+            label: "Restore a previous backup",
+            action: hamRestoreFromBackup
         }
         , infoItem: {
             label: "About, help, and credits",
