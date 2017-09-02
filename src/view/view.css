@@ -32,6 +32,11 @@
     font-weight: bold;
 }
 
+/* The tab that currently has focus */
+.tf-focused-tab {
+    font-weight: bold;
+}
+
 /* Any browser window or tab that is currently open (as opposed to closed
  * and saved) */
 .tf-visible-window a {

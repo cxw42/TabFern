@@ -521,18 +521,19 @@ function createNodeForClosedWindow(win_data)
 /// Did we have a problem loading save data?
 let was_loading_error = false;
 
-/// Populate the tree from version-0 save data in #data, then call #next_action.
-/// Assumes the caller has confirmed that the data is indeed V0 data.
-function loadSaveDataV0(data)
-{
-    for(let win_data of data) {
-        createNodeForClosedWindow(win_data);
-    }
-    return true;    //load successful
-}  //loadSaveDataV0
 
 /// Populate the tree from the save data, then call next_action.
 let loadSavedWindowsIntoTree = (function(){
+
+    /// Populate the tree from version-0 save data in #data, then call #next_action.
+    /// Assumes the caller has confirmed that the data is indeed V0 data.
+    function loadSaveDataV0(data)
+    {
+        for(let win_data of data) {
+            createNodeForClosedWindow(win_data);
+        }
+        return true;    //load successful
+    }  //loadSaveDataV0
 
     /// The mapping table from versions to loaders.
     /// each loader should return truthy if load successful, falsy otherwise.
@@ -597,7 +598,6 @@ let loadSavedWindowsIntoTree = (function(){
             next_action();
         });
     } //loadSavedWindowsIntoTree
-
 })();
 
 // Debug helper, so uses console.log() directly.
@@ -733,6 +733,7 @@ function treeOnSelect(evt, evt_data)
 
 function winOnCreated(win)
 {
+    treeobj.clear_flags();
     if(window_is_being_restored) {
         window_is_being_restored = false;
         return;     // don't create an extra copy
@@ -790,6 +791,8 @@ function winOnRemoved(win_id)
 function winOnFocusChanged(win_id)
 {
     //log.info('Window focus-change triggered: ' + win_id);
+
+    treeobj.clear_flags();
 
     chrome.windows.getLastFocused({}, function(win){
         let new_win_id;
@@ -937,18 +940,15 @@ function tabOnActivated(activeinfo)
 
     winOnFocusChanged(activeinfo.windowId);
 
-    // Use this if you want the selection to track the open tab.
-    if(false) {
+    // Highlight the active tab
+    SELTAB: {
         // Get the tab's node
         let tab_node_id = mdTabs.by_tab_id(activeinfo.tabId, 'node_id');
-        if(typeof tab_node_id === 'undefined') return;
+        if(typeof tab_node_id === 'undefined') break SELTAB;
 
-        treeobj.deselect_all();
-        treeobj.select_node(tab_node_id);
+        treeobj.clear_flags();
+        treeobj.flag_node(tab_node_id);
     }
-
-    //let parent_node = treeobj.get_node(parent_node_id);
-    //if(typeof parent_node === 'undefined') return;
 
     // No need to save --- we don't save which tab is active.
 } //tabOnActivated
@@ -1165,18 +1165,21 @@ function initTree1(win_id)
     log.info('TabFern view.js initializing tree in window ' + win_id.toString());
 
     let jstreeConfig = {
-        'plugins': ['actions', 'wholerow'] // TODO add state plugin
-        , 'core': {
-            'animation': false,
-            'multiple': false,          // for now
-            'check_callback': true,     // for now, allow modifications
+        plugins: ['actions', 'wholerow', 'flagnode'] // TODO add state plugin
+        , core: {
+            animation: false,
+            multiple: false,          // for now
+            check_callback: true,     // for now, allow modifications
             themes: {
-                'name': 'default-dark'
-              , 'variant': 'small'
+                name: 'default-dark'
+              , variant: 'small'
             }
         }
-        , 'state': {
-            'key': 'tabfern-jstree'
+        , state: {
+            key: 'tabfern-jstree'
+        }
+        , flagnode: {
+            css_class: 'tf-focused-tab'
         }
     };
 
