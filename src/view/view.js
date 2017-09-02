@@ -2,6 +2,11 @@
 // Uses jquery, jstree, jstree-actions, loglevel, common.js, all of which are
 // loaded by view.html.
 
+// TODO make the save data {tabfern: 42, version: <number>, windows: []}.
+// (`tabfern: 42` is magic :) )  Current [] save data
+// will be version 0.  Add a table mapping version to reader function so that
+// we can always import old backup files.
+
 //////////////////////////////////////////////////////////////////////////
 // Constants //
 
@@ -516,6 +521,7 @@ function createNodeForClosedWindow(win_data)
 //////////////////////////////////////////////////////////////////////////
 // Loading //
 
+// TODO RESUME HERE --- move for() loop below into readVersion0().
 function loadSavedWindowsIntoTree(next_action)
 {
     chrome.storage.local.get(STORAGE_KEY, function(items) {
@@ -741,6 +747,12 @@ function winOnFocusChanged(win_id)
         // Clear the focus highlights if we are changing windows.
         // Avoid flicker if the selection is staying in the same window.
         if(new_win_id === currently_focused_winid) return;
+
+        // Update the size of new windows - TODO see if this works in practice
+        if(win.type === 'normal') {
+            winSizes[win.id] = getWindowSizeFromWindowRecord(win);
+            newWinSize = winSizes[win.id];
+        }
 
         //log.info('Clearing focus classes');
         $('.' + WIN_CLASS + ' > a').removeClass(FOCUSED_WIN_CLASS);

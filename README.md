@@ -4,7 +4,8 @@
 
 Very basic extension for vertical, grouped tabs.  Inspired by
 [Tabs Outliner](https://chrome.google.com/webstore/detail/tabs-outliner/eggkanocgddhmamlbiijnphhppkpkmkl)
-by Vladyslav Volovyk.
+by Vladyslav Volovyk.  However, TabFern is not derived from or in any way
+affiliated with Vladyslav or his (excellent!) work.
 
 # Usage
 
@@ -33,11 +34,13 @@ by Vladyslav Volovyk.
 
 # Limitations
 
- - The tree will not update when you drag tabs between browser windows.
  - There is only a two-level hierarchy --- tabs cannot be the children
    of other tabs in the tree.
  - You cannot open and close individual tabs --- you have to open and close
    the window as a whole.
+ - Where new windows open may not always be where Chrome would open a new window.
+   Currently, the original size/position of the last-focused or last-closed
+   window is generally where the new window will end up.
  - Lots of others I'm not going to list right now!
 
 # Thanks
@@ -51,7 +54,9 @@ by Vladyslav Volovyk.
 
 # Legal
 
-Copyright (c) 2017 Chris White.  CC-BY-SA 4.0 International.
+Copyright (c) 2017 Chris White, Jasmine Hegman.  CC-BY-SA 4.0 International
+See [LICENSE.md](LICENSE.md) for details, which are controlling in case of any
+difference between that file and this section.
 
 ![logo](https://raw.githubusercontent.com/cxw42/TabFern/master/assets/fern128.png)
 
