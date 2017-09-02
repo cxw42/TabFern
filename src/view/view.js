@@ -45,9 +45,6 @@ let window_is_being_restored = false;
 /// ID of a timer to save the new window size after a resize event
 let resize_save_timer_id;
 
-/// Did initialization complete successfully?
-let did_init_complete = false;
-
 /// The size of the last-closed window, to be used as the
 /// size of newly-opened windows (whence the name).
 /// Should always have a valid value.
@@ -521,29 +518,87 @@ function createNodeForClosedWindow(win_data)
 //////////////////////////////////////////////////////////////////////////
 // Loading //
 
-// TODO RESUME HERE --- move for() loop below into readVersion0().
-function loadSavedWindowsIntoTree(next_action)
+/// Did we have a problem loading save data?
+let was_loading_error = false;
+
+/// Populate the tree from version-0 save data in #data, then call #next_action.
+/// Assumes the caller has confirmed that the data is indeed V0 data.
+function loadSaveDataV0(data)
 {
-    chrome.storage.local.get(STORAGE_KEY, function(items) {
-        if(typeof(chrome.runtime.lastError) === 'undefined') {
-            let parsed = items[STORAGE_KEY];    // auto JSON.parse
-            if(Array.isArray(parsed)) {
+    for(let win_data of data) {
+        createNodeForClosedWindow(win_data);
+    }
+    return true;    //load successful
+}  //loadSaveDataV0
 
-                //log.info('Loading:');
-                //log.info(parsed);
+/// Populate the tree from the save data, then call next_action.
+let loadSavedWindowsIntoTree = (function(){
 
-                for(let win_data of parsed) {
-                    createNodeForClosedWindow(win_data);
+    /// The mapping table from versions to loaders.
+    /// each loader should return truthy if load successful, falsy otherwise.
+    let versionLoaders = { 0: loadSaveDataV0 };
+
+    /// Populate the tree from the save data, then call next_action.
+    return function(next_action)
+    {
+        chrome.storage.local.get(STORAGE_KEY, function(items) {
+
+            READIT:
+            if(typeof(chrome.runtime.lastError) !== 'undefined') {
+                //Chrome couldn't load the data
+                log.error("Chrome couldn't load save data: " + chrome.runtime.lastError +
+                        "\nHowever, if you didn't have any save data, this isn't " +
+                        "a problem!");
+
+                // If Chrome didn't load the data, don't treat it as a reading
+                // error, since it might simply not have existed.  Therefore,
+                // we don't set was_loading_error here.  TODO figure out if
+                // this makes sense.  Maybe check the specific error returned.
+
+            } else {    // Chrome did load the data
+                let parsed = items[STORAGE_KEY];    // auto JSON.parse
+
+                // Figure out the version number
+                let vernum;
+                if(Array.isArray(parsed)) {         // version 0
+                    vernum = 0;
+                } else if( (typeof parsed === 'object') &&
+                        ('tabfern' in parsed) &&
+                        (parsed['tabfern'] == 42) &&
+                        ('version' in parsed)) {    // a specific version
+                    vernum = parsed['version']
+                } else {
+                    log.error('Could not identify the version number of the save data');
+                    was_loading_error = true;
+                    break READIT;
                 }
-            } //endif is array
-        } //endif loaded OK
 
-        // Even if there was an error, call the next action so that
-        // the initialization can complete.
-        if(typeof next_action !== 'function') return;
-        next_action();
-    });
-} //loadSavedWindowsIntoTree
+                // Load it
+                let loaded_ok;
+                if(vernum in versionLoaders) {
+                    loaded_ok = versionLoaders[vernum](parsed);
+                } else {
+                    log.error("I don't know how to load save data from version " + vernum);
+                    was_loading_error = true;
+                    break READIT;
+                }
+
+                if(!loaded_ok) {
+                    log.error("There was a problem loading save data of version " + vernum);
+                    was_loading_error = true;
+                    break READIT;
+                }
+
+            } //endif data loaded OK
+
+            // Even if there was an error, call the next action so that
+            // the initialization can complete.
+            if(typeof next_action !== 'function') return;
+            next_action();
+        });
+    } //loadSavedWindowsIntoTree
+
+})();
 
 // Debug helper, so uses console.log() directly.
 function DBG_printSaveData()
@@ -1002,6 +1057,9 @@ function eventOnResize(evt)
 //////////////////////////////////////////////////////////////////////////
 // Startup / shutdown //
 
+/// Did initialization complete successfully?
+let did_init_complete = false;
+
 // This is done in vaguely continuation-passing style.  TODO make it cleaner.
 // Maybe use promises?
 
@@ -1009,9 +1067,11 @@ function eventOnResize(evt)
 /// completed successfully.
 function initTreeFinal()
 {
-    did_init_complete = true;
-    // Assume the document is loaded by this point.
-    $(INIT_MSG_SEL).css('display','none');    // just in case
+    if(!was_loading_error) {
+        did_init_complete = true;
+        // Assume the document is loaded by this point.
+        $(INIT_MSG_SEL).css('display','none');    // just in case
+    }
 } //initTreeFinal()
 
 function initTree4(items)
