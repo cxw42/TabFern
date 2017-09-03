@@ -1,0 +1,25 @@
+TabFern organizes your browsing life.  It shows all your open windows and tabs
+in one place, for immediate access.  With one click, you can close a window,
+and then bring it back any time with one more click.  With two clicks, you can
+backup all those URLs to a text file, or restore a backup.  No need to login to
+copy browsing sessions between computers!  With TabFern, switching between
+projects is a breeze, and you can leave a task behind without worrying about
+losing the pages.
+
+TabFern is under active development, so please do not hesitate to report bugs
+or provide feedback via GitHub.  Because of its alpha status, TabFern is
+offered AS-IS, and with NO WARRANTY - see the license on the Web site for full
+details.  However, the primary author uses TabFern 365 days a year, so bug
+reports should receive a quick response :) .  If you would like to contribute
+to TabFern's development, feel free --- we welcome pull requests and would be
+happy to help you get started.
+
+Permissions: The "Read your browsing history" permission permits TabFern to 
+access the URLs and titles of pages you visit, so that it can help you
+manage your tabs.  TabFern stores that data only on your computer, and does not
+send it anywhere.
+
+Credit where credit is due!  TabFern is inspired by the excellent Tabs Outliner
+by Vladyslav Volovyk.  However, TabFern is a completely separate extension,
+and is not affiliated with Tabs Outliner or with Vladyslav in any way.
+
