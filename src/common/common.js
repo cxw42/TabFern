@@ -2,7 +2,7 @@
 // in this file.
 console.log('TabFern common.js loading');
 
-const TABFERN_VERSION='0.1 alpha \u26a0'
+const TABFERN_VERSION='0.1.2 alpha \u26a0'
 
 const MSG_GET_VIEW_WIN_ID = 'getViewWindowID';
 

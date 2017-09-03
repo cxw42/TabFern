@@ -1,7 +1,8 @@
 {
-  "name": "TabFern",
-  "version": "0.1",
-  "version_name": "0.1 ALPHA - YMMV",
+  "name": "TabFern tab manager and backup tool",
+  "short_name": "TabFern",
+  "version": "0.1.2",
+  "version_name": "0.1.2 ALPHA - YMMV",
   "manifest_version": 2,
   "minimum_chrome_version": "54",
   "description": "Vertical view of your windows and tabs, including saved tabs and windows.",
