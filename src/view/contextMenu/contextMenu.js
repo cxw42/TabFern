@@ -1,19 +1,12 @@
 window._tabFernContextMenu = window._tabFernContextMenu || {};
 
 (function(_tabFernContextMenu) {
+    "use strict";
 
     var log = console.log.bind(console, 'TabFern contextMenu.js:');
 
     function getEnabledValueFromLocalStorage() {
-        let locStorageValue = localStorage.getItem('store.settings.ContextMenu.Enabled');
-        if (
-            locStorageValue === null
-            || locStorageValue === "false"
-        ) {
-            return false;
-        } else if ( locStorageValue === "true" ) {
-            return true;
-        }
+        return getBoolSetting('ContextMenu.Enabled', false);
     }
 
     _tabFernContextMenu.isEnabled = function isEnabled() {
@@ -21,6 +14,7 @@ window._tabFernContextMenu = window._tabFernContextMenu || {};
         return getEnabledValueFromLocalStorage();
     };
 
+    /// The shortcuts module, if any
     var shortcutNs = false;
 
     /**
@@ -115,7 +109,6 @@ window._tabFernContextMenu = window._tabFernContextMenu || {};
 
     // <span class="contextMenu-entryTitle">Tip: Native Chrome context menu can be opened by Right Click with <span class="shortCutKey">Shift</span> pressed</span></il></il></ul>
 
-        "use strict";
 
         ///////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////

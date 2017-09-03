@@ -2,34 +2,45 @@
 // in this file.
 console.log('TabFern common.js loading');
 
+//////////////////////////////////////////////////////////////////////////
+// General constants //
+
 const TABFERN_VERSION='0.1.2 alpha \u26a0'
 
+//////////////////////////////////////////////////////////////////////////
+// Messages between parts of TabFern //
+
 const MSG_GET_VIEW_WIN_ID = 'getViewWindowID';
+
+//////////////////////////////////////////////////////////////////////////
+// Names of settings //
+
+//////////////////////////////////////////////////////////////////////////
+// Functions //
 
 /// Get a boolean setting from options_custom, which uses HTML5 localStorage.
 function getBoolSetting(setting_name, default_value = false)
 {
     let locStorageValue = localStorage.getItem('store.settings.' + setting_name);
-    if ( locStorageValue === null ) {
+    if ( locStorageValue === null ) {   // nonexistent key
         return default_value;
-    } else if ( locStorageValue === "false" ) {
-        return false;
-    } else if ( locStorageValue === "true" ) {
-        return true;
     } else {
-        return default_value;
+        let str = String(locStorageValue).toLowerCase();
+        if ( str === "false" ) {
+            return false;
+        } else if ( str === "true" ) {
+            return true;
+        } else {
+            return default_value;
+        }
     }
 } //getBoolSetting
 
-// vi: set ts=4 sts=4 sw=4 et ai fo-=o: //
-
-
-/**
- * @param {Document} document
- * @param {String} url URL of script to load
- * @param {String} [type] Type of Script tag. Default: text/javascript
- * @param {Function} callback Set as callback for BOTH onreadystatechange and onload
- */
+/// Append a <script> to the <head> of #document.
+/// @param {Document} document
+/// @param {String} url URL of script to load
+/// @param {String} [type] Type of Script tag. Default: text/javascript
+/// @param {Function} callback Set as callback for BOTH onreadystatechange and onload
 function asyncAppendScriptToHead(document, url, callback, type = 'text/javascript')
 {
     // Adding the script tag to the head as suggested before
@@ -46,4 +57,6 @@ function asyncAppendScriptToHead(document, url, callback, type = 'text/javascrip
 
     // Fire the loading
     head.appendChild(script);
-}
+} //asyncAppendScriptToHead()
+
+// vi: set ts=4 sts=4 sw=4 et ai fo-=o: //
