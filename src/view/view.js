@@ -1516,22 +1516,41 @@ function hamRestoreFromBackup()
                 e);
         }
     });
-}
+} //hamRestoreFromBackup()
+
+function hamExpandAll()
+{
+    treeobj.open_all();
+} //hamExpandAll()
+
+function hamCollapseAll()
+{
+    treeobj.close_all();
+} //hamCollapseAll()
 
 function getMenuItems(node, UNUSED_proxyfunc, e)
 {
     return {
-        backupItem: {
+        infoItem: {
+            label: "About, help, and credits",
+            action: hamAboutWindow
+        }
+        , backupItem: {
             label: "Backup now",
             action: hamBackup
         }
         , restoreItem: {
             label: "Restore a previous backup",
-            action: hamRestoreFromBackup
+            action: hamRestoreFromBackup,
+            separator_after: true
         }
-        , infoItem: {
-            label: "About, help, and credits",
-            action: hamAboutWindow
+        , expandItem: {
+            label: "Expand all",
+            action: hamExpandAll
+        }
+        , collapseItem: {
+            label: "Collapse all",
+            action: hamCollapseAll
         }
     };
 } //getMenuItems()
