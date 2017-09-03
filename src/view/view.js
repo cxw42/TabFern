@@ -89,6 +89,8 @@ let Esc = HTMLEscaper();
 log.setDefaultLevel(log.levels.INFO);
     // TODO change the default to ERROR or SILENT for production.
 
+console.log('Loading TabFern ' + TABFERN_VERSION);
+
 mdTabs = Multidex(
     [ //keys
         'tab_id'    // from Chrome
@@ -372,11 +374,11 @@ function saveTree(save_visible_windows = true, cbk = undefined)
 
 function actionRenameWindow(node_id, node, unused_action_id, unused_action_el)
 {
-    let win_name = window.prompt('Window name?', node.text);
-    if(win_name === null) return;   // user cancelled
-
     let win_val = mdWindows.by_node_id(node_id);
     if(!win_val) return;
+
+    let win_name = window.prompt('Window name?', win_val.raw_title);
+    if(win_name === null) return;   // user cancelled
 
     win_val.raw_title = win_name;
     win_val.keep = true;    // assume that a user who bothered to rename a node
@@ -1016,7 +1018,7 @@ function tabOnCreated(tab)
         treeobj.move_node(tab_node_id, win_node_id, tab.index);
             // Put it in the right place
     } else {
-        console.log('   - That tab already exists.');
+        log.info('   - That tab already exists.');
         treeobj.move_node(tab_val.node_id, win_node_id, tab.index);
             // Just put it where it now belongs.
     }
@@ -1410,7 +1412,8 @@ function initTree1(win_id)
 
 function initTree0()
 {
-    log.info('TabFern view.js initializing view');
+    log.info('TabFern view.js initializing view - ' + TABFERN_VERSION);
+    document.title = 'TabFern ' + TABFERN_VERSION;
 
     // Stash our current size, which is the default window size.
     newWinSize = getWindowSize(window);

@@ -25,6 +25,7 @@ this.manifest = {
         },
 
         // Details
+        /* //Disabled for now, because contextMenu needs to be refactored first.
         {
             "tab": "Details",
             "group": "ContextMenu",
@@ -32,6 +33,7 @@ this.manifest = {
             "type": "checkbox",
             "label": "Right-click Menu (refresh the TabFern window after you change this to make the change take effect)"
         },
+        */
         {
             "tab": "Details",
             "group": "KeyBinds",
