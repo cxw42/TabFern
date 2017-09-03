@@ -1240,6 +1240,107 @@ function eventOnResize(evt)
 } //eventOnResize
 
 //////////////////////////////////////////////////////////////////////////
+// Hamburger menu //
+
+/// Open a new window with the TabFern homepage.  Also remove the default
+/// tab that appears because we are letting the window open at the
+/// default size.  Yes, this is quite ugly.
+function hamAboutWindow()
+{
+    chrome.windows.create(
+        function(win) {
+            if(typeof(chrome.runtime.lastError) === 'undefined') {
+                chrome.tabs.create({windowId: win.id, url: 'https://cxw42.github.io/TabFern/'},
+                    function(keep_tab) {
+                        if(typeof(chrome.runtime.lastError) === 'undefined') {
+                            chrome.tabs.query({windowId: win.id, index: 0},
+                                function(tabs) {
+                                    if(typeof(chrome.runtime.lastError) === 'undefined') {
+                                        chrome.tabs.remove(tabs[0].id,
+                                            ignore_chrome_error
+                                        ); //tabs.remove
+                                    }
+                                } //function(tabs)
+                            ); //tabs.query
+                        }
+                    } //function(keep_tab)
+                ); //tabs.create
+            }
+        } //function(win)
+    ); //windows.create
+} //hamAboutWindow()
+
+function hamBackup()
+{
+    let date_tag = new Date().toISOString().replace(/:/g,'.');
+        // DOS filenames can't include colons.
+        // TODO use local time - maybe
+        // https://www.npmjs.com/package/dateformat ?
+    let filename = 'TabFern backup ' + date_tag + '.tabfern';
+
+    // Save the tree, including currently-open windows/tabs, then
+    // export the save data to #filename.
+    saveTree(true, function(saved_info){
+        Fileops.Export(document, JSON.stringify(saved_info), filename);
+    });
+} //hamBackup()
+
+/// Restore tabs from a saved backup
+function hamRestoreFromBackup()
+{
+    let importer = new Fileops.Importer(document, '.tabfern');
+    importer.getFileAsString(function(text, filename){
+        try {
+            let parsed = JSON.parse(text);
+            if(!loadSavedWindowsFromData(parsed)) {
+                window.alert("I couldn't load the file " + filename + ': ' + e);
+            }
+        } catch(e) {
+            window.alert("File " + filename + ' is not something I can '+
+                'understand as a TabFern save file.  Parse error code was: ' +
+                e);
+        }
+    });
+} //hamRestoreFromBackup()
+
+function hamExpandAll()
+{
+    treeobj.open_all();
+} //hamExpandAll()
+
+function hamCollapseAll()
+{
+    treeobj.close_all();
+} //hamCollapseAll()
+
+function getHamburgerMenuItems(node, UNUSED_proxyfunc, e)
+{
+    return {
+        infoItem: {
+            label: "About, help, and credits",
+            action: hamAboutWindow
+        }
+        , backupItem: {
+            label: "Backup now",
+            action: hamBackup
+        }
+        , restoreItem: {
+            label: "Restore a previous backup",
+            action: hamRestoreFromBackup,
+            separator_after: true
+        }
+        , expandItem: {
+            label: "Expand all",
+            action: hamExpandAll
+        }
+        , collapseItem: {
+            label: "Collapse all",
+            action: hamCollapseAll
+        }
+    };
+} //getHamburgerMenuItems()
+
+//////////////////////////////////////////////////////////////////////////
 // Startup / shutdown //
 
 /// Did initialization complete successfully?
@@ -1419,6 +1520,8 @@ function initTree0()
     log.info('TabFern view.js initializing view - ' + TABFERN_VERSION);
     document.title = 'TabFern ' + TABFERN_VERSION;
 
+    Hamburger = HamburgerMenuMaker('#hamburger-menu', getHamburgerMenuItems);
+
     // Stash our current size, which is the default window size.
     newWinSize = getWindowSize(window);
 
@@ -1426,7 +1529,6 @@ function initTree0()
     // I don't know a way to get this directly from the JS window object.
     chrome.runtime.sendMessage(MSG_GET_VIEW_WIN_ID, initTree1);
 } //initTree0
-
 
 /// Save the tree on window.unload
 function shutdownTree()
@@ -1455,112 +1557,6 @@ function initIncompleteWarning()
 } //initIncompleteWarning()
 
 //////////////////////////////////////////////////////////////////////////
-// Hamburger menu //
-
-/// Open a new window with the TabFern homepage.  Also remove the default
-/// tab that appears because we are letting the window open at the
-/// default size.  Yes, this is quite ugly.
-function hamAboutWindow()
-{
-    chrome.windows.create(
-        function(win) {
-            if(typeof(chrome.runtime.lastError) === 'undefined') {
-                chrome.tabs.create({windowId: win.id, url: 'https://cxw42.github.io/TabFern/'},
-                    function(keep_tab) {
-                        if(typeof(chrome.runtime.lastError) === 'undefined') {
-                            chrome.tabs.query({windowId: win.id, index: 0},
-                                function(tabs) {
-                                    if(typeof(chrome.runtime.lastError) === 'undefined') {
-                                        chrome.tabs.remove(tabs[0].id,
-                                            ignore_chrome_error
-                                        ); //tabs.remove
-                                    }
-                                } //function(tabs)
-                            ); //tabs.query
-                        }
-                    } //function(keep_tab)
-                ); //tabs.create
-            }
-        } //function(win)
-    ); //windows.create
-} //hamAboutWindow()
-
-function hamBackup()
-{
-    let date_tag = new Date().toISOString().replace(/:/g,'.');
-        // DOS filenames can't include colons.
-        // TODO use local time - maybe
-        // https://www.npmjs.com/package/dateformat ?
-    let filename = 'TabFern backup ' + date_tag + '.tabfern';
-
-    // Save the tree, including currently-open windows/tabs, then
-    // export the save data to #filename.
-    saveTree(true, function(saved_info){
-        Fileops.Export(document, JSON.stringify(saved_info), filename);
-    });
-} //hamBackup()
-
-/// Restore tabs from a saved backup
-function hamRestoreFromBackup()
-{
-    let importer = new Fileops.Importer(document, '.tabfern');
-    importer.getFileAsString(function(text, filename){
-        try {
-            let parsed = JSON.parse(text);
-            if(!loadSavedWindowsFromData(parsed)) {
-                window.alert("I couldn't load the file " + filename + ': ' + e);
-            }
-        } catch(e) {
-            window.alert("File " + filename + ' is not something I can '+
-                'understand as a TabFern save file.  Parse error code was: ' +
-                e);
-        }
-    });
-} //hamRestoreFromBackup()
-
-function hamExpandAll()
-{
-    treeobj.open_all();
-} //hamExpandAll()
-
-function hamCollapseAll()
-{
-    treeobj.close_all();
-} //hamCollapseAll()
-
-function getMenuItems(node, UNUSED_proxyfunc, e)
-{
-    return {
-        infoItem: {
-            label: "About, help, and credits",
-            action: hamAboutWindow
-        }
-        , backupItem: {
-            label: "Backup now",
-            action: hamBackup
-        }
-        , restoreItem: {
-            label: "Restore a previous backup",
-            action: hamRestoreFromBackup,
-            separator_after: true
-        }
-        , expandItem: {
-            label: "Expand all",
-            action: hamExpandAll
-        }
-        , collapseItem: {
-            label: "Collapse all",
-            action: hamCollapseAll
-        }
-    };
-} //getMenuItems()
-
-function initHamburger()
-{
-    Hamburger = HamburgerMenuMaker('#hamburger-menu', getMenuItems);
-} //initHamburger
-
-//////////////////////////////////////////////////////////////////////////
 // MAIN //
 
 // Timer to display the warning message if initialization doesn't complete
@@ -1574,9 +1570,6 @@ window.addEventListener('resize', eventOnResize);
     // This doesn't detect window movement without a resize.  TODO implement
     // something from https://stackoverflow.com/q/4319487/2877364 to
     // deal with that.
-
-// Hamburger menu
-window.addEventListener('load', initHamburger, { 'once': true });
 
 // Install keyboard shortcuts.  This includes the keyboard listener for
 // context menus.
