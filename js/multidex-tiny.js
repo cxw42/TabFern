@@ -18,6 +18,12 @@
 //
 //     store.remove_value(foo);     // Have to remove by value, not by key.
 //     store.by_key1(42);   // <-- undefined, since we removed _foo_.
+//
+// Caution: If you change the indices in a value, the by_* accessors will
+// no longer work as they should.  Instead, use change_key():
+//
+//     store.change_key(foo, 'key1', 84);
+//     store.by_key1(84)    // foo
 
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
@@ -150,6 +156,15 @@
                 return val;
             } //add
 
+            /// Change a key in a value, and update the indices
+            function change_key(val, key_name, new_value)
+            {
+                if(!(val in this.all_values)) return;
+                delete this[IDX+key_name][val[key_name]];   // rm old index
+                val[key_name] = new_value;                  // mutate val
+                this[IDX+key_name][new_value] = val;        // add new index
+            } //change_key
+
             // The prototype
             let fns = {
                 new_value
@@ -157,6 +172,7 @@
               , remove_value
               , add_value
               , add
+              , change_key
             }; //fns
 
             // by_* accessors for the keys.
