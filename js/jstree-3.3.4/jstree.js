@@ -75,7 +75,7 @@
 		idregex : /[\\:&!^|()\[\]<>@*'+~#";.,=\- \/${}%?`]/g,
 		root : '#'
 	};
-	
+
 	/**
 	 * creates a jstree instance
 	 * @name $.jstree.create(el [, options])
@@ -5285,9 +5285,9 @@
 			this.element.find('.jstree-closed').not(':has(.jstree-children)')
 				.each(function () {
 					var tmp = tt.get_node(this), tmp2;
-					
+
 					if(!tmp) { return; }
-					
+
 					if(!tmp.state.loaded) {
 						if(tmp.original && tmp.original.state && tmp.original.state.undetermined && tmp.original.state.undetermined === true) {
 							if(o[tmp.id] === undefined && tmp.id !== $.jstree.root) {
@@ -5652,7 +5652,7 @@
 				this.trigger('uncheck_node', { 'node' : obj, 'selected' : this._data.checkbox.selected, 'event' : e });
 			}
 		};
-		
+
 		/**
 		 * checks all nodes in the tree (only if tie_selection in checkbox settings is false, otherwise select_all will be called internally)
 		 * @name check_all()
@@ -5880,7 +5880,7 @@
 		 * * `_disabled` - a boolean indicating if this action should be disabled
 		 * * `label` - a string - the name of the action (could be a function returning a string)
 		 * * `title` - a string - an optional tooltip for the item
-		 * * `action` - a function to be executed if this item is chosen, the function will receive 
+		 * * `action` - a function to be executed if this item is chosen, the function will receive
 		 * * `icon` - a string, can be a path to an icon or a className, if using an image that is in the current directory use a `./` prefix, otherwise it will be detected as a class
 		 * * `shortcut` - keyCode which will trigger the action if the menu is open (for example `113` for rename, which equals F2)
 		 * * `shortcut_label` - shortcut label (like for example `F2` for rename)
@@ -6012,7 +6012,14 @@
 						if (e.target.tagName.toLowerCase() === 'input') {
 							return;
 						}
-						e.preventDefault();
+
+						if ( this._data.contextmenu.bypass ) {
+							// Tell the caller that the menu was bypassed.
+							this.trigger('bypass_contextmenu', {event: e});
+						} else {
+							e.preventDefault();
+						}
+
 						last_ts = e.ctrlKey ? +new Date() : 0;
 						if(data || cto) {
 							last_ts = (+new Date()) + 10000;
@@ -6021,7 +6028,7 @@
 							clearTimeout(cto);
 						}
 						if(!this.is_loading(e.currentTarget)) {
-							this.show_contextmenu(e.currentTarget, e.pageX, e.pageY, e);
+							return this.show_contextmenu(e.currentTarget, e.pageX, e.pageY, e);
 						}
 					}, this))
 				.on("click.jstree", ".jstree-anchor", $.proxy(function (e) {
@@ -6115,10 +6122,10 @@
 			if($.isFunction(i)) {
 				i = i.call(this, obj, $.proxy(function (i) {
 					this._show_contextmenu(obj, x, y, i);
-				}, this));
+				}, this), e);
 			}
 			if($.isPlainObject(i)) {
-				this._show_contextmenu(obj, x, y, i);
+				return this._show_contextmenu(obj, x, y, i);
 			}
 		};
 		/**
@@ -7153,7 +7160,7 @@
 	 *		"id1" : [{ "text" : "Child of ID1", "id" : "c1" }, { "text" : "Another child of ID1", "id" : "c2" }],
 	 *		"id2" : [{ "text" : "Child of ID2", "id" : "c3" }]
 	 *	}
-	 * 
+	 *
 	 * @name $.jstree.defaults.massload
 	 * @plugin massload
 	 */
@@ -8335,9 +8342,12 @@
 					}, this))
 				.on("contextmenu.jstree", ".jstree-wholerow", $.proxy(function (e) {
 						if (this._data.contextmenu) {
-							e.preventDefault();
+							if ( ! this._data.contextmenu.bypass ) {
+                                e.preventDefault();
+                            }
+							// Forward to the regular context-menu handlers
 							var tmp = $.Event('contextmenu', { metaKey : e.metaKey, ctrlKey : e.ctrlKey, altKey : e.altKey, shiftKey : e.shiftKey, pageX : e.pageX, pageY : e.pageY });
-							$(e.currentTarget).closest(".jstree-node").children(".jstree-anchor").first().trigger(tmp);
+							return $(e.currentTarget).closest(".jstree-node").children(".jstree-anchor").first().trigger(tmp);
 						}
 					}, this))
 				/*!

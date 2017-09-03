@@ -1,6 +1,17 @@
 /* view.css */
 
-/* DEBUG */
+/* //////////////////////////////////////////////////////////////////// */
+/* Accessibility */
+
+/* Thanks to http://webaim.org/techniques/css/invisiblecontent/ */
+.hidden-but-accessible {
+    position:absolute;
+    left:-10000px;
+    top:auto;
+    width:1px;
+    height:1px;
+    overflow:hidden;
+}
 
 /* //////////////////////////////////////////////////////////////////// */
 /* Local styles */
@@ -8,6 +19,7 @@
 .tabfern-popup-footer {
     position:fixed;
     bottom:0px;
+    padding-bottom: 0.5em;
 }
 
 .tabfern-popup-footer a {
@@ -17,6 +29,11 @@
 
 /* The browser window that currently has focus */
 .tf-focused-window {
+    font-weight: bold;
+}
+
+/* The tab that currently has focus */
+.tf-focused-tab {
     font-weight: bold;
 }
 
@@ -66,7 +83,28 @@ div#init-incomplete {
     visibility: hidden;
 }
 
-/* ------------------------------------------------------------------------ */
+/* --- Menu --------------------------------------------------------------- */
+div#hamburger-menu {
+    position: fixed;
+    right: 0;
+    padding-right: 0.5em;
+    bottom: 0;
+    padding-bottom: 0.5em;
+};
+
+/* This doesn't work and I don't know why.  However, the wholerow plugin
+ * does the same job. */
+/* Hide the down-left tree decoration on the hamburger menu. */
+/*
+.jstree-default-dark .hamburger-menu.jstree-default-dark-small .jstree-leaf > .jstree-icon.jstree-ocl {
+    display: none !important;
+    visibility: hidden !important;
+    background-image: none !important;
+    border: 1px red !important;
+};
+*/
+
+/* --- Action buttons ----------------------------------------------------- */
 
 .right-top {
 
@@ -83,6 +121,11 @@ div#init-incomplete {
     //position:fixed;
     //right:0;
     */
+}
+
+/* Keep the "delete" button farther from the others */
+.tf-action-group .fff-cross {
+    margin-left:0.5em;
 }
 
 /* Icons ------------------------------------------------------------------ */

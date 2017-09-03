@@ -1,9 +1,11 @@
 {
   "name": "TabFern",
-  "version": "0.0.2",
+  "version": "0.1",
+  "version_name": "0.1 ALPHA - YMMV",
   "manifest_version": 2,
-  "description": "Basic outline view of your tabs, including saved tabs and windows.",
-  "homepage_url": "https://github.com/cxw42/TabFern",
+  "minimum_chrome_version": "54",
+  "description": "Vertical view of your windows and tabs, including saved tabs and windows.",
+  "homepage_url": "https://cxw42.github.io/TabFern/",
   "icons": {
     "16": "assets/fern16.png",
     "48": "assets/fern48.png",
@@ -28,7 +30,6 @@
   },
   "permissions": [
     "chrome://favicon/",
-    "notifications",
     "tabs",
     "storage",
     "unlimitedStorage"

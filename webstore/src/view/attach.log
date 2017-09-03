@@ -1,0 +1,218 @@
+
+common.js:3 TabFern common.js loading
+view.html:1 Not allowed to load local resource: chrome://theme/IDR_EXTENSIONS_FAVICON@2x
+log.setLevel(log.levels.DEBUG)
+undefined
+
+view.js:765 Tab activated:
+view.js:766 {tabId: 21, windowId: 20}
+
+view.js:683 Tab updated: 21
+view.js:684 {status: "loading", url: "https://www.google.com/search?q=jquery+count+child…s=chrome..69i57.1943j0j1&sourceid=chrome&ie=UTF-8"}
+view.js:685 {active: true, audible: false, autoDiscardable: true, discarded: false, height: 752, …}
+
+view.js:683 Tab updated: 21
+view.js:684 {title: "jquery count children - Google Search"}
+view.js:685 {active: true, audible: false, autoDiscardable: true, discarded: false, height: 752, …}
+
+
+view.js:683 Tab updated: 21
+view.js:684 {status: "complete"}
+view.js:685 {active: true, audible: false, autoDiscardable: true, discarded: false, height: 752, …}
+
+view.js:683 Tab updated: 21
+view.js:684 {favIconUrl: "https://www.google.com/images/branding/product/ico/googleg_lodp.ico"}
+view.js:685 {active: true, audible: false, autoDiscardable: true, discarded: false, favIconUrl: "https://www.google.com/images/branding/product/ico/googleg_lodp.ico", …}
+
+view.js:683 Tab updated: 21
+view.js:684 {status: "loading", url: "https://stackoverflow.com/questions/4291151/jquery-count-child-elements"}
+view.js:685 {active: true, audible: false, autoDiscardable: true, discarded: false, height: 752, …}
+
+view.js:683 Tab updated: 21
+view.js:684 {title: "javascript - jQuery count child elements - Stack Overflow"}
+view.js:685 {active: true, audible: false, autoDiscardable: true, discarded: false, height: 752, …}
+
+view.js:683 Tab updated: 21
+view.js:684 {status: "complete"}
+view.js:685 {active: true, audible: false, autoDiscardable: true, discarded: false, height: 752, …}
+
+view.js:683 Tab updated: 21
+view.js:684 {favIconUrl: "https://cdn.sstatic.net/Sites/stackoverflow/img/favicon.ico?v=4f32ecc8f43d"}
+view.js:685 {active: true, audible: false, autoDiscardable: true, discarded: false, favIconUrl: "https://cdn.sstatic.net/Sites/stackoverflow/img/favicon.ico?v=4f32ecc8f43d", …}
+
+view.js:683 Tab updated: 18
+view.js:684 {audible: false}
+view.js:685 {active: true, audible: false, autoDiscardable: true, discarded: false, favIconUrl: "https://www.youtube.com/yts/img/favicon_32-vfl8NGn4k.png", …}
+
+view.js:683 Tab updated: 18
+view.js:684 {audible: true}
+view.js:685 {active: true, audible: true, autoDiscardable: true, discarded: false, favIconUrl: "https://www.youtube.com/yts/img/favicon_32-vfl8NGn4k.png", …}
+Navigated to chrome-extension://omfkinmdgabadllkfgeeadolgheepill/src/view/view.html
+
+common.js:3 TabFern common.js loading
+
+view.js:1044 TabFern view.js initializing view
+
+view.js:1018 TabFern view.js initializing tree in window 4
+view.js:397 Adding nodeid map for winid 1
+view.js:404    7: Save and mark windows still open when Chrome crashes · Issue #23 · cxw42/TabFern
+view.js:404    26: Demozoo
+view.js:397 Adding nodeid map for winid 17
+view.js:404    18: Camel - Mirage [Full Album] (1974) - YouTube
+view.js:397 Adding nodeid map for winid 20
+view.js:404    21: javascript - jQuery count child elements - Stack Overflow
+view.js:404    24: Stack Overflow - Where Developers Learn, Share, & Build Careers
+view.js:404    9: jsTree
+
+view.js:765 Tab activated:
+view.js:766 {tabId: 24, windowId: 20}
+view.js:397 Adding nodeid map for winid 35
+
+
+view.js:846 Tab being detached: 24
+view.js:847 {oldPosition: 1, oldWindowId: 20}
+
+
+view.js:790 Tab being removed: 24
+view.js:791 {isWindowClosing: false, windowId: 20}
+
+
+view.js:765 Tab activated:
+view.js:766 {tabId: 9, windowId: 20}
+
+
+view.js:765 Tab activated:
+view.js:766 {tabId: 21, windowId: 20}
+
+
+view.js:860 Tab being attached: 24
+view.js:861 {newPosition: 0, newWindowId: 35}
+
+
+view.js:765 Tab activated:
+view.js:766 {tabId: 24, windowId: 35}
+
+
+view.js:667 Tab created:
+view.js:668 {active: true, audible: false, autoDiscardable: true, discarded: false, favIconUrl: "https://cdn.sstatic.net/Sites/stackoverflow/img/favicon.ico?v=4f32ecc8f43d", …}
+
+
+view.js:846 Tab being detached: 24
+view.js:847 {oldPosition: 0, oldWindowId: 35}
+
+
+view.js:790 Tab being removed: 24
+view.js:791 {isWindowClosing: false, windowId: 35}
+
+
+view.js:860 Tab being attached: 24
+view.js:861 {newPosition: 2, newWindowId: 20}
+
+
+view.js:765 Tab activated:
+view.js:766 {tabId: 24, windowId: 20}
+
+
+view.js:667 Tab created:
+view.js:668 {active: true, audible: false, autoDiscardable: true, discarded: false, favIconUrl: "https://cdn.sstatic.net/Sites/stackoverflow/img/favicon.ico?v=4f32ecc8f43d", …}
+view.js:258 Removing nodeid map for winid 35
+view.js:397 Adding nodeid map for winid 36
+
+
+view.js:846 Tab being detached: 24
+view.js:847 {oldPosition: 2, oldWindowId: 20}
+
+
+view.js:790 Tab being removed: 24
+view.js:791 {isWindowClosing: false, windowId: 20}
+
+
+view.js:765 Tab activated:
+view.js:766 {tabId: 9, windowId: 20}
+
+
+view.js:765 Tab activated:
+view.js:766 {tabId: 21, windowId: 20}
+
+
+view.js:860 Tab being attached: 24
+view.js:861 {newPosition: 0, newWindowId: 36}
+
+
+view.js:765 Tab activated:
+view.js:766 {tabId: 24, windowId: 36}
+
+
+view.js:846 Tab being detached: 24
+view.js:847 {oldPosition: 0, oldWindowId: 36}
+
+
+view.js:790 Tab being removed: 24
+view.js:791 {isWindowClosing: false, windowId: 36}
+
+
+view.js:860 Tab being attached: 24
+view.js:861 {newPosition: 2, newWindowId: 20}
+
+
+view.js:765 Tab activated:
+view.js:766 {tabId: 24, windowId: 20}
+
+
+view.js:667 Tab created:
+view.js:668 {active: true, audible: false, autoDiscardable: true, discarded: false, favIconUrl: "https://cdn.sstatic.net/Sites/stackoverflow/img/favicon.ico?v=4f32ecc8f43d", …}
+
+
+view.js:667 Tab created:
+view.js:668 {active: true, audible: false, autoDiscardable: true, discarded: false, favIconUrl: "https://cdn.sstatic.net/Sites/stackoverflow/img/favicon.ico?v=4f32ecc8f43d", …}
+view.js:258 Removing nodeid map for winid 36
+view.js:397 Adding nodeid map for winid 37
+
+
+view.js:846 Tab being detached: 24
+view.js:847 {oldPosition: 2, oldWindowId: 20}
+
+
+view.js:790 Tab being removed: 24
+view.js:791 {isWindowClosing: false, windowId: 20}
+
+
+view.js:765 Tab activated:
+view.js:766 {tabId: 9, windowId: 20}
+
+
+view.js:765 Tab activated:
+view.js:766 {tabId: 21, windowId: 20}
+
+
+view.js:860 Tab being attached: 24
+view.js:861 {newPosition: 0, newWindowId: 37}
+
+
+view.js:765 Tab activated:
+view.js:766 {tabId: 24, windowId: 37}
+
+
+view.js:667 Tab created:
+view.js:668 {active: true, audible: false, autoDiscardable: true, discarded: false, favIconUrl: "https://cdn.sstatic.net/Sites/stackoverflow/img/favicon.ico?v=4f32ecc8f43d", …}
+
+
+view.js:846 Tab being detached: 24
+view.js:847 {oldPosition: 0, oldWindowId: 37}
+
+
+view.js:790 Tab being removed: 24
+view.js:791 {isWindowClosing: false, windowId: 37}
+
+
+view.js:860 Tab being attached: 24
+view.js:861 {newPosition: 2, newWindowId: 20}
+
+
+view.js:765 Tab activated:
+view.js:766 {tabId: 24, windowId: 20}
+
+
+view.js:667 Tab created:
+view.js:668 {active: true, audible: false, autoDiscardable: true, discarded: false, favIconUrl: "https://cdn.sstatic.net/Sites/stackoverflow/img/favicon.ico?v=4f32ecc8f43d", …}
+view.js:258 Removing nodeid map for winid 37

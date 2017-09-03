@@ -1,0 +1,7 @@
+*.DS_Store
+*.scssc
+bower_components/
+test/keypress.js
+test/tests.js
+.build*
+node_modules/
