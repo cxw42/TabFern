@@ -4,13 +4,15 @@ title: TabFern tab-management extension for Google Chrome
 
 ![screenshot](https://raw.githubusercontent.com/cxw42/TabFern/gh-pages/screenshot.png)
 
-Very basic extension for vertical, grouped tabs.  Inspired by
-[Tabs Outliner](https://chrome.google.com/webstore/detail/tabs-outliner/eggkanocgddhmamlbiijnphhppkpkmkl)
-by Vladyslav Volovyk.
+A single window showing all your open browser windows and tabs, listed
+vertically.  TabFern will also save browser windows so you can close them and
+come back to them later with all their tabs intact.
 
 # Call for alpha testers!
 
 If you are willing, please try TabFern and let us know how it goes!
+
+[![badge](/img/ChromeWebStore_Badge_v2_206x58.png)](https://chrome.google.com/webstore/detail/tabfern-tab-manager-and-b/hbajjpcdbninabigakflkhiogmmjaakm)
 
 <strong>TabFern is now available in the [Chrome Web Store](https://chrome.google.com/webstore/detail/tabfern-tab-manager-and-b/hbajjpcdbninabigakflkhiogmmjaakm)</strong>
 
@@ -55,12 +57,16 @@ If you are willing, please try TabFern and let us know how it goes!
 
 # Thanks
 
+ - Inspired by (but not in any way related to or affiliated with)
+   [Tabs Outliner](https://chrome.google.com/webstore/detail/tabs-outliner/eggkanocgddhmamlbiijnphhppkpkmkl)
+   by Vladyslav Volovyk.
  - [Extensionizr](https://extensionizr.com)
  - [jstree](https://www.jstree.com/)
  - [jstree-actions](https://github.com/alexandernst/jstree-actions)
  - [jquery](https://jquery.com/)
  - [Barnsley fern generator](http://www.chradams.co.uk/fern/maker.html)
  - [famfamfam Silk icons](http://www.famfamfam.com/lab/icons/silk/)
+ - [Font Awesome](http://fontawesome.io/)
 
 # Legal
 
