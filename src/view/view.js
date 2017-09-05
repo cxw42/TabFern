@@ -78,8 +78,11 @@ let Shortcuts;
 /// The hamburger menu
 let Hamburger;
 
-// An escaper
+/// An escaper
 let Esc = HTMLEscaper();
+
+/// The module that handles <Shift> bypassing of the jstree context menu
+let Bypasser;
 
 //////////////////////////////////////////////////////////////////////////
 // Initialization //
@@ -1242,15 +1245,15 @@ function eventOnResize(evt)
 //////////////////////////////////////////////////////////////////////////
 // Hamburger menu //
 
-/// Open a new window with the TabFern homepage.  Also remove the default
+/// Open a new window with a given URL.  Also remove the default
 /// tab that appears because we are letting the window open at the
 /// default size.  Yes, this is quite ugly.
-function hamAboutWindow()
+function openWindowForURL(url)
 {
     chrome.windows.create(
         function(win) {
             if(typeof(chrome.runtime.lastError) === 'undefined') {
-                chrome.tabs.create({windowId: win.id, url: 'https://cxw42.github.io/TabFern/'},
+                chrome.tabs.create({windowId: win.id, url: url},
                     function(keep_tab) {
                         if(typeof(chrome.runtime.lastError) === 'undefined') {
                             chrome.tabs.query({windowId: win.id, index: 0},
@@ -1268,7 +1271,20 @@ function hamAboutWindow()
             }
         } //function(win)
     ); //windows.create
+} //openWindowForURL
+
+/// Open a new window with the TabFern homepage.
+function hamAboutWindow()
+{
+    openWindowForURL('https://cxw42.github.io/TabFern/');
 } //hamAboutWindow()
+
+/// Open the Settings window
+function hamSettings()
+{
+    openWindowForURL(chrome.extension.getURL('/src/options_custom/index.html'));
+}
+
 
 function hamBackup()
 {
@@ -1313,32 +1329,105 @@ function hamCollapseAll()
     treeobj.close_all();
 } //hamCollapseAll()
 
+/**
+ * You can call proxyfunc with the items or just return them, so we just
+ * return them.
+ * @param node
+ * @returns {actionItemId: {label: string, action: function}, ...}, or
+ *          false for no menu.
+ */
 function getHamburgerMenuItems(node, UNUSED_proxyfunc, e)
 {
     return {
         infoItem: {
             label: "About, help, and credits",
-            action: hamAboutWindow
+            action: hamAboutWindow,
+            icon: 'fa fa-info',
+        }
+        , settingsItem: {
+            label: "Settings",
+            action: hamSettings,
+            icon: 'fa fa-cogs',
+            separator_after: true
         }
         , backupItem: {
             label: "Backup now",
+            icon: 'fa fa-floppy-o',
             action: hamBackup
         }
         , restoreItem: {
             label: "Restore a previous backup",
             action: hamRestoreFromBackup,
+            icon: 'fa fa-folder-open-o',
             separator_after: true
         }
         , expandItem: {
             label: "Expand all",
+            icon: 'fa fa-plus-square',
             action: hamExpandAll
         }
         , collapseItem: {
             label: "Collapse all",
+            icon: 'fa fa-minus-square',
             action: hamCollapseAll
         }
     };
 } //getHamburgerMenuItems()
+
+//////////////////////////////////////////////////////////////////////////
+// Context menu for the main tree
+
+function getMainContextMenuItems(node, UNUSED_proxyfunc, e)
+{
+
+    if ( Bypasser.isBypassed() ) {
+        return false;
+    } else {    // not bypassed - show jsTree context menu
+        e.preventDefault();
+    }
+
+    return { foo: { label: 'Test', action: function(){} } };
+
+    return false;   //TODO
+
+    log('rawr', node.data.nodeType);
+
+    // The default set of all items
+    var items = {
+        grabWindowItem: {
+            label: "Move window to here (not yet implemented)",
+            action: function () {
+                // debugger;    // <-- a manual breakpoint
+                return;
+                let win_id;
+                if(node.data.nodeType === 'window') {
+                    if(node.data.win) {
+                        win_id = node.data.win.id;
+                    }
+                } else if(node.data.nodeType === 'tab') {
+                    // TODO get the tab ID, then the window ID.
+                } else {
+                    return;
+                }
+
+                if(win_id) {
+                    //TODO
+                }
+            } //grabWindowItem action()
+        }
+    };
+
+    if(!node.data.isOpen) {
+        delete items.grabWindowItem;
+    }
+
+    // Don't return {} --- that seems to cause jstree to not properly
+    // remove the jstree-context style.
+    return Object.keys(items).length > 0 ? items : false ;
+        // https://stackoverflow.com/a/4889658/2877364 by
+        // https://stackoverflow.com/users/7012/avi-flax
+
+} //getMainContextMenuItems
 
 //////////////////////////////////////////////////////////////////////////
 // Startup / shutdown //
@@ -1385,7 +1474,7 @@ function initTree4(items)
 function initTree3()
 {
     // Set event listeners
-    $('#maintree').on('changed.jstree', treeOnSelect);
+    treeobj.element.on('changed.jstree', treeOnSelect);
 
     chrome.windows.onCreated.addListener(winOnCreated);
     chrome.windows.onRemoved.addListener(winOnRemoved);
@@ -1472,8 +1561,8 @@ function initTree1(win_id)
     if ( getBoolSetting('ContextMenu.Enabled', false) ) {
         jstreeConfig.plugins.push('contextmenu');
         jstreeConfig.contextmenu = {
-            items: window._tabFernContextMenu.generateJsTreeMenuItems
-        };          // TODO put that in our context since we have mdTabs and mdWindows
+            items: getMainContextMenuItems
+        };
         $.jstree.defaults.contextmenu.select_node = false;
         $.jstree.defaults.contextmenu.show_at_node = false;
     }
@@ -1482,7 +1571,6 @@ function initTree1(win_id)
     $('#maintree').jstree(jstreeConfig);
     treeobj = $('#maintree').jstree(true);
 
-    window._tabFernContextMenu.installTreeEventHandler(treeobj, Shortcuts);
 
     // --------
 
@@ -1511,8 +1599,34 @@ function initTree1(win_id)
 
     // --------
 
-    // Load the tree
-    loadSavedWindowsIntoTree(initTree2);
+    // Install keyboard shortcuts.  This includes the keyboard listener for
+    // context menus.
+    window._tabFernShortcuts.install(
+        {
+            window: window,
+            keybindings: window._tabFernShortcuts.keybindings.default,
+            drivers: [window._tabFernShortcuts.drivers.dmaruo_keypress]
+        },
+        function initialized(err) {
+            if ( err ) {
+                console.log('Failed loading a shortcut driver!  Initializing context menu with no shortcut driver.  ' + err);
+                //window._tabFernContextMenu.installEventHandler(window, document, null);
+                Bypasser = ContextMenuBypasser.create(window, treeobj);
+
+                // Continue initialization by loading the tree
+                loadSavedWindowsIntoTree(initTree2);
+
+            } else {
+                Shortcuts = window._tabFernShortcuts;
+                //window._tabFernContextMenu.installEventHandler(window, document, window._tabFernShortcuts);
+                Bypasser = ContextMenuBypasser.create(window, treeobj, Shortcuts);
+
+                // Continue initialization by loading the tree
+                loadSavedWindowsIntoTree(initTree2);
+            }
+        }
+    );
+
 } //initTree1()
 
 function initTree0()
@@ -1571,26 +1685,11 @@ window.addEventListener('resize', eventOnResize);
     // something from https://stackoverflow.com/q/4319487/2877364 to
     // deal with that.
 
-// Install keyboard shortcuts.  This includes the keyboard listener for
-// context menus.
-window._tabFernShortcuts.install(
-    {
-        window: window,
-        keybindings: window._tabFernShortcuts.keybindings.default,
-        drivers: [window._tabFernShortcuts.drivers.dmaruo_keypress]
-    },
-    function initialized(err) {
-        if ( err ) {
-            console.log('Failed loading a shortcut driver!  Initializing context menu with no shortcut driver.  ' + err);
-            window._tabFernContextMenu.installEventHandler(window, document, null);
-        } else {
-            Shortcuts = window._tabFernShortcuts;
-            window._tabFernContextMenu.installEventHandler(window, document, window._tabFernShortcuts);
-        }
-    }
-);
-
 //TODO test what happens when Chrome exits.  Does the background page need to
 //save anything?
+
+// Notes:
+// can get treeobj from $(selector).data('jstree')
+// can get element from treeobj.element
 
 // vi: set ts=4 sts=4 sw=4 et ai fo-=o fo-=r: //

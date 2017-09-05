@@ -80,7 +80,7 @@
 
         $(selector).on('changed.jstree', retval.hamOnSelect.bind(retval));
 
-        return Object.seal(retval);
+        return retval;      // Not sealed, to give the caller flexibility.
     } //ctor
 
     return ctor;
