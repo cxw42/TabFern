@@ -1301,7 +1301,8 @@ function hamBackup()
     });
 } //hamBackup()
 
-/// Restore tabs from a saved backup
+/// Restore tabs from a saved backup.  Note that this adds the tabs to those
+/// already present.  It does not delete existing tabs/windows.
 function hamRestoreFromBackup()
 {
     let importer = new Fileops.Importer(document, '.tabfern');
@@ -1356,7 +1357,7 @@ function getHamburgerMenuItems(node, UNUSED_proxyfunc, e)
             action: hamBackup
         }
         , restoreItem: {
-            label: "Restore a previous backup",
+            label: "Load contents of a backup",
             action: hamRestoreFromBackup,
             icon: 'fa fa-folder-open-o',
             separator_after: true
