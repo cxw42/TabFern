@@ -12,14 +12,7 @@ by Vladyslav Volovyk.
 
 If you are willing, please try TabFern and let us know how it goes!
 
- - Download the ZIP from [here](https://github.com/cxw42/TabFern/archive/pr/win-size.zip).
- - Unzip it
- - Switch Chrome to developer mode via `chrome://extensions`
- - Load unpacked extension
- - Restart Chrome
- - When Chrome starts, you will get a prompt asking whether you want to disable
-   developer-mode extensions.  Hit "Cancel."
- - Open issues or email <mailto:tabfern@zoho.com> with feedback!
+<strong>TabFern is now available in the [Chrome Web Store](https://chrome.google.com/webstore/detail/tabfern-tab-manager-and-b/hbajjpcdbninabigakflkhiogmmjaakm)</strong>
 
 # Usage
 
