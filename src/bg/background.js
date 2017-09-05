@@ -1,7 +1,7 @@
 // CC-BY-SA 3.0
 console.log('TabFern: running background.js');
 
-var commonViewWindowID;     // the chrome.windows ID of our view
+var viewWindowID;     // the chrome.windows ID of our view
 
 //////////////////////////////////////////////////////////////////////////
 // Helpers //
@@ -16,40 +16,68 @@ function loadView()
           'focused': true
         },
         function(win) {
-            commonViewWindowID = win.id;
-            console.log('TabFern new View ID: ' + commonViewWindowID.toString());
+            viewWindowID = win.id;
+            console.log('TabFern new View ID: ' + viewWindowID.toString());
         });
 } //loadView()
 
 //////////////////////////////////////////////////////////////////////////
 // Action button //
 
-// From https://stackoverflow.com/q/8984047/2877364 by
+/// Move the TabFern window to #win.  This helps if the
+/// TabFern window winds up off-screen.
+function moveTabFernViewToWindow(win)
+{
+    if(typeof(chrome.runtime.lastError) === 'undefined') {
+        if(!viewWindowID) return;
+        chrome.windows.update(viewWindowID,
+                {left: win.left+16, top: win.top+16});
+    }
+} //moveTabFernViewToWindow()
+
+// Modified from https://stackoverflow.com/q/8984047/2877364 by
 // https://stackoverflow.com/users/930675/sean-bannister
 
 // When the icon is clicked in Chrome
 chrome.browserAction.onClicked.addListener(function(tab) {
 
-    // If commonViewWindowID is undefined then there isn't a popup currently open.
-    if (typeof commonViewWindowID === "undefined") {        // Open the popup
+    // If viewWindowID is undefined then there isn't a popup currently open.
+    if (typeof viewWindowID === "undefined") {        // Open the popup
         loadView();
     } else {                                // There's currently a popup open
      // Bring it to the front so the user can see it
-        chrome.windows.update(commonViewWindowID, { "focused": true });
-  }
+        chrome.windows.update(viewWindowID, { "focused": true });
+    }
+
+    // Set a timer to bring the window to the front on another click
+    // that follows fairly shortly.
+    {
+        let clickListener = function(tab) {
+            if(viewWindowID && tab.windowId) {
+                chrome.windows.get(tab.windowId, moveTabFernViewToWindow);
+            }
+        };
+
+        let removeClickListener = function() {
+            chrome.browserAction.onClicked.removeListener(clickListener);
+        };
+
+        setTimeout(removeClickListener, 1337);
+            // Do not change this constant or the Unix daemon will dog
+            // your footsteps until the `time_t`s roll over.
+        chrome.browserAction.onClicked.addListener(clickListener);
+    }
 
 });
 
 // When a window is closed
 chrome.windows.onRemoved.addListener(function(windowId) {
   // If the window getting closed is the popup we created
-  if (windowId === commonViewWindowID) {
-    // Set commonViewWindowID to undefined so we know the popups not open
-    commonViewWindowID = undefined;
+  if (windowId === viewWindowID) {
+    // Set viewWindowID to undefined so we know the popup is not open
+    viewWindowID = undefined;
   }
 });
-
-// End of Sean's code
 
 //////////////////////////////////////////////////////////////////////////
 // Messages //
@@ -58,8 +86,8 @@ function messageListener(request, sender, sendResponse)
 {
     //console.log('Got message ' + request.toString());
     if(request === MSG_GET_VIEW_WIN_ID) {
-        //console.log('Responding with window ID ' + commonViewWindowID.toString());
-        sendResponse(commonViewWindowID);
+        //console.log('Responding with window ID ' + viewWindowID.toString());
+        sendResponse(viewWindowID);
     }
 } //messageListener
 
@@ -73,7 +101,7 @@ chrome.runtime.onMessage.addListener(messageListener);
 ////example of using a message handler from the inject scripts
 //chrome.extension.onMessage.addListener(
 //  function(request, sender, sendResponse) {
-//  	chrome.pageAction.show(sender.tab.id);
+//      chrome.pageAction.show(sender.tab.id);
 //    sendResponse();
 //  });
 
