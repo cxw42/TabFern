@@ -163,4 +163,9 @@ div#hamburger-menu {
     background-size: cover !important;
 }
 
+/* Don't expand icons in the context menu - leave them at their native size */
+ul.jstree-contextmenu i {
+    object-fit: none;
+}
+
 /* vi: set ts=4 sts=4 sw=4 et ai: */

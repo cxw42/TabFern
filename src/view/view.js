@@ -36,6 +36,11 @@ const WIN_KEEP = true;
 const WIN_NOKEEP = false;
 const NONE = chrome.windows.WINDOW_ID_NONE;
 
+// Node-type enumeration.  Here because there may be more node types
+// in the future (e.g., dividers or plugins).
+const NT_WINDOW = 1;
+const NT_TAB = 2;
+
 //////////////////////////////////////////////////////////////////////////
 // Globals //
 
@@ -1381,52 +1386,99 @@ function getHamburgerMenuItems(node, UNUSED_proxyfunc, e)
 function getMainContextMenuItems(node, UNUSED_proxyfunc, e)
 {
 
+    // TODO move this to Bypasser.isBypassed(e)
     if ( Bypasser.isBypassed() ) {
         return false;
     } else {    // not bypassed - show jsTree context menu
         e.preventDefault();
     }
 
-    return { foo: { label: 'Test', action: function(){} } };
-
-    return false;   //TODO
-
-    log('rawr', node.data.nodeType);
-
-    // The default set of all items
-    var items = {
-        grabWindowItem: {
-            label: "Move window to here (not yet implemented)",
-            action: function () {
-                // debugger;    // <-- a manual breakpoint
-                return;
-                let win_id;
-                if(node.data.nodeType === 'window') {
-                    if(node.data.win) {
-                        win_id = node.data.win.id;
-                    }
-                } else if(node.data.nodeType === 'tab') {
-                    // TODO get the tab ID, then the window ID.
-                } else {
-                    return;
-                }
-
-                if(win_id) {
-                    //TODO
-                }
-            } //grabWindowItem action()
-        }
-    };
-
-    if(!node.data.isOpen) {
-        delete items.grabWindowItem;
+    // What kind of node is it?
+    let nodeType;
+    {
+        let win_val = mdWindows.by_node_id(node.id);
+        if(win_val) nodeType = NT_WINDOW;
     }
 
-    // Don't return {} --- that seems to cause jstree to not properly
-    // remove the jstree-context style.
-    return Object.keys(items).length > 0 ? items : false ;
-        // https://stackoverflow.com/a/4889658/2877364 by
-        // https://stackoverflow.com/users/7012/avi-flax
+    if(!nodeType) {
+        let tab_val = mdTabs.by_node_id(node.id);
+        if(tab_val) nodeType = NT_TAB;
+    }
+
+    if(!nodeType) return false;     // A node type we don't know about
+
+    // -------
+
+    if(nodeType == NT_TAB) return false;    // At present, no menu for tabs
+
+    if(nodeType == NT_WINDOW) {
+        const winItems = {
+            renameItem:{
+                label: 'Rename',
+                icon: 'fff-pencil',
+                action:
+                    function(){actionRenameWindow(node.id, node, null, null);}
+            }
+            , closeItem:{
+                label: 'Close',
+                icon: 'fff-picture-delete',
+                action:
+                    function(){actionCloseWindow(node.id, node, null, null);}
+            }
+            , deleteItem:{
+                label: 'Delete',
+                icon: 'fff-cross',
+                separator_before: true,
+                action:
+                    function(){actionDeleteWindow(node.id, node, null, null);}
+            }
+        };
+
+        return winItems;
+    } //endif NT_WINDOW
+
+    return false;
+
+//    return { foo: { label: 'Test', action: function(){} } };
+//
+//    return false;   //TODO
+//
+//    log('rawr', node.data.nodeType);
+//
+//    // The default set of all items
+//    var items = {
+//        grabWindowItem: {
+//            label: "Move window to here (not yet implemented)",
+//            action: function () {
+//                // debugger;    // <-- a manual breakpoint
+//                return;
+//                let win_id;
+//                if(node.data.nodeType === 'window') {
+//                    if(node.data.win) {
+//                        win_id = node.data.win.id;
+//                    }
+//                } else if(node.data.nodeType === 'tab') {
+//                    // TODO get the tab ID, then the window ID.
+//                } else {
+//                    return;
+//                }
+//
+//                if(win_id) {
+//                    //TODO
+//                }
+//            } //grabWindowItem action()
+//        }
+//    };
+//
+//    if(!node.data.isOpen) {
+//        delete items.grabWindowItem;
+//    }
+//
+//    // Don't return {} --- that seems to cause jstree to not properly
+//    // remove the jstree-context style.
+//    return Object.keys(items).length > 0 ? items : false ;
+//        // https://stackoverflow.com/a/4889658/2877364 by
+//        // https://stackoverflow.com/users/7012/avi-flax
 
 } //getMainContextMenuItems
 
@@ -1639,6 +1691,13 @@ function initTree0()
 
     // Stash our current size, which is the default window size.
     newWinSize = getWindowSize(window);
+    // TODO get screen size of the current monitor and make sure the TabFern
+    // window is fully visible -
+    // chrome.windows.create({state:'fullscreen'},function(win){console.log(win); chrome.windows.remove(win.id);})
+    // appears to provide valid `win.width` and `win.height` values.
+    // TODO also make sure the TabFern window is at least 300px wide, or at
+    // at least 30% of screen width if <640px.  Also make sure that the
+    // TabFern window is tall enough.
 
     // Get our Chrome-extensions-API window ID from the background page.
     // I don't know a way to get this directly from the JS window object.

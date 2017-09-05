@@ -5,7 +5,8 @@ console.log('TabFern common.js loading');
 //////////////////////////////////////////////////////////////////////////
 // General constants //
 
-const TABFERN_VERSION='0.1.2 alpha \u26a0'
+const TABFERN_VERSION='0.1.4-pre.1 alpha \u26a0'
+// Don't forget to update manifest.js when you change this!
 
 //////////////////////////////////////////////////////////////////////////
 // Messages between parts of TabFern //
