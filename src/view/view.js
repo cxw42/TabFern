@@ -333,7 +333,8 @@ function saveTree(save_visible_windows = true, cbk = undefined)
 
         // Don't save visible windows unless we've been asked to.
         // However, always save windows marked as keep.
-        if( !save_visible_windows && win_val.isOpen && !win_val.keep ) {
+        if( !save_visible_windows && win_val.isOpen &&
+            (win_val.keep==WIN_NOKEEP) ) {
             continue;
         }
 
@@ -390,8 +391,8 @@ function actionRenameWindow(node_id, node, unused_action_id, unused_action_el)
     if(win_name === null) return;   // user cancelled
 
     win_val.raw_title = win_name;
-    win_val.keep = true;    // assume that a user who bothered to rename a node
-                            // wants to keep it.
+    win_val.keep = WIN_KEEP;    // assume that a user who bothered to rename
+                                // a node wants to keep it.
 
     treeobj.rename_node(node_id, Esc.escape(win_name));
 
@@ -401,6 +402,21 @@ function actionRenameWindow(node_id, node, unused_action_id, unused_action_el)
 
     saveTree();
 } //actionRenameWindow()
+
+/// Mark a window as NOKEEP but don't close it
+function actionForgetWindow(node_id, node, unused_action_id, unused_action_el)
+{
+    let win_val = mdWindows.by_node_id(node_id);
+    if(!win_val) return;
+
+    win_val.keep = WIN_NOKEEP;
+
+    if(win_val.isOpen) {    // should always be true, but just in case...
+        treeobj.set_icon(node, 'visible-window-icon');
+    }
+
+    saveTree();
+} //actionForgetWindow()
 
 /// Close a window, but don't delete its tree nodes.  Used for saving windows.
 /// ** The caller must call saveTree() --- actionCloseWindow() does not.
@@ -1418,14 +1434,14 @@ function getMainContextMenuItems(node, UNUSED_proxyfunc, e)
     }
 
     // What kind of node is it?
-    let nodeType;
+    let nodeType, win_val, tab_val;
     {
-        let win_val = mdWindows.by_node_id(node.id);
+        win_val = mdWindows.by_node_id(node.id);
         if(win_val) nodeType = NT_WINDOW;
     }
 
     if(!nodeType) {
-        let tab_val = mdTabs.by_node_id(node.id);
+        tab_val = mdTabs.by_node_id(node.id);
         if(tab_val) nodeType = NT_TAB;
     }
 
@@ -1436,27 +1452,38 @@ function getMainContextMenuItems(node, UNUSED_proxyfunc, e)
     if(nodeType == NT_TAB) return false;    // At present, no menu for tabs
 
     if(nodeType == NT_WINDOW) {
-        const winItems = {
-            renameItem:{
+        let winItems = {};
+        winItems.renameItem = {
                 label: 'Rename',
                 icon: 'fff-pencil',
                 action:
                     function(){actionRenameWindow(node.id, node, null, null);}
-            }
-            , closeItem:{
+            };
+
+        if( win_val.isOpen && (win_val.keep == WIN_KEEP) ) {
+            winItems.forgetItem = {
+                label: "Forget but don't close",
+                title: "Do not save this window when it is closed",
+                icon: 'fa fa-chain-broken',
+                action:
+                    function(){actionForgetWindow(node.id, node, null, null);}
+            };
+        }
+
+        winItems.closeItem = {
                 label: 'Close and remember',
                 icon: 'fff-picture-delete',
                 action:
                     function(){actionCloseWindow(node.id, node, null, null);}
-            }
-            , deleteItem:{
+            };
+
+        winItems.deleteItem = {
                 label: 'Delete',
                 icon: 'fff-cross',
                 separator_before: true,
                 action:
                     function(){actionDeleteWindow(node.id, node, null, null);}
-            }
-        };
+            };
 
         return winItems;
     } //endif NT_WINDOW
