@@ -62,7 +62,7 @@ div#init-incomplete {
 
 .tf-action-group {
     /* Sit at the right side of the screen */
-    position: fixed;
+    position: absolute;
     right: 0;
     padding-right: 1em;
 
