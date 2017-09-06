@@ -6,7 +6,7 @@ window._tabFernContextMenu = window._tabFernContextMenu || {};
     var log = console.log.bind(console, 'TabFern contextMenu.js:');
 
     function getEnabledValueFromLocalStorage() {
-        return getBoolSetting('ContextMenu.Enabled', false);
+        return getBoolSetting('ContextMenu.Enabled', true);
     }
 
     _tabFernContextMenu.isEnabled = function isEnabled() {

@@ -35,7 +35,7 @@
 
     function isEnabled() {
         // TODO improve this so it is reactive to disabling it in options
-        return getBoolSetting('ContextMenu.Enabled', false);
+        return getBoolSetting('ContextMenu.Enabled', true);
     };
 
     /// The shortcuts module, if any

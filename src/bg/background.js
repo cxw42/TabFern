@@ -117,6 +117,12 @@ window.addEventListener('load',
     { 'once': true }
 )
 
+// Set the defaults for some of the options.  options_custom does not appear
+// to have this facility.
+if(!haveSetting('ContextMenu.Enabled')) {
+    localStorage.setItem('ContextMenu.Enabled','true');
+}
+
 console.log('TabFern: done running background.js');
 
 // vi: set ts=4 sts=4 sw=4 et ai fo-=o: //

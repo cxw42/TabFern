@@ -19,6 +19,13 @@ const MSG_GET_VIEW_WIN_ID = 'getViewWindowID';
 //////////////////////////////////////////////////////////////////////////
 // Helper functions //
 
+/// Find out whether the given setting from options_custom exists.
+function haveSetting(setting_name)
+{
+    if(!setting_name) return false;
+    return ('store.settings.' + setting_name) in localStorage;
+} //haveSetting()
+
 /// Get a boolean setting from options_custom, which uses HTML5 localStorage.
 function getBoolSetting(setting_name, default_value = false)
 {

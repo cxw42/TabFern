@@ -1641,7 +1641,7 @@ function initTree1(win_id)
         }
     };
 
-    if ( getBoolSetting('ContextMenu.Enabled', false) ) {
+    if ( getBoolSetting('ContextMenu.Enabled', true) ) {
         jstreeConfig.plugins.push('contextmenu');
         jstreeConfig.contextmenu = {
             items: getMainContextMenuItems
