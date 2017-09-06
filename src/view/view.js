@@ -7,10 +7,11 @@
 // whatever is needed at that point.  Variable names starting with "raw_"
 // hold the raw data.
 
-// TODO make the save data {tabfern: 42, version: <number>, tree: []}.
+// Design decision:
+// Save data are {tabfern: 42, version: <whatever>, tree: []}.
 // (`tabfern: 42` is magic :) )  Current [] save data
-// will be version 0.  Add a table mapping version to reader function so that
-// we can always import old backup files.
+// are version 0.  We must always support loading
+// backup files having versions earlier than the current version.
 
 //////////////////////////////////////////////////////////////////////////
 // Constants //
@@ -1460,44 +1461,9 @@ function getMainContextMenuItems(node, UNUSED_proxyfunc, e)
         return winItems;
     } //endif NT_WINDOW
 
-    return false;
+    return false;   // if it's a node we don't have a menu for
 
-//    return { foo: { label: 'Test', action: function(){} } };
-//
-//    return false;   //TODO
-//
-//    log('rawr', node.data.nodeType);
-//
-//    // The default set of all items
-//    var items = {
-//        grabWindowItem: {
-//            label: "Move window to here (not yet implemented)",
-//            action: function () {
-//                // debugger;    // <-- a manual breakpoint
-//                return;
-//                let win_id;
-//                if(node.data.nodeType === 'window') {
-//                    if(node.data.win) {
-//                        win_id = node.data.win.id;
-//                    }
-//                } else if(node.data.nodeType === 'tab') {
-//                    // TODO get the tab ID, then the window ID.
-//                } else {
-//                    return;
-//                }
-//
-//                if(win_id) {
-//                    //TODO
-//                }
-//            } //grabWindowItem action()
-//        }
-//    };
-//
-//    if(!node.data.isOpen) {
-//        delete items.grabWindowItem;
-//    }
-//
-//    // Don't return {} --- that seems to cause jstree to not properly
+//    // Note: Don't return {} --- that seems to cause jstree to not properly
 //    // remove the jstree-context style.
 //    return Object.keys(items).length > 0 ? items : false ;
 //        // https://stackoverflow.com/a/4889658/2877364 by

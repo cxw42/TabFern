@@ -107,20 +107,11 @@ div#hamburger-menu {
 /* --- Action buttons ----------------------------------------------------- */
 
 .right-top {
-
     /* Keep the pencil above the whole-row bar.
      * Thanks to https://stackoverflow.com/a/7421805/2877364 by
      * https://stackoverflow.com/users/248129/richard-jp-le-guen */
     position:relative;
     z-index: 1;
-
-    /*
-    // TODO tweak jstree-actions to use a div as below to wrap the actions.
-    // Using this on each action makes them all overlap.
-    //float: right;
-    //position:fixed;
-    //right:0;
-    */
 }
 
 /* Keep the "delete" button farther from the others */
