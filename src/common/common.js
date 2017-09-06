@@ -17,7 +17,7 @@ const MSG_GET_VIEW_WIN_ID = 'getViewWindowID';
 // Names of settings //
 
 //////////////////////////////////////////////////////////////////////////
-// Functions //
+// Helper functions //
 
 /// Get a boolean setting from options_custom, which uses HTML5 localStorage.
 function getBoolSetting(setting_name, default_value = false)
@@ -59,5 +59,54 @@ function asyncAppendScriptToHead(document, url, callback, type = 'text/javascrip
     // Fire the loading
     head.appendChild(script);
 } //asyncAppendScriptToHead()
+
+/// Deep-compare two objects for memberwise equality.  However, if either
+/// object contains a pointer to the other, this will return false rather
+/// than getting stuck in a loop.  Non-`object` types are compared by ===.
+/// All member comparisons are ===.
+/// @param obj1 An object to compare
+/// @param obj2 The other object to compare
+/// Modified from https://gist.github.com/nicbell/6081098 by
+/// https://gist.github.com/nicbell
+function ObjectCompare(obj1, obj2) {
+    if( (typeof obj1 !== 'object') || (typeof obj2 !== 'object') ) {
+        return obj1 === obj2;
+    }
+
+    //Loop through properties in object 1
+    for (var p in obj1) {
+        //Check property exists on both objects
+        if (obj1.hasOwnProperty(p) !== obj2.hasOwnProperty(p)) return false;
+
+        switch (typeof (obj1[p])) {
+
+            //Deep compare objects
+            case 'object':
+                //Check for circularity
+                if( (obj1[p]===obj2) || (obj2[p]===obj1) ) return false;
+
+                if (!ObjectCompare(obj1[p], obj2[p])) return false;
+                break;
+
+            //Compare function code
+            case 'function':
+                if (typeof (obj2[p]) == 'undefined' ||
+                    (obj1[p].toString() !== obj2[p].toString())) {
+                    return false;
+                }
+                break;
+
+            //Compare values
+            default:
+                if (obj1[p] !== obj2[p]) return false;
+        }
+    }
+
+    //Check object 2 for any extra properties
+    for (var p in obj2) {
+        if (typeof (obj1[p]) === 'undefined') return false;
+    }
+    return true;
+} //ObjectCompare
 
 // vi: set ts=4 sts=4 sw=4 et ai fo-=o: //

@@ -31,7 +31,10 @@ const INIT_TIME_ALLOWED_MS = 2000;  // After this time, if init isn't done,
                                     // display an error message.
 const INIT_MSG_SEL = 'div#init-incomplete';     // Selector for that message
 
-// Syntactic sugar
+/// How often to check whether our window has been moved or resized
+const RESIZE_DETECTOR_INTERVAL_MS = 5000;
+
+// --- Syntactic sugar ---
 const WIN_KEEP = true;
 const WIN_NOKEEP = false;
 const NONE = chrome.windows.WINDOW_ID_NONE;
@@ -59,9 +62,6 @@ let currently_focused_winid = null;
 
 /// HACK to avoid creating extra tree items.
 let window_is_being_restored = false;
-
-/// ID of a timer to save the new window size after a resize event
-let resize_save_timer_id;
 
 /// The size of the last-closed window, to be used as the
 /// size of newly-opened windows (whence the name).
@@ -1215,11 +1215,36 @@ function tabOnReplaced(addedTabId, removedTabId)
 //////////////////////////////////////////////////////////////////////////
 // DOM event handlers //
 
+/// ID of a timer to save the new window size after a resize event
+let resize_save_timer_id;
+
+/// A cache of the last size we saved to disk
+let last_saved_size;
+
+/// Save #size_data as the size of our popup window
+function saveViewSize(size_data)
+{
+    //log.info('Saving new size ' + size_data.toString());
+
+    let to_save = {};
+    to_save[LOCN_KEY] = size_data;
+    chrome.storage.local.set(to_save,
+            function() {
+                log.info('Saving size: error=' + chrome.runtime.lastError);
+                if(typeof(chrome.runtime.lastError) === 'undefined') {
+                    last_saved_size = $.extend({}, size_data);
+                } else {
+                    log.error("TabFern: couldn't save location: " +
+                                chrome.runtime.lastError.toString());
+                }
+            });
+} //saveViewSize()
+
 /// When the user resizes the tabfern popup, save the size for next time.
 function eventOnResize(evt)
 {
     // Clear any previous timer we may have had running
-    if(typeof resize_save_timer_id !== 'undefined') {
+    if(resize_save_timer_id) {
         window.clearTimeout(resize_save_timer_id);
         resize_save_timer_id = undefined;
     }
@@ -1229,23 +1254,21 @@ function eventOnResize(evt)
     // Save the size, but only after two seconds go by.  This is to avoid
     // saving until the user is actually done resizing.
     resize_save_timer_id = window.setTimeout(
-        function() {
-            //log.info('Saving new size ' + size_data.toString());
-
-            let to_save = {};
-            to_save[LOCN_KEY] = size_data;
-            chrome.storage.local.set(to_save,
-                    function() {
-                        if(typeof(chrome.runtime.lastError) === 'undefined') {
-                            return;     // Saved OK
-                        }
-                        log.error("TabFern: couldn't save location: " +
-                                        chrome.runtime.lastError.toString());
-                    });
-        },
-        2000);
+            function(){saveViewSize(size_data);}, 2000);
 
 } //eventOnResize
+
+// On a timer, save the window size if it has changed.  Inspired by, but not
+// copied from, https://stackoverflow.com/q/4319487/2877364 by
+// https://stackoverflow.com/users/144833/oscar-godson
+function timedResizeDetector()
+{
+    let size_data = getWindowSize(window);
+    if(!ObjectCompare(size_data, last_saved_size)) {
+        saveViewSize(size_data);
+    }
+    setTimeout(timedResizeDetector, RESIZE_DETECTOR_INTERVAL_MS);
+} //timedResizeDetector
 
 //////////////////////////////////////////////////////////////////////////
 // Hamburger menu //
@@ -1503,23 +1526,30 @@ function initTreeFinal()
 } //initTreeFinal()
 
 function initTree4(items)
-{ // move the popup window to its last position/size
+{   // move the popup window to its last position/size.
+    // If there was an error (e.g., nonexistent key), just
+    // accept the default size.
+
     if(typeof(chrome.runtime.lastError) === 'undefined') {
-        // If there was an error (e.g., nonexistent key), just
-        // accept the default size.
         let parsed = items[LOCN_KEY];
         if( (parsed !== null) && (typeof parsed === 'object') ) {
             // + and || are to provide some sensible defaults - thanks to
             // https://stackoverflow.com/a/7540412/2877364 by
             // https://stackoverflow.com/users/113716/user113716
-            chrome.windows.update(my_winid, {
-                  'left': +parsed.left || 0
-                , 'top': +parsed.top || 0
-                , 'width': +parsed.width || 300
-                , 'height': +parsed.height || 600
-            });
+            let size_data =
+                {
+                      'left': +parsed.left || 0
+                    , 'top': +parsed.top || 0
+                    , 'width': +parsed.width || 300
+                    , 'height': +parsed.height || 600
+                };
+            last_saved_size = $.extend({}, size_data);
+            chrome.windows.update(my_winid, size_data);
         }
     } //endif no error
+
+    // Start the detection of moved or resized windows
+    setTimeout(timedResizeDetector, RESIZE_DETECTOR_INTERVAL_MS);
 
     initTreeFinal();
 } //initTree4()
@@ -1691,11 +1721,12 @@ function initTree0()
 
     // Stash our current size, which is the default window size.
     newWinSize = getWindowSize(window);
-    // TODO get screen size of the current monitor and make sure the TabFern
+
+    // TODO? get screen size of the current monitor and make sure the TabFern
     // window is fully visible -
     // chrome.windows.create({state:'fullscreen'},function(win){console.log(win); chrome.windows.remove(win.id);})
     // appears to provide valid `win.width` and `win.height` values.
-    // TODO also make sure the TabFern window is at least 300px wide, or at
+    // TODO? also make sure the TabFern window is at least 300px wide, or at
     // at least 30% of screen width if <640px.  Also make sure that the
     // TabFern window is tall enough.
 
@@ -1741,9 +1772,8 @@ window.setTimeout(initIncompleteWarning, INIT_TIME_ALLOWED_MS);
 window.addEventListener('load', initTree0, { 'once': true });
 window.addEventListener('unload', shutdownTree, { 'once': true });
 window.addEventListener('resize', eventOnResize);
-    // This doesn't detect window movement without a resize.  TODO implement
-    // something from https://stackoverflow.com/q/4319487/2877364 to
-    // deal with that.
+    // This doesn't detect window movement without a resize, which is why
+    // we have timedResizeDetector above.
 
 //TODO test what happens when Chrome exits.  Does the background page need to
 //save anything?
