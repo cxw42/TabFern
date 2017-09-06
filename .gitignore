@@ -23,6 +23,7 @@ core
 *.stackdump
 /*_history
 /tags
+/webstore.zip
 
 # Output directories
 /build*

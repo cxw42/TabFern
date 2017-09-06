@@ -5,8 +5,11 @@ console.log('TabFern common.js loading');
 //////////////////////////////////////////////////////////////////////////
 // General constants //
 
-const TABFERN_VERSION='0.1.4-pre.1 alpha \u26a0'
-// Don't forget to update manifest.js when you change this!
+/// The TabFern extension friendly version number.  Displayed in the
+/// title bar of the popup window.
+const TABFERN_VERSION='0.1.4 alpha \u26a0'
+    // Don't forget to update BOTH the version and version_name in
+    // manifest.json when you change this!
 
 //////////////////////////////////////////////////////////////////////////
 // Messages between parts of TabFern //
@@ -19,20 +22,22 @@ const MSG_GET_VIEW_WIN_ID = 'getViewWindowID';
 //////////////////////////////////////////////////////////////////////////
 // Helper functions //
 
+const SETTING_PREFIX = 'store.settings.';
+
 /// Find out whether the given setting from options_custom exists.
 function haveSetting(setting_name)
 {
     if(!setting_name) return false;
-    return ('store.settings.' + setting_name) in localStorage;
+    return (SETTING_PREFIX + setting_name) in localStorage;
 } //haveSetting()
 
 /// Get a boolean setting from options_custom, which uses HTML5 localStorage.
 function getBoolSetting(setting_name, default_value = false)
 {
-    let locStorageValue = localStorage.getItem('store.settings.' + setting_name);
+    let locStorageValue = localStorage.getItem(SETTING_PREFIX + setting_name);
     if ( locStorageValue === null ) {   // nonexistent key
         return default_value;
-    } else {
+    } else {    // Get the value, which is stored as JSON
         let str = String(locStorageValue).toLowerCase();
         if ( str === "false" ) {
             return false;
@@ -43,6 +48,24 @@ function getBoolSetting(setting_name, default_value = false)
         }
     }
 } //getBoolSetting
+
+/// Set a setting (wow!).
+/// @param setting_name {String} The name, without the leading SETTING_PREFIX
+/// @param setting_value {mixed} The value, which must be JSON.stringifiable.
+function setSetting(setting_name, setting_value)
+{
+    localStorage.setItem(
+        SETTING_PREFIX + setting_name,
+        JSON.stringify(setting_value)
+    );
+} //setSetting
+
+/// Set a setting only if it's not already there.  Parameters are as
+/// setSetting().
+function setSettingIfNonexistent(setting_name, setting_value)
+{
+    if(!haveSetting(setting_name)) setSetting(setting_name, setting_value);
+}
 
 /// Append a <script> to the <head> of #document.
 /// @param {Document} document

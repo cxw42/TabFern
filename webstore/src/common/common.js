@@ -2,34 +2,76 @@
 // in this file.
 console.log('TabFern common.js loading');
 
-const TABFERN_VERSION='0.1.2 alpha \u26a0'
+//////////////////////////////////////////////////////////////////////////
+// General constants //
+
+/// The TabFern extension friendly version number.  Displayed in the
+/// title bar of the popup window.
+const TABFERN_VERSION='0.1.4 alpha \u26a0'
+    // Don't forget to update BOTH the version and version_name in
+    // manifest.json when you change this!
+
+//////////////////////////////////////////////////////////////////////////
+// Messages between parts of TabFern //
 
 const MSG_GET_VIEW_WIN_ID = 'getViewWindowID';
+
+//////////////////////////////////////////////////////////////////////////
+// Names of settings //
+
+//////////////////////////////////////////////////////////////////////////
+// Helper functions //
+
+const SETTING_PREFIX = 'store.settings.';
+
+/// Find out whether the given setting from options_custom exists.
+function haveSetting(setting_name)
+{
+    if(!setting_name) return false;
+    return (SETTING_PREFIX + setting_name) in localStorage;
+} //haveSetting()
 
 /// Get a boolean setting from options_custom, which uses HTML5 localStorage.
 function getBoolSetting(setting_name, default_value = false)
 {
-    let locStorageValue = localStorage.getItem('store.settings.' + setting_name);
-    if ( locStorageValue === null ) {
+    let locStorageValue = localStorage.getItem(SETTING_PREFIX + setting_name);
+    if ( locStorageValue === null ) {   // nonexistent key
         return default_value;
-    } else if ( locStorageValue === "false" ) {
-        return false;
-    } else if ( locStorageValue === "true" ) {
-        return true;
-    } else {
-        return default_value;
+    } else {    // Get the value, which is stored as JSON
+        let str = String(locStorageValue).toLowerCase();
+        if ( str === "false" ) {
+            return false;
+        } else if ( str === "true" ) {
+            return true;
+        } else {
+            return default_value;
+        }
     }
 } //getBoolSetting
 
-// vi: set ts=4 sts=4 sw=4 et ai fo-=o: //
+/// Set a setting (wow!).
+/// @param setting_name {String} The name, without the leading SETTING_PREFIX
+/// @param setting_value {mixed} The value, which must be JSON.stringifiable.
+function setSetting(setting_name, setting_value)
+{
+    localStorage.setItem(
+        SETTING_PREFIX + setting_name,
+        JSON.stringify(setting_value)
+    );
+} //setSetting
 
+/// Set a setting only if it's not already there.  Parameters are as
+/// setSetting().
+function setSettingIfNonexistent(setting_name, setting_value)
+{
+    if(!haveSetting(setting_name)) setSetting(setting_name, setting_value);
+}
 
-/**
- * @param {Document} document
- * @param {String} url URL of script to load
- * @param {String} [type] Type of Script tag. Default: text/javascript
- * @param {Function} callback Set as callback for BOTH onreadystatechange and onload
- */
+/// Append a <script> to the <head> of #document.
+/// @param {Document} document
+/// @param {String} url URL of script to load
+/// @param {String} [type] Type of Script tag. Default: text/javascript
+/// @param {Function} callback Set as callback for BOTH onreadystatechange and onload
 function asyncAppendScriptToHead(document, url, callback, type = 'text/javascript')
 {
     // Adding the script tag to the head as suggested before
@@ -46,4 +88,55 @@ function asyncAppendScriptToHead(document, url, callback, type = 'text/javascrip
 
     // Fire the loading
     head.appendChild(script);
-}
+} //asyncAppendScriptToHead()
+
+/// Deep-compare two objects for memberwise equality.  However, if either
+/// object contains a pointer to the other, this will return false rather
+/// than getting stuck in a loop.  Non-`object` types are compared by ===.
+/// All member comparisons are ===.
+/// @param obj1 An object to compare
+/// @param obj2 The other object to compare
+/// Modified from https://gist.github.com/nicbell/6081098 by
+/// https://gist.github.com/nicbell
+function ObjectCompare(obj1, obj2) {
+    if( (typeof obj1 !== 'object') || (typeof obj2 !== 'object') ) {
+        return obj1 === obj2;
+    }
+
+    //Loop through properties in object 1
+    for (var p in obj1) {
+        //Check property exists on both objects
+        if (obj1.hasOwnProperty(p) !== obj2.hasOwnProperty(p)) return false;
+
+        switch (typeof (obj1[p])) {
+
+            //Deep compare objects
+            case 'object':
+                //Check for circularity
+                if( (obj1[p]===obj2) || (obj2[p]===obj1) ) return false;
+
+                if (!ObjectCompare(obj1[p], obj2[p])) return false;
+                break;
+
+            //Compare function code
+            case 'function':
+                if (typeof (obj2[p]) == 'undefined' ||
+                    (obj1[p].toString() !== obj2[p].toString())) {
+                    return false;
+                }
+                break;
+
+            //Compare values
+            default:
+                if (obj1[p] !== obj2[p]) return false;
+        }
+    }
+
+    //Check object 2 for any extra properties
+    for (var p in obj2) {
+        if (typeof (obj1[p]) === 'undefined') return false;
+    }
+    return true;
+} //ObjectCompare
+
+// vi: set ts=4 sts=4 sw=4 et ai fo-=o: //

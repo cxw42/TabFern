@@ -24,34 +24,32 @@ this.manifest = {
             //"text": i18n.get("x-characters")
         },
 
-        // Details
-        /* //Disabled for now, because contextMenu needs to be refactored first.
+        // Features
         {
-            "tab": "Details",
-            "group": "ContextMenu",
+            "tab": "Features",
+            "group": "Context Menu",
             "name": "ContextMenu.Enabled",
             "type": "checkbox",
-            "label": "Right-click Menu (refresh the TabFern window after you change this to make the change take effect)"
+            "label": "Enable right-click menus (refresh the TabFern window after you change this to make the change take effect)"
         },
-        */
         {
-            "tab": "Details",
-            "group": "KeyBinds",
+            "tab": "Features",
+            "group": "Key Mapping",
             "name": "KeyBinds.Enabled",
             "type": "checkbox",
-            "label": "KeyBinding Functionality (refresh the TabFern window after you change this to make the change take effect)"
+            "label": "Enable key mapping (refresh the TabFern window after you change this to make the change take effect)"
         },
 
         {
             "tab": "Key Mappings",
-            "group": "KeyMappings.PersistenceControl",
+            "group": "Persistence Control",
             "name": "KeyMappings.PersistenceControl.SaveButton",
             "type": "button",
             "text": "Save"
         },
         {
             "tab": "Key Mappings",
-            "group": "KeyMappings.PersistenceControl",
+            "group": "Persistence Control",
             "name": "KeyMappings.PersistenceControl.RevertButton",
             "type": "button",
             "text": "Revert"
@@ -61,28 +59,28 @@ this.manifest = {
         // TODO Generate these from code.
         {
             "tab": "Key Mappings",
-            "group": "KeyMappings.KeyBinds",
+            "group": "Key Bindings",
             "name": "KeyMappings.KeyBinds.IgnoreContextMenu.KeyBind",
             "type": "text",
             "text": "IgnoreContextMenu"
         },
         {
             "tab": "Key Mappings",
-            "group": "KeyMappings.KeyBinds",
+            "group": "Key Bindings",
             "name": "KeyMappings.KeyBinds.IgnoreContextMenu.ClearButton",
             "type": "button",
             "text": "Clear"
         },
         {
             "tab": "Key Mappings",
-            "group": "KeyMappings.KeyBinds",
+            "group": "Key Bindings",
             "name": "KeyMappings.KeyBinds.IgnoreContextMenu.EnterBindModeButton",
             "type": "button",
             "text": "Bind"
         },
         {
             "tab": "Key Mappings",
-            "group": "KeyMappings.KeyBinds",
+            "group": "Key Bindings",
             "name": "KeyMappings.KeyBinds.IgnoreContextMenu.AdditionalBindButton",
             "type": "button",
             "text": "X or + or don't show when these are dynamic"

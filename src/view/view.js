@@ -1444,7 +1444,7 @@ function getMainContextMenuItems(node, UNUSED_proxyfunc, e)
                     function(){actionRenameWindow(node.id, node, null, null);}
             }
             , closeItem:{
-                label: 'Close',
+                label: 'Close and remember',
                 icon: 'fff-picture-delete',
                 action:
                     function(){actionCloseWindow(node.id, node, null, null);}
@@ -1464,7 +1464,7 @@ function getMainContextMenuItems(node, UNUSED_proxyfunc, e)
     return false;   // if it's a node we don't have a menu for
 
 //    // Note: Don't return {} --- that seems to cause jstree to not properly
-//    // remove the jstree-context style.
+//    // remove the jstree-context style.  Instead, something like this:
 //    return Object.keys(items).length > 0 ? items : false ;
 //        // https://stackoverflow.com/a/4889658/2877364 by
 //        // https://stackoverflow.com/users/7012/avi-flax

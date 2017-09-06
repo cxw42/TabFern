@@ -107,20 +107,11 @@ div#hamburger-menu {
 /* --- Action buttons ----------------------------------------------------- */
 
 .right-top {
-
     /* Keep the pencil above the whole-row bar.
      * Thanks to https://stackoverflow.com/a/7421805/2877364 by
      * https://stackoverflow.com/users/248129/richard-jp-le-guen */
     position:relative;
     z-index: 1;
-
-    /*
-    // TODO tweak jstree-actions to use a div as below to wrap the actions.
-    // Using this on each action makes them all overlap.
-    //float: right;
-    //position:fixed;
-    //right:0;
-    */
 }
 
 /* Keep the "delete" button farther from the others */
@@ -161,6 +152,11 @@ div#hamburger-menu {
     /* Two jstree-children: don't touch the top-level nodes, only second-level
      * and lower. */
     background-size: cover !important;
+}
+
+/* Don't expand icons in the context menu - leave them at their native size */
+ul.jstree-contextmenu i {
+    object-fit: none;
 }
 
 /* vi: set ts=4 sts=4 sw=4 et ai: */

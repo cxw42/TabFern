@@ -7,10 +7,11 @@
 // whatever is needed at that point.  Variable names starting with "raw_"
 // hold the raw data.
 
-// TODO make the save data {tabfern: 42, version: <number>, tree: []}.
+// Design decision:
+// Save data are {tabfern: 42, version: <whatever>, tree: []}.
 // (`tabfern: 42` is magic :) )  Current [] save data
-// will be version 0.  Add a table mapping version to reader function so that
-// we can always import old backup files.
+// are version 0.  We must always support loading
+// backup files having versions earlier than the current version.
 
 //////////////////////////////////////////////////////////////////////////
 // Constants //
@@ -31,10 +32,18 @@ const INIT_TIME_ALLOWED_MS = 2000;  // After this time, if init isn't done,
                                     // display an error message.
 const INIT_MSG_SEL = 'div#init-incomplete';     // Selector for that message
 
-// Syntactic sugar
+/// How often to check whether our window has been moved or resized
+const RESIZE_DETECTOR_INTERVAL_MS = 5000;
+
+// --- Syntactic sugar ---
 const WIN_KEEP = true;
 const WIN_NOKEEP = false;
 const NONE = chrome.windows.WINDOW_ID_NONE;
+
+// Node-type enumeration.  Here because there may be more node types
+// in the future (e.g., dividers or plugins).
+const NT_WINDOW = 1;
+const NT_TAB = 2;
 
 //////////////////////////////////////////////////////////////////////////
 // Globals //
@@ -54,9 +63,6 @@ let currently_focused_winid = null;
 
 /// HACK to avoid creating extra tree items.
 let window_is_being_restored = false;
-
-/// ID of a timer to save the new window size after a resize event
-let resize_save_timer_id;
 
 /// The size of the last-closed window, to be used as the
 /// size of newly-opened windows (whence the name).
@@ -78,8 +84,11 @@ let Shortcuts;
 /// The hamburger menu
 let Hamburger;
 
-// An escaper
+/// An escaper
 let Esc = HTMLEscaper();
+
+/// The module that handles <Shift> bypassing of the jstree context menu
+let Bypasser;
 
 //////////////////////////////////////////////////////////////////////////
 // Initialization //
@@ -1207,11 +1216,36 @@ function tabOnReplaced(addedTabId, removedTabId)
 //////////////////////////////////////////////////////////////////////////
 // DOM event handlers //
 
+/// ID of a timer to save the new window size after a resize event
+let resize_save_timer_id;
+
+/// A cache of the last size we saved to disk
+let last_saved_size;
+
+/// Save #size_data as the size of our popup window
+function saveViewSize(size_data)
+{
+    //log.info('Saving new size ' + size_data.toString());
+
+    let to_save = {};
+    to_save[LOCN_KEY] = size_data;
+    chrome.storage.local.set(to_save,
+            function() {
+                log.info('Saving size: error=' + chrome.runtime.lastError);
+                if(typeof(chrome.runtime.lastError) === 'undefined') {
+                    last_saved_size = $.extend({}, size_data);
+                } else {
+                    log.error("TabFern: couldn't save location: " +
+                                chrome.runtime.lastError.toString());
+                }
+            });
+} //saveViewSize()
+
 /// When the user resizes the tabfern popup, save the size for next time.
 function eventOnResize(evt)
 {
     // Clear any previous timer we may have had running
-    if(typeof resize_save_timer_id !== 'undefined') {
+    if(resize_save_timer_id) {
         window.clearTimeout(resize_save_timer_id);
         resize_save_timer_id = undefined;
     }
@@ -1221,23 +1255,221 @@ function eventOnResize(evt)
     // Save the size, but only after two seconds go by.  This is to avoid
     // saving until the user is actually done resizing.
     resize_save_timer_id = window.setTimeout(
-        function() {
-            //log.info('Saving new size ' + size_data.toString());
-
-            let to_save = {};
-            to_save[LOCN_KEY] = size_data;
-            chrome.storage.local.set(to_save,
-                    function() {
-                        if(typeof(chrome.runtime.lastError) === 'undefined') {
-                            return;     // Saved OK
-                        }
-                        log.error("TabFern: couldn't save location: " +
-                                        chrome.runtime.lastError.toString());
-                    });
-        },
-        2000);
+            function(){saveViewSize(size_data);}, 2000);
 
 } //eventOnResize
+
+// On a timer, save the window size if it has changed.  Inspired by, but not
+// copied from, https://stackoverflow.com/q/4319487/2877364 by
+// https://stackoverflow.com/users/144833/oscar-godson
+function timedResizeDetector()
+{
+    let size_data = getWindowSize(window);
+    if(!ObjectCompare(size_data, last_saved_size)) {
+        saveViewSize(size_data);
+    }
+    setTimeout(timedResizeDetector, RESIZE_DETECTOR_INTERVAL_MS);
+} //timedResizeDetector
+
+//////////////////////////////////////////////////////////////////////////
+// Hamburger menu //
+
+/// Open a new window with a given URL.  Also remove the default
+/// tab that appears because we are letting the window open at the
+/// default size.  Yes, this is quite ugly.
+function openWindowForURL(url)
+{
+    chrome.windows.create(
+        function(win) {
+            if(typeof(chrome.runtime.lastError) === 'undefined') {
+                chrome.tabs.create({windowId: win.id, url: url},
+                    function(keep_tab) {
+                        if(typeof(chrome.runtime.lastError) === 'undefined') {
+                            chrome.tabs.query({windowId: win.id, index: 0},
+                                function(tabs) {
+                                    if(typeof(chrome.runtime.lastError) === 'undefined') {
+                                        chrome.tabs.remove(tabs[0].id,
+                                            ignore_chrome_error
+                                        ); //tabs.remove
+                                    }
+                                } //function(tabs)
+                            ); //tabs.query
+                        }
+                    } //function(keep_tab)
+                ); //tabs.create
+            }
+        } //function(win)
+    ); //windows.create
+} //openWindowForURL
+
+/// Open a new window with the TabFern homepage.
+function hamAboutWindow()
+{
+    openWindowForURL('https://cxw42.github.io/TabFern/');
+} //hamAboutWindow()
+
+/// Open the Settings window
+function hamSettings()
+{
+    openWindowForURL(chrome.extension.getURL('/src/options_custom/index.html'));
+}
+
+
+function hamBackup()
+{
+    let date_tag = new Date().toISOString().replace(/:/g,'.');
+        // DOS filenames can't include colons.
+        // TODO use local time - maybe
+        // https://www.npmjs.com/package/dateformat ?
+    let filename = 'TabFern backup ' + date_tag + '.tabfern';
+
+    // Save the tree, including currently-open windows/tabs, then
+    // export the save data to #filename.
+    saveTree(true, function(saved_info){
+        Fileops.Export(document, JSON.stringify(saved_info), filename);
+    });
+} //hamBackup()
+
+/// Restore tabs from a saved backup.  Note that this adds the tabs to those
+/// already present.  It does not delete existing tabs/windows.
+function hamRestoreFromBackup()
+{
+    let importer = new Fileops.Importer(document, '.tabfern');
+    importer.getFileAsString(function(text, filename){
+        try {
+            let parsed = JSON.parse(text);
+            if(!loadSavedWindowsFromData(parsed)) {
+                window.alert("I couldn't load the file " + filename + ': ' + e);
+            }
+        } catch(e) {
+            window.alert("File " + filename + ' is not something I can '+
+                'understand as a TabFern save file.  Parse error code was: ' +
+                e);
+        }
+    });
+} //hamRestoreFromBackup()
+
+function hamExpandAll()
+{
+    treeobj.open_all();
+} //hamExpandAll()
+
+function hamCollapseAll()
+{
+    treeobj.close_all();
+} //hamCollapseAll()
+
+/**
+ * You can call proxyfunc with the items or just return them, so we just
+ * return them.
+ * @param node
+ * @returns {actionItemId: {label: string, action: function}, ...}, or
+ *          false for no menu.
+ */
+function getHamburgerMenuItems(node, UNUSED_proxyfunc, e)
+{
+    return {
+        infoItem: {
+            label: "About, help, and credits",
+            action: hamAboutWindow,
+            icon: 'fa fa-info',
+        }
+        , settingsItem: {
+            label: "Settings",
+            action: hamSettings,
+            icon: 'fa fa-cogs',
+            separator_after: true
+        }
+        , backupItem: {
+            label: "Backup now",
+            icon: 'fa fa-floppy-o',
+            action: hamBackup
+        }
+        , restoreItem: {
+            label: "Load contents of a backup",
+            action: hamRestoreFromBackup,
+            icon: 'fa fa-folder-open-o',
+            separator_after: true
+        }
+        , expandItem: {
+            label: "Expand all",
+            icon: 'fa fa-plus-square',
+            action: hamExpandAll
+        }
+        , collapseItem: {
+            label: "Collapse all",
+            icon: 'fa fa-minus-square',
+            action: hamCollapseAll
+        }
+    };
+} //getHamburgerMenuItems()
+
+//////////////////////////////////////////////////////////////////////////
+// Context menu for the main tree
+
+function getMainContextMenuItems(node, UNUSED_proxyfunc, e)
+{
+
+    // TODO move this to Bypasser.isBypassed(e)
+    if ( Bypasser.isBypassed() ) {
+        return false;
+    } else {    // not bypassed - show jsTree context menu
+        e.preventDefault();
+    }
+
+    // What kind of node is it?
+    let nodeType;
+    {
+        let win_val = mdWindows.by_node_id(node.id);
+        if(win_val) nodeType = NT_WINDOW;
+    }
+
+    if(!nodeType) {
+        let tab_val = mdTabs.by_node_id(node.id);
+        if(tab_val) nodeType = NT_TAB;
+    }
+
+    if(!nodeType) return false;     // A node type we don't know about
+
+    // -------
+
+    if(nodeType == NT_TAB) return false;    // At present, no menu for tabs
+
+    if(nodeType == NT_WINDOW) {
+        const winItems = {
+            renameItem:{
+                label: 'Rename',
+                icon: 'fff-pencil',
+                action:
+                    function(){actionRenameWindow(node.id, node, null, null);}
+            }
+            , closeItem:{
+                label: 'Close and remember',
+                icon: 'fff-picture-delete',
+                action:
+                    function(){actionCloseWindow(node.id, node, null, null);}
+            }
+            , deleteItem:{
+                label: 'Delete',
+                icon: 'fff-cross',
+                separator_before: true,
+                action:
+                    function(){actionDeleteWindow(node.id, node, null, null);}
+            }
+        };
+
+        return winItems;
+    } //endif NT_WINDOW
+
+    return false;   // if it's a node we don't have a menu for
+
+//    // Note: Don't return {} --- that seems to cause jstree to not properly
+//    // remove the jstree-context style.  Instead, something like this:
+//    return Object.keys(items).length > 0 ? items : false ;
+//        // https://stackoverflow.com/a/4889658/2877364 by
+//        // https://stackoverflow.com/users/7012/avi-flax
+
+} //getMainContextMenuItems
 
 //////////////////////////////////////////////////////////////////////////
 // Startup / shutdown //
@@ -1260,23 +1492,30 @@ function initTreeFinal()
 } //initTreeFinal()
 
 function initTree4(items)
-{ // move the popup window to its last position/size
+{   // move the popup window to its last position/size.
+    // If there was an error (e.g., nonexistent key), just
+    // accept the default size.
+
     if(typeof(chrome.runtime.lastError) === 'undefined') {
-        // If there was an error (e.g., nonexistent key), just
-        // accept the default size.
         let parsed = items[LOCN_KEY];
         if( (parsed !== null) && (typeof parsed === 'object') ) {
             // + and || are to provide some sensible defaults - thanks to
             // https://stackoverflow.com/a/7540412/2877364 by
             // https://stackoverflow.com/users/113716/user113716
-            chrome.windows.update(my_winid, {
-                  'left': +parsed.left || 0
-                , 'top': +parsed.top || 0
-                , 'width': +parsed.width || 300
-                , 'height': +parsed.height || 600
-            });
+            let size_data =
+                {
+                      'left': +parsed.left || 0
+                    , 'top': +parsed.top || 0
+                    , 'width': +parsed.width || 300
+                    , 'height': +parsed.height || 600
+                };
+            last_saved_size = $.extend({}, size_data);
+            chrome.windows.update(my_winid, size_data);
         }
     } //endif no error
+
+    // Start the detection of moved or resized windows
+    setTimeout(timedResizeDetector, RESIZE_DETECTOR_INTERVAL_MS);
 
     initTreeFinal();
 } //initTree4()
@@ -1284,7 +1523,7 @@ function initTree4(items)
 function initTree3()
 {
     // Set event listeners
-    $('#maintree').on('changed.jstree', treeOnSelect);
+    treeobj.element.on('changed.jstree', treeOnSelect);
 
     chrome.windows.onCreated.addListener(winOnCreated);
     chrome.windows.onRemoved.addListener(winOnRemoved);
@@ -1368,11 +1607,11 @@ function initTree1(win_id)
         }
     };
 
-    if ( getBoolSetting('ContextMenu.Enabled', false) ) {
+    if ( getBoolSetting('ContextMenu.Enabled', true) ) {
         jstreeConfig.plugins.push('contextmenu');
         jstreeConfig.contextmenu = {
-            items: window._tabFernContextMenu.generateJsTreeMenuItems
-        };          // TODO put that in our context since we have mdTabs and mdWindows
+            items: getMainContextMenuItems
+        };
         $.jstree.defaults.contextmenu.select_node = false;
         $.jstree.defaults.contextmenu.show_at_node = false;
     }
@@ -1381,7 +1620,6 @@ function initTree1(win_id)
     $('#maintree').jstree(jstreeConfig);
     treeobj = $('#maintree').jstree(true);
 
-    window._tabFernContextMenu.installTreeEventHandler(treeobj, Shortcuts);
 
     // --------
 
@@ -1410,8 +1648,34 @@ function initTree1(win_id)
 
     // --------
 
-    // Load the tree
-    loadSavedWindowsIntoTree(initTree2);
+    // Install keyboard shortcuts.  This includes the keyboard listener for
+    // context menus.
+    window._tabFernShortcuts.install(
+        {
+            window: window,
+            keybindings: window._tabFernShortcuts.keybindings.default,
+            drivers: [window._tabFernShortcuts.drivers.dmaruo_keypress]
+        },
+        function initialized(err) {
+            if ( err ) {
+                console.log('Failed loading a shortcut driver!  Initializing context menu with no shortcut driver.  ' + err);
+                //window._tabFernContextMenu.installEventHandler(window, document, null);
+                Bypasser = ContextMenuBypasser.create(window, treeobj);
+
+                // Continue initialization by loading the tree
+                loadSavedWindowsIntoTree(initTree2);
+
+            } else {
+                Shortcuts = window._tabFernShortcuts;
+                //window._tabFernContextMenu.installEventHandler(window, document, window._tabFernShortcuts);
+                Bypasser = ContextMenuBypasser.create(window, treeobj, Shortcuts);
+
+                // Continue initialization by loading the tree
+                loadSavedWindowsIntoTree(initTree2);
+            }
+        }
+    );
+
 } //initTree1()
 
 function initTree0()
@@ -1419,14 +1683,23 @@ function initTree0()
     log.info('TabFern view.js initializing view - ' + TABFERN_VERSION);
     document.title = 'TabFern ' + TABFERN_VERSION;
 
+    Hamburger = HamburgerMenuMaker('#hamburger-menu', getHamburgerMenuItems);
+
     // Stash our current size, which is the default window size.
     newWinSize = getWindowSize(window);
+
+    // TODO? get screen size of the current monitor and make sure the TabFern
+    // window is fully visible -
+    // chrome.windows.create({state:'fullscreen'},function(win){console.log(win); chrome.windows.remove(win.id);})
+    // appears to provide valid `win.width` and `win.height` values.
+    // TODO? also make sure the TabFern window is at least 300px wide, or at
+    // at least 30% of screen width if <640px.  Also make sure that the
+    // TabFern window is tall enough.
 
     // Get our Chrome-extensions-API window ID from the background page.
     // I don't know a way to get this directly from the JS window object.
     chrome.runtime.sendMessage(MSG_GET_VIEW_WIN_ID, initTree1);
 } //initTree0
-
 
 /// Save the tree on window.unload
 function shutdownTree()
@@ -1455,93 +1728,6 @@ function initIncompleteWarning()
 } //initIncompleteWarning()
 
 //////////////////////////////////////////////////////////////////////////
-// Hamburger menu //
-
-/// Open a new window with the TabFern homepage.  Also remove the default
-/// tab that appears because we are letting the window open at the
-/// default size.  Yes, this is quite ugly.
-function hamAboutWindow()
-{
-    chrome.windows.create(
-        function(win) {
-            if(typeof(chrome.runtime.lastError) === 'undefined') {
-                chrome.tabs.create({windowId: win.id, url: 'https://cxw42.github.io/TabFern/'},
-                    function(keep_tab) {
-                        if(typeof(chrome.runtime.lastError) === 'undefined') {
-                            chrome.tabs.query({windowId: win.id, index: 0},
-                                function(tabs) {
-                                    if(typeof(chrome.runtime.lastError) === 'undefined') {
-                                        chrome.tabs.remove(tabs[0].id,
-                                            ignore_chrome_error
-                                        ); //tabs.remove
-                                    }
-                                } //function(tabs)
-                            ); //tabs.query
-                        }
-                    } //function(keep_tab)
-                ); //tabs.create
-            }
-        } //function(win)
-    ); //windows.create
-} //hamAboutWindow()
-
-function hamBackup()
-{
-    let date_tag = new Date().toISOString().replace(/:/g,'.');
-        // DOS filenames can't include colons.
-        // TODO use local time - maybe
-        // https://www.npmjs.com/package/dateformat ?
-    let filename = 'TabFern backup ' + date_tag + '.tabfern';
-
-    // Save the tree, including currently-open windows/tabs, then
-    // export the save data to #filename.
-    saveTree(true, function(saved_info){
-        Fileops.Export(document, JSON.stringify(saved_info), filename);
-    });
-} //hamBackup()
-
-/// Restore tabs from a saved backup
-function hamRestoreFromBackup()
-{
-    let importer = new Fileops.Importer(document, '.tabfern');
-    importer.getFileAsString(function(text, filename){
-        try {
-            let parsed = JSON.parse(text);
-            if(!loadSavedWindowsFromData(parsed)) {
-                window.alert("I couldn't load the file " + filename + ': ' + e);
-            }
-        } catch(e) {
-            window.alert("File " + filename + ' is not something I can '+
-                'understand as a TabFern save file.  Parse error code was: ' +
-                e);
-        }
-    });
-}
-
-function getMenuItems(node, UNUSED_proxyfunc, e)
-{
-    return {
-        backupItem: {
-            label: "Backup now",
-            action: hamBackup
-        }
-        , restoreItem: {
-            label: "Restore a previous backup",
-            action: hamRestoreFromBackup
-        }
-        , infoItem: {
-            label: "About, help, and credits",
-            action: hamAboutWindow
-        }
-    };
-} //getMenuItems()
-
-function initHamburger()
-{
-    Hamburger = HamburgerMenuMaker('#hamburger-menu', getMenuItems);
-} //initHamburger
-
-//////////////////////////////////////////////////////////////////////////
 // MAIN //
 
 // Timer to display the warning message if initialization doesn't complete
@@ -1552,33 +1738,14 @@ window.setTimeout(initIncompleteWarning, INIT_TIME_ALLOWED_MS);
 window.addEventListener('load', initTree0, { 'once': true });
 window.addEventListener('unload', shutdownTree, { 'once': true });
 window.addEventListener('resize', eventOnResize);
-    // This doesn't detect window movement without a resize.  TODO implement
-    // something from https://stackoverflow.com/q/4319487/2877364 to
-    // deal with that.
-
-// Hamburger menu
-window.addEventListener('load', initHamburger, { 'once': true });
-
-// Install keyboard shortcuts.  This includes the keyboard listener for
-// context menus.
-window._tabFernShortcuts.install(
-    {
-        window: window,
-        keybindings: window._tabFernShortcuts.keybindings.default,
-        drivers: [window._tabFernShortcuts.drivers.dmaruo_keypress]
-    },
-    function initialized(err) {
-        if ( err ) {
-            console.log('Failed loading a shortcut driver!  Initializing context menu with no shortcut driver.  ' + err);
-            window._tabFernContextMenu.installEventHandler(window, document, null);
-        } else {
-            Shortcuts = window._tabFernShortcuts;
-            window._tabFernContextMenu.installEventHandler(window, document, window._tabFernShortcuts);
-        }
-    }
-);
+    // This doesn't detect window movement without a resize, which is why
+    // we have timedResizeDetector above.
 
 //TODO test what happens when Chrome exits.  Does the background page need to
 //save anything?
+
+// Notes:
+// can get treeobj from $(selector).data('jstree')
+// can get element from treeobj.element
 
 // vi: set ts=4 sts=4 sw=4 et ai fo-=o fo-=r: //

@@ -119,9 +119,8 @@ window.addEventListener('load',
 
 // Set the defaults for some of the options.  options_custom does not appear
 // to have this facility.
-if(!haveSetting('ContextMenu.Enabled')) {
-    localStorage.setItem('ContextMenu.Enabled','true');
-}
+setSettingIfNonexistent('ContextMenu.Enabled', true);
+setSettingIfNonexistent("collapse-trees-on-startup", true);
 
 console.log('TabFern: done running background.js');
 
