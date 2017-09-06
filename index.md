@@ -20,8 +20,8 @@ If you are willing, please try TabFern and let us know how it goes!
 
  - Click the icon to open the TabFern view.  The view will also open when
    you start Chrome.
- - When you open windows or tabs, or rearrange windows or tabs _within a
-   particular browser window_, the tree will update.
+ - When you open windows or tabs, or rearrange windows or tabs,
+   the tree will update.
  - To mark a window to be saved, you have two choices:
 
      1. Give the window a name using the pencil icon (![image](https://raw.githubusercontent.com/cxw42/TabFern/master/assets/icons/pencil.png)).
@@ -41,6 +41,23 @@ If you are willing, please try TabFern and let us know how it goes!
  - Windows you do not expressly save will not be saved when you exit!
    I am open to discussion of better ways to handle this.
 
+# Backup and Restore
+
+On the menu in the bottom right, you have options for "Backup" and
+"Load contents":
+
+![screenshot of hamburger menu](/img/hamburger-screenshot.png)
+
+ - Click "Backup now" to save a backup as a `.tabfern` file in your Downloads
+   directory.
+ - Click "Load contents of a backup", then choose the file you want and hit OK,
+   to add the backed-up windows to your tree.
+
+Loading a backup is not a "restore" operation that takes you
+back to where you were.  Instead, it _adds_ the loaded information to
+the windows and tabs you already have open or saved.  That way you don't
+have to worry about losing your current place.
+
 # Limitations
 
  - There is only a two-level hierarchy --- tabs cannot be the children
@@ -49,7 +66,9 @@ If you are willing, please try TabFern and let us know how it goes!
    the window as a whole.
  - Windows will not necessarily open at the size of the last-closed window,
    like they do normally in Chrome.
- - Lots of others I'm not going to list right now!
+
+See the [issue tracker](https://github.com/cxw42/TabFern/issues) on GitHub for
+more about current limitations, and where TabFern is going in the future!
 
 # Related information
 
