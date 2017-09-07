@@ -245,53 +245,37 @@ function getWindowSizeFromWindowRecord(win)
     };
 } //getWindowSize
 
-//////////////////////////////////////////////////////////////////////////
-// Node-state classes //
+// --- Vertical-scrolling support ---
 
-// These classes only hold the info that's not elsewhere in the jstree.
-// For example, parent/child relationships and tab titles are in the tree,
-// so are not here.
+// When scrolling, with the CSS I am using, actions do not scroll with the
+// tree.  TODO figure out how to handle this more effectively.  Maybe
+// float, now that we have an action group?
 
-/*
-/// Create node data for a tab
-/// @param newIsOpen {Boolean} True if the node represents an open tab
-/// @param newTabValue {Tab} If #newIsOpen, the Chrome tab record
-function tabState(newIsOpen, newTabValue)
+/// A scroll function to make sure the action-group divs stay
+/// in the right place.  Inspired by
+/// https://stackoverflow.com/a/16248243/2877364 by
+/// https://stackoverflow.com/users/939547/jsarma
+function vscroll_function()
+{ //TODO make this a closure over a specific win, jq
+    log.info('Updating V positions');
+    $('.' + ACTION_GROUP_WIN_CLASS).each(function(idx, dom_elem) {
+        let jq = $(dom_elem);
+        jq.css('top',jq.parent().offset().top - $(window).scrollTop());
+    });
+} //vscroll_function
+
+/// Set up the vscroll function to be called when appropriate.
+/// @param win {DOM Window} window
+/// @param jq {JQuery element} the jQuery element for the tree root
+function install_vscroll_function(win, jq)
 {
-    let retval = { nodeType: 'tab', isOpen: newIsOpen };
-    if(newIsOpen) {
-        retval.tab = newTabValue;
-        retval.raw_url = newTabValue.url;
-        retval.raw_title = newTabValue.title;
-    } else {
-        retval.raw_url = newTabValue;
-    }
-    return retval;
-} //tabState
+    $(win).scroll(vscroll_function);
 
-/// Create node data for a window
-/// @param newIsOpen {Boolean} True if the node represents an open window
-/// @param newKeep {Boolean} True if the node represents a saved window
-/// @param newTitle {String} The text shown in the tree, raw
-/// @param newWinValue {Window} if #newIsOpen, the Chrome window record.
-function winState(newIsOpen, newKeep, newTitle, newWinValue)
-{
-    let retval = {
-        nodeType: 'window'
-        , isOpen: newIsOpen
-        , keep: newKeep
-            // whether this window is to be saved for a later session.
-    };
-
-    retval.raw_title = newTitle;
-    if(newIsOpen) {
-        retval.win = newWinValue;
-    } else {
-        retval.win = undefined;
-    }
-    return retval;
-} //winState
-*/
+    // We also have to reset the positions on tree redraw.  Ugly.
+    jq.on('redraw.jstree', vscroll_function);
+    jq.on('after_open.jstree', vscroll_function);
+    jq.on('after_close.jstree', vscroll_function);
+} //install_vscroll_function()
 
 //////////////////////////////////////////////////////////////////////////
 // Saving //
@@ -333,7 +317,8 @@ function saveTree(save_visible_windows = true, cbk = undefined)
 
         // Don't save visible windows unless we've been asked to.
         // However, always save windows marked as keep.
-        if( !save_visible_windows && win_val.isOpen && !win_val.keep ) {
+        if( !save_visible_windows && win_val.isOpen &&
+            (win_val.keep==WIN_NOKEEP) ) {
             continue;
         }
 
@@ -390,8 +375,8 @@ function actionRenameWindow(node_id, node, unused_action_id, unused_action_el)
     if(win_name === null) return;   // user cancelled
 
     win_val.raw_title = win_name;
-    win_val.keep = true;    // assume that a user who bothered to rename a node
-                            // wants to keep it.
+    win_val.keep = WIN_KEEP;    // assume that a user who bothered to rename
+                                // a node wants to keep it.
 
     treeobj.rename_node(node_id, Esc.escape(win_name));
 
@@ -401,6 +386,21 @@ function actionRenameWindow(node_id, node, unused_action_id, unused_action_el)
 
     saveTree();
 } //actionRenameWindow()
+
+/// Mark a window as NOKEEP but don't close it
+function actionForgetWindow(node_id, node, unused_action_id, unused_action_el)
+{
+    let win_val = mdWindows.by_node_id(node_id);
+    if(!win_val) return;
+
+    win_val.keep = WIN_NOKEEP;
+
+    if(win_val.isOpen) {    // should always be true, but just in case...
+        treeobj.set_icon(node, 'visible-window-icon');
+    }
+
+    saveTree();
+} //actionForgetWindow()
 
 /// Close a window, but don't delete its tree nodes.  Used for saving windows.
 /// ** The caller must call saveTree() --- actionCloseWindow() does not.
@@ -824,6 +824,7 @@ function treeOnSelect(evt, evt_data)
 
         // Grab the URLs for all the tabs
         let urls=[];
+        let expected_tab_count = win_node.children.length;
         for(let child_id of win_node.children) {
             let child_val = mdTabs.by_node_id(child_id);
             urls.push(child_val.raw_url);
@@ -854,7 +855,27 @@ function treeOnSelect(evt, evt_data)
 
                 treeobj.open_node(win_node);
 
-                for(let idx=0; idx < win.tabs.length; ++idx) {
+                // In Chrome 61, with v0.1.4, I observed strange behaviour:
+                // the window would open extra tabs that were copies of
+                // items listed in `urls`.  However, win.tabs.length sometimes
+                // would, and sometimes would not, indicate those extra tabs.
+                // It's a heisenbug.  It may arise from two TabFerns running
+                // at once.  It may also be related to what appears to be
+                // a Chrome 61 regression - Ctl+N for a new window will
+                // sometimes reopen previously-closed tabs. However, I
+                // don't know - I can't repro reliably.
+                // I have reported the Ctl+N issue:
+                // https://bugs.chromium.org/p/chromium/issues/detail?id=762951
+
+                // To hack around this if it happens again, I am trying:
+
+                if(win.tabs.length != expected_tab_count) {
+                    log.warn('Win ' + win.id + ': expected ' +
+                            expected_tab_count + ' tabs; got ' +
+                            win.tabs.length + 'tabs.');
+                }
+                let count_to_use = Math.min(expected_tab_count, win.tabs.length);
+                for(let idx=0; idx < count_to_use; ++idx) {
                     let tab_node_id = win_node.children[idx];
                     let tab_val = mdTabs.by_node_id(tab_node_id);
                     if(!tab_val) continue;
@@ -869,8 +890,33 @@ function treeOnSelect(evt, evt_data)
                     tab_val.isOpen = true;
                     mdTabs.change_key(tab_val, 'tab_id', tab_val.tab.id);
                 }
+
+                // Another hack for the strange behaviour above: get rid of
+                // any tabs we didn't expect.  This assumes the tabs we
+                // wanted come first in the window, which seems to be a safe
+                // assumption.
+                chrome.windows.get(win.id, {populate: true},
+                    function(win) {
+                        if(win.tabs.length > expected_tab_count) {
+                            log.warn('Win ' + win.id + ': expected ' +
+                                    expected_tab_count + ' tabs; got ' +
+                                    win.tabs.length + 'tabs --- pruning.');
+
+                            let to_prune=[];
+                            for(let tab_idx = expected_tab_count;
+                                tab_idx < win.tabs.length;
+                                ++tab_idx) {
+                                to_prune.push(win.tabs[tab_idx].id);
+                            } //foreach extra tab
+
+                            log.warn('Pruning ' + to_prune);
+                            chrome.tabs.remove(to_prune, ignore_chrome_error);
+                        } //endif we have extra tabs
+                    } //get callback
+                ); //windows.get
+
             } //create callback
-        );
+        ); //windows.created
 
     } else {    // it's a node type we don't know how to handle.
         log.error('treeOnSelect: Unknown node ' + node);
@@ -890,6 +936,8 @@ function treeOnSelect(evt, evt_data)
 
 function winOnCreated(win)
 {
+    log.info('Window being created: ' + win.id +
+            (window_is_being_restored ? " (restoring)" : "") );
     //log.info('clearing flags winoncreated');
     treeobj.clear_flags();
     if(window_is_being_restored) {
@@ -908,6 +956,7 @@ function winOnCreated(win)
     }
 
     createNodeForWindow(win, WIN_NOKEEP);
+    vscroll_function();
     saveTree();     // for now, brute-force save on any change.
 } //winOnCreated
 
@@ -947,6 +996,7 @@ function winOnRemoved(win_id)
             // This removes the node's children also.
             // actionDeleteWindow also saves the tree, so we don't need to.
     }
+    vscroll_function();
 } //winOnRemoved
 
 /// Update the highlight for the current window.  Note: this does not always
@@ -1037,13 +1087,13 @@ function tabOnCreated(tab)
     }
 
     updateTabIndexValues(win_node_id);
-
+    vscroll_function();
     saveTree();
 } //tabOnCreated
 
 function tabOnUpdated(tabid, changeinfo, tab)
 {
-    log.info('Tab updated: ' + tabid);
+    log.info('Tab updated: ' + tabid + ' (`changeinfo` and `tab` follow)');
     log.info(changeinfo);
     log.info(tab);
 
@@ -1178,6 +1228,7 @@ function tabOnRemoved(tabid, removeinfo)
     // Refresh the tab.index values for the remaining tabs
     updateTabIndexValues(window_node_id);
 
+    vscroll_function();
     saveTree();
 } //tabOnRemoved
 
@@ -1192,6 +1243,7 @@ function tabOnDetached(tabid, detachinfo)
 
     // Rather than stashing the tab's data, for now, just trash it and
     // re-create it when it lands in its new home.  This seems to work OK.
+    // TODO change this so that we can preserve per-tab data.
     tabOnRemoved(tabid,
             {isWindowClosing: false, windowId: detachinfo.oldWindowId}
     );
@@ -1418,14 +1470,14 @@ function getMainContextMenuItems(node, UNUSED_proxyfunc, e)
     }
 
     // What kind of node is it?
-    let nodeType;
+    let nodeType, win_val, tab_val;
     {
-        let win_val = mdWindows.by_node_id(node.id);
+        win_val = mdWindows.by_node_id(node.id);
         if(win_val) nodeType = NT_WINDOW;
     }
 
     if(!nodeType) {
-        let tab_val = mdTabs.by_node_id(node.id);
+        tab_val = mdTabs.by_node_id(node.id);
         if(tab_val) nodeType = NT_TAB;
     }
 
@@ -1436,27 +1488,38 @@ function getMainContextMenuItems(node, UNUSED_proxyfunc, e)
     if(nodeType == NT_TAB) return false;    // At present, no menu for tabs
 
     if(nodeType == NT_WINDOW) {
-        const winItems = {
-            renameItem:{
+        let winItems = {};
+        winItems.renameItem = {
                 label: 'Rename',
                 icon: 'fff-pencil',
                 action:
                     function(){actionRenameWindow(node.id, node, null, null);}
-            }
-            , closeItem:{
+            };
+
+        if( win_val.isOpen && (win_val.keep == WIN_KEEP) ) {
+            winItems.forgetItem = {
+                label: "Forget but don't close",
+                title: "Do not save this window when it is closed",
+                icon: 'fa fa-chain-broken',
+                action:
+                    function(){actionForgetWindow(node.id, node, null, null);}
+            };
+        }
+
+        winItems.closeItem = {
                 label: 'Close and remember',
                 icon: 'fff-picture-delete',
                 action:
                     function(){actionCloseWindow(node.id, node, null, null);}
-            }
-            , deleteItem:{
+            };
+
+        winItems.deleteItem = {
                 label: 'Delete',
                 icon: 'fff-cross',
                 separator_before: true,
                 action:
                     function(){actionDeleteWindow(node.id, node, null, null);}
-            }
-        };
+            };
 
         return winItems;
     } //endif NT_WINDOW
@@ -1620,31 +1683,7 @@ function initTree1(win_id)
     $('#maintree').jstree(jstreeConfig);
     treeobj = $('#maintree').jstree(true);
 
-
-    // --------
-
-    // When scrolling, with the CSS I am using, actions do not scroll with the
-    // tree.  TODO figure out how to handle this more effectively.  Maybe
-    // float, now that we have an action group?
-
-    // Set up the scroll function to make sure the action-group divs stay
-    // in the right place.  Inspired by
-    // https://stackoverflow.com/a/16248243/2877364 by
-    // https://stackoverflow.com/users/939547/jsarma
-    let vscroll_function = function(){
-        //log.info('Updating V positions');
-        $('.' + ACTION_GROUP_WIN_CLASS).each(function(idx, dom_elem) {
-            let jq = $(dom_elem);
-            jq.css('top',jq.parent().offset().top - $(window).scrollTop());
-        });
-    };
-
-    $(window).scroll(vscroll_function);
-
-    // We also have to reset the positions on tree redraw.  Ugly.
-    $('#maintree').on('redraw.jstree', vscroll_function);
-    $('#maintree').on('after_open.jstree', vscroll_function);
-    $('#maintree').on('after_close.jstree', vscroll_function);
+    install_vscroll_function(window, $('#maintree'));
 
     // --------
 

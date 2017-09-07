@@ -18,7 +18,7 @@
 //(function(_tabFernContextMenu) {
     "use strict";
 
-    var log = console.log.bind(console, 'TabFern contextMenu.js:');
+    var log = console.log.bind(console, 'TabFern bypasser.js:');
 
     // --- Map jstree objects to bypassable-context-menu (BCM) objects ---
 
