@@ -860,9 +860,14 @@ function treeOnSelect(evt, evt_data)
                 // items listed in `urls`.  However, win.tabs.length sometimes
                 // would, and sometimes would not, indicate those extra tabs.
                 // It's a heisenbug.  It may arise from two TabFerns running
-                // at once, but I don't know - I can't repro reliably.
+                // at once.  It may also be related to what appears to be
+                // a Chrome 61 regression - Ctl+N for a new window will
+                // sometimes reopen previously-closed tabs. However, I
+                // don't know - I can't repro reliably.
+                // I have reported the Ctl+N issue:
+                // https://bugs.chromium.org/p/chromium/issues/detail?id=762951
 
-                // To hack around that if it happens again, I am trying this:
+                // To hack around this if it happens again, I am trying:
 
                 if(win.tabs.length != expected_tab_count) {
                     log.warn('Win ' + win.id + ': expected ' +
