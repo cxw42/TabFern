@@ -384,6 +384,8 @@ function actionRenameWindow(node_id, node, unused_action_id, unused_action_el)
         treeobj.set_icon(node, 'visible-saved-window-icon');
     }
 
+    vscroll_function();     // Not sure why this is necessary, but I saw a
+                            // vposition glitch without it.
     saveTree();
 } //actionRenameWindow()
 
@@ -900,7 +902,7 @@ function treeOnSelect(evt, evt_data)
                         if(win.tabs.length > expected_tab_count) {
                             log.warn('Win ' + win.id + ': expected ' +
                                     expected_tab_count + ' tabs; got ' +
-                                    win.tabs.length + 'tabs --- pruning.');
+                                    win.tabs.length + ' tabs --- pruning.');
 
                             let to_prune=[];
                             for(let tab_idx = expected_tab_count;
