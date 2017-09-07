@@ -245,53 +245,37 @@ function getWindowSizeFromWindowRecord(win)
     };
 } //getWindowSize
 
-//////////////////////////////////////////////////////////////////////////
-// Node-state classes //
+// --- Vertical-scrolling support ---
 
-// These classes only hold the info that's not elsewhere in the jstree.
-// For example, parent/child relationships and tab titles are in the tree,
-// so are not here.
+// When scrolling, with the CSS I am using, actions do not scroll with the
+// tree.  TODO figure out how to handle this more effectively.  Maybe
+// float, now that we have an action group?
 
-/*
-/// Create node data for a tab
-/// @param newIsOpen {Boolean} True if the node represents an open tab
-/// @param newTabValue {Tab} If #newIsOpen, the Chrome tab record
-function tabState(newIsOpen, newTabValue)
+/// A scroll function to make sure the action-group divs stay
+/// in the right place.  Inspired by
+/// https://stackoverflow.com/a/16248243/2877364 by
+/// https://stackoverflow.com/users/939547/jsarma
+function vscroll_function()
+{ //TODO make this a closure over a specific win, jq
+    log.info('Updating V positions');
+    $('.' + ACTION_GROUP_WIN_CLASS).each(function(idx, dom_elem) {
+        let jq = $(dom_elem);
+        jq.css('top',jq.parent().offset().top - $(window).scrollTop());
+    });
+} //vscroll_function
+
+/// Set up the vscroll function to be called when appropriate.
+/// @param win {DOM Window} window
+/// @param jq {JQuery element} the jQuery element for the tree root
+function install_vscroll_function(win, jq)
 {
-    let retval = { nodeType: 'tab', isOpen: newIsOpen };
-    if(newIsOpen) {
-        retval.tab = newTabValue;
-        retval.raw_url = newTabValue.url;
-        retval.raw_title = newTabValue.title;
-    } else {
-        retval.raw_url = newTabValue;
-    }
-    return retval;
-} //tabState
+    $(win).scroll(vscroll_function);
 
-/// Create node data for a window
-/// @param newIsOpen {Boolean} True if the node represents an open window
-/// @param newKeep {Boolean} True if the node represents a saved window
-/// @param newTitle {String} The text shown in the tree, raw
-/// @param newWinValue {Window} if #newIsOpen, the Chrome window record.
-function winState(newIsOpen, newKeep, newTitle, newWinValue)
-{
-    let retval = {
-        nodeType: 'window'
-        , isOpen: newIsOpen
-        , keep: newKeep
-            // whether this window is to be saved for a later session.
-    };
-
-    retval.raw_title = newTitle;
-    if(newIsOpen) {
-        retval.win = newWinValue;
-    } else {
-        retval.win = undefined;
-    }
-    return retval;
-} //winState
-*/
+    // We also have to reset the positions on tree redraw.  Ugly.
+    jq.on('redraw.jstree', vscroll_function);
+    jq.on('after_open.jstree', vscroll_function);
+    jq.on('after_close.jstree', vscroll_function);
+} //install_vscroll_function()
 
 //////////////////////////////////////////////////////////////////////////
 // Saving //
@@ -906,6 +890,8 @@ function treeOnSelect(evt, evt_data)
 
 function winOnCreated(win)
 {
+    log.info('Window being created: ' + win.id +
+            (window_is_being_restored ? " (restoring)" : "") );
     //log.info('clearing flags winoncreated');
     treeobj.clear_flags();
     if(window_is_being_restored) {
@@ -924,6 +910,7 @@ function winOnCreated(win)
     }
 
     createNodeForWindow(win, WIN_NOKEEP);
+    vscroll_function();
     saveTree();     // for now, brute-force save on any change.
 } //winOnCreated
 
@@ -963,6 +950,7 @@ function winOnRemoved(win_id)
             // This removes the node's children also.
             // actionDeleteWindow also saves the tree, so we don't need to.
     }
+    vscroll_function();
 } //winOnRemoved
 
 /// Update the highlight for the current window.  Note: this does not always
@@ -1053,7 +1041,7 @@ function tabOnCreated(tab)
     }
 
     updateTabIndexValues(win_node_id);
-
+    vscroll_function();
     saveTree();
 } //tabOnCreated
 
@@ -1194,6 +1182,7 @@ function tabOnRemoved(tabid, removeinfo)
     // Refresh the tab.index values for the remaining tabs
     updateTabIndexValues(window_node_id);
 
+    vscroll_function();
     saveTree();
 } //tabOnRemoved
 
@@ -1208,6 +1197,7 @@ function tabOnDetached(tabid, detachinfo)
 
     // Rather than stashing the tab's data, for now, just trash it and
     // re-create it when it lands in its new home.  This seems to work OK.
+    // TODO change this so that we can preserve per-tab data.
     tabOnRemoved(tabid,
             {isWindowClosing: false, windowId: detachinfo.oldWindowId}
     );
@@ -1647,31 +1637,7 @@ function initTree1(win_id)
     $('#maintree').jstree(jstreeConfig);
     treeobj = $('#maintree').jstree(true);
 
-
-    // --------
-
-    // When scrolling, with the CSS I am using, actions do not scroll with the
-    // tree.  TODO figure out how to handle this more effectively.  Maybe
-    // float, now that we have an action group?
-
-    // Set up the scroll function to make sure the action-group divs stay
-    // in the right place.  Inspired by
-    // https://stackoverflow.com/a/16248243/2877364 by
-    // https://stackoverflow.com/users/939547/jsarma
-    let vscroll_function = function(){
-        //log.info('Updating V positions');
-        $('.' + ACTION_GROUP_WIN_CLASS).each(function(idx, dom_elem) {
-            let jq = $(dom_elem);
-            jq.css('top',jq.parent().offset().top - $(window).scrollTop());
-        });
-    };
-
-    $(window).scroll(vscroll_function);
-
-    // We also have to reset the positions on tree redraw.  Ugly.
-    $('#maintree').on('redraw.jstree', vscroll_function);
-    $('#maintree').on('after_open.jstree', vscroll_function);
-    $('#maintree').on('after_close.jstree', vscroll_function);
+    install_vscroll_function(window, $('#maintree'));
 
     // --------
 
