@@ -824,6 +824,7 @@ function treeOnSelect(evt, evt_data)
 
         // Grab the URLs for all the tabs
         let urls=[];
+        let expected_tab_count = win_node.children.length;
         for(let child_id of win_node.children) {
             let child_val = mdTabs.by_node_id(child_id);
             urls.push(child_val.raw_url);
@@ -854,7 +855,22 @@ function treeOnSelect(evt, evt_data)
 
                 treeobj.open_node(win_node);
 
-                for(let idx=0; idx < win.tabs.length; ++idx) {
+                // In Chrome 61, with v0.1.4, I observed strange behaviour:
+                // the window would open extra tabs that were copies of
+                // items listed in `urls`.  However, win.tabs.length sometimes
+                // would, and sometimes would not, indicate those extra tabs.
+                // It's a heisenbug.  It may arise from two TabFerns running
+                // at once, but I don't know - I can't repro reliably.
+
+                // To hack around that if it happens again, I am trying this:
+
+                if(win.tabs.length != expected_tab_count) {
+                    log.warn('Win ' + win.id + ': expected ' +
+                            expected_tab_count + ' tabs; got ' +
+                            win.tabs.length + 'tabs.');
+                }
+                let count_to_use = Math.min(expected_tab_count, win.tabs.length);
+                for(let idx=0; idx < count_to_use; ++idx) {
                     let tab_node_id = win_node.children[idx];
                     let tab_val = mdTabs.by_node_id(tab_node_id);
                     if(!tab_val) continue;
@@ -869,8 +885,33 @@ function treeOnSelect(evt, evt_data)
                     tab_val.isOpen = true;
                     mdTabs.change_key(tab_val, 'tab_id', tab_val.tab.id);
                 }
+
+                // Another hack for the strange behaviour above: get rid of
+                // any tabs we didn't expect.  This assumes the tabs we
+                // wanted come first in the window, which seems to be a safe
+                // assumption.
+                chrome.windows.get(win.id, {populate: true},
+                    function(win) {
+                        if(win.tabs.length > expected_tab_count) {
+                            log.warn('Win ' + win.id + ': expected ' +
+                                    expected_tab_count + ' tabs; got ' +
+                                    win.tabs.length + 'tabs --- pruning.');
+
+                            let to_prune=[];
+                            for(let tab_idx = expected_tab_count;
+                                tab_idx < win.tabs.length;
+                                ++tab_idx) {
+                                to_prune.push(win.tabs[tab_idx].id);
+                            } //foreach extra tab
+
+                            log.warn('Pruning ' + to_prune);
+                            chrome.tabs.remove(to_prune, ignore_chrome_error);
+                        } //endif we have extra tabs
+                    } //get callback
+                ); //windows.get
+
             } //create callback
-        );
+        ); //windows.created
 
     } else {    // it's a node type we don't know how to handle.
         log.error('treeOnSelect: Unknown node ' + node);
@@ -1047,7 +1088,7 @@ function tabOnCreated(tab)
 
 function tabOnUpdated(tabid, changeinfo, tab)
 {
-    log.info('Tab updated: ' + tabid);
+    log.info('Tab updated: ' + tabid + ' (`changeinfo` and `tab` follow)');
     log.info(changeinfo);
     log.info(tab);
 
