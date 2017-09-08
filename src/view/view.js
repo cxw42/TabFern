@@ -41,9 +41,9 @@ const WIN_NOKEEP = false;
 const NONE = chrome.windows.WINDOW_ID_NONE;
 
 // Node-type enumeration.  Here because there may be more node types
-// in the future (e.g., dividers or plugins).
-const NT_WINDOW = 1;
-const NT_TAB = 2;
+// in the future (e.g., dividers or plugins).  Each NT_* must be truthy.
+const NT_WINDOW = 'window';
+const NT_TAB = 'tab';
 
 //////////////////////////////////////////////////////////////////////////
 // Globals //
@@ -1056,12 +1056,12 @@ function winOnFocusChanged(win_id)
     chrome.windows.getLastFocused({}, function(win){
         let new_win_id;
         if(!win.focused) {
-            new_win_id = -1;
+            new_win_id = NONE;
         } else {
             new_win_id = win.id;
         }
 
-        log.info('Focus change to ' + win_id + '; lastfocused ' + win.id);
+        log.info('Focus change from ' + currently_focused_winid + ' to ' + win_id + '; lastfocused ' + win.id);
 
         // Clear the focus highlights if we are changing windows.
         // Avoid flicker if the selection is staying in the same window.
@@ -1078,7 +1078,7 @@ function winOnFocusChanged(win_id)
 
         currently_focused_winid = new_win_id;
 
-        if(new_win_id == NONE) return;
+        if(new_win_id === NONE) return;
 
         // Get the window
         let window_node_id = mdWindows.by_win_id(new_win_id, 'node_id');
@@ -1529,9 +1529,9 @@ function getMainContextMenuItems(node, UNUSED_proxyfunc, e)
 
     // -------
 
-    if(nodeType == NT_TAB) return false;    // At present, no menu for tabs
+    if(nodeType === NT_TAB) return false;    // At present, no menu for tabs
 
-    if(nodeType == NT_WINDOW) {
+    if(nodeType === NT_WINDOW) {
         let winItems = {};
         winItems.renameItem = {
                 label: 'Rename',
@@ -1585,7 +1585,7 @@ function getMainContextMenuItems(node, UNUSED_proxyfunc, e)
 /// At present, we only support reordering windows.
 function dndIsDraggable(nodes, evt)
 {
-    if(false) {
+    if(log.getLevel() <= log.levels.TRACE) {
         console.group('is draggable?');
         console.log(nodes);
         console.groupEnd();
@@ -1593,14 +1593,12 @@ function dndIsDraggable(nodes, evt)
     }
 
     // If any node being dragged is anything other than a window,
-    // it's not draggable.
+    // it's not draggable.  Check all nodes for future-proofing, since we
+    // may someday support multiselect.
     for(let node of nodes) {
         let val = get_node_val(node.id);
         if(val.ty !== NT_WINDOW) return false;
     }
-
-    // TODO RESUME HERE: somehow, after dragging a window, dragging one of
-    // its children moves the whole window.
 
     return true;    // Otherwise, it is draggable
 } //dndIsDraggable
@@ -1611,7 +1609,7 @@ function dndIsDraggable(nodes, evt)
 function treeCheckCallback(
             operation, node, node_parent, node_position, more)
 {
-    if(false) {
+    if(log.getLevel() <= log.levels.TRACE) {
         console.group('check callback for ' + operation);
         console.log(node);
         console.log(node_parent);
@@ -1639,6 +1637,16 @@ function treeCheckCallback(
     // in the root.
     if(operation==='move_node') {
         let val = get_node_val(node.id);
+
+        if(log.getLevel() <= log.levels.TRACE) {
+            console.group('check callback for ' + operation);
+            console.log(val);
+            console.log(node);
+            console.log(node_parent);
+            if(more) console.log(more);
+            console.groupEnd();
+        }
+
         if(val.ty === NT_WINDOW && node_parent.id !== $.jstree.root)
             return false;
     }
@@ -1793,11 +1801,18 @@ function initTree1(win_id)
             copy: false,
             drag_selection: false,  // only drag one node
             is_draggable: dndIsDraggable,
-            large_drop_target: true,
-            use_html5: true
+            large_drop_target: true
+            //, use_html5: true
             //, check_while_dragging: false   // For debugging only
         }
     };
+
+    // Note on dnd.use_html5: When it's set, if you drag a non-draggable item,
+    // it seems to treat the drag as if you were dragging the last node
+    // you successfully dragged.
+    // The effect of this is that, e.g., after dragging a window, dragging
+    // one of its children moves the whole window.  TODO report this upstream.
+
 
     if ( getBoolSetting('ContextMenu.Enabled', true) ) {
         jstreeConfig.plugins.push('contextmenu');
