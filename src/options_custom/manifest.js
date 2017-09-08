@@ -5,6 +5,19 @@ this.manifest = {
     "icon": "/assets/fern16.png",
     "settings": [
 
+        // Welcome page
+        {
+            "tab": i18n.get("Welcome / Help"),
+            "group": i18n.get("Introduction"),
+            "name": "welcome-intro",
+            "type": "description",
+            "text": "Welcome to TabFern!  Each Chrome window you have open "+
+                    "or saved is represented in the TabFern window.  "+
+                    "Right-click on those representations or hover " +
+                    "the mouse over them for options.  Click the " +
+                    '<i class="fa fa-bars"></i> menu for more options.'
+        },
+
         // Behaviour.  Yeah, there's a "u" in there!
         {
             "tab": i18n.get("Behaviour"),
@@ -84,8 +97,31 @@ this.manifest = {
             "name": "KeyMappings.KeyBinds.IgnoreContextMenu.AdditionalBindButton",
             "type": "button",
             "text": "X or + or don't show when these are dynamic"
-        }
+        },
 
+        // Changelog
+        {
+            "tab": i18n.get("Feature history"),
+            "group": "Version 0.1.5",
+            "name": "changelog-0_1_5",
+            "type": "description",
+            "text": "Bug fixes, including workarounds for Chrome 61 changes"
+        },
+        {
+            "tab": i18n.get("Feature history"),
+            "group": "Version 0.1.4",
+            "name": "changelog-0_1_4",
+            "type": "description",
+            "text": "Added context menus, saving of TabFern window position, "+
+                    "and Expand All/Collapse All."
+        },
+        {
+            "tab": i18n.get("Feature history"),
+            "group": "Version 0.1.2",
+            "name": "changelog-0_1_2",
+            "type": "description",
+            "text": "First version released to the Chrome Web Store"
+        }
     ]
 };
 // vi: set ts=4 sts=4 sw=4 et ai: //

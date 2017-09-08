@@ -352,13 +352,11 @@ function saveTree(save_visible_windows = true, cbk = undefined)
 {
     // Get the raw data for the whole tree.  Can't use $(...) because closed
     // tree nodes aren't in the DOM.
-    let win_nodes = treeobj.get_json();
     let root_node = treeobj.get_node($.jstree.root);    //from get_json() src
     if(!root_node || !root_node.children) return;
 
     let result = [];    // the data to be saved
 
-    //debugger;
     // Clean up the data
     for(let win_node_id of root_node.children) {
         let win_node = treeobj.get_node(win_node_id);
@@ -406,18 +404,19 @@ function saveTree(save_visible_windows = true, cbk = undefined)
     to_save[STORAGE_KEY] = makeSaveData(result);
         // storage automatically does JSON.stringify
     chrome.storage.local.set(to_save,
-            function() {
-                if(typeof(chrome.runtime.lastError) === 'undefined') {
-                    if(typeof cbk === 'function') {
-                        cbk(to_save[STORAGE_KEY]);
-                    }
-                    return;     // Saved OK
+        function() {
+            if(typeof(chrome.runtime.lastError) === 'undefined') {
+                if(typeof cbk === 'function') {
+                    cbk(to_save[STORAGE_KEY]);
                 }
-                let msg = "TabFern: couldn't save: " +
-                                chrome.runtime.lastError.toString();
-                log.error(msg);
-                window.alert(msg);     // The user needs to know
-            });
+                return;     // Saved OK
+            }
+            let msg = "TabFern: couldn't save: " +
+                            chrome.runtime.lastError.toString();
+            log.error(msg);
+            window.alert(msg);     // The user needs to know
+        }
+    ); //storage.local.set
 } //saveTree()
 
 //////////////////////////////////////////////////////////////////////////
@@ -1479,6 +1478,13 @@ function hamSortAZ()
 /**
  * You can call proxyfunc with the items or just return them, so we just
  * return them.
+ *
+ * Note: Only use String, non-Integer, non-Symbol keys in the returned items.
+ * That way the context menu will be in the same order as the order of the keys
+ * in the items.  See https://stackoverflow.com/a/32149345/2877364 and
+ * http://www.ecma-international.org/ecma-262/6.0/#sec-ordinary-object-internal-methods-and-internal-slots-ownpropertykeys
+ * for details.
+ *
  * @param node
  * @returns {actionItemId: {label: string, action: function}, ...}, or
  *          false for no menu.
