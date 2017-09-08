@@ -169,6 +169,24 @@ function get_node_val(node_ref)
     return retval;
 } //get_node_val
 
+/// Sorting criterion for node text: by locale, ascending, case-insensitive.
+/// If either node is unknown to the tree, it is sorted later.  If both nodes
+/// are unknown, they are sorted equally.
+/// @param a {mixed} One node, in any form acceptable to jstree.get_node()
+/// @param b {mixed} The other node, in any form acceptable to jstree.get_node()
+/// @return {Number} -1, 0, or 1
+function compare_node_text(a, b)
+{
+    let a_text = treeobj.get_text(a);
+    let b_text = treeobj.get_text(b);
+
+    if(a_text === b_text) return 0;     // e.g., both unknown
+    if(a_text === false) return 1;      // only #a unknown - it sorts later
+    if(b_text === false) return -1;     // only #b unknown - it sorts later
+
+    return a_text.localeCompare(b_text, undefined, {sensitivity:'base'});
+} //compare_node_text
+
 /// Ignore a Chrome callback error, and suppress Chrome's "runtime.lastError"
 /// diagnostic.
 function ignore_chrome_error() { void chrome.runtime.lastError; }
@@ -1452,6 +1470,12 @@ function hamCollapseAll()
     treeobj.close_all();
 } //hamCollapseAll()
 
+function hamSortAZ()
+{
+    treeobj.get_node($.jstree.root).children.sort(compare_node_text);
+    treeobj.redraw(true);   // true => full redraw
+} //hamSortAZ
+
 /**
  * You can call proxyfunc with the items or just return them, so we just
  * return them.
@@ -1484,9 +1508,17 @@ function getHamburgerMenuItems(node, UNUSED_proxyfunc, e)
             icon: 'fa fa-folder-open-o',
             separator_after: true
         }
-        // TODO RESUME HERE add a "Sort" submenu: Asc, Desc, Asc numeric, Desc numeric
-        // Sorting just rearranges the node.children array and then calls
-        // redraw_node.  See https://github.com/vakata/jstree/blob/master/src/jstree.sort.js
+        , sortItem: {
+            label: 'Sort',
+            submenu: {
+                azItem: {
+                    label: 'A-Z',
+                    title: 'Sort ascending by window name, case-insensitive',
+                    action: hamSortAZ
+                }
+                // TODO RESUME HERE add Desc, Asc numeric, Desc numeric orders
+            } //submenu
+        } //sortItem
         , expandItem: {
             label: "Expand all",
             icon: 'fa fa-plus-square',
