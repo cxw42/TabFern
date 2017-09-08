@@ -130,6 +130,45 @@ mdWindows = Multidex(
 //////////////////////////////////////////////////////////////////////////
 // General utility routines //
 
+/// Find a node's value in the model, regardless of type.
+/// @param node_ref {mixed} If a string, the node id; otherwise, anything
+///                         that can be passed to jstree.get_node.
+/// @return ret {object} .ty = NT_*; .val = the value, or
+///                         .ty=false if the node wasn't found.
+function get_node_val(node_ref)
+{
+    let retval = {ty: false, val: null};
+    if(!node_ref) return retval;
+
+    // Get the node ID
+    let node_id;
+    if(typeof node_ref === 'string') {
+        node_id = node_ref;
+    } else {
+        let node = treeobj.get_node(node_ref);
+        if(node === false) return retval;
+        node_id = node.id;
+    }
+
+    // Check each piece of the model in turn
+    let val, ty;
+    val = mdWindows.by_node_id(node_id);
+    if(val) {
+        retval.ty = NT_WINDOW;
+        retval.val = val;
+        return retval;
+    }
+
+    val = mdTabs.by_node_id(node_id);
+    if(val) {
+        retval.ty = NT_TAB;
+        retval.val = val;
+        return retval;
+    }
+
+    return retval;
+} //get_node_val
+
 /// Ignore a Chrome callback error, and suppress Chrome's "runtime.lastError"
 /// diagnostic.
 function ignore_chrome_error() { void chrome.runtime.lastError; }
@@ -1445,6 +1484,9 @@ function getHamburgerMenuItems(node, UNUSED_proxyfunc, e)
             icon: 'fa fa-folder-open-o',
             separator_after: true
         }
+        // TODO RESUME HERE add a "Sort" submenu: Asc, Desc, Asc numeric, Desc numeric
+        // Sorting just rearranges the node.children array and then calls
+        // redraw_node.  See https://github.com/vakata/jstree/blob/master/src/jstree.sort.js
         , expandItem: {
             label: "Expand all",
             icon: 'fa fa-plus-square',
@@ -1535,6 +1577,82 @@ function getMainContextMenuItems(node, UNUSED_proxyfunc, e)
 //        // https://stackoverflow.com/users/7012/avi-flax
 
 } //getMainContextMenuItems
+
+//////////////////////////////////////////////////////////////////////////
+// Drag-and-drop support //
+
+/// Determine whether a node or set of nodes can be dragged.
+/// At present, we only support reordering windows.
+function dndIsDraggable(nodes, evt)
+{
+    if(false) {
+        console.group('is draggable?');
+        console.log(nodes);
+        console.groupEnd();
+        //console.log($.jstree.reference(evt.target));
+    }
+
+    // If any node being dragged is anything other than a window,
+    // it's not draggable.
+    for(let node of nodes) {
+        let val = get_node_val(node.id);
+        if(val.ty !== NT_WINDOW) return false;
+    }
+
+    // TODO RESUME HERE: somehow, after dragging a window, dragging one of
+    // its children moves the whole window.
+
+    return true;    // Otherwise, it is draggable
+} //dndIsDraggable
+
+/// Determine whether a node is a valid drop target.
+/// This function actually gets called for all changes to the tree,
+/// so we permit everything except for invalid drops.
+function treeCheckCallback(
+            operation, node, node_parent, node_position, more)
+{
+    if(false) {
+        console.group('check callback for ' + operation);
+        console.log(node);
+        console.log(node_parent);
+        //console.log(node_position);
+        if(more) console.log(more);
+        if(!more || !more.dnd) {
+            console.group('Not drag and drop');
+            console.trace();
+            console.groupEnd();
+        }
+        console.groupEnd();
+    }
+
+    // When dragging, you can't drag into another node, or anywhere but the root.
+    if(more && more.dnd && operation==='move_node') {
+
+        // Can't drop inside - only before or after
+        if(more.pos==='i') return false;
+
+        // Can't drop other than in the root
+        if(node_parent.id !== $.jstree.root) return false;
+    }
+
+    // When moving, e.g., at drag end, you can't drop a window other than
+    // in the root.
+    if(operation==='move_node') {
+        let val = get_node_val(node.id);
+        if(val.ty === NT_WINDOW && node_parent.id !== $.jstree.root)
+            return false;
+    }
+
+    // See https://github.com/vakata/jstree/issues/815 - the final node move
+    // doesn't come from the dnd plugin, so doesn't have more.dnd.
+    // It does have more.core, however.  We may need to save state from an
+    // earlier call of this to a later call, but I hope not.
+
+    // Note: if settings.dnd.check_while_dragging is false, we never get
+    // a call to this function from the dnd plugin!
+
+    return true;    // If we made it here, we're OK.
+} //treeCheckCallback
 
 //////////////////////////////////////////////////////////////////////////
 // Startup / shutdown //
@@ -1654,11 +1772,12 @@ function initTree1(win_id)
     log.info('TabFern view.js initializing tree in window ' + win_id.toString());
 
     let jstreeConfig = {
-        plugins: ['actions', 'wholerow', 'flagnode'] // TODO add state plugin
+        plugins: ['actions', 'wholerow', 'flagnode',
+                    'dnd'] // TODO add state plugin
         , core: {
             animation: false,
             multiple: false,          // for now
-            check_callback: true,     // for now, allow modifications
+            check_callback: treeCheckCallback,
             themes: {
                 name: 'default-dark'
               , variant: 'small'
@@ -1669,6 +1788,14 @@ function initTree1(win_id)
         }
         , flagnode: {
             css_class: 'tf-focused-tab'
+        }
+        , dnd: {
+            copy: false,
+            drag_selection: false,  // only drag one node
+            is_draggable: dndIsDraggable,
+            large_drop_target: true,
+            use_html5: true
+            //, check_while_dragging: false   // For debugging only
         }
     };
 
