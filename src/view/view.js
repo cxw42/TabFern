@@ -1494,11 +1494,13 @@ function getHamburgerMenuItems(node, UNUSED_proxyfunc, e)
     return {
         infoItem: {
             label: "About, help, and credits",
+            title: "Online - the TabFern web site",
             action: hamAboutWindow,
             icon: 'fa fa-info',
         }
         , settingsItem: {
-            label: "Settings",
+            label: "Settings and offline help",
+            title: "Also lists the features introduced with each version!",
             action: hamSettings,
             icon: 'fa fa-cogs',
             separator_after: true
