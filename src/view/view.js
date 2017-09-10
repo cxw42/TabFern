@@ -17,9 +17,12 @@
 // Constants //
 
 const STORAGE_KEY='tabfern-data';
-    // Store the saved windows/tabs
+    ///< Store the saved windows/tabs
 const LOCN_KEY='tabfern-window-location';
-    // Store where the tabfern popup is
+    ///< Store where the tabfern popup is
+const LASTVER_KEY='tabfern-last-version';
+    ///< Store the last version used on this system, for showing a
+    ///< "What's New" notification
 
 const SAVE_DATA_AS_VERSION=1;       // version we are currently saving
 
@@ -28,7 +31,7 @@ const FOCUSED_WIN_CLASS='tf-focused-window';  // Class on the currently-focused 
 const VISIBLE_WIN_CLASS='tf-visible-window';  // Class on all visible wins
 const ACTION_GROUP_WIN_CLASS='tf-action-group';   // Class on action-group div
 
-const INIT_TIME_ALLOWED_MS = 2000;  // After this time, if init isn't done,
+const INIT_TIME_ALLOWED_MS = 3000;  // After this time, if init isn't done,
                                     // display an error message.
 const INIT_MSG_SEL = 'div#init-incomplete';     // Selector for that message
 
@@ -89,6 +92,9 @@ let Esc = HTMLEscaper();
 
 /// The module that handles <Shift> bypassing of the jstree context menu
 let Bypasser;
+
+/// Whether to show a notification of new features
+let ShowWhatIsNew = false;
 
 //////////////////////////////////////////////////////////////////////////
 // Initialization //
@@ -186,6 +192,13 @@ function compare_node_text(a, b)
 
     return a_text.localeCompare(b_text, undefined, {sensitivity:'base'});
 } //compare_node_text
+
+/// Sorting criterion for node text: by locale, ascending, case-insensitive.
+/// Limitations are as compare_node_text().
+function compare_node_text_desc(a,b)
+{
+    return compare_node_text(b,a);
+} //compare_node_text_desc
 
 /// Ignore a Chrome callback error, and suppress Chrome's "runtime.lastError"
 /// diagnostic.
@@ -1418,12 +1431,25 @@ function hamAboutWindow()
     openWindowForURL('https://cxw42.github.io/TabFern/');
 } //hamAboutWindow()
 
-/// Open the Settings window
+/// Open the Settings window.  If ShowWhatIsNew, also updates the LASTVER_KEY
+/// information used by checkWhatIsNew().
 function hamSettings()
 {
-    openWindowForURL(chrome.extension.getURL('/src/options_custom/index.html'));
-}
+    // Actually open the window
+    openWindowForURL(chrome.extension.getURL(
+        '/src/options_custom/index.html' +
+        (ShowWhatIsNew ? '#open=last' : ''))
+    );
 
+    // Record that the user has seen the "what's new" for this version
+    if(ShowWhatIsNew) {
+        ShowWhatIsNew = false;
+
+        let to_save = {};
+        to_save[LASTVER_KEY] = TABFERN_VERSION;
+        chrome.storage.local.set(to_save, ignore_chrome_error);
+    }
+} //hamSettings()
 
 function hamBackup()
 {
@@ -1469,11 +1495,19 @@ function hamCollapseAll()
     treeobj.close_all();
 } //hamCollapseAll()
 
+/// Sort by name, ascending
 function hamSortAZ()
 {
     treeobj.get_node($.jstree.root).children.sort(compare_node_text);
     treeobj.redraw(true);   // true => full redraw
 } //hamSortAZ
+
+/// Sort by name, descending
+function hamSortZA()
+{
+    treeobj.get_node($.jstree.root).children.sort(compare_node_text_desc);
+    treeobj.redraw(true);   // true => full redraw
+} //hamSortZA
 
 /**
  * You can call proxyfunc with the items or just return them, so we just
@@ -1502,7 +1536,8 @@ function getHamburgerMenuItems(node, UNUSED_proxyfunc, e)
             label: "Settings and offline help",
             title: "Also lists the features introduced with each version!",
             action: hamSettings,
-            icon: 'fa fa-cogs',
+            icon: 'fa fa-cogs' + (ShowWhatIsNew ? ' tf-notification' : ''),
+                // If we have a "What's new" item, flag it
             separator_after: true
         }
         , backupItem: {
@@ -1524,7 +1559,12 @@ function getHamburgerMenuItems(node, UNUSED_proxyfunc, e)
                     title: 'Sort ascending by window name, case-insensitive',
                     action: hamSortAZ
                 }
-                // TODO RESUME HERE add Desc, Asc numeric, Desc numeric orders
+                , zaItem: {
+                    label: 'Z-A',
+                    title: 'Sort descending by window name, case-insensitive',
+                    action: hamSortZA
+                }
+                // TODO RESUME HERE add Asc numeric, Desc numeric orders
             } //submenu
         } //sortItem
         , expandItem: {
@@ -1701,6 +1741,37 @@ function treeCheckCallback(
 
     return true;    // If we made it here, we're OK.
 } //treeCheckCallback
+
+//////////////////////////////////////////////////////////////////////////
+// What's New //
+
+/// Check whether to show a "what's new" notification.
+/// Sets ShowWhatIsNew, used by getHamburgerMenuItems().
+/// Function hamSettings() updates the LASTVER_KEY information.
+function checkWhatIsNew(selector)
+{
+    chrome.storage.local.get(LASTVER_KEY, function(items) {
+        let should_notify = true;   // unless proven otherwise
+
+        // Check whether the user has seen the notification
+        if(typeof(chrome.runtime.lastError) === 'undefined') {
+            let lastver = items[LASTVER_KEY];
+            if( (lastver !== null) && (typeof lastver === 'string') ) {
+                if(lastver === TABFERN_VERSION) {   // the user has already
+                    should_notify = false;          // seen the notification.
+                }
+            }
+        }
+
+        if(should_notify) {
+            ShowWhatIsNew = true;
+            // Put a notification icon on the hamburger
+            let i = $(selector + ' .jstree-anchor i');
+            i.addClass('tf-notification');
+            i.one('click', function() { i.removeClass('tf-notification'); });
+        }
+    });
+} //checkWhatIsNew
 
 //////////////////////////////////////////////////////////////////////////
 // Startup / shutdown //
@@ -1907,6 +1978,8 @@ function initTree0()
     document.title = 'TabFern ' + TABFERN_VERSION;
 
     Hamburger = HamburgerMenuMaker('#hamburger-menu', getHamburgerMenuItems);
+
+    checkWhatIsNew('#hamburger-menu');
 
     // Stash our current size, which is the default window size.
     newWinSize = getWindowSize(window);
