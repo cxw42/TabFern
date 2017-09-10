@@ -465,6 +465,8 @@ function actionForgetWindow(node_id, node, unused_action_id, unused_action_el)
     if(!win_val) return;
 
     win_val.keep = WIN_NOKEEP;
+    win_val.raw_title += ' (Unsaved)';
+    treeobj.rename_node(node_id, Esc.escape(win_val.raw_title));
 
     if(win_val.isOpen) {    // should always be true, but just in case...
         treeobj.set_icon(node, 'visible-window-icon');
@@ -636,8 +638,9 @@ function createNodeForWindow(win, keep)
         return;
     }
 
+    let win_text = (keep ? 'Saved tabs' : 'Unsaved');
     let win_node_id = treeobj.create_node(null,
-            {     text: 'Window'
+            {     text: win_text
                 , icon: (keep ? 'visible-saved-window-icon' :
                                     'visible-window-icon')
                 , li_attr: { class: WIN_CLASS + ' ' + VISIBLE_WIN_CLASS }
@@ -647,7 +650,7 @@ function createNodeForWindow(win, keep)
     log.info('Adding nodeid map for winid ' + win.id);
     mdWindows.add({
         win_id: win.id, node_id: win_node_id, win: win,
-        raw_title: 'Window', isOpen: true, keep: keep
+        raw_title: win_text, isOpen: true, keep: keep
     });
 
     addWindowNodeActions(win_node_id);
@@ -1851,6 +1854,39 @@ function initTree3()
     chrome.storage.local.get(LOCN_KEY, initTree4);
 } //initTree3
 
+/// See whether a window corresponds to an already-saved, closed window.
+/// This may happen, e.g., due to TabFern refresh or Chrome reload.
+/// @return the existing window's node and value, or false if no match.
+function winAlreadyExists(new_win)
+{
+    WIN:
+    for(let existing_win_node_id of treeobj.get_node($.jstree.root).children) {
+
+        // Is it already open?  If so, don't hijack it.
+        let existing_win_val = mdWindows.by_node_id(existing_win_node_id);
+        if(existing_win_val.isOpen) continue WIN;
+
+        // Does it have the same number of tabs?  If not, skip it.
+        let existing_win_node = treeobj.get_node(existing_win_node_id);
+        if(existing_win_node.children.length != new_win.tabs.length)
+            continue WIN;
+
+        // Same number of tabs.  Are they the same URLs?
+        for(let i=0; i<new_win.tabs.length; ++i) {
+            let existing_tab_val = mdTabs.by_node_id(existing_win_node.children[i]);
+            if(!existing_tab_val) continue WIN;
+            if(existing_tab_val.raw_url !== new_win.tabs[i].url) continue WIN;
+        }
+
+        // Since all the tabs have the same URLs, assume we are reopening
+        // an existing window.
+        return {node: existing_win_node, val: existing_win_val};
+
+    } //foreach existing window
+
+    return false;
+} //winAlreadyExists()
+
 function addOpenWindowsToTree(winarr)
 {
     let dat = {};
@@ -1861,7 +1897,40 @@ function addOpenWindowsToTree(winarr)
         if(win.focused) {
             focused_win_id = win.id;
         }
-        createNodeForWindow(win, WIN_NOKEEP);
+
+        let existing_win = winAlreadyExists(win);
+        if(!existing_win) {
+            createNodeForWindow(win, WIN_NOKEEP);
+        } else {
+            log.info('Found existing window in the tree: ' + existing_win.val.raw_title);
+            mdWindows.change_key(existing_win.val, 'win_id', win.id);
+            existing_win.val.isOpen = true;
+            // don't change val.keep, which may have either value.
+            existing_win.val.win = win;
+            twiddleVisibleStyle(existing_win.node, true);
+            treeobj.set_icon(existing_win.node,
+                    existing_win.val.keep ? 'visible-saved-window-icon' :
+                                            'visible-window-icon' );
+            treeobj.open_node(existing_win.node);
+
+            // If we reach here, win.tabs.length === existing_win.node.children.length.
+            for(let idx=0; idx < win.tabs.length; ++idx) {
+                let tab_node_id = existing_win.node.children[idx];
+                let tab_val = mdTabs.by_node_id(tab_node_id);
+                if(!tab_val) continue;
+
+                let tab = win.tabs[idx];
+
+                tab_val.win_id = win.id;
+                tab_val.index = idx;
+                tab_val.tab = tab;
+                tab_val.raw_url = tab.url || 'about:blank';
+                tab_val.raw_title = tab.title || '## Unknown title ##';
+                tab_val.isOpen = true;
+                mdTabs.change_key(tab_val, 'tab_id', tab_val.tab.id);
+            }
+
+        }
     } //foreach window
 
     // Highlight the focused window.
