@@ -5,10 +5,11 @@
 (function(root){
     // Shortcuts for frequently-used items
     let ham = '<i class="fa fa-bars"></i>';
+    let gt = '<i class="fa fa-lg fa-caret-right"></i>';
 
     // Assign the settings
     root.manifest = {
-        "name": "TabFern Settings",
+        "name": "Settings - ver. "+TABFERN_VERSION+' - TabFern',
         "icon": "/assets/fern16.png",
         "settings": [
 
@@ -117,7 +118,7 @@
                 "type": "description",
                 "text":
     '<ul>' +
-    '<li>Sorting list by window name (on the '+ham+' menu)</li>'+
+    '<li>Sorting list by window name (on the '+ham+' '+gt+' Sort menu)</li>'+
     '<li>You can now drag and drop windows to rearrange them in the tree!</li>'+
     '</ul>'
             },
@@ -126,7 +127,10 @@
                 "group": "Version 0.1.5",
                 "name": "changelog-0_1_5",
                 "type": "description",
-                "text": "Bug fixes, including workarounds for Chrome 61 changes"
+                "text": "You can now right-click on a saved window and choose "+
+                    '"Forget" to leave the window as open, but not save it '+
+                    'for next time.  Also includes some bug fixes, including '+
+                    'workarounds for Chrome 61 changes.'
             },
             {
                 "tab": i18n.get("What's new?"),

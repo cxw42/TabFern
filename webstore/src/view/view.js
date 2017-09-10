@@ -17,9 +17,12 @@
 // Constants //
 
 const STORAGE_KEY='tabfern-data';
-    // Store the saved windows/tabs
+    ///< Store the saved windows/tabs
 const LOCN_KEY='tabfern-window-location';
-    // Store where the tabfern popup is
+    ///< Store where the tabfern popup is
+const LASTVER_KEY='tabfern-last-version';
+    ///< Store the last version used on this system, for showing a
+    ///< "What's New" notification
 
 const SAVE_DATA_AS_VERSION=1;       // version we are currently saving
 
@@ -28,7 +31,7 @@ const FOCUSED_WIN_CLASS='tf-focused-window';  // Class on the currently-focused 
 const VISIBLE_WIN_CLASS='tf-visible-window';  // Class on all visible wins
 const ACTION_GROUP_WIN_CLASS='tf-action-group';   // Class on action-group div
 
-const INIT_TIME_ALLOWED_MS = 2000;  // After this time, if init isn't done,
+const INIT_TIME_ALLOWED_MS = 3000;  // After this time, if init isn't done,
                                     // display an error message.
 const INIT_MSG_SEL = 'div#init-incomplete';     // Selector for that message
 
@@ -41,9 +44,9 @@ const WIN_NOKEEP = false;
 const NONE = chrome.windows.WINDOW_ID_NONE;
 
 // Node-type enumeration.  Here because there may be more node types
-// in the future (e.g., dividers or plugins).
-const NT_WINDOW = 1;
-const NT_TAB = 2;
+// in the future (e.g., dividers or plugins).  Each NT_* must be truthy.
+const NT_WINDOW = 'window';
+const NT_TAB = 'tab';
 
 //////////////////////////////////////////////////////////////////////////
 // Globals //
@@ -90,6 +93,9 @@ let Esc = HTMLEscaper();
 /// The module that handles <Shift> bypassing of the jstree context menu
 let Bypasser;
 
+/// Whether to show a notification of new features
+let ShowWhatIsNew = false;
+
 //////////////////////////////////////////////////////////////////////////
 // Initialization //
 
@@ -129,6 +135,70 @@ mdWindows = Multidex(
 
 //////////////////////////////////////////////////////////////////////////
 // General utility routines //
+
+/// Find a node's value in the model, regardless of type.
+/// @param node_ref {mixed} If a string, the node id; otherwise, anything
+///                         that can be passed to jstree.get_node.
+/// @return ret {object} .ty = NT_*; .val = the value, or
+///                         .ty=false if the node wasn't found.
+function get_node_val(node_ref)
+{
+    let retval = {ty: false, val: null};
+    if(!node_ref) return retval;
+
+    // Get the node ID
+    let node_id;
+    if(typeof node_ref === 'string') {
+        node_id = node_ref;
+    } else {
+        let node = treeobj.get_node(node_ref);
+        if(node === false) return retval;
+        node_id = node.id;
+    }
+
+    // Check each piece of the model in turn
+    let val, ty;
+    val = mdWindows.by_node_id(node_id);
+    if(val) {
+        retval.ty = NT_WINDOW;
+        retval.val = val;
+        return retval;
+    }
+
+    val = mdTabs.by_node_id(node_id);
+    if(val) {
+        retval.ty = NT_TAB;
+        retval.val = val;
+        return retval;
+    }
+
+    return retval;
+} //get_node_val
+
+/// Sorting criterion for node text: by locale, ascending, case-insensitive.
+/// If either node is unknown to the tree, it is sorted later.  If both nodes
+/// are unknown, they are sorted equally.
+/// @param a {mixed} One node, in any form acceptable to jstree.get_node()
+/// @param b {mixed} The other node, in any form acceptable to jstree.get_node()
+/// @return {Number} -1, 0, or 1
+function compare_node_text(a, b)
+{
+    let a_text = treeobj.get_text(a);
+    let b_text = treeobj.get_text(b);
+
+    if(a_text === b_text) return 0;     // e.g., both unknown
+    if(a_text === false) return 1;      // only #a unknown - it sorts later
+    if(b_text === false) return -1;     // only #b unknown - it sorts later
+
+    return a_text.localeCompare(b_text, undefined, {sensitivity:'base'});
+} //compare_node_text
+
+/// Sorting criterion for node text: by locale, ascending, case-insensitive.
+/// Limitations are as compare_node_text().
+function compare_node_text_desc(a,b)
+{
+    return compare_node_text(b,a);
+} //compare_node_text_desc
 
 /// Ignore a Chrome callback error, and suppress Chrome's "runtime.lastError"
 /// diagnostic.
@@ -295,13 +365,11 @@ function saveTree(save_visible_windows = true, cbk = undefined)
 {
     // Get the raw data for the whole tree.  Can't use $(...) because closed
     // tree nodes aren't in the DOM.
-    let win_nodes = treeobj.get_json();
     let root_node = treeobj.get_node($.jstree.root);    //from get_json() src
     if(!root_node || !root_node.children) return;
 
     let result = [];    // the data to be saved
 
-    //debugger;
     // Clean up the data
     for(let win_node_id of root_node.children) {
         let win_node = treeobj.get_node(win_node_id);
@@ -349,18 +417,19 @@ function saveTree(save_visible_windows = true, cbk = undefined)
     to_save[STORAGE_KEY] = makeSaveData(result);
         // storage automatically does JSON.stringify
     chrome.storage.local.set(to_save,
-            function() {
-                if(typeof(chrome.runtime.lastError) === 'undefined') {
-                    if(typeof cbk === 'function') {
-                        cbk(to_save[STORAGE_KEY]);
-                    }
-                    return;     // Saved OK
+        function() {
+            if(typeof(chrome.runtime.lastError) === 'undefined') {
+                if(typeof cbk === 'function') {
+                    cbk(to_save[STORAGE_KEY]);
                 }
-                let msg = "TabFern: couldn't save: " +
-                                chrome.runtime.lastError.toString();
-                log.error(msg);
-                window.alert(msg);     // The user needs to know
-            });
+                return;     // Saved OK
+            }
+            let msg = "TabFern: couldn't save: " +
+                            chrome.runtime.lastError.toString();
+            log.error(msg);
+            window.alert(msg);     // The user needs to know
+        }
+    ); //storage.local.set
 } //saveTree()
 
 //////////////////////////////////////////////////////////////////////////
@@ -384,6 +453,8 @@ function actionRenameWindow(node_id, node, unused_action_id, unused_action_el)
         treeobj.set_icon(node, 'visible-saved-window-icon');
     }
 
+    vscroll_function();     // Not sure why this is necessary, but I saw a
+                            // vposition glitch without it.
     saveTree();
 } //actionRenameWindow()
 
@@ -900,7 +971,7 @@ function treeOnSelect(evt, evt_data)
                         if(win.tabs.length > expected_tab_count) {
                             log.warn('Win ' + win.id + ': expected ' +
                                     expected_tab_count + ' tabs; got ' +
-                                    win.tabs.length + 'tabs --- pruning.');
+                                    win.tabs.length + ' tabs --- pruning.');
 
                             let to_prune=[];
                             for(let tab_idx = expected_tab_count;
@@ -1015,12 +1086,12 @@ function winOnFocusChanged(win_id)
     chrome.windows.getLastFocused({}, function(win){
         let new_win_id;
         if(!win.focused) {
-            new_win_id = -1;
+            new_win_id = NONE;
         } else {
             new_win_id = win.id;
         }
 
-        log.info('Focus change to ' + win_id + '; lastfocused ' + win.id);
+        log.info('Focus change from ' + currently_focused_winid + ' to ' + win_id + '; lastfocused ' + win.id);
 
         // Clear the focus highlights if we are changing windows.
         // Avoid flicker if the selection is staying in the same window.
@@ -1037,7 +1108,7 @@ function winOnFocusChanged(win_id)
 
         currently_focused_winid = new_win_id;
 
-        if(new_win_id == NONE) return;
+        if(new_win_id === NONE) return;
 
         // Get the window
         let window_node_id = mdWindows.by_win_id(new_win_id, 'node_id');
@@ -1360,12 +1431,25 @@ function hamAboutWindow()
     openWindowForURL('https://cxw42.github.io/TabFern/');
 } //hamAboutWindow()
 
-/// Open the Settings window
+/// Open the Settings window.  If ShowWhatIsNew, also updates the LASTVER_KEY
+/// information used by checkWhatIsNew().
 function hamSettings()
 {
-    openWindowForURL(chrome.extension.getURL('/src/options_custom/index.html'));
-}
+    // Actually open the window
+    openWindowForURL(chrome.extension.getURL(
+        '/src/options_custom/index.html' +
+        (ShowWhatIsNew ? '#open=last' : ''))
+    );
 
+    // Record that the user has seen the "what's new" for this version
+    if(ShowWhatIsNew) {
+        ShowWhatIsNew = false;
+
+        let to_save = {};
+        to_save[LASTVER_KEY] = TABFERN_VERSION;
+        chrome.storage.local.set(to_save, ignore_chrome_error);
+    }
+} //hamSettings()
 
 function hamBackup()
 {
@@ -1411,9 +1495,30 @@ function hamCollapseAll()
     treeobj.close_all();
 } //hamCollapseAll()
 
+/// Sort by name, ascending
+function hamSortAZ()
+{
+    treeobj.get_node($.jstree.root).children.sort(compare_node_text);
+    treeobj.redraw(true);   // true => full redraw
+} //hamSortAZ
+
+/// Sort by name, descending
+function hamSortZA()
+{
+    treeobj.get_node($.jstree.root).children.sort(compare_node_text_desc);
+    treeobj.redraw(true);   // true => full redraw
+} //hamSortZA
+
 /**
  * You can call proxyfunc with the items or just return them, so we just
  * return them.
+ *
+ * Note: Only use String, non-Integer, non-Symbol keys in the returned items.
+ * That way the context menu will be in the same order as the order of the keys
+ * in the items.  See https://stackoverflow.com/a/32149345/2877364 and
+ * http://www.ecma-international.org/ecma-262/6.0/#sec-ordinary-object-internal-methods-and-internal-slots-ownpropertykeys
+ * for details.
+ *
  * @param node
  * @returns {actionItemId: {label: string, action: function}, ...}, or
  *          false for no menu.
@@ -1423,13 +1528,16 @@ function getHamburgerMenuItems(node, UNUSED_proxyfunc, e)
     return {
         infoItem: {
             label: "About, help, and credits",
+            title: "Online - the TabFern web site",
             action: hamAboutWindow,
             icon: 'fa fa-info',
         }
         , settingsItem: {
-            label: "Settings",
+            label: "Settings and offline help",
+            title: "Also lists the features introduced with each version!",
             action: hamSettings,
-            icon: 'fa fa-cogs',
+            icon: 'fa fa-cogs' + (ShowWhatIsNew ? ' tf-notification' : ''),
+                // If we have a "What's new" item, flag it
             separator_after: true
         }
         , backupItem: {
@@ -1443,6 +1551,22 @@ function getHamburgerMenuItems(node, UNUSED_proxyfunc, e)
             icon: 'fa fa-folder-open-o',
             separator_after: true
         }
+        , sortItem: {
+            label: 'Sort',
+            submenu: {
+                azItem: {
+                    label: 'A-Z',
+                    title: 'Sort ascending by window name, case-insensitive',
+                    action: hamSortAZ
+                }
+                , zaItem: {
+                    label: 'Z-A',
+                    title: 'Sort descending by window name, case-insensitive',
+                    action: hamSortZA
+                }
+                // TODO RESUME HERE add Asc numeric, Desc numeric orders
+            } //submenu
+        } //sortItem
         , expandItem: {
             label: "Expand all",
             icon: 'fa fa-plus-square',
@@ -1485,9 +1609,9 @@ function getMainContextMenuItems(node, UNUSED_proxyfunc, e)
 
     // -------
 
-    if(nodeType == NT_TAB) return false;    // At present, no menu for tabs
+    if(nodeType === NT_TAB) return false;    // At present, no menu for tabs
 
-    if(nodeType == NT_WINDOW) {
+    if(nodeType === NT_WINDOW) {
         let winItems = {};
         winItems.renameItem = {
                 label: 'Rename',
@@ -1533,6 +1657,121 @@ function getMainContextMenuItems(node, UNUSED_proxyfunc, e)
 //        // https://stackoverflow.com/users/7012/avi-flax
 
 } //getMainContextMenuItems
+
+//////////////////////////////////////////////////////////////////////////
+// Drag-and-drop support //
+
+/// Determine whether a node or set of nodes can be dragged.
+/// At present, we only support reordering windows.
+function dndIsDraggable(nodes, evt)
+{
+    if(log.getLevel() <= log.levels.TRACE) {
+        console.group('is draggable?');
+        console.log(nodes);
+        console.groupEnd();
+        //console.log($.jstree.reference(evt.target));
+    }
+
+    // If any node being dragged is anything other than a window,
+    // it's not draggable.  Check all nodes for future-proofing, since we
+    // may someday support multiselect.
+    for(let node of nodes) {
+        let val = get_node_val(node.id);
+        if(val.ty !== NT_WINDOW) return false;
+    }
+
+    return true;    // Otherwise, it is draggable
+} //dndIsDraggable
+
+/// Determine whether a node is a valid drop target.
+/// This function actually gets called for all changes to the tree,
+/// so we permit everything except for invalid drops.
+function treeCheckCallback(
+            operation, node, node_parent, node_position, more)
+{
+    if(log.getLevel() <= log.levels.TRACE) {
+        console.group('check callback for ' + operation);
+        console.log(node);
+        console.log(node_parent);
+        //console.log(node_position);
+        if(more) console.log(more);
+        if(!more || !more.dnd) {
+            console.group('Not drag and drop');
+            console.trace();
+            console.groupEnd();
+        }
+        console.groupEnd();
+    }
+
+    // When dragging, you can't drag into another node, or anywhere but the root.
+    if(more && more.dnd && operation==='move_node') {
+
+        // Can't drop inside - only before or after
+        if(more.pos==='i') return false;
+
+        // Can't drop other than in the root
+        if(node_parent.id !== $.jstree.root) return false;
+    }
+
+    // When moving, e.g., at drag end, you can't drop a window other than
+    // in the root.
+    if(operation==='move_node') {
+        let val = get_node_val(node.id);
+
+        if(log.getLevel() <= log.levels.TRACE) {
+            console.group('check callback for ' + operation);
+            console.log(val);
+            console.log(node);
+            console.log(node_parent);
+            if(more) console.log(more);
+            console.groupEnd();
+        }
+
+        if(val.ty === NT_WINDOW && node_parent.id !== $.jstree.root)
+            return false;
+    }
+
+    // See https://github.com/vakata/jstree/issues/815 - the final node move
+    // doesn't come from the dnd plugin, so doesn't have more.dnd.
+    // It does have more.core, however.  We may need to save state from an
+    // earlier call of this to a later call, but I hope not.
+
+    // Note: if settings.dnd.check_while_dragging is false, we never get
+    // a call to this function from the dnd plugin!
+
+    return true;    // If we made it here, we're OK.
+} //treeCheckCallback
+
+//////////////////////////////////////////////////////////////////////////
+// What's New //
+
+/// Check whether to show a "what's new" notification.
+/// Sets ShowWhatIsNew, used by getHamburgerMenuItems().
+/// Function hamSettings() updates the LASTVER_KEY information.
+function checkWhatIsNew(selector)
+{
+    chrome.storage.local.get(LASTVER_KEY, function(items) {
+        let should_notify = true;   // unless proven otherwise
+
+        // Check whether the user has seen the notification
+        if(typeof(chrome.runtime.lastError) === 'undefined') {
+            let lastver = items[LASTVER_KEY];
+            if( (lastver !== null) && (typeof lastver === 'string') ) {
+                if(lastver === TABFERN_VERSION) {   // the user has already
+                    should_notify = false;          // seen the notification.
+                }
+            }
+        }
+
+        if(should_notify) {
+            ShowWhatIsNew = true;
+            // Put a notification icon on the hamburger
+            let i = $(selector + ' .jstree-anchor i');
+            i.addClass('tf-notification');
+            i.one('click', function() { i.removeClass('tf-notification'); });
+        }
+    });
+} //checkWhatIsNew
 
 //////////////////////////////////////////////////////////////////////////
 // Startup / shutdown //
@@ -1652,11 +1891,12 @@ function initTree1(win_id)
     log.info('TabFern view.js initializing tree in window ' + win_id.toString());
 
     let jstreeConfig = {
-        plugins: ['actions', 'wholerow', 'flagnode'] // TODO add state plugin
+        plugins: ['actions', 'wholerow', 'flagnode',
+                    'dnd'] // TODO add state plugin
         , core: {
             animation: false,
             multiple: false,          // for now
-            check_callback: true,     // for now, allow modifications
+            check_callback: treeCheckCallback,
             themes: {
                 name: 'default-dark'
               , variant: 'small'
@@ -1668,7 +1908,22 @@ function initTree1(win_id)
         , flagnode: {
             css_class: 'tf-focused-tab'
         }
+        , dnd: {
+            copy: false,
+            drag_selection: false,  // only drag one node
+            is_draggable: dndIsDraggable,
+            large_drop_target: true
+            //, use_html5: true
+            //, check_while_dragging: false   // For debugging only
+        }
     };
+
+    // Note on dnd.use_html5: When it's set, if you drag a non-draggable item,
+    // it seems to treat the drag as if you were dragging the last node
+    // you successfully dragged.
+    // The effect of this is that, e.g., after dragging a window, dragging
+    // one of its children moves the whole window.  TODO report this upstream.
+
 
     if ( getBoolSetting('ContextMenu.Enabled', true) ) {
         jstreeConfig.plugins.push('contextmenu');
@@ -1723,6 +1978,8 @@ function initTree0()
     document.title = 'TabFern ' + TABFERN_VERSION;
 
     Hamburger = HamburgerMenuMaker('#hamburger-menu', getHamburgerMenuItems);
+
+    checkWhatIsNew('#hamburger-menu');
 
     // Stash our current size, which is the default window size.
     newWinSize = getWindowSize(window);

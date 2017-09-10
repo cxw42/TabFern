@@ -1,5 +1,7 @@
 /* view.css */
 
+/* DEBUG */
+/*div#hamburger-menu { background: #533; }*/
 /* //////////////////////////////////////////////////////////////////// */
 /* Accessibility */
 
@@ -52,6 +54,29 @@ div#init-incomplete {
     font-size: large;
     font-weight: bold;
     color: #f33;
+}
+
+/* Notification icon ------------------------------------------------------ */
+
+/* Need the parents of notification icons to have position other than static.
+ * Thanks to https://stackoverflow.com/a/9404641/2877364 by
+ * https://stackoverflow.com/users/246246/animuson */
+div#hamburger-menu ul li a i { position:relative; }
+.jstree-contextmenu a i { position:relative; }
+
+/* The notification icon itself */
+.tf-notification:after {
+    content: '\25cf';   /* a bullet */
+    /*text-shadow: none;*/
+    /*text-shadow: 2px 2px rgba(0,0,0,0.5);*/   /*maybe*/
+    z-index: 10000;
+    font-size: large;
+    color: #f22;        /* looks OK on black and white */
+    position:absolute;
+    transform: translateX(-50%);
+        /* thanks to https://stackoverflow.com/a/30631050/2877364 by
+         * https://stackoverflow.com/users/395910/terry */
+    top:-25%;
 }
 
 /* Action buttons --------------------------------------------------------- */

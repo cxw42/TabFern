@@ -7,7 +7,7 @@ console.log('TabFern common.js loading');
 
 /// The TabFern extension friendly version number.  Displayed in the
 /// title bar of the popup window.
-const TABFERN_VERSION='0.1.5 alpha \u26a0'
+const TABFERN_VERSION='0.1.6 alpha \u26a0'
     // Don't forget to update BOTH the version and version_name in
     // manifest.json when you change this!
 

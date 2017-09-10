@@ -1,9 +1,43 @@
+/// An object to hold the settings for later programmatic access
+let settingsobj;
+
 window.addEvent("domready", function () {
     // Option 1: Use the manifest:
     new FancySettings.initWithManifest(function (settings) {
+        settingsobj = settings;
         //settings.manifest.myButton.addEvent("action", function () {
         //    alert("You clicked me!");
         //});
+
+        // open tab specified in a query parm, if known.
+        // See https://stackoverflow.com/a/12151322/2877364
+        // Use location.hash instead of location.search since Chrome doesn't
+        // seem to navigate to chrome-extension://...&... .
+        let searchParams = new URLSearchParams(window.location.hash.slice(1));
+        if(searchParams.has('open')) {
+            let whichtab = -1;  // If other than -1, select that tab
+
+            let openval = String(searchParams.get('open'));     // Do we need the explicit String()?
+            let tabNames = Object.keys(settingsobj.tabs);
+                // These come out in definition order, as far as I know
+
+            // Check for a tab number
+            let tabnum = Number(openval);
+            if(!isNaN(tabnum) && (tabnum|0)>=0 && (tabnum|0)<tabNames.length) {
+                whichtab = (tabnum|0);
+            }
+
+            // Check for "last" as a special value
+            if(whichtab === -1 && openval.toLowerCase()==='last') {
+                whichtab = tabNames.length-1;
+            }
+
+            // Jump to that tab.
+            if(whichtab !== -1) {
+                settingsobj.tabs[tabNames[whichtab]].bundle.activate();
+            }
+
+        } //endif &open=... parameter specified
     });
 
     // Option 2: Do everything manually:
@@ -58,3 +92,4 @@ window.addEvent("domready", function () {
     ]);
     */
 });
+// vi: set ts=4 sts=4 sw=4 et ai: //
