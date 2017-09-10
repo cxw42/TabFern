@@ -116,7 +116,7 @@ mdTabs = Multidex(
       , 'index'     // in the current window
       , 'tab'       // the actual Tab record from Chrome
       , 'raw_url'   // the tab's URL
-      , 'raw_title' // the tab's title
+      , 'raw_title' // the tab's title.  null => default.
       , 'isOpen'    // open or not
       // TODO save favIconUrl?
     ]);
@@ -199,6 +199,18 @@ function compare_node_text_desc(a,b)
 {
     return compare_node_text(b,a);
 } //compare_node_text_desc
+
+/// Get the textual version of raw_title for a window
+function get_curr_raw_text(win_val)
+{
+    if(win_val.raw_title !== null) {
+        return win_val.raw_title;
+    } else if(win_val.keep) {
+        return 'Saved tabs';
+    } else {
+        return 'Unsaved';
+    }
+} //get_curr_raw_text()
 
 /// Ignore a Chrome callback error, and suppress Chrome's "runtime.lastError"
 /// diagnostic.
@@ -440,14 +452,14 @@ function actionRenameWindow(node_id, node, unused_action_id, unused_action_el)
     let win_val = mdWindows.by_node_id(node_id);
     if(!win_val) return;
 
-    let win_name = window.prompt('Window name?', win_val.raw_title);
+    let win_name = window.prompt('Window name?', get_curr_raw_text(win_val));
     if(win_name === null) return;   // user cancelled
 
     win_val.raw_title = win_name;
     win_val.keep = WIN_KEEP;    // assume that a user who bothered to rename
                                 // a node wants to keep it.
 
-    treeobj.rename_node(node_id, Esc.escape(win_name));
+    treeobj.rename_node(node_id, Esc.escape(get_curr_raw_text(win_val)));
 
     if(win_val.isOpen) {
         treeobj.set_icon(node, 'visible-saved-window-icon');
@@ -465,8 +477,11 @@ function actionForgetWindow(node_id, node, unused_action_id, unused_action_el)
     if(!win_val) return;
 
     win_val.keep = WIN_NOKEEP;
-    win_val.raw_title += ' (Unsaved)';
-    treeobj.rename_node(node_id, Esc.escape(win_val.raw_title));
+    if(win_val.raw_title !== null) {
+        win_val.raw_title += ' (Unsaved)';
+    }
+
+    treeobj.rename_node(node_id, Esc.escape(get_curr_raw_text(win_val)));
 
     if(win_val.isOpen) {    // should always be true, but just in case...
         treeobj.set_icon(node, 'visible-window-icon');
@@ -502,6 +517,8 @@ function actionCloseWindow(node_id, node, unused_action_id, unused_action_el)
     }
 
     win_val.isOpen = false;
+    treeobj.rename_node(node_id, Esc.escape(get_curr_raw_text(win_val)));
+        // text may have changed with isOpen
 
     treeobj.set_icon(node_id, true);    //default icon
     twiddleVisibleStyle(node, false);   // remove the visible style
@@ -628,7 +645,7 @@ function addWindowNodeActions(win_node_id)
 
 } //addWindowNodeActions
 
-/// Create a tree node for open window #win.
+/// Create a tree node for open, unsaved window #win.
 /// @returns the tree-node ID, or undefined on error.
 function createNodeForWindow(win, keep)
 {
@@ -638,9 +655,8 @@ function createNodeForWindow(win, keep)
         return;
     }
 
-    let win_text = (keep ? 'Saved tabs' : 'Unsaved');
     let win_node_id = treeobj.create_node(null,
-            {     text: win_text
+            {     text: 'Window'
                 , icon: (keep ? 'visible-saved-window-icon' :
                                     'visible-window-icon')
                 , li_attr: { class: WIN_CLASS + ' ' + VISIBLE_WIN_CLASS }
@@ -648,11 +664,13 @@ function createNodeForWindow(win, keep)
             });
 
     log.info('Adding nodeid map for winid ' + win.id);
-    mdWindows.add({
+    let win_val = mdWindows.add({
         win_id: win.id, node_id: win_node_id, win: win,
-        raw_title: win_text, isOpen: true, keep: keep
+        raw_title: null,    // default name
+        isOpen: true, keep: keep
     });
 
+    treeobj.rename_node(win_node_id, Esc.escape(get_curr_raw_text(win_val)));
     addWindowNodeActions(win_node_id);
 
     if(win.tabs) {                      // new windows may have no tabs
@@ -671,17 +689,18 @@ function createNodeForClosedWindow(win_data_v1)
 {
     let shouldCollapse = getBoolSetting('collapse-trees-on-startup');
     let win_node_id = treeobj.create_node(null,
-            {   text: Esc.escape(win_data_v1.raw_title)
+            {   text: 'Closed window'
                 //, 'icon': 'visible-window-icon'   // use the default icon
                 , li_attr: { class: WIN_CLASS }
                 , state: { 'opened': !shouldCollapse }
             });
 
-    mdWindows.add({
+    let win_val = mdWindows.add({
         win_id: NONE, node_id: win_node_id,
         win: undefined, raw_title: win_data_v1.raw_title, isOpen: false,
         keep: WIN_KEEP
     });
+    treeobj.rename_node(win_node_id, Esc.escape(get_curr_raw_text(win_val)));
 
     addWindowNodeActions(win_node_id);
 
