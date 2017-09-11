@@ -193,12 +193,49 @@ function compare_node_text(a, b)
     return a_text.localeCompare(b_text, undefined, {sensitivity:'base'});
 } //compare_node_text
 
-/// Sorting criterion for node text: by locale, ascending, case-insensitive.
+/// Sorting criterion for node text: by locale, descending, case-insensitive.
 /// Limitations are as compare_node_text().
 function compare_node_text_desc(a,b)
 {
     return compare_node_text(b,a);
 } //compare_node_text_desc
+
+/// Sorting criterion for node text: numeric, by locale, ascending,
+/// case-insensitive.
+/// If either node is unknown to the tree, it is sorted later.  If both nodes
+/// are unknown, they are sorted equally.  Numbers are sorted before
+/// @param a {mixed} One node, in any form acceptable to jstree.get_node()
+/// @param b {mixed} The other node, in any form acceptable to jstree.get_node()
+/// @return {Number} -1, 0, or 1
+function compare_node_num(a, b)
+{
+    let a_text = treeobj.get_text(a);
+    let b_text = treeobj.get_text(b);
+
+    if(a_text === b_text) return 0;     // e.g., both unknown
+    if(a_text === false) return 1;      // only #a unknown - it sorts later
+    if(b_text === false) return -1;     // only #b unknown - it sorts later
+
+    let a_num = parseFloat(a_text);
+    let b_num = parseFloat(b_text);
+
+    if(isNaN(a_num) && !isNaN(b_num)) return 1;     // a text, b # => a later
+    if(!isNaN(a_num) && isNaN(b_num)) return -1;    // b text, a # => b later
+
+    if(isNaN(a_num) && isNaN(b_num))     // both are text
+        return a_text.localeCompare(b_text, undefined, {sensitivity:'base'});
+
+    // Finally!  Numeric comparison!
+    if(a_num === b_num) return 0;
+    return (a_num > b_num ? 1 : -1);
+} //compare_node_num
+
+/// Sorting criterion for node text: numeric, by locale, descending,
+/// case-insensitive.  Limitations are as compare_node_num().
+function compare_node_num_desc(a,b)
+{
+    return compare_node_num(b,a);
+} //compare_node_num_desc
 
 /// Get the textual version of raw_title for a window
 function get_curr_raw_text(win_val)
@@ -1517,19 +1554,14 @@ function hamCollapseAll()
     treeobj.close_all();
 } //hamCollapseAll()
 
-/// Sort by name, ascending
-function hamSortAZ()
+/// Make a function to sort the top-level nodes based on #compare_fn
+function hamSorter(compare_fn)
 {
-    treeobj.get_node($.jstree.root).children.sort(compare_node_text);
-    treeobj.redraw(true);   // true => full redraw
-} //hamSortAZ
-
-/// Sort by name, descending
-function hamSortZA()
-{
-    treeobj.get_node($.jstree.root).children.sort(compare_node_text_desc);
-    treeobj.redraw(true);   // true => full redraw
-} //hamSortZA
+    return function() {
+        treeobj.get_node($.jstree.root).children.sort(compare_fn);
+        treeobj.redraw(true);   // true => full redraw
+    };
+} //hamSorter
 
 /**
  * You can call proxyfunc with the items or just return them, so we just
@@ -1558,7 +1590,7 @@ function getHamburgerMenuItems(node, UNUSED_proxyfunc, e)
             label: "Settings and offline help",
             title: "Also lists the features introduced with each version!",
             action: hamSettings,
-            icon: 'fa fa-cogs' + (ShowWhatIsNew ? ' tf-notification' : ''),
+            icon: 'fa fa-cog' + (ShowWhatIsNew ? ' tf-notification' : ''),
                 // If we have a "What's new" item, flag it
             separator_after: true
         }
@@ -1579,14 +1611,23 @@ function getHamburgerMenuItems(node, UNUSED_proxyfunc, e)
                 azItem: {
                     label: 'A-Z',
                     title: 'Sort ascending by window name, case-insensitive',
-                    action: hamSortAZ
+                    action: hamSorter(compare_node_text)
                 }
                 , zaItem: {
                     label: 'Z-A',
                     title: 'Sort descending by window name, case-insensitive',
-                    action: hamSortZA
+                    action: hamSorter(compare_node_text_desc)
                 }
-                // TODO RESUME HERE add Asc numeric, Desc numeric orders
+                , numItem09: {
+                    label: '0-9',
+                    title: 'Sort ascending by window name, numeric, case-insensitive',
+                    action: hamSorter(compare_node_num)
+                }
+                , numItem90: {
+                    label: '9-0',
+                    title: 'Sort descending by window name, numeric, case-insensitive',
+                    action: hamSorter(compare_node_num_desc)
+                }
             } //submenu
         } //sortItem
         , expandItem: {

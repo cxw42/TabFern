@@ -113,6 +113,16 @@
             // Changelog
             {
                 "tab": i18n.get("What's new?"),
+                "group": "Version 0.1.7",
+                "name": "changelog-0_1_7",
+                "type": "description",
+                "text":
+    '<ul>' +
+    '<li>Numeric sort order options (on the '+ham+' '+gt+' Sort menu)</li>'+
+    '</ul>'
+            },
+            {
+                "tab": i18n.get("What's new?"),
                 "group": "Version 0.1.6",
                 "name": "changelog-0_1_6",
                 "type": "description",
