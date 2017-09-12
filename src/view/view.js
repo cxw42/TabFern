@@ -79,6 +79,12 @@ let winSizes={};
 // TODO use content scripts to catch window resizing, a la
 // https://stackoverflow.com/q/13141072/2877364
 
+/// Whether to show a notification of new features
+let ShowWhatIsNew = false;
+
+/// Array of URLs of the last-deleted window
+let lastDeletedWindow;
+
 // - Modules -
 
 /// The keyboard shortcuts handler, if any.
@@ -92,9 +98,6 @@ let Esc = HTMLEscaper();
 
 /// The module that handles <Shift> bypassing of the jstree context menu
 let Bypasser;
-
-/// Whether to show a notification of new features
-let ShowWhatIsNew = false;
 
 //////////////////////////////////////////////////////////////////////////
 // Initialization //
@@ -584,11 +587,14 @@ function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el)
     // Close the window and adjust the tree
     actionCloseWindow(node_id, node, unused_action_id, unused_action_el);
 
+    lastDeletedWindow = [];
     // Remove the tabs from mdTabs
     for(let tab_node_id of node.children) {
         let tab_val = mdTabs.by_node_id(tab_node_id);
         if(!tab_val) continue;
         mdTabs.remove_value(tab_val);
+        // Save the URLs for "Restore last deleted"
+        lastDeletedWindow.push(tab_val.raw_url);
     }
 
     // Remove the window's node and value
@@ -757,7 +763,9 @@ function createNodeForClosedWindow(win_data_v1)
 /// Did we have a problem loading save data?
 let was_loading_error = false;
 
-/// Populate the tree from the save data, then call next_action.
+/// Add the save data into the tree.
+/// Design decision: TabFern SHALL always be able to load older save files.
+/// Never remove a loader from this function.
 /// @param {mixed} data The save data, parsed (i.e., not a JSON string)
 /// @return {Boolean} true on success, false on failure.
 let loadSavedWindowsFromData = (function(){
@@ -768,7 +776,7 @@ let loadSavedWindowsFromData = (function(){
     /// each tab is {text: "foo", url: "bar"}
     function loadSaveDataV0(data)
     {
-        // Make V1 data from the v0 data and pass it to the workers
+        // Make V1 data from the v0 data and pass it along the chain
         for(let v0_win of data) {
             let v1_win = {};
             v1_win.raw_title = v0_win.text;
@@ -798,7 +806,7 @@ let loadSavedWindowsFromData = (function(){
     /// each loader should return truthy if load successful, falsy otherwise.
     let versionLoaders = { 0: loadSaveDataV0, 1: loadSaveDataV1 };
 
-    /// Populate the tree from the save data, then call next_action.
+    /// Populate the tree from the save data.
     return function(data)
     {
         let succeeded = false;
@@ -1544,6 +1552,26 @@ function hamRestoreFromBackup()
     });
 } //hamRestoreFromBackup()
 
+function hamRestoreLastDeleted()
+{
+    if(!Array.isArray(lastDeletedWindow) || lastDeletedWindow.length<=0) return;
+
+    // Make v0 save data from the last-deleted-window URLs, just because
+    // v0 is convenient, and the backward-compatibility guarantee of
+    // loadSavedWindowsFromData means we won't have to refactor this.
+    let tabs=[]
+    for(let url of lastDeletedWindow) {
+        tabs.push({text: 'Restored', url: url});
+    }
+    let dat = [{text: 'Restored window', tabs: tabs}];
+
+    // Load it into the tree
+    loadSavedWindowsFromData(dat);
+
+    lastDeletedWindow = [];
+
+} //hamRestoreLastDeleted
+
 function hamExpandAll()
 {
     treeobj.open_all();
@@ -1579,33 +1607,42 @@ function hamSorter(compare_fn)
  */
 function getHamburgerMenuItems(node, UNUSED_proxyfunc, e)
 {
-    return {
-        infoItem: {
+    let items = {};
+    items.infoItem = {
             label: "About, help, and credits",
             title: "Online - the TabFern web site",
             action: hamAboutWindow,
             icon: 'fa fa-info',
-        }
-        , settingsItem: {
+        };
+    items.settingsItem = {
             label: "Settings and offline help",
             title: "Also lists the features introduced with each version!",
             action: hamSettings,
             icon: 'fa fa-cog' + (ShowWhatIsNew ? ' tf-notification' : ''),
                 // If we have a "What's new" item, flag it
             separator_after: true
-        }
-        , backupItem: {
+        };
+
+    if(Array.isArray(lastDeletedWindow) && lastDeletedWindow.length>0) {
+        items.restoreLastDeletedItem = {
+            label: "Restore last deleted",
+            action: hamRestoreLastDeleted,
+        };
+    }
+
+    items.backupItem = {
             label: "Backup now",
             icon: 'fa fa-floppy-o',
             action: hamBackup
-        }
-        , restoreItem: {
+        };
+    items.restoreItem = {
             label: "Load contents of a backup",
             action: hamRestoreFromBackup,
             icon: 'fa fa-folder-open-o',
             separator_after: true
-        }
-        , sortItem: {
+        };
+
+    items.sortItem = {
             label: 'Sort',
             submenu: {
                 azItem: {
@@ -1629,18 +1666,20 @@ function getHamburgerMenuItems(node, UNUSED_proxyfunc, e)
                     action: hamSorter(compare_node_num_desc)
                 }
             } //submenu
-        } //sortItem
-        , expandItem: {
+        }; //sortItem
+
+    items.expandItem = {
             label: "Expand all",
             icon: 'fa fa-plus-square',
             action: hamExpandAll
-        }
-        , collapseItem: {
+        };
+    items.collapseItem = {
             label: "Collapse all",
             icon: 'fa fa-minus-square',
             action: hamCollapseAll
-        }
-    };
+        };
+
+    return items;
 } //getHamburgerMenuItems()
 
 //////////////////////////////////////////////////////////////////////////
