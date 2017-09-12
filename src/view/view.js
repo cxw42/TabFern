@@ -766,8 +766,9 @@ let was_loading_error = false;
 /// Add the save data into the tree.
 /// Design decision: TabFern SHALL always be able to load older save files.
 /// Never remove a loader from this function.
+/// @post The new windows are added after any existing windows in the tree
 /// @param {mixed} data The save data, parsed (i.e., not a JSON string)
-/// @return {Boolean} true on success, false on failure.
+/// @return {number} the number of new windows, or,falsy on failure.
 let loadSavedWindowsFromData = (function(){
 
     /// Populate the tree from version-0 save data in #data.
@@ -776,6 +777,7 @@ let loadSavedWindowsFromData = (function(){
     /// each tab is {text: "foo", url: "bar"}
     function loadSaveDataV0(data)
     {
+        let numwins = 0;
         // Make V1 data from the v0 data and pass it along the chain
         for(let v0_win of data) {
             let v1_win = {};
@@ -786,8 +788,9 @@ let loadSavedWindowsFromData = (function(){
                 v1_win.tabs.push(v1_tab);
             }
             createNodeForClosedWindow(v1_win);
+            ++numwins;
         }
-        return true;    //load successful
+        return numwins;    //load successful
     }  //loadSaveDataV0
 
     /// Populate the tree from version-1 save data in #data.
@@ -796,10 +799,12 @@ let loadSavedWindowsFromData = (function(){
     /// each tab is {raw_title: "foo", raw_url: "bar"}
     function loadSaveDataV1(data) {
         if(!data.tree) return false;
+        let numwins=0;
         for(let win_data_v1 of data.tree) {
             createNodeForClosedWindow(win_data_v1);
+            ++numwins;
         }
-        return true;
+        return numwins;
     }
 
     /// The mapping table from versions to loaders.
@@ -810,6 +815,8 @@ let loadSavedWindowsFromData = (function(){
     return function(data)
     {
         let succeeded = false;
+        let loader_retval;      // # of wins loaded
+
         READIT: {
             // Figure out the version number
             let vernum;
@@ -826,22 +833,21 @@ let loadSavedWindowsFromData = (function(){
             }
 
             // Load it
-            let loaded_ok;
             if(vernum in versionLoaders) {
-                loaded_ok = versionLoaders[vernum](data);
+                loader_retval = versionLoaders[vernum](data);
             } else {
                 log.error("I don't know how to load save data from version " + vernum);
                 break READIT;
             }
 
-            if(!loaded_ok) {
+            if(!loader_retval) {
                 log.error("There was a problem loading save data of version " + vernum);
                 break READIT;
             }
 
             succeeded = true;
         }
-        return succeeded;
+        return (succeeded ? loader_retval : false);
     }
 })(); //loadSavedWindowsFromData
 
@@ -902,7 +908,8 @@ function DBG_printSaveData()
 
 /// Process clicks on items in the tree.  Also works for keyboard navigation
 /// with arrow keys and Enter.
-function treeOnSelect(evt, evt_data)
+/// TODO break "open window" out into a separate function.
+function treeOnSelect(_evt_unused, evt_data)
 {
     //log.info(evt_data.node);
     if(typeof evt_data.node === 'undefined') return;
@@ -1566,7 +1573,14 @@ function hamRestoreLastDeleted()
     let dat = [{text: 'Restored window', tabs: tabs}];
 
     // Load it into the tree
-    loadSavedWindowsFromData(dat);
+    if(loadSavedWindowsFromData(dat)) {
+        // We loaded the window successfully.  Open it, if the user wishes.
+        if(getBoolSetting(CFG_RESTORE_ON_LAST_DELETED, false)) {
+            let root = treeobj.get_node($.jstree.root);
+            let node_id = root.children[root.children.length-1];
+            treeOnSelect(null, { node: treeobj.get_node(node_id) } );
+        }
+    }
 
     lastDeletedWindow = [];
 

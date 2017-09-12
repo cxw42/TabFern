@@ -47,6 +47,13 @@
                 "label": i18n.get("Close a window, collapse its tree")
                 //"text": i18n.get("x-characters")
             },
+            {
+                "tab": i18n.get("Behaviour"),
+                "group": i18n.get("When I..."),
+                "name": CFG_RESTORE_ON_LAST_DELETED,
+                "type": "checkbox",
+                "label": i18n.get("Restore the last-deleted window, reopen its tabs")
+            },
 
             // Features
             {
@@ -119,6 +126,7 @@
                 "text":
     '<ul>' +
     '<li>Numeric sort order options (on the '+ham+' '+gt+' Sort menu)</li>'+
+    '<li>"Restore last deleted" option on the '+ham+' menu</li>'+
     '</ul>'
             },
             {
