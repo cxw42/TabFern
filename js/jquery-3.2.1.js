@@ -5552,9 +5552,11 @@ jQuery.each( {
 				related = event.relatedTarget,
 				handleObj = event.handleObj;
 
+					//DEBUG console.log('Got '+event.type);
 			// For mouseenter/leave call the handler if related is outside the target.
 			// NB: No relatedTarget if the mouse left/entered the browser window
 			if ( !related || ( related !== target && !jQuery.contains( target, related ) ) ) {
+					//DEBUG console.log('Forwarding as ' +handleObj.origType);
 				event.type = handleObj.origType;
 				ret = handleObj.handler.apply( this, arguments );
 				event.type = fix;

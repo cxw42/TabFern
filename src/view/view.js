@@ -410,6 +410,66 @@ function install_vscroll_function(win, jq)
     jq.on('after_close.jstree', vscroll_function);
 } //install_vscroll_function()
 
+/// Set up a function to set the visibilities of the action buttons.
+/// We can't do this with straight CSS because, in each row, the wholerow
+/// div is a sibling, not a parent, of the icons, text, and action buttons.
+/// Therefore, mousing over the action buttons when the <a> extends under
+/// those buttons causes repeated mouseenter/mouseleave even within the
+/// borders of the wholerow.
+/// @param win {DOM Window} window
+/// @param jq_node {JQuery element} the jQuery element for the node
+/// TODO move this to a jstree plugin so we can add this when the nodes are
+/// redrawn.
+function install_action_visibility_function(win, jq_node)
+{
+        // .first() in case it's expanded
+    function handler(evt) {
+        //let jq_wholerow = jq_node.children('.jstree-wholerow').first();
+        let jq_a = jq_node.children('a');   // Use the anchor as a proxy for
+                                            // the whole first row
+        let wholerow_pageXY = jq_a.offset();
+        let wholerow_ht = jq_a.outerHeight();
+        // Assume wholerow boxes are infinitely wide
+        // ** NOTE ** Assumes single-column layout
+
+        //let rel_x = evt.pageX - wholerow_pageXY.left;
+        let rel_y = evt.pageY - wholerow_pageXY.top;
+        let vis = 'hidden';
+        if( //(rel_x >= 0) &&
+            (rel_y >= 0) &&
+            //(rel_x < wholerow_wid) &&
+            (rel_y < wholerow_ht)
+        ) {
+            vis = 'visible';
+        }
+        jq_node.children('.tf-action-group').css('visibility', vis);
+        console.group(evt.type);
+        console.log({rel_y, vis});
+        console.groupEnd();
+
+        /*
+        let elt = $(this);
+        let elt_rect = this.getBoundingClientRect();
+            // These do change as you scroll
+        let elt_ofs = elt.offset();
+            // This does not change as you scroll
+        console.group(evt.type);
+        console.log(elt_rect);
+        console.log(elt_ofs);
+        console.log({evt_pageX: evt.pageX, evt_pageY: evt.pageY});
+        console.log({oh: elt.outerHeight(), ow: elt.outerWidth()});
+            // These match the sizes from getBoundingClientRect
+        console.groupEnd();
+        //let elt_wid = elt.outerWidth();
+        //let elt_ht = elt.outerHeight();
+        */
+    }
+    jq_node.mousemove(handler);     // takes care of mouseenter
+        // Have to use mousemove rather than mouseenter because jq_node
+        // is as tall as all its children if it's expanded.
+    jq_node.mouseleave(handler);
+} //install_action_visibility_function
+
 //////////////////////////////////////////////////////////////////////////
 // Saving //
 
@@ -644,6 +704,9 @@ function createNodeForTab(tab, parent_node_id)
         win_id: tab.windowId, index: tab.index, tab: tab,
         raw_url: tab.url, raw_title: tab.title, isOpen: true
     });
+
+    install_action_visibility_function(window, treeobj.get_node(tab_node_id, true));
+
     return tab_node_id;
 } //createNodeForTab
 
@@ -662,6 +725,7 @@ function createNodeForClosedTab(tab_data_v1, parent_node_id)
         win_id: NONE, index: NONE, tab: undefined, isOpen: false,
         raw_url: tab_data_v1.raw_url, raw_title: tab_data_v1.raw_title
     });
+    install_action_visibility_function(window, treeobj.get_node(tab_node_id, true));
     return tab_node_id;
 } //createNodeForClosedTab
 
@@ -716,6 +780,7 @@ function createNodeForWindow(win, keep)
                 , li_attr: { class: WIN_CLASS + ' ' + VISIBLE_WIN_CLASS }
                 , state: { 'opened': true }
             });
+    install_action_visibility_function(window, treeobj.get_node(win_node_id, true));
 
     log.info('Adding nodeid map for winid ' + win.id);
     let win_val = mdWindows.add({
@@ -753,6 +818,7 @@ function createNodeForClosedWindow(win_data_v1)
                 , li_attr: { class: WIN_CLASS }
                 , state: { 'opened': !shouldCollapse }
             });
+    install_action_visibility_function(window, treeobj.get_node(win_node_id, true));
 
     // Mark recovered windows
     if(is_ephemeral) {
