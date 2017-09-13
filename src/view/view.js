@@ -410,6 +410,37 @@ function install_vscroll_function(win, jq)
     jq.on('after_close.jstree', vscroll_function);
 } //install_vscroll_function()
 
+/// Set up a function to set the visibilities of the action buttons.
+/// We can't do this with straight CSS because, in each row, the wholerow
+/// div is a sibling, not a parent, of the icons, text, and action buttons.
+/// Therefore, mousing over the action buttons when the <a> extends under
+/// those buttons causes repeated mouseenter/mouseleave even within the
+/// borders of the wholerow.
+/// @param jq_tree {JQuery element} the jQuery element for the tree
+function install_action_visibility_function(jq_tree)
+{
+    // The worker
+    function impl(evt, evt_data, new_visibility) {
+        if(typeof evt_data.node === 'undefined') return;
+
+        let node = evt_data.node;
+        let node_rec = get_node_val(evt_data.node.id);
+        if(node_rec.ty !== NT_WINDOW) return;
+
+        let jq_elem = treeobj.get_node(node.id, true);
+        jq_elem.children('.tf-action-group').css('visibility', new_visibility);
+        console.log(new_visibility);
+    } //impl
+
+    function hover(evt, data)   { return impl(evt, data, 'visible'); }
+    function dehover(evt, data) { return impl(evt, data, 'hidden'); }
+
+    jq_tree.on('hover_node.jstree',   hover);
+    jq_tree.on('dehover_node.jstree', dehover);
+        // Turns out this also doesn't work, because hover/dehover are
+        // effectively aliases for mouseenter/mouseleave.
+} //install_action_visibility_function
+
 //////////////////////////////////////////////////////////////////////////
 // Saving //
 
@@ -2166,10 +2197,13 @@ function initTree1(win_id)
     }
 
     // Create the tree
-    $('#maintree').jstree(jstreeConfig);
-    treeobj = $('#maintree').jstree(true);
+    let jq_tree = $('#maintree');
+    jq_tree.jstree(jstreeConfig);
+    treeobj = jq_tree.jstree(true);
 
-    install_vscroll_function(window, $('#maintree'));
+    install_vscroll_function(window, jq_tree);
+
+    install_action_visibility_function(jq_tree);
 
     // --------
 

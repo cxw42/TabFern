@@ -105,12 +105,16 @@ div#hamburger-menu ul li a i { position:relative; }
 }
 
 /* Hide the action buttons except when the row is hovered. */
+/*
 .jstree-node a.jstree-hovered ~ .tf-action-group {
     visibility: visible;
 }
+*/
+/* Action buttons are initially hidden */
 .jstree-node a ~ .tf-action-group {
     visibility: hidden;
 }
+
 
 /* --- Menu --------------------------------------------------------------- */
 div#hamburger-menu {

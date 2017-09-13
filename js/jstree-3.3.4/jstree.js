@@ -3117,7 +3117,7 @@
 			setTimeout(function () { t.attr('aria-activedescendant', obj[0].id); }, 0);
 		},
 		/**
-		 * removes the hover state from a nodecalled when a node is no longer hovered by the user. Used internally.
+		 * removes the hover state from a node, called when a node is no longer hovered by the user. Used internally.
 		 * @private
 		 * @name dehover_node(obj)
 		 * @param {mixed} obj
