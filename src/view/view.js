@@ -13,6 +13,11 @@
 // are version 0.  We must always support loading
 // backup files having versions earlier than the current version.
 
+// Notation: Windows can be open or closed, and can be saved or unsaved.
+// A closed, unsaved window isn't represented in TabFern, except in the
+// "Restore last deleted window" function.
+// An open, unsaved window is referred to for brevity as an "ephemeral" window.
+
 //////////////////////////////////////////////////////////////////////////
 // Constants //
 
@@ -280,8 +285,9 @@ function remove_classname(class_list, existing_class)
 } //remove_classname()
 
 /// Set or remove the VISIBLE_WIN_CLASS style on an existing node.
-/// TODO figure out a cleaner way to do this - it's not obvious to me from
-/// the jstree docs how to change li_attr after node creation.
+/// TODO Replace this with use of the jstree "types" plugin, which permits
+/// changing a node's li_attr after node creation by changing the type
+/// of that node.
 function twiddleVisibleStyle(node, shouldAdd)
 {
     let class_str;
@@ -409,11 +415,12 @@ function makeSaveData(data)
 } //makeSaveData()
 
 /// Save the tree to Chrome local storage.
-/// @param save_visible_windows {Boolean} whether to save information for open,
-///                                         unsaved windows (default true)
-/// @param cbk {function} A callback to be called when saving is complete.
-///                         Called with the save data.
-function saveTree(save_visible_windows = true, cbk = undefined)
+/// @param save_ephemeral_windows {Boolean}
+///     whether to save information for open, unsaved windows (default true)
+/// @param cbk {function}
+///     If provided, will be called when saving is complete.
+///     Called with the save data.
+function saveTree(save_ephemeral_windows = true, cbk = undefined)
 {
     // Get the raw data for the whole tree.  Can't use $(...) because closed
     // tree nodes aren't in the DOM.
@@ -435,17 +442,16 @@ function saveTree(save_visible_windows = true, cbk = undefined)
         let win_val = mdWindows.by_node_id(win_node.id);
         if(!win_val) continue;
 
-        // Don't save visible windows unless we've been asked to.
-        // However, always save windows marked as keep.
-        if( !save_visible_windows && win_val.isOpen &&
-            (win_val.keep==WIN_NOKEEP) ) {
-            continue;
-        }
+        // Don't save ephemeral windows unless we've been asked to.
+        let is_ephemeral = win_val.isOpen && (win_val.keep==WIN_NOKEEP);
+        if( is_ephemeral && !save_ephemeral_windows ) continue;
 
         let result_win = {};       // what will hold our data
 
         result_win.raw_title = win_val.raw_title;
         result_win.tabs = [];
+        if(is_ephemeral) result_win.ephemeral = true;
+            // Don't bother putting it in if we don't need it.
 
         // Stash the tabs.  No recursion at this time.
         if(win_node.children) {
@@ -730,7 +736,10 @@ function createNodeForWindow(win, keep)
 /// @param win_data_v1      V1 save data for the window
 function createNodeForClosedWindow(win_data_v1)
 {
+    let is_ephemeral = Boolean(win_data_v1.ephemeral);  // missing => false
     let shouldCollapse = getBoolSetting('collapse-trees-on-startup');
+
+    // Update the view
     let win_node_id = treeobj.create_node(null,
             {   text: 'Closed window'
                 //, 'icon': 'visible-window-icon'   // use the default icon
@@ -738,11 +747,26 @@ function createNodeForClosedWindow(win_data_v1)
                 , state: { 'opened': !shouldCollapse }
             });
 
+    // Update the model
+    let new_title;
+    if( is_ephemeral && (typeof win_data_v1.raw_title !== 'string') ) {
+        new_title = 'Recovered tabs';
+    } else if(is_ephemeral) {   // and raw_title is a string
+        new_title = String(win_data_v1.raw_title) + ' (Recovered)';
+    } else {    // not ephemeral
+        let n = win_data_v1.raw_title;
+        new_title = (typeof n === 'string') ? n : null;
+    }
+
     let win_val = mdWindows.add({
         win_id: NONE, node_id: win_node_id,
-        win: undefined, raw_title: win_data_v1.raw_title, isOpen: false,
-        keep: WIN_KEEP
+        win: undefined,
+        raw_title: new_title,
+        isOpen: false,
+        keep: WIN_KEEP  // even if it was ephemeral before
     });
+    // TODO also highlight recovered tabs with a color
+
     treeobj.rename_node(win_node_id, Esc.escape(get_curr_raw_text(win_val)));
 
     addWindowNodeActions(win_node_id);
@@ -795,8 +819,10 @@ let loadSavedWindowsFromData = (function(){
 
     /// Populate the tree from version-1 save data in #data.
     /// V1 format: { ... , tree:[win, win, ...] }
-    /// each win is {raw_title: "foo", tabs: [tab, tab, ...]}
-    /// each tab is {raw_title: "foo", raw_url: "bar"}
+    /// Each win is {raw_title: "foo", tabs: [tab, tab, ...]}
+    ///     A V1 win may optionally include { ephemeral:<truthy> } to mark
+    ///     ephemeral windows.  The default for `ephemeral` is false.
+    /// Each tab is {raw_title: "foo", raw_url: "bar"}
     function loadSaveDataV1(data) {
         if(!data.tree) return false;
         let numwins=0;
@@ -1578,12 +1604,11 @@ function hamRestoreLastDeleted()
         if(getBoolSetting(CFG_RESTORE_ON_LAST_DELETED, false)) {
             let root = treeobj.get_node($.jstree.root);
             let node_id = root.children[root.children.length-1];
-            treeOnSelect(null, { node: treeobj.get_node(node_id) } );
+            treeobj.select_node(node_id);
         }
     }
 
     lastDeletedWindow = [];
-
 } //hamRestoreLastDeleted
 
 function hamExpandAll()
