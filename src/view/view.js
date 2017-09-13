@@ -40,6 +40,8 @@ const INIT_TIME_ALLOWED_MS = 3000;  // After this time, if init isn't done,
                                     // display an error message.
 const INIT_MSG_SEL = 'div#init-incomplete';     // Selector for that message
 
+const CLASS_RECOVERED = 'ephemeral-recovered';
+
 /// How often to check whether our window has been moved or resized
 const RESIZE_DETECTOR_INTERVAL_MS = 5000;
 
@@ -52,6 +54,9 @@ const NONE = chrome.windows.WINDOW_ID_NONE;
 // in the future (e.g., dividers or plugins).  Each NT_* must be truthy.
 const NT_WINDOW = 'window';
 const NT_TAB = 'tab';
+
+// Node-type names
+const NTN_RECOVERED = 'ephemeral_recovered';
 
 //////////////////////////////////////////////////////////////////////////
 // Globals //
@@ -739,6 +744,8 @@ function createNodeForClosedWindow(win_data_v1)
     let is_ephemeral = Boolean(win_data_v1.ephemeral);  // missing => false
     let shouldCollapse = getBoolSetting('collapse-trees-on-startup');
 
+    log.info('Closed window ' + win_data_v1.raw_title + (is_ephemeral?' (ephemeral)':''));
+
     // Update the view
     let win_node_id = treeobj.create_node(null,
             {   text: 'Closed window'
@@ -746,6 +753,11 @@ function createNodeForClosedWindow(win_data_v1)
                 , li_attr: { class: WIN_CLASS }
                 , state: { 'opened': !shouldCollapse }
             });
+
+    // Mark recovered windows
+    if(is_ephemeral) {
+        treeobj.set_type(win_node_id, NTN_RECOVERED);
+    }
 
     // Update the model
     let new_title;
@@ -953,6 +965,10 @@ function treeOnSelect(_evt_unused, evt_data)
     } else {
         log.error('Selection of unknown node '+node);
         return;     // unknown node type
+    }
+
+    if(treeobj.get_type(node) === NTN_RECOVERED) {
+        treeobj.set_type(node, 'default');
     }
 
     // TODO figure out why this doesn't work: treeobj.deselect_node(node, true);
@@ -2097,9 +2113,16 @@ function initTree1(win_id)
 
     log.info('TabFern view.js initializing tree in window ' + win_id.toString());
 
+    // Node types - use constants as the keys
+    let jstreeTypes = {};
+    jstreeTypes[NTN_RECOVERED] = {
+        li_attr: { class: CLASS_RECOVERED }
+    };
+
+    // The main config
     let jstreeConfig = {
         plugins: ['actions', 'wholerow', 'flagnode',
-                    'dnd'] // TODO add state plugin
+                    'dnd', 'types'] // TODO add state plugin
         , core: {
             animation: false,
             multiple: false,          // for now
@@ -2123,6 +2146,7 @@ function initTree1(win_id)
             //, use_html5: true
             //, check_while_dragging: false   // For debugging only
         }
+        , types: jstreeTypes
     };
 
     // Note on dnd.use_html5: When it's set, if you drag a non-draggable item,

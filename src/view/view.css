@@ -56,6 +56,10 @@ div#init-incomplete {
     color: #f33;
 }
 
+li.ephemeral-recovered {
+    background: darkslategray !important;
+}
+
 /* Notification icon ------------------------------------------------------ */
 
 /* Need the parents of notification icons to have position other than static.
