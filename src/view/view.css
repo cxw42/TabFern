@@ -98,7 +98,7 @@ div#hamburger-menu ul li a i { position:relative; }
     /* Keep the action icons above the whole-row bar.
      * Thanks to https://stackoverflow.com/a/7421805/2877364 by
      * https://stackoverflow.com/users/248129/richard-jp-le-guen */
-    z-index: 1;
+    z-index: 10;
 
     /* Be on the same row as the window */
     display: inline-block;
@@ -115,6 +115,24 @@ div#hamburger-menu ul li a i { position:relative; }
     visibility: hidden;
 }
 
+/* Some things I was trying with z-index */
+.jstree-node > i {
+    z-index: 5;
+}
+
+.jstree-node > a {
+    z-index: 5;
+}
+
+.tf-action-group i {
+    z-index: 10;    /* same as .tf-action-group */
+}
+
+.jstree-node {
+    opacity: 0.999999; /*start a new stacking context*/
+    /* transform: translateX(0px); */ /* this didn't work */
+}
+/* End of the things I was trying with z-index */
 
 /* --- Menu --------------------------------------------------------------- */
 div#hamburger-menu {
@@ -185,6 +203,11 @@ div#hamburger-menu {
     /* Two jstree-children: don't touch the top-level nodes, only second-level
      * and lower. */
     background-size: cover !important;
+}
+
+/* context menu rides over the tree */
+.jstree-contextmenu {
+    z-index: 10;
 }
 
 /* Don't expand icons in the context menu - leave them at their native size */

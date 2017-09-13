@@ -854,10 +854,10 @@
 						}
 					}, this))
 				.on('mouseenter.jstree', '.jstree-anchor', $.proxy(function (e) {
-						this.hover_node(e.currentTarget);
+						this.hover_node(e.currentTarget, e);
 					}, this))
 				.on('mouseleave.jstree', '.jstree-anchor', $.proxy(function (e) {
-						this.dehover_node(e.currentTarget);
+						this.dehover_node(e.currentTarget, e);
 					}, this));
 		},
 		/**
@@ -3096,9 +3096,10 @@
 		 * @private
 		 * @name hover_node(obj)
 		 * @param {mixed} obj
+		 * @param {Event} evt the event that triggered the hover, if any
 		 * @trigger hover_node.jstree
 		 */
-		hover_node : function (obj) {
+		hover_node : function (obj, evt) {
 			obj = this.get_node(obj, true);
 			if(!obj || !obj.length || obj.children('.jstree-hovered').length) {
 				return false;
@@ -3113,7 +3114,9 @@
 			 * @name hover_node.jstree
 			 * @param {Object} node
 			 */
-			this.trigger('hover_node', { 'node' : this.get_node(obj) });
+			var evt_data = { 'node' : this.get_node(obj) };
+			if(evt) evt_data.evt = evt;
+			this.trigger('hover_node', evt_data);
 			setTimeout(function () { t.attr('aria-activedescendant', obj[0].id); }, 0);
 		},
 		/**
@@ -3121,9 +3124,10 @@
 		 * @private
 		 * @name dehover_node(obj)
 		 * @param {mixed} obj
+		 * @param {Event} evt the event that triggered the hover, if any
 		 * @trigger dehover_node.jstree
 		 */
-		dehover_node : function (obj) {
+		dehover_node : function (obj, evt) {
 			obj = this.get_node(obj, true);
 			if(!obj || !obj.length || !obj.children('.jstree-hovered').length) {
 				return false;
@@ -3135,7 +3139,9 @@
 			 * @name dehover_node.jstree
 			 * @param {Object} node
 			 */
-			this.trigger('dehover_node', { 'node' : this.get_node(obj) });
+			var evt_data = { 'node' : this.get_node(obj) };
+			if(evt) evt_data.evt = evt;
+			this.trigger('dehover_node', evt_data);
 		},
 		/**
 		 * select a node
@@ -8374,15 +8380,15 @@
 						var tmp = $.Event('click', { metaKey : e.metaKey, ctrlKey : e.ctrlKey, altKey : e.altKey, shiftKey : e.shiftKey });
 						$(e.currentTarget).closest(".jstree-node").children(".jstree-anchor").first().trigger(tmp).focus();
 					}, this))
-				.on("mouseover.jstree", ".jstree-wholerow, .jstree-icon", $.proxy(function (e) {
+				.on("mouseenter.jstree", ".jstree-wholerow, .jstree-icon", $.proxy(function (e) {
 						e.stopImmediatePropagation();
 						if(!this.is_disabled(e.currentTarget)) {
-							this.hover_node(e.currentTarget);
+							this.hover_node(e.currentTarget, e);
 						}
 						return false;
 					}, this))
 				.on("mouseleave.jstree", ".jstree-node", $.proxy(function (e) {
-						this.dehover_node(e.currentTarget);
+						this.dehover_node(e.currentTarget, e);
 					}, this));
 		};
 		this.teardown = function () {

@@ -420,25 +420,48 @@ function install_vscroll_function(win, jq)
 function install_action_visibility_function(jq_tree)
 {
     // The worker
-    function impl(evt, evt_data, new_visibility) {
+    function impl(evt, evt_data) {
         if(typeof evt_data.node === 'undefined') return;
+        if(typeof evt_data.evt === 'undefined') return;
 
         let node = evt_data.node;
         let node_rec = get_node_val(evt_data.node.id);
         if(node_rec.ty !== NT_WINDOW) return;
 
         let jq_elem = treeobj.get_node(node.id, true);
-        jq_elem.children('.tf-action-group').css('visibility', new_visibility);
-        console.log(new_visibility);
+
+        // Hover/dehover are effectively aliases for mouseenter/mouseleave,
+        // so check the actual Y position.  ** NOTE ** This assumes and
+        // enforces a single-column layout.
+
+        let jq_a = jq_elem.children('a');   // Use the anchor as a proxy for
+                                            // the whole first row
+        let wholerow_pageXY = jq_a.offset();
+        let wholerow_ht = jq_a.outerHeight();
+
+        let rel_y = evt_data.evt.pageY - wholerow_pageXY.top;
+        let vis;
+        if( (rel_y >= 0) && (rel_y < wholerow_ht)) {
+            vis = 'visible';
+        } else {
+            vis = 'hidden';
+        }
+
+        jq_elem.children('.tf-action-group').css('visibility', vis);
+        console.log(vis);
     } //impl
 
-    function hover(evt, data)   { return impl(evt, data, 'visible'); }
-    function dehover(evt, data) { return impl(evt, data, 'hidden'); }
+    //function hover(evt, data)   { return impl(evt, data, 'visible'); }
+    //function dehover(evt, data) { return impl(evt, data, 'hidden'); }
 
-    jq_tree.on('hover_node.jstree',   hover);
-    jq_tree.on('dehover_node.jstree', dehover);
-        // Turns out this also doesn't work, because hover/dehover are
-        // effectively aliases for mouseenter/mouseleave.
+    jq_tree.on('hover_node.jstree',   impl);
+    jq_tree.on('dehover_node.jstree', impl);
+
+    // Getting closer, but still occasionally leaves behind an extra, or 
+    // fails to react to clicks on the action buttons.  I think I may just
+    // need to write a plugin to wrap a div around the node itself, excluding
+    // its children.  Then mouseenter/mouseleave would work.
+
 } //install_action_visibility_function
 
 //////////////////////////////////////////////////////////////////////////
@@ -675,6 +698,7 @@ function createNodeForTab(tab, parent_node_id)
         win_id: tab.windowId, index: tab.index, tab: tab,
         raw_url: tab.url, raw_title: tab.title, isOpen: true
     });
+
     return tab_node_id;
 } //createNodeForTab
 
@@ -693,6 +717,7 @@ function createNodeForClosedTab(tab_data_v1, parent_node_id)
         win_id: NONE, index: NONE, tab: undefined, isOpen: false,
         raw_url: tab_data_v1.raw_url, raw_title: tab_data_v1.raw_title
     });
+
     return tab_node_id;
 } //createNodeForClosedTab
 
