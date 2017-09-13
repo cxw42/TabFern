@@ -16,6 +16,8 @@ If you are willing, please try TabFern and let us know how it goes!
 
 <strong>TabFern is now available in the [Chrome Web Store](https://chrome.google.com/webstore/detail/tabfern-tab-manager-and-b/hbajjpcdbninabigakflkhiogmmjaakm)</strong>
 
+Check out the code or report issues [on GitHub](https://github.com/cxw42/TabFern).
+
 # Usage
 
  - Click the icon to open the TabFern view.  The view will also open when
