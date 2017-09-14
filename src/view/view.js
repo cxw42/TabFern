@@ -399,6 +399,7 @@ function getWindowSizeFromWindowRecord(win)
 function vscroll_function()
 { //TODO make this a closure over a specific win, jq
     log.info('Updating V positions');
+    return;
     $('.' + ACTION_GROUP_WIN_CLASS).each(function(idx, dom_elem) {
         let jq = $(dom_elem);
         jq.css('top',jq.parent().offset().top - $(window).scrollTop());
@@ -495,6 +496,33 @@ function install_action_visibility_function(doc, jq_tree, overrides)
         }
     }
 } //install_action_visibility_function
+
+/// Forward mouse events from a div.tf-action-group to the underlying
+/// element.
+function mouse_event_forwarder(event)
+{
+    if(!event) return;
+    //if(!event.target.parentNode.id) return;
+    if(!event.clientX || !event.clientY) return;
+
+    //let target = event.target.parentNode;
+
+    let nodes = document.elementsFromPoint(event.clientX, event.clientY);
+    if(!nodes || !nodes[1]) return;
+
+    let target = nodes[1];  // nodes[0] is us, since we're topmost.
+
+    // Adapted from https://stackoverflow.com/a/5436015/2877364 by
+    // https://stackoverflow.com/users/183918/wildcard
+    var eventCopy = document.createEvent("MouseEvents");
+    eventCopy.initMouseEvent(event.type, event.bubbles, event.cancelable,
+            event.view, event.detail,
+            event.pageX || event.layerX, event.pageY || event.layerY,
+            event.clientX, event.clientY, event.ctrlKey, event.altKey,
+            event.shiftKey, event.metaKey, event.button,
+            event.relatedTarget);
+    target.dispatchEvent(eventCopy);
+} //mouse_event_forwarder
 
 //////////////////////////////////////////////////////////////////////////
 // Saving //
@@ -2227,6 +2255,10 @@ function initTree1(win_id)
             //, check_while_dragging: false   // For debugging only
         }
         , types: jstreeTypes
+        , actions: {
+            propagation: 'stop'
+            //clicks on action buttons don't bubble
+        }
     };
 
     // Note on dnd.use_html5: When it's set, if you drag a non-draggable item,
@@ -2253,6 +2285,10 @@ function initTree1(win_id)
     // Add custom event handlers
     install_vscroll_function(window, jq_tree);
     install_action_visibility_function(window, jq_tree, $('#hamburger-menu') );
+
+    $(document).on("click.debug",'.tf-action-group',
+            function(e){console.log({dbg_click: e.target.parentNode.id});}) //DEBUG
+    $(document).on("click.debug",'.tf-action-group', mouse_event_forwarder);
 
     // --------
 
@@ -2289,6 +2325,9 @@ function initTree1(win_id)
 function initTree0()
 {
     log.info('TabFern view.js initializing view - ' + TABFERN_VERSION);
+
+    $(document).on("click.debug",function(e){console.log({doc_click: e.target});}) //DEBUG
+
     document.title = 'TabFern ' + TABFERN_VERSION;
 
     Hamburger = HamburgerMenuMaker('#hamburger-menu', getHamburgerMenuItems,

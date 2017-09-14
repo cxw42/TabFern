@@ -87,14 +87,23 @@ div#hamburger-menu ul li a i { position:relative; }
 
 .tf-action-group {
     /* Sit at the right side of the screen */
-    position: fixed;
-    right: 0;
-    padding-right: 1em;
+    position: absolute;
+    width: calc(100vw - 1em);
+    left: 0;
 
     /* Be on the same row as the window */
     display: inline-block;
 
     /* See also z-index, below */
+    background: #00f;
+    opacity: 0.5;
+    // TODO see https://github.com/cxw42/jquery.forwardevents.git
+}
+
+.tf-action-group i {
+    float: right;
+    opacity: 1; /* doesn't work - why? */
+    background: none;
 }
 
 /* Hide the action buttons except when desired.  We indicate this

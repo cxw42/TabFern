@@ -12,7 +12,29 @@
 }(function ($, undefined) {
 	"use strict";
 
-	$.jstree.defaults.actions = $.noop;
+	if($.jstree.plugins.actions) { return; }
+
+	/**
+	 * stores all defaults for the actions plugin
+	 * @name $.jstree.defaults.actions
+	 * @plugin actions
+	 */
+	$.jstree.defaults.actions = {
+		/**
+		 * How event propagation should be controlled after a click
+		 * on an action button.
+		 *
+		 * - Set to `stop` to call `stopPropagation` after the callback
+		 * - Set to `immediate` to call `stopImmediatePropagation`
+		 *   after the callback
+		 * - Any other value (e.g., the default of `normal` will not
+		 *   change the propagation.
+		 *
+		 * @name $.jstree.defaults.actions.propagation
+		 * @plugin actions
+		 */
+		propagation: 'normal'
+	};
 
 	$.jstree.plugins.actions = function (options, parent) {
 
@@ -153,10 +175,17 @@
 			var action_el = document.createElement("i");
 			action_el.className = action.class;
 			action_el.textContent = action.text;
-			action_el.onclick = function() {
+			$(action_el).click(function(event) {
 				var node = self.get_node(action_el);
-				action.callback(node_id, node, action_id, action_el);
-			};
+				action.callback(node_id, node,
+					action_id, action_el, event);
+
+				if(self.settings.actions.propagation==='stop') {
+					event.stopPropagation();
+				} else if(self.settings.actions.propagation === 'immediate') {
+					event.stopImmediatePropagation();
+				}
+			});
 
 			return {
 				"action": action,
