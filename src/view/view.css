@@ -140,18 +140,29 @@ div#hamburger-menu ul li a i { position:relative; }
     z-index: 10;    /* same as .tf-action-group */
 }
 
-/* --- Menu --------------------------------------------------------------- */
+/* --- Main (hamburger) menu ---------------------------------------------- */
+
 div#hamburger-menu {
     position: fixed;
+    z-index: 100;
+
     right: 0;
     padding-right: 0.5em;
     bottom: 0;
     padding-bottom: 0.5em;
-    z-index: 100;
 }
 
-.jstree-context-menu {
-    z-index: 200;
+/* Z orders for other pertinent elements of the page, to put them in the
+ * correct place with respect to the hamburger menu. */
+
+.tabfern-container {
+    z-index: 0;     /* non-auto */
+    position: relative;
+}
+
+div#maintree {
+    z-index: 0;
+    position: relative;
 }
 
 /* --- Action buttons ----------------------------------------------------- */
@@ -206,7 +217,7 @@ div#hamburger-menu {
 
 /* context menu rides over the tree */
 .jstree-contextmenu {
-    z-index: 10;
+    z-index: 200;
 }
 
 /* Don't expand icons in the context menu - leave them at their native size */

@@ -45,7 +45,13 @@
 
     /// Create a hamburger menu at the DOM object identified by #selector.
     /// Menu items should be returned by function #getMenuItems.
-    function ctor(selector, getMenuItems)
+    /// @param selector     Where the menu should go
+    /// @param getMenuItems Callback returning items, or false for none
+    /// @param timeout      Optional: if provided, timeout in ms for menu
+    ///                     to disappear after mouseout.
+    ///                     *** CAUTION *** applies to all contextmenus in
+    ///                                     the document.
+    function ctor(selector, getMenuItems, timeout)
     {
         let retval = Object.create(Proto);
         log.info('TabFern hamburger.js initializing view at ' + selector);
@@ -72,8 +78,10 @@
         retval.treeobj = $(selector).jstree(true);
 
         // Close the tree on mouseout.  Note: this affects all trees
-        // in the document.
-        $.vakata.context.settings.hide_onmouseleave = 1000;
+        // in the document.  Math.abs() for safety.
+        if(timeout) {
+            $.vakata.context.settings.hide_onmouseleave = Math.abs(timeout);
+        }
 
         // Add the single item
         retval.tree_node = retval.treeobj.create_node(null,

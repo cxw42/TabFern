@@ -47,6 +47,9 @@ const CLASS_RECOVERED = 'ephemeral-recovered';
 /// How often to check whether our window has been moved or resized
 const RESIZE_DETECTOR_INTERVAL_MS = 5000;
 
+/// This many ms after mouseout, a context menu will disappear
+const CONTEXT_MENU_MOUSEOUT_TIMEOUT_MS = 1500;
+
 // --- Syntactic sugar ---
 const WIN_KEEP = true;
 const WIN_NOKEEP = false;
@@ -2279,7 +2282,8 @@ function initTree0()
     log.info('TabFern view.js initializing view - ' + TABFERN_VERSION);
     document.title = 'TabFern ' + TABFERN_VERSION;
 
-    Hamburger = HamburgerMenuMaker('#hamburger-menu', getHamburgerMenuItems);
+    Hamburger = HamburgerMenuMaker('#hamburger-menu', getHamburgerMenuItems,
+            CONTEXT_MENU_MOUSEOUT_TIMEOUT_MS);
 
     checkWhatIsNew('#hamburger-menu');
 
