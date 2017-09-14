@@ -1194,8 +1194,10 @@ function treeOnSelect(_evt_unused, evt_data)
 
 function winOnCreated(win)
 {
-    log.info('Window being created: ' + win.id +
-            (window_is_being_restored ? " (restoring)" : "") );
+    log.info({'Window created': win.id,
+                "Restore?": (window_is_being_restored ? "yes" : "no"),
+                win
+            });
     //log.info('clearing flags winoncreated');
     treeobj.clear_flags();
     if(window_is_being_restored) {
@@ -1323,8 +1325,7 @@ function winOnFocusChanged(win_id)
 /// we check for that here.
 function tabOnCreated(tab)
 {
-    log.info('Tab created:');
-    log.info(tab);
+    log.info({'Tab created': tab.id, tab});
 
     let win_node_id = mdWindows.by_win_id(tab.windowId, 'node_id')
     if(!win_node_id) return;
@@ -1351,9 +1352,7 @@ function tabOnCreated(tab)
 
 function tabOnUpdated(tabid, changeinfo, tab)
 {
-    log.info('Tab updated: ' + tabid + ' (`changeinfo` and `tab` follow)');
-    log.info(changeinfo);
-    log.info(tab);
+    log.info({'Tab updated': tabid, changeinfo, tab});
 
     let tab_node_val = mdTabs.by_tab_id(tabid);
     if(!tab_node_val) return;
@@ -1391,8 +1390,7 @@ function tabOnUpdated(tabid, changeinfo, tab)
 /// Handle movements of tabs or tab groups within a window.
 function tabOnMoved(tabid, moveinfo)
 {
-    log.info('Tab moved: ' + tabid);
-    log.info(moveinfo);
+    log.info({'Tab moved': tabid, moveinfo});
 
     let from_idx = moveinfo.fromIndex;
     let to_idx = moveinfo.toIndex;
@@ -1431,8 +1429,7 @@ function tabOnMoved(tabid, moveinfo)
 
 function tabOnActivated(activeinfo)
 {
-    log.info('Tab activated:');
-    log.info(activeinfo);
+    log.info({'Tab activated': activeinfo.tabId, activeinfo});
 
     winOnFocusChanged(activeinfo.windowId);
 
@@ -1454,8 +1451,7 @@ function tabOnActivated(activeinfo)
 /// Delete a tab's information when the user closes it.
 function tabOnRemoved(tabid, removeinfo)
 {
-    log.info('Tab being removed: ' + tabid);
-    log.info(removeinfo);
+    log.info({'Tab removed': tabid, removeinfo});
 
     // If the window is closing, do not remove the tab records.
     // The cleanup will be handled by winOnRemoved().
@@ -1494,8 +1490,7 @@ function tabOnDetached(tabid, detachinfo)
 {
     // Don't save here?  Do we get a WindowCreated if the tab is not
     // attached to another window?
-    log.info('Tab being detached: ' + tabid);
-    log.info(detachinfo);
+    log.info({'Tab detached': tabid, detachinfo});
 
     treeobj.clear_flags();  //just to be on the safe side
 
@@ -1509,8 +1504,8 @@ function tabOnDetached(tabid, detachinfo)
 
 function tabOnAttached(tabid, attachinfo)
 {
-    log.info('Tab being attached: ' + tabid);
-    log.info(attachinfo);
+    log.info({'Tab attached': tabid, attachinfo});
+
     // Since we forgot about the tab in tabOnDetached, re-create it
     // now that it's back.
     chrome.tabs.get(tabid, tabOnCreated);
@@ -1519,8 +1514,8 @@ function tabOnAttached(tabid, attachinfo)
 function tabOnReplaced(addedTabId, removedTabId)
 {
     // Do we get this?
-    log.info('Tab being replaced: added ' + addedTabId + '; removed ' +
-            removedTabId);
+    log.warn('Tab being replaced: added ' + addedTabId + '; removed ' +
+                removedTabId);
 } //tabOnReplaced
 
 //////////////////////////////////////////////////////////////////////////
