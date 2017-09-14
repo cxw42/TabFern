@@ -85,31 +85,59 @@ div#hamburger-menu ul li a i { position:relative; }
 
 /* Action buttons --------------------------------------------------------- */
 
-.jstree-wholerow {
-    z-index: 0;
-}
-
 .tf-action-group {
     /* Sit at the right side of the screen */
     position: fixed;
     right: 0;
     padding-right: 1em;
 
+    /* Be on the same row as the window */
+    display: inline-block;
+
+    /* See also z-index, below */
+}
+
+/* Hide the action buttons except when desired.  We indicate this
+ * with a custom style on the <li> element: .tf-show-actions.
+ */
+.jstree-node.tf-show-actions > .tf-action-group {
+    visibility: visible;
+}
+
+.jstree-node > .tf-action-group {
+    visibility: hidden;
+}
+
+/* Z order of items within a node - make sure the action group is on top */
+.jstree-node {
+    /* Start a new stacking context.  Thanks to
+     * https://philipwalton.com/articles/what-no-one-told-you-about-z-index/
+     */
+    opacity: 0.999999;
+    /* transform: translateX(0px); */   /* this doesn't seem to work */
+}
+
+.jstree-wholerow {  /* wholerow highlight at the bottom */
+    z-index: 0;
+}
+
+.jstree-node > i {  /* icon and text in the middle */
+    z-index: 5;
+}
+
+.jstree-node > a {
+    z-index: 5;
+}
+
+.tf-action-group {  /* action buttons on top */
     /* Keep the action icons above the whole-row bar.
      * Thanks to https://stackoverflow.com/a/7421805/2877364 by
      * https://stackoverflow.com/users/248129/richard-jp-le-guen */
-    z-index: 1;
-
-    /* Be on the same row as the window */
-    display: inline-block;
+    z-index: 10;
 }
 
-/* Hide the action buttons except when the row is hovered. */
-.jstree-node a.jstree-hovered ~ .tf-action-group {
-    visibility: visible;
-}
-.jstree-node a ~ .tf-action-group {
-    visibility: hidden;
+.tf-action-group i {
+    z-index: 10;    /* same as .tf-action-group */
 }
 
 /* --- Menu --------------------------------------------------------------- */
@@ -181,6 +209,11 @@ div#hamburger-menu {
     /* Two jstree-children: don't touch the top-level nodes, only second-level
      * and lower. */
     background-size: cover !important;
+}
+
+/* context menu rides over the tree */
+.jstree-contextmenu {
+    z-index: 10;
 }
 
 /* Don't expand icons in the context menu - leave them at their native size */

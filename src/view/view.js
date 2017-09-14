@@ -35,6 +35,8 @@ const WIN_CLASS='tabfern-window';     // class on all <li>s representing windows
 const FOCUSED_WIN_CLASS='tf-focused-window';  // Class on the currently-focused win
 const VISIBLE_WIN_CLASS='tf-visible-window';  // Class on all visible wins
 const ACTION_GROUP_WIN_CLASS='tf-action-group';   // Class on action-group div
+const SHOW_ACTIONS_CLASS = 'tf-show-actions';
+    // Class on a .jstree-node to indicate its actions should be shown
 
 const INIT_TIME_ALLOWED_MS = 3000;  // After this time, if init isn't done,
                                     // display an error message.
@@ -399,16 +401,69 @@ function vscroll_function()
 
 /// Set up the vscroll function to be called when appropriate.
 /// @param win {DOM Window} window
-/// @param jq {JQuery element} the jQuery element for the tree root
-function install_vscroll_function(win, jq)
+/// @param jq_tree {JQuery element} the jQuery element for the tree root
+function install_vscroll_function(win, jq_tree)
 {
     $(win).scroll(vscroll_function);
 
     // We also have to reset the positions on tree redraw.  Ugly.
-    jq.on('redraw.jstree', vscroll_function);
-    jq.on('after_open.jstree', vscroll_function);
-    jq.on('after_close.jstree', vscroll_function);
+    jq_tree.on('redraw.jstree', vscroll_function);
+    jq_tree.on('after_open.jstree', vscroll_function);
+    jq_tree.on('after_close.jstree', vscroll_function);
 } //install_vscroll_function()
+
+/// Set up a function to set the visibilities of the action buttons.
+/// We can't do this with straight CSS because, in each row, the wholerow
+/// div is a sibling, not a parent, of the icons, text, and action buttons.
+/// Therefore, mousing over the action buttons when the <a> extends under
+/// those buttons causes repeated mouseenter/mouseleave even within the
+/// borders of the wholerow.
+///
+/// This function assumes that items are infinitely wide, so only checks
+/// the Y coordinate. ** NOTE ** This enforces a single-column layout.
+///
+/// @param win {DOM Window} window
+/// @param jq_tree {JQuery element} the jQuery element for the tree as a whole
+///
+function install_action_visibility_function(win, jq_tree)
+{
+    function handler(evt) {
+        let jq_node = $(this);
+        let jq_a = jq_node.children('a');
+        if(!jq_a) return;
+
+        let wholerow_pageXY = jq_a.offset();
+        let wholerow_ht = jq_a.outerHeight();
+            // Use the anchor as a proxy for the height of the row
+
+        let rel_y = evt.pageY - wholerow_pageXY.top;
+        let should_show = ( (rel_y >= 0) && (rel_y < wholerow_ht));
+
+        jq_node[should_show ? 'addClass' : 'removeClass'](SHOW_ACTIONS_CLASS);
+
+        // Debugging output, at the lowest log level
+        if(log.getLevel() <= log.levels.TRACE) {
+            console.group(evt.type + ' ' +
+                    jq_tree.data('jstree').get_node(jq_node).id);
+            console.log({rel_y, should_show});
+            console.groupEnd();
+        }
+
+    } //handler
+
+    jq_tree.on('mousemove', '.jstree-node', handler);
+        // Have to use mousemove rather than mouseenter because jq_node
+        // is as tall as all its children if it's expanded.
+        // Also, mouseover only catches the actual children, not the rest of
+        // the wholerow bar.
+    jq_tree.on('mouseleave', '.jstree-node', handler);
+
+    // Dedicated handler for when the mouse leaves the window, since
+    // .jstree-node mouseleave doesn't trigger at that time.
+    $(document).on('mouseleave', function() {
+        jq_tree.find('.' + SHOW_ACTIONS_CLASS).removeClass(SHOW_ACTIONS_CLASS);
+    });
+} //install_action_visibility_function
 
 //////////////////////////////////////////////////////////////////////////
 // Saving //
@@ -644,6 +699,7 @@ function createNodeForTab(tab, parent_node_id)
         win_id: tab.windowId, index: tab.index, tab: tab,
         raw_url: tab.url, raw_title: tab.title, isOpen: true
     });
+
     return tab_node_id;
 } //createNodeForTab
 
@@ -2166,10 +2222,13 @@ function initTree1(win_id)
     }
 
     // Create the tree
-    $('#maintree').jstree(jstreeConfig);
-    treeobj = $('#maintree').jstree(true);
+    let jq_tree = $('#maintree');
+    jq_tree.jstree(jstreeConfig);
+    treeobj = jq_tree.jstree(true);
 
-    install_vscroll_function(window, $('#maintree'));
+    // Add custom event handlers
+    install_vscroll_function(window, jq_tree);
+    install_action_visibility_function(window, jq_tree);
 
     // --------
 
