@@ -100,6 +100,9 @@ let ShowWhatIsNew = false;
 /// Array of URLs of the last-deleted window
 let lastDeletedWindow;
 
+/// Did initialization complete successfully?
+let did_init_complete = false;
+
 // - Modules -
 
 /// The keyboard shortcuts handler, if any.
@@ -433,6 +436,19 @@ function install_vscroll_function(win, jq_tree)
 function install_action_visibility_function(doc, jq_tree, overrides)
 {
     function showSpecificActions(evt) {
+        if(typeof evt.pageY === 'undefined') {
+            //if(isNaN(rel_y)) debugger;
+            // evt.pageY is undefined when the mouseout is triggered, e.g.,
+            // in response to a blur.jstree event.
+            // https://stackoverflow.com/q/18154966/2877364 by
+            // https://stackoverflow.com/users/2662630/raja-ramu
+
+            if(log.getLevel() <= log.levels.TRACE) {
+                console.log({['Ignoring '+evt.type]: evt});
+            }
+            return; // for now, ignore the synthetic events.
+        }
+
         let jq_node = $(this);
         let jq_a = jq_node.children('a');
         if(!jq_a) return;
@@ -1912,7 +1928,8 @@ function dndIsDraggable(nodes, evt)
 function treeCheckCallback(
             operation, node, node_parent, node_position, more)
 {
-    if(log.getLevel() <= log.levels.TRACE) {
+    // Don't log checks during initial tree population
+    if(did_init_complete && (log.getLevel() <= log.levels.TRACE) ) {
         console.group('check callback for ' + operation);
         console.log(node);
         console.log(node_parent);
@@ -1998,9 +2015,6 @@ function checkWhatIsNew(selector)
 
 //////////////////////////////////////////////////////////////////////////
 // Startup / shutdown //
-
-/// Did initialization complete successfully?
-let did_init_complete = false;
 
 // This is done in vaguely continuation-passing style.  TODO make it cleaner.
 // Maybe use promises?
