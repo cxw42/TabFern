@@ -71,6 +71,10 @@
         $(selector).jstree(jstreeConfig);
         retval.treeobj = $(selector).jstree(true);
 
+        // Close the tree on mouseout.  Note: this affects all trees
+        // in the document.
+        $.vakata.context.settings.hide_onmouseleave = 1000;
+
         // Add the single item
         retval.tree_node = retval.treeobj.create_node(null,
                 {   text: ''

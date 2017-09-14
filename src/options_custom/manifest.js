@@ -127,6 +127,7 @@
     '<ul>' +
     '<li>Numeric sort order options (on the '+ham+' '+gt+' Sort menu)</li>'+
     '<li>"Restore last deleted" option on the '+ham+' menu</li>'+
+    '<li>Moving the mouse off the TabFern window closes the '+ham+' menu</li>'+
     '</ul>'
             },
             {

@@ -422,12 +422,14 @@ function install_vscroll_function(win, jq_tree)
 /// This function assumes that items are infinitely wide, so only checks
 /// the Y coordinate. ** NOTE ** This enforces a single-column layout.
 ///
-/// @param win {DOM Window} window
+/// @param doc {DOM Document} the document
 /// @param jq_tree {JQuery element} the jQuery element for the tree as a whole
+/// @param overrides {mixed} Optional jQuery element or array of elements
+///                          which should hide the actions on mouseover
 ///
-function install_action_visibility_function(win, jq_tree)
+function install_action_visibility_function(doc, jq_tree, overrides)
 {
-    function handler(evt) {
+    function showSpecificActions(evt) {
         let jq_node = $(this);
         let jq_a = jq_node.children('a');
         if(!jq_a) return;
@@ -449,20 +451,30 @@ function install_action_visibility_function(win, jq_tree)
             console.groupEnd();
         }
 
-    } //handler
+    } //showSpecificActions()
 
-    jq_tree.on('mousemove', '.jstree-node', handler);
+    function hideAllActions() {
+        jq_tree.find('.' + SHOW_ACTIONS_CLASS).removeClass(SHOW_ACTIONS_CLASS);
+    } //hideAllActions()
+
+    jq_tree.on('mousemove', '.jstree-node', showSpecificActions);
         // Have to use mousemove rather than mouseenter because jq_node
         // is as tall as all its children if it's expanded.
         // Also, mouseover only catches the actual children, not the rest of
         // the wholerow bar.
-    jq_tree.on('mouseleave', '.jstree-node', handler);
+    jq_tree.on('mouseleave', '.jstree-node', showSpecificActions);
 
     // Dedicated handler for when the mouse leaves the window, since
     // .jstree-node mouseleave doesn't trigger at that time.
-    $(document).on('mouseleave', function() {
-        jq_tree.find('.' + SHOW_ACTIONS_CLASS).removeClass(SHOW_ACTIONS_CLASS);
-    });
+    $(document).on('mouseleave', hideAllActions);
+
+    if(overrides) {
+        let ovrs = Array.isArray(overrides) ? overrides: [overrides];
+        for(let override of ovrs) {
+            override.on('mouseenter', hideAllActions);
+            override.on('mouseover', hideAllActions);
+        }
+    }
 } //install_action_visibility_function
 
 //////////////////////////////////////////////////////////////////////////
@@ -2228,7 +2240,7 @@ function initTree1(win_id)
 
     // Add custom event handlers
     install_vscroll_function(window, jq_tree);
-    install_action_visibility_function(window, jq_tree);
+    install_action_visibility_function(window, jq_tree, $('#hamburger-menu') );
 
     // --------
 

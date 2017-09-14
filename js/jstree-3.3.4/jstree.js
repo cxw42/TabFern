@@ -6492,7 +6492,12 @@
 					}
 					// also apply a RTL class?
 					vakata_context.element.find("ul").hide().end();
-				});
+				})
+                // An alternative to hide_onmouseleave
+                //.on('mouseleave.vakata.jstree', function(e) {
+                //    if(vakata_context.is_visible) $.vakata.context.hide();
+                //})
+                ;
 		});
 	}($));
 	// $.jstree.defaults.plugins.push("contextmenu");
