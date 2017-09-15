@@ -49,7 +49,9 @@
 		 *
 		 * possible opts are:
 		 * selector <- a selector that would specify where to insert the action. Note that this is a plain JavaScript selector and not a jQuery one.
-		 * after    <- bool (insert the action after (true, default) or before (false) the element matching the <selector> key
+		 * 				If selector is missing or falsy, the <li> of the item itself is used.
+		 * child    <- (bool) optional - if true, insert the action as a child of the element matching <selector>
+		 * after    <- (bool) insert the action after (true, default) or before (false) the element matching the <selector> key.  Ignored if <child> is true.
 		 * class    <- class(es) to apply to the new div
 		 * text     <- text to put in the new div
 		 */
@@ -63,11 +65,41 @@
 			var parms = this._group_parms[node_id] = Object.assign({}, opts);
 			parms.class = parms.class || '';
 			parms.text = parms.text || '';
+			parms.selector = parms.selector || null;
+				// any falsy value => null, for regularity and to permit
+				// distinguishing undefined from null should you need to.
 		}
+
+		/** Add a DOM element based on the selector, child, and after options.
+		 * @param node_el {DOM Element} The root element of the node, generally <li>.
+		 * 								Must have non-null `parentNode`.
+		 * @param to_add_el {DOM Element} The element to add
+		 * @param opts {object} Where to add the element.  Has optional selector,
+		 * 						optional child, and optional after, as described
+		 * 						with reference to this._make_group().
+		 */
+		this._add_dom_element = function(node_el, to_add_el, opts) {
+			var place;
+			if(opts.selector) {
+				place = node_el.querySelector(opts.selector);
+			} else {
+				place = node_el;
+			}
+
+			if (opts.child) {
+				place.appendChild(to_add_el);
+			} else if (opts.after) {
+				place.parentNode.insertBefore(to_add_el, place.nextSibling);
+			} else { //before
+				place.parentNode.insertBefore(to_add_el, place);
+			}
+		};
 
 		/** Create the group div for a node.  Returns the DOM object, or null.
 		 * Uses the provided node_el because this.get_node(node_id, true)
-		 * doesn't always succeed.
+		 * doesn't always succeed during redraw.
+		 * @param node_id {string} The node
+		 * @param node_el {DOM element} The current element for this node.
 		 */
 		this._create_group_for = function (node_id, node_el) {
 			if(!(node_id in this._group_parms)) return null;	// TODO report error?
@@ -77,12 +109,7 @@
 			group_el.className = opts.class;
 			group_el.textContent = opts.text;
 
-			var place = node_el.querySelector(opts.selector);
-			if (opts.after) {
-				place.parentNode.insertBefore(group_el, place.nextSibling);
-			} else {
-				obj.insertBefore(node_el, place);
-			}
+			this._add_dom_element(node_el, group_el, opts);
 
 			return group_el;
 		};
@@ -94,18 +121,20 @@
 		 * The <node id> is the "id" key of each element of the "core.data" array.
 		 * A special value "all" is allowed, in which case the action will be added to all nodes.
 		 *
-		 * The actions object can contain the following keys:
+		 * The action object can contain the following keys:
 		 * id       <- string An ID which identifies the action. The same ID can be shared across different nodes
 		 * text     <- string The action's text
 		 * class    <- string (a string containing all the classes you want to add to the action (space separated)
 		 * event    <- string The event on which the trigger will be called
 		 * callback <- function that will be called when the action is clicked
 		 *
-		 * The actions object can contain one of two types of location information:
+		 * The action object can contain one of two types of location information:
 		 * 1. grouped  <- (default false) if true, put this action in a div.  Call make_group() first to set up this div.  Actions are appended as children of the div.
 		 * 2.  If grouped is not true, the following can be used:
 		 * 		selector <- a selector that would specify where to insert the action. Note that this is a plain JavaScript selector and not a jQuery one.
-		 * 		after    <- bool (insert the action after (true) or before (false) the element matching the <selector> key
+		 * 				If selector is missing or falsy, the <li> of the item itself is used.
+		 * 		child    <- (bool) optional - if true, insert the action as a child of the element matching <selector>
+		 * 		after    <- (bool) insert the action after (true, default) or before (false) the element matching the <selector> key.  Ignored if <child> is true.
 		 *
 		 * NOTES: Please keep in mind that:
 		 * - the id's are strictly compared (===)
@@ -124,7 +153,9 @@
 						continue;	// TODO report error?
 					}
 
-					actions.push(action);
+					var the_action = Object.assign({}, action);	//our own copy
+					the_action.selector = the_action.selector || null;
+					actions.push(the_action);
 					this.redraw_node(_node_id);
 				}
 
@@ -167,6 +198,11 @@
 			}
 		};
 
+		/**
+		 * Create the element for an action button.
+		 * @param node_id {string} The node's ID
+		 * @param action_id {string} The action's ID
+		 */
 		this._create_action = function (node_id, action_id) {
 			var self = this;
 			var action = this._get_action(node_id, action_id);
@@ -193,6 +229,12 @@
 			};
 		};
 
+		/**
+		 * Find an action of a node.
+		 * @param node_id {string} The node's ID, or "all"
+		 * @param action_id {string} The action's ID
+		 * @return The action's data, or `null` if the action wasn't found.
+		 */
 		this._get_action = function (node_id, action_id) {
 			var actions = this._actions[node_id] || [];
 			var v = null;
@@ -206,15 +248,16 @@
 			return v;
 		};
 
-		this._set_action = function (node_id, obj, action) {
+		/**
+		 * Add the given action to the DOM.
+		 * @param node_el {DOM element} The node
+		 * @param action The action's data record, including the
+		 * 					already-created DOM element of the action button
+		 */
+		this._set_action = function (node_el, action) {
 			if (action === null) return;
 
-			var place = obj.querySelector(action.action.selector);
-			if (action.action.after) {
-				place.parentNode.insertBefore(action.action_el, place.nextSibling);
-			} else {
-				obj.insertBefore(action.action_el, place);
-			}
+			this._add_dom_element(node_el, action.action_el, action.action);
 		};
 
 		this._has_action = function (node_id, action_id) {
@@ -236,11 +279,14 @@
 			return found;
 		};
 
+		/**
+		 * @param obj The node to redraw
+		 */
 		this.redraw_node = function (obj, deep, callback, force_draw) {
 			var self = this;
 			var node_id = typeof obj === "object" ? obj.id : obj;
-			var el = parent.redraw_node.call(this, obj, deep, callback, force_draw);
-			if (el) {
+			var node_el = parent.redraw_node.call(this, obj, deep, callback, force_draw);
+			if (node_el) {
 				//Check if we have any specific actions for this node
 				var actions = this._actions[node_id] || [];
 				var actions_all = this._actions["all"] || [];
@@ -249,14 +295,14 @@
 				var group_el;
 				for (var i = 0; i < actions.length; i++) {
 					if(actions[i].grouped) {
-						group_el = this._create_group_for(node_id, el);
+						group_el = this._create_group_for(node_id, node_el);
 						break;
 					}
 				}
 
 				for (var i = 0; (!group_el) && (i < actions_all.length); i++) {
 					if(actions_all[i].grouped) {
-						group_el = this._create_group_for(node_id, el);
+						group_el = this._create_group_for(node_id, node_el);
 						break;
 					}
 				}
@@ -273,7 +319,7 @@
 					if(actions[i].grouped) {
 						group_el.appendChild(_action.action_el);
 					} else {	// not grouped
-						self._set_action(node_id, el, _action);
+						self._set_action(node_el, _action);
 					}
 				}
 
@@ -289,12 +335,12 @@
 					if(actions_all[i].grouped) {
 						group_el.appendChild(_action.action_el);
 					} else {	// not grouped
-						self._set_action(node_id, el, _action);
+						self._set_action(node_el, _action);
 					}
 				}
 
-			}
-			return el;
+			} //endif node_el
+			return node_el;
 		};
 
 	}
