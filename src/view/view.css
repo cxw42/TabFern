@@ -150,6 +150,13 @@ div:not(.jstree-wholerow-hovered) > .tf-action-group {
     visibility: hidden;
 }
 
+/* TODO figure this out */
+.tf-action-group > i {  /* matches .jstree-hovered for consistency */
+    /*background-color: #555;*/ /*rgba(85,85,85, 0.5);*/
+    /*border-radius: 2px; */
+    /*transition: background-color 0.15s;*/
+}
+
 .tf-action-group {  /* matches .jstree-animated, plus visibility */
     /* Have to repeat here because a more-specific transition rule replaces
      * any less-specific transition rules instead of supplementing them. */
