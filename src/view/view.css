@@ -45,7 +45,7 @@
     color: #fff !important;    /* because it's a dark theme */
 }
 
-.action-margin {
+.action-margin {    /* actually padding, not margin => it's clickable */
     padding-left: 0.4em;
 }
 
@@ -83,51 +83,19 @@ div#hamburger-menu ul li a i { position:relative; }
     top:-25%;
 }
 
-/* Action buttons --------------------------------------------------------- */
-
-.tf-action-group-OLD {
-    /* Sit at the right side of the screen */
-    position: absolute;
-    width: calc(100vw - 1em);
-    left: 0;
-
-    /* Be on the same row as the window */
-    display: inline-block;
-
-    /* See also z-index, below */
-    background: #00f;
-    opacity: 0.5;
-    // TODO see https://github.com/cxw42/jquery.forwardevents.git
-}
-
-.tf-action-group-OLD i {
-    float: right;
-    opacity: 1; /* doesn't work - why? */
-    background: none;
-}
-
-/* Hide the action buttons except when desired.  We indicate this
- * with a custom style on the <li> element: .tf-show-actions.
- */
-.jstree-node.tf-show-actions > .tf-action-group-OLD {
-    visibility: visible;
-}
-
-.jstree-node > .tf-action-group-OLD {
-    visibility: hidden;
-}
+/* Action buttons and Z-order --------------------------------------------- */
 
 /* Z order of items within a node - make sure the action group is on top */
 .jstree-node {
-    /* Start a new stacking context.  Thanks to
+    /* start a new stacking context - per
+     * http://examiningeverything.com/index.php/2017/02/10/css-stacking-contexts/
+     * See also
      * https://philipwalton.com/articles/what-no-one-told-you-about-z-index/
+     * and https://stackoverflow.com/a/7421805/2877364 by
+     * https://stackoverflow.com/users/248129/richard-jp-le-guen */
      */
-    //opacity: 0.999999;
-
-    /* start a new stacking context - per http://examiningeverything.com/index.php/2017/02/10/css-stacking-contexts/ */
     position: relative;
     z-index: 0;
-    /* transform: translateX(0px); */   /* this doesn't seem to work */
 }
 
 .jstree-wholerow {  /* wholerow highlight at the bottom */
@@ -139,13 +107,14 @@ div#hamburger-menu ul li a i { position:relative; }
     position: fixed;        /* starts a new stacking context */
     right: 0;
     display: inline-block;  /* Be on the same row as the window */
+    padding-right: 0.5em;   /* same as hamburger menu, below */
 };
 
 .jstree-wholerow-hovered > .tf-action-group {
     visibility: visible;
 }
 
-/* Not sure why I need the :not() -- it worked above (for different DOM) without :not. */
+/* Not sure why I need the :not() -- it worked or different DOM without :not. */
 div:not(.jstree-wholerow-hovered) > .tf-action-group {
     visibility: hidden;
 }
@@ -180,15 +149,15 @@ div:not(.jstree-wholerow-hovered) > .tf-action-group {
     z-index: 5;
 }
 
-.tf-action-group-OLD {  /* action buttons on top */
-    /* Keep the action icons above the whole-row bar.
-     * Thanks to https://stackoverflow.com/a/7421805/2877364 by
-     * https://stackoverflow.com/users/248129/richard-jp-le-guen */
-    z-index: 10;
-}
-
-.tf-action-group-OLD i {
-    z-index: 10;    /* same as .tf-action-group */
+/* The buttons are in order Rename, Close, Delete.  Add some space to the right
+ * of Close to move the "delete" button farther from the others.
+ * Use padding-right on Close rather than margin-left on Delete so there isn't
+ * a gap between buttons.  If there is such a gap, clicking it hits the node.
+ * TODO replace this with an invisible, narrow action button that just calls
+ * select_node().
+ */
+.tf-action-group .fff-picture-delete {
+    padding-right: 0.5em;
 }
 
 /* --- Main (hamburger) menu and related ---------------------------------- */
@@ -235,21 +204,6 @@ div#maintree {
  * hamburger menu. */
 #maintree {
     margin-bottom: 30px;    /* empirical, based on the hamburger menu's box */
-}
-
-/* --- Action buttons ----------------------------------------------------- */
-
-.right-top {
-    /* Keep the pencil above the whole-row bar.
-     * Thanks to https://stackoverflow.com/a/7421805/2877364 by
-     * https://stackoverflow.com/users/248129/richard-jp-le-guen */
-    position:relative;
-    z-index: 1;
-}
-
-/* Keep the "delete" button farther from the others */
-.tf-action-group .fff-cross {
-    margin-left:0.5em;
 }
 
 /* Icons ------------------------------------------------------------------ */
