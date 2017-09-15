@@ -126,6 +126,22 @@ div:not(.jstree-wholerow-hovered) > .tf-action-group {
     /*transition: background-color 0.15s;*/
 }
 
+.tf-action-group > i {
+    border: 1px solid transparent;
+    boder-radius: 2px;
+}
+
+.tf-action-group > i:hover {
+    background-color: #555;     /* solid, but otherwise matches wholerow */
+        /* Solid => makes it easier to see what you're about to click on
+         * when there's a long title under the buttons.  Thanks to
+         * https://stackoverflow.com/a/29630813/2877364 by
+         * https://stackoverflow.com/users/3436942/jbutler483 */
+    border: 1px solid #707070;  /* just a bit of an affordance */
+    boder-radius: 2px;
+    /* TODO transition 0.15s? */
+}
+
 .tf-action-group {  /* matches .jstree-animated, plus visibility */
     /* Have to repeat here because a more-specific transition rule replaces
      * any less-specific transition rules instead of supplementing them. */
