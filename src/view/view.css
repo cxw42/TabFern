@@ -85,7 +85,7 @@ div#hamburger-menu ul li a i { position:relative; }
 
 /* Action buttons --------------------------------------------------------- */
 
-.tf-action-group {
+.tf-action-group-OLD {
     /* Sit at the right side of the screen */
     position: absolute;
     width: calc(100vw - 1em);
@@ -100,7 +100,7 @@ div#hamburger-menu ul li a i { position:relative; }
     // TODO see https://github.com/cxw42/jquery.forwardevents.git
 }
 
-.tf-action-group i {
+.tf-action-group-OLD i {
     float: right;
     opacity: 1; /* doesn't work - why? */
     background: none;
@@ -109,11 +109,11 @@ div#hamburger-menu ul li a i { position:relative; }
 /* Hide the action buttons except when desired.  We indicate this
  * with a custom style on the <li> element: .tf-show-actions.
  */
-.jstree-node.tf-show-actions > .tf-action-group {
+.jstree-node.tf-show-actions > .tf-action-group-OLD {
     visibility: visible;
 }
 
-.jstree-node > .tf-action-group {
+.jstree-node > .tf-action-group-OLD {
     visibility: hidden;
 }
 
@@ -122,12 +122,37 @@ div#hamburger-menu ul li a i { position:relative; }
     /* Start a new stacking context.  Thanks to
      * https://philipwalton.com/articles/what-no-one-told-you-about-z-index/
      */
-    opacity: 0.999999;
+    //opacity: 0.999999;
+
+    /* start a new stacking context - per http://examiningeverything.com/index.php/2017/02/10/css-stacking-contexts/ */
+    position: relative;
+    z-index: 0;
     /* transform: translateX(0px); */   /* this doesn't seem to work */
 }
 
 .jstree-wholerow {  /* wholerow highlight at the bottom */
-    z-index: 0;
+    /*z-index: auto;*/  /* no express z-index on an absolute element => don't make a new stacking context */
+}
+
+.jstree-wholerow > .tf-action-group {
+    z-index: 10;
+    position: fixed;        /* starts a new stacking context */
+    right: 0;
+    display: inline-block;  /* Be on the same row as the window */
+};
+
+.jstree-wholerow-hovered > .tf-action-group {
+    visibility: visible;
+}
+
+/* Not sure why I need the :not() -- it worked above (for different DOM) without :not. */
+div:not(.jstree-wholerow-hovered) > .tf-action-group {
+    visibility: hidden;
+}
+
+.jstree-wholerow > i {  /* action buttons on top */
+    z-index: 10;
+    float: right;
 }
 
 .jstree-node > i {  /* icon and text in the middle */
@@ -138,18 +163,18 @@ div#hamburger-menu ul li a i { position:relative; }
     z-index: 5;
 }
 
-.tf-action-group {  /* action buttons on top */
+.tf-action-group-OLD {  /* action buttons on top */
     /* Keep the action icons above the whole-row bar.
      * Thanks to https://stackoverflow.com/a/7421805/2877364 by
      * https://stackoverflow.com/users/248129/richard-jp-le-guen */
     z-index: 10;
 }
 
-.tf-action-group i {
+.tf-action-group-OLD i {
     z-index: 10;    /* same as .tf-action-group */
 }
 
-/* --- Main (hamburger) menu ---------------------------------------------- */
+/* --- Main (hamburger) menu and related ---------------------------------- */
 
 div#hamburger-menu {
     position: fixed;
@@ -172,6 +197,20 @@ div#hamburger-menu {
 div#maintree {
     z-index: 0;
     position: relative;
+}
+
+/* Make the hamburger menu symmetrical around the visible icon */
+
+#hamburger-menu i.jstree-icon.jstree-ocl {
+    display: none;
+}
+
+#hamburger-menu a.jstree-anchor {
+    padding-left: 4px;     /* matches padding-right from the theme */
+}
+
+#hamburger-menu a.jstree-anchor i.jstree-icon {
+    margin-left: 2px;       /* matches margin-right from the theme */
 }
 
 /* --- Action buttons ----------------------------------------------------- */

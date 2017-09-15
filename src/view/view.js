@@ -782,17 +782,25 @@ function createNodeForClosedTab(tab_data_v1, parent_node_id)
 
 function addWindowNodeActions(win_node_id)
 {
-    treeobj.make_group(win_node_id, {
-        selector: 'a',
-        after: true,
-        class: ACTION_GROUP_WIN_CLASS
-    });
+    let DBG_grouped = true;    // This is for ease of testing.
+    let DBG_group_class = ACTION_GROUP_WIN_CLASS;
+    let DBG_selector = 'div.jstree-wholerow';    // null => the li
+
+    if(DBG_grouped) {
+        treeobj.make_group(win_node_id, {
+            selector: DBG_selector,     //'a',
+            child: true,    //after: true,
+            class: ACTION_GROUP_WIN_CLASS
+        });
+    }
 
     treeobj.add_action(win_node_id, {
         id: 'renameWindow',
         class: 'fff-pencil action-margin right-top',
         text: '&nbsp;',
-        grouped: true,
+        grouped: DBG_grouped,
+        child: !DBG_grouped,
+        selector: DBG_grouped ? null : DBG_selector,
         callback: actionRenameWindow
     });
 
@@ -800,7 +808,9 @@ function addWindowNodeActions(win_node_id)
         id: 'closeWindow',
         class: 'fff-picture-delete action-margin right-top',
         text: '&nbsp;',
-        grouped: true,
+        grouped: DBG_grouped,
+        child: !DBG_grouped,
+        selector: DBG_grouped ? null : DBG_selector,
         callback: actionCloseWindow
     });
 
@@ -808,7 +818,9 @@ function addWindowNodeActions(win_node_id)
         id: 'deleteWindow',
         class: 'fff-cross action-margin right-top',
         text: '&nbsp;',
-        grouped: true,
+        grouped: DBG_grouped,
+        child: !DBG_grouped,
+        selector: DBG_grouped ? null : DBG_selector,
         callback: actionDeleteWindow
     });
 
@@ -2229,8 +2241,10 @@ function initTree1(win_id)
 
     // The main config
     let jstreeConfig = {
-        plugins: ['actions', 'wholerow', 'flagnode',
-                    'dnd', 'types'] // TODO add state plugin
+        plugins: ['wholerow', 'actions',
+                    // actions must be after wholerow since we attach the
+                    // action buttons to the wholerow div
+                    'flagnode', 'dnd', 'types'] // TODO add state plugin
         , core: {
             animation: false,
             multiple: false,          // for now
@@ -2251,13 +2265,13 @@ function initTree1(win_id)
             drag_selection: false,  // only drag one node
             is_draggable: dndIsDraggable,
             large_drop_target: true
-            //, use_html5: true
+            //, use_html5: true     // Didn't work in my testing
             //, check_while_dragging: false   // For debugging only
         }
         , types: jstreeTypes
         , actions: {
             propagation: 'stop'
-            //clicks on action buttons don't bubble
+                // clicks on action buttons don't also go to any other elements
         }
     };
 
