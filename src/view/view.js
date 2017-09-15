@@ -274,6 +274,21 @@ function get_curr_raw_text(win_val)
 /// diagnostic.
 function ignore_chrome_error() { void chrome.runtime.lastError; }
 
+/// Make a callback function that will forward to #fn on a later tick.
+/// @param fn {function} the function to call
+function nextTickRunner(fn) {
+    function inner(...args) {   // the actual callback
+        setTimeout( function() { fn(...args); } ,0);
+            // on a later tick, call #fn, passing it ther arguments the
+            // actual callback (inner()) got.
+    }
+
+    return inner;
+} //nextTickRunner()
+
+//////////////////////////////////////////////////////////////////////////
+// DOM Manipulation //
+
 /// Given string #class_list, add #new_class without duplicating.
 function add_classname(class_list, new_class)
 {
@@ -399,7 +414,6 @@ function getWindowSizeFromWindowRecord(win)
 function vscroll_function()
 { //TODO make this a closure over a specific win, jq
     log.info('Updating V positions');
-    return;
     $('.' + ACTION_GROUP_WIN_CLASS).each(function(idx, dom_elem) {
         let jq = $(dom_elem);
         jq.css('top',jq.parent().offset().top - $(window).scrollTop());
@@ -617,7 +631,9 @@ function actionRenameWindow(node_id, node, unused_action_id, unused_action_el)
     let win_val = mdWindows.by_node_id(node_id);
     if(!win_val) return;
 
-    let win_name = window.prompt('Window name?', get_curr_raw_text(win_val));
+    // TODO replace window.prompt with an in-DOM GUI.
+    let win_name = window.prompt('New window name?',
+                                get_curr_raw_text(win_val));
     if(win_name === null) return;   // user cancelled
 
     win_val.raw_title = win_name;
@@ -783,14 +799,14 @@ function createNodeForClosedTab(tab_data_v1, parent_node_id)
 function addWindowNodeActions(win_node_id)
 {
     let DBG_grouped = true;    // This is for ease of testing.
-    let DBG_group_class = ACTION_GROUP_WIN_CLASS;
+    let DBG_group_class = ACTION_GROUP_WIN_CLASS; // + ' jstree-animated';
     let DBG_selector = 'div.jstree-wholerow';    // null => the li
 
     if(DBG_grouped) {
         treeobj.make_group(win_node_id, {
             selector: DBG_selector,     //'a',
             child: true,    //after: true,
-            class: ACTION_GROUP_WIN_CLASS
+            class: ACTION_GROUP_WIN_CLASS //+ ' jstree-animated'
         });
     }
 
@@ -1892,11 +1908,16 @@ function getMainContextMenuItems(node, UNUSED_proxyfunc, e)
 
     if(nodeType === NT_WINDOW) {
         let winItems = {};
+
         winItems.renameItem = {
                 label: 'Rename',
                 icon: 'fff-pencil',
-                action:
+
+                // Use nextTickRunner so the context menu can be
+                // hidden before actionRenameWindow() calls window.prompt().
+                action: nextTickRunner(
                     function(){actionRenameWindow(node.id, node, null, null);}
+                )
             };
 
         if( win_val.isOpen && (win_val.keep == WIN_KEEP) ) {

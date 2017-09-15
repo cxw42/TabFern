@@ -150,6 +150,16 @@ div:not(.jstree-wholerow-hovered) > .tf-action-group {
     visibility: hidden;
 }
 
+.tf-action-group {  /* matches .jstree-animated, plus visibility */
+    /* Have to repeat here because a more-specific transition rule replaces
+     * any less-specific transition rules instead of supplementing them. */
+    /*transition: background-color 0.15s, box-shadow 0.15s, visibility 0.15s;*/
+        /* this doesn't work - need to control opacity and visibility,
+         * I think.
+         * TODO maybe try http://www.greywyvern.com/?post=337
+         */
+}
+
 .jstree-wholerow > i {  /* action buttons on top */
     z-index: 10;
     float: right;
