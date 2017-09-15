@@ -35,6 +35,7 @@ const WIN_CLASS='tabfern-window';     // class on all <li>s representing windows
 const FOCUSED_WIN_CLASS='tf-focused-window';  // Class on the currently-focused win
 const VISIBLE_WIN_CLASS='tf-visible-window';  // Class on all visible wins
 const ACTION_GROUP_WIN_CLASS='tf-action-group';   // Class on action-group div
+const ACTION_BUTTON_WIN_CLASS='tf-action-button'; // Class on action buttons (<i>)
 const SHOW_ACTIONS_CLASS = 'tf-show-actions';
     // Class on a .jstree-node to indicate its actions should be shown
 
@@ -812,7 +813,7 @@ function addWindowNodeActions(win_node_id)
 
     treeobj.add_action(win_node_id, {
         id: 'renameWindow',
-        class: 'fff-pencil action-margin right-top',
+        class: 'fff-pencil ' + ACTION_BUTTON_WIN_CLASS,
         text: '&nbsp;',
         grouped: DBG_grouped,
         child: !DBG_grouped,
@@ -822,7 +823,7 @@ function addWindowNodeActions(win_node_id)
 
     treeobj.add_action(win_node_id, {
         id: 'closeWindow',
-        class: 'fff-picture-delete action-margin right-top',
+        class: 'fff-picture-delete ' + ACTION_BUTTON_WIN_CLASS,
         text: '&nbsp;',
         grouped: DBG_grouped,
         child: !DBG_grouped,
@@ -832,7 +833,7 @@ function addWindowNodeActions(win_node_id)
 
     treeobj.add_action(win_node_id, {
         id: 'deleteWindow',
-        class: 'fff-cross action-margin right-top',
+        class: 'fff-cross ' + ACTION_BUTTON_WIN_CLASS,
         text: '&nbsp;',
         grouped: DBG_grouped,
         child: !DBG_grouped,
@@ -1110,15 +1111,32 @@ function treeOnSelect(_evt_unused, evt_data)
         return;     // unknown node type
     }
 
-    if(treeobj.get_type(node) === NTN_RECOVERED) {
-        treeobj.set_type(node, 'default');
-    }
-
     // TODO figure out why this doesn't work: treeobj.deselect_node(node, true);
     treeobj.deselect_all(true);
         // Clear the selection.  True => no event due to this change.
     //log.info('Clearing flags treeonselect');
     treeobj.clear_flags(true);
+
+    // Now that the selection is clear, see if this actually should have been
+    // an action-button click.
+    if(evt_data.event && evt_data.event.clientX) {
+        let e = evt_data.event;
+        let elem = document.elementFromPoint(e.clientX, e.clientY);
+        if(elem.tagName && elem.tagName.toLowerCase() == 'i' &&
+            $(elem).hasClass(ACTION_BUTTON_WIN_CLASS)) {
+            // The events were such that the user clicked a button but the
+            // event went to the wholerow.  I think this is because of how
+            // focus/blur happens when you focus a window by clicking on an
+            // element in it.  For now, ignore the click.
+            // TODO dispatch the actual action.
+            log.info({'Actually, button press':elem});
+            return;
+        }
+    }
+
+    if(treeobj.get_type(node) === NTN_RECOVERED) {
+        treeobj.set_type(node, 'default');
+    }
 
     if(is_tab && node_val.isOpen) {   // An open tab
         chrome.tabs.highlight({

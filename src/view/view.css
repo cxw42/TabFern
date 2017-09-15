@@ -45,7 +45,8 @@
     color: #fff !important;    /* because it's a dark theme */
 }
 
-.action-margin {    /* actually padding, not margin => it's clickable */
+.tf-action-button {
+    /* padding, not margin, so it's clickable */
     padding-left: 0.4em;
 }
 
