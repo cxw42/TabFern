@@ -858,6 +858,10 @@
 					}, this))
 				.on('mouseleave.jstree', '.jstree-anchor', $.proxy(function (e) {
 						this.dehover_node(e.currentTarget);
+						// TODO check this against wholerow - when you click
+						// outside the <a>, even if you're still in the row,
+						// this fires.  I think this may be why clicks on
+						// action buttons sometimes get lost.
 					}, this));
 		},
 		/**
@@ -8351,7 +8355,9 @@
                                 e.preventDefault();
                             }
 							// Forward to the regular context-menu handlers
-							var tmp = $.Event('contextmenu', { metaKey : e.metaKey, ctrlKey : e.ctrlKey, altKey : e.altKey, shiftKey : e.shiftKey, pageX : e.pageX, pageY : e.pageY });
+							//var tmp = $.Event('contextmenu', { metaKey : e.metaKey, ctrlKey : e.ctrlKey, altKey : e.altKey, shiftKey : e.shiftKey, pageX : e.pageX, pageY : e.pageY });
+							var tmp = $.Event(e);	//propagation is not stopped on the copy
+							tmp.target=null; //so jQuery will fill it in
 							return $(e.currentTarget).closest(".jstree-node").children(".jstree-anchor").first().trigger(tmp);
 						}
 					}, this))
@@ -8366,17 +8372,23 @@
 				*/
 				.on("click.jstree", ".jstree-wholerow", function (e) {
 						e.stopImmediatePropagation();
-						var tmp = $.Event('click', { metaKey : e.metaKey, ctrlKey : e.ctrlKey, altKey : e.altKey, shiftKey : e.shiftKey });
+						//var tmp = $.Event('click', { metaKey : e.metaKey, ctrlKey : e.ctrlKey, altKey : e.altKey, shiftKey : e.shiftKey });
+						var tmp = $.Event(e);	//propagation is not stopped on the copy
+						tmp.target=null; //so jQuery will fill it in
 						$(e.currentTarget).closest(".jstree-node").children(".jstree-anchor").first().trigger(tmp).focus();
 					})
 				.on("dblclick.jstree", ".jstree-wholerow", function (e) {
 						e.stopImmediatePropagation();
-						var tmp = $.Event('dblclick', { metaKey : e.metaKey, ctrlKey : e.ctrlKey, altKey : e.altKey, shiftKey : e.shiftKey });
+						//var tmp = $.Event('dblclick', { metaKey : e.metaKey, ctrlKey : e.ctrlKey, altKey : e.altKey, shiftKey : e.shiftKey });
+						var tmp = $.Event(e);
+						tmp.target = null;
 						$(e.currentTarget).closest(".jstree-node").children(".jstree-anchor").first().trigger(tmp).focus();
 					})
 				.on("click.jstree", ".jstree-leaf > .jstree-ocl", $.proxy(function (e) {
 						e.stopImmediatePropagation();
 						var tmp = $.Event('click', { metaKey : e.metaKey, ctrlKey : e.ctrlKey, altKey : e.altKey, shiftKey : e.shiftKey });
+						//var tmp = $.Event(e);
+						//tmp.target = null;
 						$(e.currentTarget).closest(".jstree-node").children(".jstree-anchor").first().trigger(tmp).focus();
 					}, this))
 				.on("mouseover.jstree", ".jstree-wholerow, .jstree-icon", $.proxy(function (e) {
