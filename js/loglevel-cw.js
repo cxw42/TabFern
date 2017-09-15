@@ -151,6 +151,12 @@
           return currentLevel;
       };
 
+      self.getLevelName = function () {
+          for(var level_name in self.levels) {
+              if(currentLevel == self.levels[level_name]) return level_name;
+          }
+      }
+
       self.setLevel = function (level, persist) {
           if (typeof level === "string" && self.levels[level.toUpperCase()] !== undefined) {
               level = self.levels[level.toUpperCase()];
