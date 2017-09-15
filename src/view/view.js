@@ -2319,11 +2319,13 @@ function initTree1(win_id)
 
     // Add custom event handlers
     install_vscroll_function(window, jq_tree);
-    install_action_visibility_function(window, jq_tree, $('#hamburger-menu') );
+    //install_action_visibility_function(window, jq_tree, $('#hamburger-menu') );
 
+    /*
     $(document).on("click.debug",'.tf-action-group',
             function(e){console.log({dbg_click: e.target.parentNode.id});}) //DEBUG
     $(document).on("click.debug",'.tf-action-group', mouse_event_forwarder);
+    */
 
     // --------
 
@@ -2361,7 +2363,7 @@ function initTree0()
 {
     log.info('TabFern view.js initializing view - ' + TABFERN_VERSION);
 
-    $(document).on("click.debug",function(e){console.log({doc_click: e.target});}) //DEBUG
+    //$(document).on("click.debug",function(e){console.log({doc_click: e.target});}) //DEBUG
 
     document.title = 'TabFern ' + TABFERN_VERSION;
 

@@ -223,6 +223,13 @@ div#maintree {
     margin-left: 2px;       /* matches margin-right from the theme */
 }
 
+/* Make sure that the user can still click on action buttons on the very last
+ * row of the tree.  Without this, those buttons would be hidden behind the
+ * hamburger menu. */
+#maintree {
+    margin-bottom: 30px;    /* empirical, based on the hamburger menu's box */
+}
+
 /* --- Action buttons ----------------------------------------------------- */
 
 .right-top {
