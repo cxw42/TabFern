@@ -127,6 +127,9 @@
 		 * class    <- string (a string containing all the classes you want to add to the action (space separated)
 		 * event    <- string The event on which the trigger will be called
 		 * callback <- function that will be called when the action is clicked
+		 * dataset  <- optional object of key-value pairs that will be added as
+		 *             data-* attributes of the action's element.  The values
+		 *             must be strings or support toString().
 		 *
 		 * The action object can contain one of two types of location information:
 		 * 1. grouped  <- (default false) if true, put this action in a div.  Call make_group() first to set up this div.  Actions are appended as children of the div.
@@ -148,6 +151,8 @@
 				var _node_id = node_id[i];
 				var actions = self._actions[_node_id] = self._actions[_node_id] || [];
 
+				var should_redraw = false;
+
 				if (!self._has_action(_node_id, action.id)) {
 					if(action.grouped && !(_node_id in this._group_parms)) {
 						continue;	// TODO report error?
@@ -156,8 +161,10 @@
 					var the_action = Object.assign({}, action);	//our own copy
 					the_action.selector = the_action.selector || null;
 					actions.push(the_action);
-					this.redraw_node(_node_id);
+					should_redraw = true;
 				}
+
+				if(should_redraw) this.redraw_node(_node_id);
 
 			}
 		};
@@ -211,6 +218,17 @@
 			var action_el = document.createElement("i");
 			action_el.className = action.class;
 			action_el.textContent = action.text;
+
+			// Set up element data-* values, if any
+			if( action_el.dataset && action.dataset &&
+				(typeof action.dataset === 'object') &&
+				(action.dataset !== null)
+			) {
+				for(var key in action.dataset) {
+					action_el.dataset[key] = '' + action.dataset[key];
+				}
+			}
+
 			$(action_el).click(function(event) {
 				var node = self.get_node(action_el);
 				action.callback(node_id, node,
