@@ -2398,7 +2398,7 @@ function initTree1(win_id)
                 loadSavedWindowsIntoTree(initTree2);
 
             } else {
-                Bypasser = ContextMenuBypasser.create(window, treeobj, M.shortcuts);
+                Bypasser = M.bypasser.create(window, treeobj, M.shortcuts);
 
                 // Continue initialization by loading the tree
                 loadSavedWindowsIntoTree(initTree2);

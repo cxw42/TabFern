@@ -5,20 +5,21 @@
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD
-        define(['jquery', 'jstree', 'loglevel'], factory);
+        define(['jquery', 'jstree', 'loglevel', 'signals'], factory);
     } else if (typeof exports === 'object') {
         // Node, CommonJS-like
-        module.exports = factory(require('jquery'), require('jstree'), require('loglevel'));
+        module.exports = factory(require('jquery'), require('jstree'),
+            require('loglevel'), require('signals'));
     } else {
         // Browser globals (root is `window`)
-        root.ContextMenuBypasser = factory(root.jQuery, null, root.log);
+        root.ContextMenuBypasser = factory(root.jQuery, null, root.log, root.signals);
             // null because jstree doesn't actually have a module global - it
             // just plugs in to jQuery.
     }
-}(this, function ($, _unused_jstree_placeholder_, log) {
+}(this, function ($, _unused_jstree_placeholder_, log_orig, signals) {
     "use strict";
 
-    function loginfo(...args) { log.info('TabFern bypasser.js: ', ...args); };
+    function loginfo(...args) { log_orig.info('TabFern bypasser.js: ', ...args); };
         // for some reason, log.info.bind(log, ...) would capture the log level
         // at the time of the binding, so it would not respond to later
         // changes in the level.  Instead, use an actual function.

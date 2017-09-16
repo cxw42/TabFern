@@ -3,15 +3,16 @@
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD
-        define(['loglevel', 'keypress'], factory);
+        define(['loglevel', 'keypress', 'signals'], factory);
     } else if (typeof exports === 'object') {
         // Node, CommonJS-like
-        module.exports = factory(require('loglevel'), require('keypress'));
+        module.exports = factory(require('loglevel'), require('keypress'),
+                                    require('signals'));
     } else {
         // Browser globals (root is window)
-        root.dmauro_keypress_driver = factory(root.jQuery);
+        root.dmauro_keypress_driver = factory(root.log, root.keypress, root.signals);
     }
-}(this, function (log_orig, keypress) {
+}(this, function (log_orig, keypress, signals) {
 
     function loginfo(...args) { log_orig.info('TabFern drivers dmauro_keypress.js: ', ...args); };
 
