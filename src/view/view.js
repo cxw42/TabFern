@@ -1,6 +1,5 @@
-// view.js
-// Uses jquery, jstree, jstree-actions, loglevel, common.js, all of which are
-// loaded by view.html.
+// view.js: main view for TabFern
+// cxw42, 2017
 
 // Design decision: data is stored and manipulated in its native, unescaped
 // form up until the point of use.  It is then escaped for HTML, CSS, or
@@ -17,6 +16,13 @@
 // A closed, unsaved window isn't represented in TabFern, except in the
 // "Restore last deleted window" function.
 // An open, unsaved window is referred to for brevity as an "ephemeral" window.
+
+//////////////////////////////////////////////////////////////////////////
+// Modules //
+
+// This is a hack so I can keep everything in the global scope.  TODO
+// figure out a better way.
+let M = {};     // modules
 
 //////////////////////////////////////////////////////////////////////////
 // Constants //
@@ -104,56 +110,58 @@ let lastDeletedWindow;
 /// Did initialization complete successfully?
 let did_init_complete = false;
 
-// - Modules -
-
-/// The keyboard shortcuts handler, if any.
-let Shortcuts;
+// - Module instances -
 
 /// The hamburger menu
 let Hamburger;
 
 /// An escaper
-let Esc = HTMLEscaper();
+let Esc;
 
 /// The module that handles <Shift> bypassing of the jstree context menu
 let Bypasser;
 
+/// HACK - a global for loglevel because typing `M.log` everywhere is a pain.
+let log;
+
 //////////////////////////////////////////////////////////////////////////
 // Initialization //
 
-// NOTE: as of writing, log.debug() is a no-op - see
-// https://github.com/pimterry/loglevel/issues/111
-log.setDefaultLevel(log.levels.INFO);
-    // TODO change the default to ERROR or SILENT for production.
-
 console.log('Loading TabFern ' + TABFERN_VERSION);
 
-mdTabs = Multidex(
-    [ //keys
-        'tab_id'    // from Chrome
-      , 'node_id'   // from jstree
-    ],
-    [ //other data
-        'win_id'    // from Chrome
-      , 'index'     // in the current window
-      , 'tab'       // the actual Tab record from Chrome
-      , 'raw_url'   // the tab's URL
-      , 'raw_title' // the tab's title.  null => default.
-      , 'isOpen'    // open or not
-      // TODO save favIconUrl?
-    ]);
+/// Init those of our globals that don't require any data to be loaded.
+/// Call after M has been populated.
+function local_init()
+{
+    Esc = M.justhtmlescape();
 
-mdWindows = Multidex(
-    [ //keys
-        'win_id'    // from Chrome
-      , 'node_id'   // from jstree
-    ],
-    [ //other data
-        'win'       // the actual Window record from chrome
-      , 'raw_title' // the window's title (e.g., "Window")
-      , 'isOpen'    // whether the window is open or not
-      , 'keep'      // whether the window should be saved or not
-    ]);
+    mdTabs = M.multidex(
+        [ //keys
+            'tab_id'    // from Chrome
+          , 'node_id'   // from jstree
+        ],
+        [ //other data
+            'win_id'    // from Chrome
+          , 'index'     // in the current window
+          , 'tab'       // the actual Tab record from Chrome
+          , 'raw_url'   // the tab's URL
+          , 'raw_title' // the tab's title.  null => default.
+          , 'isOpen'    // open or not
+          // TODO save favIconUrl?
+        ]);
+
+    mdWindows = M.multidex(
+        [ //keys
+            'win_id'    // from Chrome
+          , 'node_id'   // from jstree
+        ],
+        [ //other data
+            'win'       // the actual Window record from chrome
+          , 'raw_title' // the window's title (e.g., "Window")
+          , 'isOpen'    // whether the window is open or not
+          , 'keep'      // whether the window should be saved or not
+        ]);
+} //init()
 
 //////////////////////////////////////////////////////////////////////////
 // General utility routines //
@@ -1760,7 +1768,7 @@ function hamBackup()
     // Save the tree, including currently-open windows/tabs, then
     // export the save data to #filename.
     saveTree(true, function(saved_info){
-        Fileops.Export(document, JSON.stringify(saved_info), filename);
+        M.exporter(document, JSON.stringify(saved_info), filename);
     });
 } //hamBackup()
 
@@ -1768,7 +1776,7 @@ function hamBackup()
 /// already present.  It does not delete existing tabs/windows.
 function hamRestoreFromBackup()
 {
-    let importer = new Fileops.Importer(document, '.tabfern');
+    let importer = new M.importer(document, '.tabfern');
     importer.getFileAsString(function(text, filename){
         try {
             let parsed = JSON.parse(text);
@@ -2375,25 +2383,22 @@ function initTree1(win_id)
 
     // Install keyboard shortcuts.  This includes the keyboard listener for
     // context menus.
-    window._tabFernShortcuts.install(
+    M.shortcuts.install(
         {
-            window: window,
-            keybindings: window._tabFernShortcuts.keybindings.default,
-            drivers: [window._tabFernShortcuts.drivers.dmaruo_keypress]
+            window,
+            keybindings: M.default_shortcuts,
+            drivers: [M.dmauro_keypress]
         },
         function initialized(err) {
             if ( err ) {
                 console.log('Failed loading a shortcut driver!  Initializing context menu with no shortcut driver.  ' + err);
-                //window._tabFernContextMenu.installEventHandler(window, document, null);
-                Bypasser = ContextMenuBypasser.create(window, treeobj);
+                Bypasser = M.bypasser.create(window, treeobj);
 
                 // Continue initialization by loading the tree
                 loadSavedWindowsIntoTree(initTree2);
 
             } else {
-                Shortcuts = window._tabFernShortcuts;
-                //window._tabFernContextMenu.installEventHandler(window, document, window._tabFernShortcuts);
-                Bypasser = ContextMenuBypasser.create(window, treeobj, Shortcuts);
+                Bypasser = ContextMenuBypasser.create(window, treeobj, M.shortcuts);
 
                 // Continue initialization by loading the tree
                 loadSavedWindowsIntoTree(initTree2);
@@ -2411,7 +2416,7 @@ function initTree0()
 
     document.title = 'TabFern ' + TABFERN_VERSION;
 
-    Hamburger = HamburgerMenuMaker('#hamburger-menu', getHamburgerMenuItems,
+    Hamburger = M.hamburger('#hamburger-menu', getHamburgerMenuItems,
             CONTEXT_MENU_MOUSEOUT_TIMEOUT_MS);
 
     checkWhatIsNew('#hamburger-menu');
@@ -2461,16 +2466,58 @@ function initIncompleteWarning()
 //////////////////////////////////////////////////////////////////////////
 // MAIN //
 
-// Timer to display the warning message if initialization doesn't complete
-// quickly enough.
-window.setTimeout(initIncompleteWarning, INIT_TIME_ALLOWED_MS);
+let dependencies = ['jquery', 'jstree', 'jstree-actions', 'jstree-flagnode',
+    'loglevel', 'hamburger', 'bypasser', 'multidex', 'justhtmlescape',
+    'local/fileops/export', 'local/fileops/import', 'signals', 'shortcuts',
+    'dmauro_keypress', 'shortcuts_keybindings_default'
+];
 
-// Main events
-window.addEventListener('load', initTree0, { 'once': true });
-window.addEventListener('unload', shutdownTree, { 'once': true });
-window.addEventListener('resize', eventOnResize);
-    // This doesn't detect window movement without a resize, which is why
-    // we have timedResizeDetector above.
+function main(...args)
+{
+    // Hack: Copy the loaded modules into our M global
+    for(let depidx = 0; depidx < args.length; ++depidx) {
+        M[dependencies[depidx]] = args[depidx];
+    }
+
+    // Easier names for some
+    M.exporter = M['local/fileops/export'];
+    M.importer = M['local/fileops/import'];
+    M.default_shortcuts = M['shortcuts_keybindings_default'];
+
+    log = M.loglevel;   // global - HACK
+    log.setDefaultLevel(log.levels.DEBUG);
+
+    local_init();
+
+    // Timer to display the warning message if initialization doesn't complete
+    // quickly enough.
+    window.setTimeout(initIncompleteWarning, INIT_TIME_ALLOWED_MS);
+
+    // Main events
+    window.addEventListener('unload', shutdownTree, { 'once': true });
+    window.addEventListener('resize', eventOnResize);
+        // This doesn't detect window movement without a resize, which is why
+        // we have timedResizeDetector above.
+
+    // Fire off the main init
+    if(document.readyState !== 'complete') {
+        // Thanks to https://stackoverflow.com/a/28093606/2877364 by
+        // https://stackoverflow.com/users/4483389/matthias-samsel
+        window.addEventListener('load', initTree0, { 'once': true });
+    } else {
+        window.setTimeout(initTree0, 0);    //always async
+    }
+} // main()
+
+require(dependencies, main);
+
+window.addEventListener('load',
+        function() { console.log({'Load fired': document.readyState}); },
+        { 'once': true });
+
+// ###########################################################################
+// ### End of real code
+// ###########################################################################
 
 //TODO test what happens when Chrome exits.  Does the background page need to
 //save anything?
