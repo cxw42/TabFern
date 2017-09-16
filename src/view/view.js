@@ -818,7 +818,8 @@ function addWindowNodeActions(win_node_id)
         grouped: DBG_grouped,
         child: !DBG_grouped,
         selector: DBG_grouped ? null : DBG_selector,
-        callback: actionRenameWindow
+        callback: actionRenameWindow,
+        dataset: { action: 'renameWindow' }
     });
 
     treeobj.add_action(win_node_id, {
@@ -828,7 +829,8 @@ function addWindowNodeActions(win_node_id)
         grouped: DBG_grouped,
         child: !DBG_grouped,
         selector: DBG_grouped ? null : DBG_selector,
-        callback: actionCloseWindow
+        callback: actionCloseWindow,
+        dataset: { action: 'closeWindow' }
     });
 
     treeobj.add_action(win_node_id, {
@@ -838,7 +840,8 @@ function addWindowNodeActions(win_node_id)
         grouped: DBG_grouped,
         child: !DBG_grouped,
         selector: DBG_grouped ? null : DBG_selector,
-        callback: actionDeleteWindow
+        callback: actionDeleteWindow,
+        dataset: { action: 'deleteWindow' }
     });
 
 } //addWindowNodeActions
@@ -1117,8 +1120,10 @@ function treeOnSelect(_evt_unused, evt_data)
     //log.info('Clearing flags treeonselect');
     treeobj.clear_flags(true);
 
+    // --------
     // Now that the selection is clear, see if this actually should have been
     // an action-button click.
+
     if(evt_data.event && evt_data.event.clientX) {
         let e = evt_data.event;
         let elem = document.elementFromPoint(e.clientX, e.clientY);
@@ -1129,10 +1134,28 @@ function treeOnSelect(_evt_unused, evt_data)
             // focus/blur happens when you focus a window by clicking on an
             // element in it.  For now, ignore the click.
             // TODO dispatch the actual action.
-            log.info({'Actually, button press':elem});
+            log.info({'Actually, button press':elem, action:elem.dataset.action});
+
+            switch(elem.dataset.action) {
+                case 'renameWindow':
+                    actionRenameWindow(node.id, node, null, null); break;
+                case 'closeWindow':
+                    actionCloseWindow(node.id, node, null, null); break;
+                case 'deleteWindow':
+                    actionDeleteWindow(node.id, node, null, null); break;
+                default: break;     //no-op (e.g., if dataset.action missing)
+            }
+
+            // Whether or not we were able to process the click, it wasn't
+            // a selection.  Therefore, don't proceed with the normal
+            // on-select operations.
             return;
-        }
-    }
+
+        } //endif the click was actually an action button
+    } //endif event has clientX
+
+    // --------
+    // Process the actual node click
 
     if(treeobj.get_type(node) === NTN_RECOVERED) {
         treeobj.set_type(node, 'default');
@@ -1260,6 +1283,9 @@ function treeOnSelect(_evt_unused, evt_data)
                             log.warn('Pruning ' + to_prune);
                             chrome.tabs.remove(to_prune, ignore_chrome_error);
                         } //endif we have extra tabs
+
+                        // TODO if a tab was clicked on, focus that particular tab
+
                     } //get callback
                 ); //windows.get
 
