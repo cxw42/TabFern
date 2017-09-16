@@ -3,70 +3,75 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <!-- CC-BY-SA 4.0 International -->
 <head>
-<title>TabFern</title>
-<meta http-equiv="Content-Type" content="text/html" />
+    <title>TabFern</title>
+    <meta http-equiv="Content-Type" content="text/html" />
 
-<link href="/js/jstree-3.3.4/themes/default-dark/style.css" rel="stylesheet" type="text/css" />
-<link href="/js/fontawesome/css/font-awesome.css" rel="stylesheet" type="text/css" />
+    <link href="/js/jstree-3.3.4/themes/default-dark/style.css" rel="stylesheet" type="text/css" />
+    <link href="/js/fontawesome/css/font-awesome.css" rel="stylesheet" type="text/css" />
 
-<script src="/js/js-signals-1a82bdd/dist/signals.min.js" type="text/javascript"></script>
+    <script src="/src/require-config.js"></script>
+    <!-- script src="/js/require.js"></script -->
 
-<script src="/js/jquery-3.2.1.js" type="text/javascript"></script>
-<script src="/js/jstree-3.3.4/jstree.js" type="text/javascript"></script>
-<script src="/js/jstree-actions-cw.js" type="text/javascript"></script>
-<script src="/js/jstree-flagnode.js" type="text/javascript"></script>
+    <script src="/js/js-signals-1a82bdd/dist/signals.min.js" type="text/javascript"></script>
 
-<script src="/js/loglevel.js" type="text/javascript"></script>
+    <script src="/js/jquery.js" type="text/javascript"></script>    <!-- does call define() - don't need shim -->
 
-<script src="/js/hamburger.js" type="text/javascript"></script>
+    <script src="/js/jstree-3.3.4/jstree.js" type="text/javascript"></script>
+    <script src="/js/jstree-actions-cw.js" type="text/javascript"></script>
+    <script src="/js/jstree-flagnode.js" type="text/javascript"></script>
 
-<script src="bypasser.js" type="text/javascript"></script>
-<script src="/js/multidex.js" type="text/javascript"></script>
-<script src="../common/common.js" type="text/javascript"></script>
-<script src="../fileops/export.js" type="text/javascript"></script>
-<script src="../fileops/import.js" type="text/javascript"></script>
+    <script src="/js/loglevel.js" type="text/javascript"></script>
 
-<script src="/js/justhtmlescape.js" type="text/javascript"></script>
+    <script src="/js/hamburger.js" type="text/javascript"></script>
 
-<!-- Not actually for TabFern - a debugging test for https://bugs.chromium.org/p/chromium/issues/detail?id=762951 -->
-<script src="chrome-issue-762951.js" type="text/javascript"></script>
+    <script src="bypasser.js" type="text/javascript"></script>
+    <script src="/js/multidex.js" type="text/javascript"></script>
+    <script src="../common/common.js" type="text/javascript"></script>
+    <script src="../fileops/export.js" type="text/javascript"></script>
+    <script src="../fileops/import.js" type="text/javascript"></script>
 
-<link rel="stylesheet" type="text/css" media="all" href="view.css" /><!-- this one should always be the last stylesheet listed -->
+    <script src="/js/justhtmlescape.js" type="text/javascript"></script>
+
+    <!-- Not actually for TabFern - a debugging test for https://bugs.chromium.org/p/chromium/issues/detail?id=762951 -->
+    <script src="chrome-issue-762951.js" type="text/javascript"></script>
+
+    <link rel="stylesheet" type="text/css" media="all" href="view.css" /><!-- this one should always be the last stylesheet listed -->
 
 </head>
+
 <body class="jstree-default-dark">
 <!-- jstree-default-dark to set background, text colors -->
 
-<div id="tabfern-container">
-<!-- Content ------------------------------------------------------------- -->
-<div id="maintree"></div><!-- the window tree -->
-<div id="view-messages"></div><!-- for error messages -->
-<div id="init-incomplete">Initialization did not complete.  Changes will not
-be saved.</div><!-- hidden if init does complete. -->
+    <div id="tabfern-container">
+    <!-- Content ------------------------------------------------------------- -->
+    <div id="maintree"></div><!-- the window tree -->
+    <div id="view-messages"></div><!-- for error messages -->
+    <div id="init-incomplete">Initialization did not complete.  Changes will not
+    be saved.</div><!-- hidden if init does complete. -->
 
-<!-- Some content for no-styles, no-JS, or screen-reader users -->
-<div id="static-about" class="hidden-but-accessible">
-    <a href="https://cxw42.github.io/TabFern/">About, help, and credits</a>
-</div>
+    <!-- Some content for no-styles, no-JS, or screen-reader users -->
+    <div id="static-about" class="hidden-but-accessible">
+        <a href="https://cxw42.github.io/TabFern/">About, help, and credits</a>
+    </div>
 
-<div id="hamburger-menu" class="hamburger-menu"></div><!-- a jstree to use as a hamburger menu -->
-</div><!-- tabfern-container -->
+    <div id="hamburger-menu" class="hamburger-menu"></div><!-- a jstree to use as a hamburger menu -->
+    </div><!-- tabfern-container -->
 
-<!-- Room for plugins ---------------------------------------------------- -->
-<div id="plugin-container"></div>
-<!-- Maybe use something like https://stackoverflow.com/q/13741871/2877364 or
-https://benfrain.com/independent-scrolling-panels-body-scroll-using-just-css/
-to give the plugin room at the bottom while permitting TabFern operation
-to continue as usual above. -->
+    <!-- Room for plugins ---------------------------------------------------- -->
+    <div id="plugin-container"></div>
+    <!-- Maybe use something like https://stackoverflow.com/q/13741871/2877364 or
+    https://benfrain.com/independent-scrolling-panels-body-scroll-using-just-css/
+    to give the plugin room at the bottom while permitting TabFern operation
+    to continue as usual above. -->
 
-<!-- Scripts ------------------------------------------------------------- -->
-<script src="shortcuts/keybindings/defaults.js" type="text/javascript"></script>
-<script src="shortcuts/drivers/dmaruo_keypress.js" type="text/javascript"></script>
-<!--TODO: Ability to save/load user bindings-->
-<script src="shortcuts/shortcuts.js" type="text/javascript"></script>
-<script src="contextMenu/contextMenu.js" type="text/javascript"></script>
+    <!-- Scripts ------------------------------------------------------------- -->
+    <script src="shortcuts/keybindings/defaults.js" type="text/javascript"></script>
+    <script src="shortcuts/drivers/dmaruo_keypress.js" type="text/javascript"></script>
+    <!--TODO: Ability to save/load user bindings-->
+    <script src="shortcuts/shortcuts.js" type="text/javascript"></script>
+    <script src="contextMenu/contextMenu.js" type="text/javascript"></script>
 
-<script src="view.js" type="text/javascript"></script><!-- the main one -->
+    <script src="view.js" type="text/javascript"></script><!-- the main one -->
 
 </body>
 </html>

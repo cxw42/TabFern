@@ -2,12 +2,19 @@
 # grab-commit.sh: Make a copy of all the files touched by a particular commit
 # cxw42 at Github 2017 - CC-BY
 
+do_grab=y
+if [[ $1 = '-n' ]]; then
+    do_grab=
+    shift
+fi
+
 if [[ ! $1 ]]; then
-    echo 'grab-commit.sh <tree-ish>'
+    echo 'grab-commit.sh [-n] <tree-ish>'
+    echo 'With -n, just list the files.'
     exit
 fi
 
-mkdir -p "$1"
+[[ $do_grab ]] && mkdir -p "$1"
 
 # Get the list of filenames touched by this commit
 mapfile -t filenames < \
@@ -31,7 +38,9 @@ mapfile -t filenames < \
 for fn in "${filenames[@]}" ; do
     echo "$fn"  # these don't have leading slashes, but are relative to the
                 # root of the working directory.
-    git show "$1":"$fn" | install -D /dev/stdin "$1"/"$fn"
+    if [[ $do_grab ]]; then 
+        git show "$1":"$fn" | install -D /dev/stdin "$1"/"$fn"
+    fi
         # Thanks to https://stackoverflow.com/a/21053077/2877364 by
         # https://stackoverflow.com/users/465183/gilles-quenot for `install` -
         # it creates any missing directories.

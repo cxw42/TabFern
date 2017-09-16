@@ -1,15 +1,15 @@
 (function (factory) {
 	"use strict";
 	if (typeof define === 'function' && define.amd) {
-		define(['jquery'], factory);
+		define(['jquery', 'jstree'], factory);
 	}
 	else if(typeof module !== 'undefined' && module.exports) {
-		module.exports = factory(require('jquery'));
+		module.exports = factory(require('jquery'), require('jstree'));
 	}
 	else {
-		factory(jQuery);
+		factory(jQuery, jQuery.jstree);
 	}
-}(function ($, undefined) {
+}(function ($, _jstree_unused, undefined) {
 	"use strict";
 
 	if($.jstree.plugins.actions) { return; }
