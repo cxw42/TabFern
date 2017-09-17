@@ -1,6 +1,8 @@
 // view.js: main view for TabFern
 // cxw42, 2017
 
+// TODO break this into some separate modules
+
 // Design decision: data is stored and manipulated in its native, unescaped
 // form up until the point of use.  It is then escaped for HTML, CSS, or
 // whatever is needed at that point.  Variable names starting with "raw_"
@@ -20,8 +22,9 @@
 //////////////////////////////////////////////////////////////////////////
 // Modules //
 
-// This is a hack so I can keep everything in the global scope.  TODO
-// figure out a better way.
+// This is a hack so I can keep everything in the global scope for ease of
+// use or inspection in the console while developing.
+// TODO figure out a better way.
 let M = {};     // modules
 
 //////////////////////////////////////////////////////////////////////////
@@ -858,7 +861,7 @@ function addWindowNodeActions(win_node_id)
 /// @returns the tree-node ID, or undefined on error.
 function createNodeForWindow(win, keep)
 {
-    // Don't put this popup window (view.html) in the list
+    // Don't put this popup window (view/index.html) in the list
     if( (typeof(win.id) !== 'undefined') &&
         (win.id == my_winid) ) {
         return;

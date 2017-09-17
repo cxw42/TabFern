@@ -11,7 +11,7 @@ function loadView()
 {
     console.log("TabFern: Opening view");
     chrome.windows.create(
-        { 'url': chrome.runtime.getURL('src/view/view.html'),
+        { 'url': chrome.runtime.getURL('src/view/index.html'),
           'type': 'popup',
           'focused': true
         },
