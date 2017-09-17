@@ -24,6 +24,9 @@
 //
 //     store.change_key(foo, 'key1', 84);
 //     store.by_key1(84)    // foo
+//
+// You can give values a type tag, accessible as <val>.ty, by passing a
+// string as the first parameter of Multidex.
 
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
@@ -46,7 +49,7 @@
     const VNAME = Symbol('value_name');
 
     // Current value name
-    let Value_name = 0;
+    let Value_name = 1;     // always truthy (unless you wrap around)
 
     // Cache for prototypes, one per set of key names.
     let Protos = {};
@@ -67,7 +70,7 @@
 
     /// Make a plain-old-data hash with the given keys.  Each key initially
     /// has the value null.
-    function make_value(field_names)
+    function make_value(field_names, ty_string)
     {
         let retval = Object.create(null);
 
@@ -75,12 +78,22 @@
         retval[VNAME] = Value_name.toString();
         ++Value_name;
 
+        // TODO? move toString and ty to a prototype?
+
         // toString so it can be used as a hash key
         Object.defineProperty(retval, 'toString', {
             configurable: false
           , enumerable: false
           , value: value_toString
           , writable: false
+        });
+
+        // Object type
+        Object.defineProperty(retval, 'ty',  {
+            configurable: false,
+            enumerable: true,
+            value: ty_string || '',
+            writable: false,
         });
 
         // Data fields
@@ -92,24 +105,60 @@
               , writable: true
             });
         }
+
         return Object.seal(retval);     // No new keys can be added.
     } //make_value
 
     /// Make a new multidex and return it.
-    function ctor(key_names, other_names=[])
+    function ctor()     //([type string, ]key_names [, other_names])
     {
+        let ty_string;
+        let key_names;
+        let other_names;
+
+        // Unpack the arguments
+        let arg0_is_string = arguments.length >= 1 && typeof arguments[0] === 'string';
+        switch(arguments.length) {
+            case 1:
+                if(!arg0_is_string) key_names = arguments[0];
+                other_names = [];
+                break;
+
+            case 2:
+                if(arg0_is_string) {
+                    ty_string = arguments[0];
+                    key_names = arguments[1];
+                    other_names = [];
+                } else {
+                    key_names = arguments[0];
+                    other_names = arguments[1];
+                }
+                break;
+
+            case 3:
+                ty_string = arguments[0];
+                key_names = arguments[1];
+                other_names = arguments[2];
+                break;
+
+            default:
+                break
+        }
+
+        // Check the arguments
         if(!Array.isArray(key_names)) return null;   //TODO better error reporting
         if(!Array.isArray(other_names)) return null;   //TODO better error reporting
         let all_names = key_names.concat(other_names);
+        if(!ty_string) ty_string = '';  //regularize
 
         // Instance functions
 
-        let proto_key = JSON.stringify(all_names);
+        let proto_key = JSON.stringify({ty: ty_string, names: all_names});
         if(!(proto_key in Protos)) {    // Need to make the instance functions
 
             /// Make a new value for storage.  Does not add the value
             /// to the multidex.
-            function new_value() { return make_value(all_names); }
+            function new_value() { return make_value(all_names, ty_string); }
 
             /// Copy the fields of an existing value.  Does not add the new
             /// value to the multidex.
@@ -170,14 +219,15 @@
             } //change_key
 
             // The prototype
-            let fns = {
-                new_value
-              , clone_value
-              , remove_value
-              , add_value
-              , add
-              , change_key
-            }; //fns
+            let this_proto = {
+                new_value,
+                clone_value,
+                remove_value,
+                add_value,
+                add,
+                change_key,
+                ty: ty_string
+            }; //this_proto
 
             // by_* accessors for the keys.
             //  - With one argument, returns the value if the key is in the
@@ -186,7 +236,7 @@
             //      pertinent index and the field named in the second argument
             //      exists in the value, else undefined.
             for(let key_name of key_names) {
-                fns[ACC + key_name] =
+                this_proto[ACC + key_name] =
                     (function(key_val, field_name=null) {
                         let idx = this[IDX+key_name];
                         if(!(key_val in idx)) {
@@ -205,7 +255,7 @@
                     });
             }
 
-            Protos[proto_key] = Object.seal(fns);
+            Protos[proto_key] = Object.seal(this_proto);
 
         } //endif needed to create proto
 
