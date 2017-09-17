@@ -1,4 +1,4 @@
-// view/model.js: Data model and related utilities for TabFern main popup. The 
+// view/model.js: Data model and related utilities for TabFern main popup. The
 // Copyright (c) 2017 Chris White, Jasmine Hegman.
 
 (function (root, factory) {
@@ -22,10 +22,10 @@
         }
         root.view_model = factory(...requirements);
     }
-}(this, function ($, _unused_jstree_placeholder_, log_orig, multidex, K ) {
+}(this, function ($, _unused_jstree_placeholder_, log, multidex, K ) {
     "use strict";
 
-    function loginfo(...args) { log_orig.info('TabFern view/model.js: ', ...args); };
+    function loginfo(...args) { log.info('TabFern view/model.js: ', ...args); };
 
     /// The module we are creating
     let module = {};
@@ -61,7 +61,7 @@
 
     /// Find a node's value in the model, regardless of type.
     /// @param node_id {string} The node ID
-    /// @return ret {object} .ty = K.NT_*; .val = the value, or
+    /// @return ret {object} .ty = K.IT_*; .val = the value, or
     ///                         .ty=false if the node wasn't found.
     module.get_node_val = function(node_id)
     {
@@ -72,14 +72,14 @@
         let val, ty;
         val = module.windows.by_node_id(node_id);
         if(val) {
-            retval.ty = K.NT_WINDOW;
+            retval.ty = K.IT_WINDOW;
             retval.val = val;
             return retval;
         }
 
         val = module.tabs.by_node_id(node_id);
         if(val) {
-            retval.ty = K.NT_TAB;
+            retval.ty = K.IT_TAB;
             retval.val = val;
             return retval;
         }

@@ -136,43 +136,6 @@ function remove_classname(class_list, existing_class)
     return attrs.join(' ');
 } //remove_classname()
 
-/// Set or remove the K.VISIBLE_WIN_CLASS style on an existing node.
-/// TODO Replace this with use of the jstree "types" plugin, which permits
-/// changing a node's li_attr after node creation by changing the type
-/// of that node.
-function twiddleVisibleStyle(node, shouldAdd)
-{
-    let class_str;
-    let isobj = true;
-    if(typeof(node.li_attr) === 'object') {
-                // On existing nodes, li_attr is an object.
-        class_str = node.li_attr.class;
-    } else if(typeof(node.li_attr) === 'string') {
-        isobj = false;
-        class_str = node.li_attr;
-    } else {        // we don't know how to handle it.
-        return;
-    }
-
-    if(shouldAdd) {
-        class_str = add_classname(class_str, K.VISIBLE_WIN_CLASS);
-    } else {
-        class_str = remove_classname(class_str, K.VISIBLE_WIN_CLASS);
-    }
-
-    if(isobj) {
-        node.li_attr.class = class_str;
-    } else {
-        node.li_attr = class_str;
-    }
-
-    if(shouldAdd) {
-        $('#'+node.id).addClass(K.VISIBLE_WIN_CLASS);
-    } else {
-        $('#'+node.id).removeClass(K.VISIBLE_WIN_CLASS);
-    }
-}
-
 /// Set the tab.index values of the tab nodes in a window.  Assumes that
 /// the nodes are in the proper order in the tree.
 /// \pre    #win_node_id is the id of a node that both exists and represents
@@ -320,21 +283,26 @@ function actionRenameWindow(node_id, node, unused_action_id, unused_action_el)
 
     // TODO replace window.prompt with an in-DOM GUI.
     let win_name = window.prompt('New window name?',
-                                G.get_curr_raw_text(win_val));
+            T.remove_unsaved_markers(G.get_curr_raw_text(win_val)));
     if(win_name === null) return;   // user cancelled
 
     win_val.raw_title = win_name;
-    win_val.keep = K.WIN_KEEP;    // assume that a user who bothered to rename
-                                // a node wants to keep it.
+    win_val.keep = K.WIN_KEEP;
+        // assume that a user who bothered to rename a node
+        // wants to keep it.
 
     T.treeobj.rename_node(node_id, G.get_safe_text(win_val));
 
     if(win_val.isOpen) {
-        T.treeobj.set_icon(node, 'visible-saved-window-icon');
+        T.treeobj.set_type(node, K.NTN_WIN_OPEN);
+    } else {
+        T.treeobj.set_type(node, K.NTN_WIN_CLOSED);
     }
 
-    T.vscroll_function();     // Not sure why this is necessary, but I saw a
-                            // vposition glitch without it.
+    T.vscroll_function();
+        // Not sure why this is necessary, but I saw a vposition glitch
+        // without it.
+
     saveTree();
 } //actionRenameWindow()
 
@@ -352,7 +320,7 @@ function actionForgetWindow(node_id, node, unused_action_id, unused_action_el)
     T.treeobj.rename_node(node_id, G.get_safe_text(win_val));
 
     if(win_val.isOpen) {    // should always be true, but just in case...
-        T.treeobj.set_icon(node, 'visible-window-icon');
+        T.treeobj.set_type(node, K.NTN_WIN_EPHEMERAL);
     }
 
     saveTree();
@@ -385,11 +353,10 @@ function actionCloseWindow(node_id, node, unused_action_id, unused_action_el)
     }
 
     win_val.isOpen = false;
+    win_val.raw_title = T.remove_unsaved_markers(win_val.raw_title);
     T.treeobj.rename_node(node_id, G.get_safe_text(win_val));
-        // text may have changed with isOpen
 
-    T.treeobj.set_icon(node_id, true);    //default icon
-    twiddleVisibleStyle(node, false);   // remove the visible style
+    T.treeobj.set_type(node_id, K.NTN_WIN_CLOSED);
 
     // Collapse the tree, if the user wants that
     if(getBoolSetting("collapse-tree-on-window-close")) {
@@ -458,6 +425,8 @@ function createNodeForTab(ctab, parent_node_id)
     // TODO if the favicon doesn't load, replace the icon with the generic
     // page icon so we don't keep hitting the favIconUrl.
     let tab_node_id = T.treeobj.create_node(parent_node_id, node_data);
+    T.treeobj.set_type(tab_node_id, K.NTN_TAB);
+
     M.tabs.add({tab_id: ctab.id, node_id: tab_node_id,
         win_id: ctab.windowId, index: ctab.index, tab: ctab,
         raw_url: ctab.url, raw_title: ctab.title, isOpen: true
@@ -473,9 +442,9 @@ function createNodeForClosedTab(tab_data_v1, parent_node_id)
 {
     let node_data = {
           text: Esc.escape(tab_data_v1.raw_title)
-        , icon: 'fff-page'
     };
     let tab_node_id = T.treeobj.create_node(parent_node_id, node_data);
+    T.treeobj.set_type(tab_node_id, K.NTN_TAB);
 
     M.tabs.add({tab_id: K.NONE, node_id: tab_node_id,
         win_id: K.NONE, index: K.NONE, tab: undefined, isOpen: false,
@@ -531,12 +500,11 @@ function createNodeForWindow(cwin, keep)
         return;
     }
 
-    let {win_node_id, win_val} = G.makeFernForWindow(
-            cwin, keep,
-            (keep ? 'visible-saved-window-icon' : 'visible-window-icon'),
-            K.WIN_CLASS + ' ' + K.VISIBLE_WIN_CLASS
-    );
+    let {win_node_id, win_val} = G.makeFernForWindow(cwin, keep);
     if(!win_node_id) return;    //sanity check
+
+    T.treeobj.set_type(win_node_id,
+            keep ? K.NTN_WIN_OPEN : K.NTN_WIN_EPHEMERAL);
 
     addWindowNodeActions(win_node_id);
 
@@ -886,9 +854,7 @@ function treeOnSelect(_evt_unused, evt_data)
                 win_val.isOpen = true;
                 win_val.keep = true;      // just in case
                 win_val.win = win;
-                T.treeobj.set_icon(win_node.id, 'visible-saved-window-icon');
-
-                twiddleVisibleStyle(win_node, true);
+                T.treeobj.set_type(win_node.id, K.NTN_WIN_OPEN);
 
                 T.treeobj.open_node(win_node);
 
@@ -1574,21 +1540,21 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
     let nodeType, win_val, tab_val;
     {
         win_val = M.windows.by_node_id(node.id);
-        if(win_val) nodeType = K.NT_WINDOW;
+        if(win_val) nodeType = K.IT_WINDOW;
     }
 
     if(!nodeType) {
         tab_val = M.tabs.by_node_id(node.id);
-        if(tab_val) nodeType = K.NT_TAB;
+        if(tab_val) nodeType = K.IT_TAB;
     }
 
     if(!nodeType) return false;     // A node type we don't know about
 
     // -------
 
-    if(nodeType === K.NT_TAB) return false;    // At present, no menu for tabs
+    if(nodeType === K.IT_TAB) return false;    // At present, no menu for tabs
 
-    if(nodeType === K.NT_WINDOW) {
+    if(nodeType === K.IT_WINDOW) {
         let winItems = {};
 
         winItems.renameItem = {
@@ -1628,7 +1594,7 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
             };
 
         return winItems;
-    } //endif K.NT_WINDOW
+    } //endif K.IT_WINDOW
 
     return false;   // if it's a node we don't have a menu for
 
@@ -1659,7 +1625,7 @@ function dndIsDraggable(nodes, evt)
     // may someday support multiselect.
     for(let node of nodes) {
         let val = G.get_node_val(node.id);
-        if(val.ty !== K.NT_WINDOW) return false;
+        if(val.ty !== K.IT_WINDOW) return false;
     }
 
     return true;    // Otherwise, it is draggable
@@ -1710,7 +1676,7 @@ function treeCheckCallback(
             console.groupEnd();
         }
 
-        if(val.ty === K.NT_WINDOW && node_parent.id !== $.jstree.root)
+        if(val.ty === K.IT_WINDOW && node_parent.id !== $.jstree.root)
             return false;
     }
 
@@ -1886,10 +1852,10 @@ function addOpenWindowsToTree(winarr)
             existing_win.val.isOpen = true;
             // don't change val.keep, which may have either value.
             existing_win.val.win = win;
-            twiddleVisibleStyle(existing_win.node, true);
-            T.treeobj.set_icon(existing_win.node,
-                    existing_win.val.keep ? 'visible-saved-window-icon' :
-                                            'visible-window-icon' );
+            T.treeobj.set_type(existing_win.node,
+                    existing_win.val.keep ? K.NTN_WIN_OPEN :
+                                            K.NTN_WIN_EPHEMERAL );
+
             T.treeobj.open_node(existing_win.node);
 
             // If we reach here, win.tabs.length === existing_win.node.children.length.

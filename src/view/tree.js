@@ -63,7 +63,24 @@
         jq_tree.on('redraw.jstree', module.vscroll_function);
         jq_tree.on('after_open.jstree', module.vscroll_function);
         jq_tree.on('after_close.jstree', module.vscroll_function);
-    } //install_vscroll_function()
+    }; //install_vscroll_function()
+
+    /// Remove " (Unsaved)" flags from a string
+    /// @param str {mixed} A string, or falsy.
+    /// @return
+    ///     If #str is falsy, a copy of #str.
+    //      Otherwise, #str as a string, without the markers if any were present
+    module.remove_unsaved_markers = function(str) {
+        if(!str) return str;
+        str = str.toString();
+        let re = /(\s+\(Unsaved\)){1,}\s*$/i;
+        let matches = str.match(re);
+        if(matches && matches.index > 0) {
+            return str.slice(0,matches.index);
+        } else {
+            return str;
+        }
+    };
 
     /// Create the tree.
     /// @param selector {JQuery selector} where to make the tree
@@ -75,8 +92,30 @@
     {
         // Node types - use constants as the keys
         let jstreeTypes = {};
+
+        jstreeTypes[K.NTN_WIN_CLOSED] = {
+            li_attr: { class: K.WIN_CLASS },
+            icon: true,     //default - folder
+        };
+
+        jstreeTypes[K.NTN_WIN_EPHEMERAL] = {
+            li_attr: { class: K.WIN_CLASS + ' ' + K.VISIBLE_WIN_CLASS },
+            icon: 'visible-window-icon',
+        };
+
+        jstreeTypes[K.NTN_WIN_OPEN] = {
+            li_attr: { class: K.WIN_CLASS + ' ' + K.VISIBLE_WIN_CLASS },
+            icon: 'visible-saved-window-icon',
+        };
+
         jstreeTypes[K.NTN_RECOVERED] = {
-            li_attr: { class: K.CLASS_RECOVERED }
+            li_attr: { class: K.WIN_CLASS + ' ' + K.CLASS_RECOVERED },
+            icon: true,     //default - folder
+        };
+
+        jstreeTypes[K.NTN_TAB] = {
+            li_attr: { class: K.TAB_CLASS },
+            icon: 'fff-page',   // per-node icons will override this
         };
 
         // The main config
@@ -84,8 +123,8 @@
             plugins: ['wholerow', 'actions',
                         // actions must be after wholerow since we attach the
                         // action buttons to the wholerow div
-                        'flagnode', 'dnd', 'types'] // TODO add state plugin
-            , core: {
+                        'flagnode', 'dnd', 'types'], // TODO add state plugin
+            core: {
                 animation: false,
                 multiple: false,          // for now
                 //check_callback added below if provided
@@ -93,26 +132,26 @@
                     name: 'default-dark'
                   , variant: 'small'
                 }
-            }
-            , state: {
+            },
+            state: {
                 key: 'tabfern-jstree'
-            }
-            , flagnode: {
+            },
+            flagnode: {
                 css_class: 'tf-focused-tab'
-            }
-            , dnd: {
+            },
+            dnd: {
                 copy: false,
                 drag_selection: false,  // only drag one node
                 //is_draggable added below if provided
                 large_drop_target: true
                 //, use_html5: true     // Didn't work in my testing
                 //, check_while_dragging: false   // For debugging only
-            }
-            , types: jstreeTypes
-            , actions: {
+            },
+            types: jstreeTypes,
+            actions: {
                 propagation: 'stop'
                     // clicks on action buttons don't also go to any other elements
-            }
+            },
         };
 
         // Note on dnd.use_html5: When it's set, if you drag a non-draggable item,
@@ -140,6 +179,12 @@
 
         // Add custom event handlers
         module.install_vscroll_function(window, jq_tree);
+
+        // TODO move this to a constructor so you can create multiple,
+        // separate treeobjs.
+        // TODO? make treeobj the prototype of module?  Then, e.g., T.get_node
+        // would work, and you wouldn't have to say T.treeobj.get_node.
+        // Or maybe make vscroll a jstree plugin?
 
     }; //module.create()
 

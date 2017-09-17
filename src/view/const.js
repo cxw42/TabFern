@@ -1,6 +1,15 @@
 // view/const.js: constants and generic helpers for the TabFern view
 // Copyright (c) 2017 Chris White, Jasmine Hegman.
 
+// Notation:
+// A "Fern" is the subtree for a particular window, including a node
+// representing the window and zero or more children of that node
+// representing tabs.  The fern ID is the node ID of the node
+// representing the window.
+//
+// An "item" is the combination of a node and the model value for that
+// node.  Current item types are window and tab.
+
 (function (root, factory) {
     let imports=['jquery','jstree','loglevel' ];
 
@@ -39,7 +48,8 @@
 
         SAVE_DATA_AS_VERSION: 1,       // version we are currently saving
 
-        WIN_CLASS: 'tabfern-window',     // class on all <li>s representing windows
+        WIN_CLASS: 'tabfern-window',    // class on all <li>s representing windows
+        TAB_CLASS: 'tabfern-tab',       // class on all <li>s representing tabs
         FOCUSED_WIN_CLASS: 'tf-focused-window',  // Class on the currently-focused win
         VISIBLE_WIN_CLASS: 'tf-visible-window',  // Class on all visible wins
         ACTION_GROUP_WIN_CLASS: 'tf-action-group',   // Class on action-group div
@@ -64,13 +74,20 @@
         WIN_NOKEEP:  false,
         NONE:  chrome.windows.WINDOW_ID_NONE,
 
-        // Node-type enumeration.  Here because there may be more node types
-        // in the future (e.g., dividers or plugins).  Each NT_* must be truthy.
-        NT_WINDOW:  'window',
-        NT_TAB:  'tab',
+        // Item-type enumeration.  Here because there may be more item
+        // types in the future (e.g., dividers or plugins).  Each IT_*
+        // must be truthy.
+        IT_WINDOW:  'window',   // strings are used for ease of debugging
+        IT_TAB:     'tab',
 
-        // Node-type names
-        NTN_RECOVERED:  'ephemeral_recovered',
+        // Node-type names - these control the display of the
+        // corresponding list items.
+        NTN_WIN_CLOSED:     'win_closed',               // closed, saved
+        NTN_WIN_EPHEMERAL:  'win_ephemeral',            // open, unsaved
+        NTN_WIN_OPEN:       'win_open_saved',           // open, saved
+        NTN_WIN_RECOVERED:  'win_ephemeral_recovered',  // closed, saved, recovered
+
+        NTN_TAB:            'tab',
     };
 
     /// Ignore a Chrome callback error, and suppress Chrome's "runtime.lastError"
