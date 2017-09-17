@@ -1,4 +1,4 @@
-// view.js: main view for TabFern
+// main.js: main script for the popup window of TabFern
 // cxw42, 2017
 
 // TODO break this into some separate modules
@@ -2469,11 +2469,26 @@ function initIncompleteWarning()
 //////////////////////////////////////////////////////////////////////////
 // MAIN //
 
-let dependencies = ['jquery', 'jstree', 'jstree-actions', 'jstree-flagnode',
+/// require.js modules used by this file
+let dependencies = [
+    // Modules that are not specific to TabFern
+    'jquery', 'jstree', 'jstree-actions', 'jstree-flagnode',
     'loglevel', 'hamburger', 'bypasser', 'multidex', 'justhtmlescape',
-    'local/fileops/export', 'local/fileops/import', 'signals', 'shortcuts',
-    'dmauro_keypress', 'shortcuts_keybindings_default'
+    'signals', 'local/fileops/export', 'local/fileops/import',
+
+    // Modules for keyboard-shortcut handling.  Not really TabFern-specific,
+    // but not yet disentangled fully.
+    'shortcuts', 'dmauro_keypress', 'shortcuts_keybindings_default',
+
+    // Modules of TabFern itself
 ];
+
+/// Make short names in M for some modules.  shortname => longname
+let module_shortnames = {
+    exporter: 'local/fileops/export',
+    importer: 'local/fileops/import',
+    default_shortcuts: 'shortcuts_keybindings_default',
+};
 
 function main(...args)
 {
@@ -2482,10 +2497,10 @@ function main(...args)
         M[dependencies[depidx]] = args[depidx];
     }
 
-    // Easier names for some
-    M.exporter = M['local/fileops/export'];
-    M.importer = M['local/fileops/import'];
-    M.default_shortcuts = M['shortcuts_keybindings_default'];
+    // Easier names for some modules
+    for(let shortname in module_shortnames) {
+        M[shortname] = M[module_shortnames[shortname]];
+    }
 
     log = M.loglevel;   // global - HACK
     log.setDefaultLevel(log.levels.DEBUG);
