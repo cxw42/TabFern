@@ -1,4 +1,4 @@
-// view/const.js: constants for the TabFern view
+// view/const.js: constants and generic helpers for the TabFern view
 // Copyright (c) 2017 Chris White, Jasmine Hegman.
 
 (function (root, factory) {
@@ -25,7 +25,7 @@
 }(this, function ($, _unused_jstree_placeholder_, log_orig ) {
     "use strict";
 
-    function loginfo(...args) { log_orig.info('TabFern const.js: ', ...args); };
+    function loginfo(...args) { log_orig.info('TabFern view/const.js: ', ...args); };
 
     /// The module we are creating
     let retval = {
@@ -72,6 +72,50 @@
         // Node-type names
         NTN_RECOVERED:  'ephemeral_recovered',
     };
+
+    /// Ignore a Chrome callback error, and suppress Chrome's "runtime.lastError"
+    /// diagnostic.
+    retval.ignore_chrome_error = function() { void chrome.runtime.lastError; }
+
+    /// Make a callback function that will forward to #fn on a later tick.
+    /// @param fn {function} the function to call
+    retval.nextTickRunner = function(fn) {
+        function inner(...args) {   // the actual callback
+            setTimeout( function() { fn(...args); } ,0);
+                // on a later tick, call #fn, passing it ther arguments the
+                // actual callback (inner()) got.
+        }
+        return inner;
+    } //nextTickRunner()
+
+    /// Open a new window with a given URL.  Also remove the default
+    /// tab that appears because we are letting the window open at the
+    /// default size.  Yes, this is quite ugly.  TODO fix the ugliness.
+    /// Maybe use asynquence?
+    retval.openWindowForURL = function(url)
+    {
+        chrome.windows.create(
+            function(win) {
+                if(typeof(chrome.runtime.lastError) === 'undefined') {
+                    chrome.tabs.create({windowId: win.id, url: url},
+                        function(keep_tab) {
+                            if(typeof(chrome.runtime.lastError) === 'undefined') {
+                                chrome.tabs.query({windowId: win.id, index: 0},
+                                    function(tabs) {
+                                        if(typeof(chrome.runtime.lastError) === 'undefined') {
+                                            chrome.tabs.remove(tabs[0].id,
+                                                K.ignore_chrome_error
+                                            ); //tabs.remove
+                                        }
+                                    } //function(tabs)
+                                ); //tabs.query
+                            }
+                        } //function(keep_tab)
+                    ); //tabs.create
+                }
+            } //function(win)
+        ); //windows.create
+    } //openWindowForURL
 
     return Object.freeze(retval);   // all fields constant
 }));
