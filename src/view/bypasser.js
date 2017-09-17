@@ -1,6 +1,5 @@
 // bypasser.js: Control a bypassable jstree context menu
 // Original by Jasmine Hegman.  Copyright (c) 2017 Chris White, Jasmine Hegman.
-// Uses jquery, jstree, loglevel, all of which must be loaded beforehand.
 
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {

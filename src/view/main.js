@@ -22,56 +22,15 @@
 //////////////////////////////////////////////////////////////////////////
 // Modules //
 
-// This is a hack so I can keep everything in the global scope for ease of
+// Hacks so I can keep everything in the global scope for ease of
 // use or inspection in the console while developing.
 // TODO figure out a better way.
-let M = {};     // modules
 
-//////////////////////////////////////////////////////////////////////////
-// Constants //
+/// Modules loaded via requirejs
+let M = {};
 
-const STORAGE_KEY='tabfern-data';
-    ///< Store the saved windows/tabs
-const LOCN_KEY='tabfern-window-location';
-    ///< Store where the tabfern popup is
-const LASTVER_KEY='tabfern-last-version';
-    ///< Store the last version used on this system, for showing a
-    ///< "What's New" notification
-
-const SAVE_DATA_AS_VERSION=1;       // version we are currently saving
-
-const WIN_CLASS='tabfern-window';     // class on all <li>s representing windows
-const FOCUSED_WIN_CLASS='tf-focused-window';  // Class on the currently-focused win
-const VISIBLE_WIN_CLASS='tf-visible-window';  // Class on all visible wins
-const ACTION_GROUP_WIN_CLASS='tf-action-group';   // Class on action-group div
-const ACTION_BUTTON_WIN_CLASS='tf-action-button'; // Class on action buttons (<i>)
-const SHOW_ACTIONS_CLASS = 'tf-show-actions';
-    // Class on a .jstree-node to indicate its actions should be shown
-
-const INIT_TIME_ALLOWED_MS = 3000;  // After this time, if init isn't done,
-                                    // display an error message.
-const INIT_MSG_SEL = 'div#init-incomplete';     // Selector for that message
-
-const CLASS_RECOVERED = 'ephemeral-recovered';
-
-/// How often to check whether our window has been moved or resized
-const RESIZE_DETECTOR_INTERVAL_MS = 5000;
-
-/// This many ms after mouseout, a context menu will disappear
-const CONTEXT_MENU_MOUSEOUT_TIMEOUT_MS = 1500;
-
-// --- Syntactic sugar ---
-const WIN_KEEP = true;
-const WIN_NOKEEP = false;
-const NONE = chrome.windows.WINDOW_ID_NONE;
-
-// Node-type enumeration.  Here because there may be more node types
-// in the future (e.g., dividers or plugins).  Each NT_* must be truthy.
-const NT_WINDOW = 'window';
-const NT_TAB = 'tab';
-
-// Node-type names
-const NTN_RECOVERED = 'ephemeral_recovered';
+/// Constants loaded from view/const.js, for ease of access
+let K = {};
 
 //////////////////////////////////////////////////////////////////////////
 // Globals //
@@ -130,7 +89,7 @@ let log;
 //////////////////////////////////////////////////////////////////////////
 // Initialization //
 
-console.log('Loading TabFern ' + TABFERN_VERSION);
+console.log('Loading TabFern ' + K.TABFERN_VERSION);
 
 /// Init those of our globals that don't require any data to be loaded.
 /// Call after M has been populated.
@@ -172,7 +131,7 @@ function local_init()
 /// Find a node's value in the model, regardless of type.
 /// @param node_ref {mixed} If a string, the node id; otherwise, anything
 ///                         that can be passed to jstree.get_node.
-/// @return ret {object} .ty = NT_*; .val = the value, or
+/// @return ret {object} .ty = K.NT_*; .val = the value, or
 ///                         .ty=false if the node wasn't found.
 function get_node_val(node_ref)
 {
@@ -193,14 +152,14 @@ function get_node_val(node_ref)
     let val, ty;
     val = mdWindows.by_node_id(node_id);
     if(val) {
-        retval.ty = NT_WINDOW;
+        retval.ty = K.NT_WINDOW;
         retval.val = val;
         return retval;
     }
 
     val = mdTabs.by_node_id(node_id);
     if(val) {
-        retval.ty = NT_TAB;
+        retval.ty = K.NT_TAB;
         retval.val = val;
         return retval;
     }
@@ -324,7 +283,7 @@ function remove_classname(class_list, existing_class)
     return attrs.join(' ');
 } //remove_classname()
 
-/// Set or remove the VISIBLE_WIN_CLASS style on an existing node.
+/// Set or remove the K.VISIBLE_WIN_CLASS style on an existing node.
 /// TODO Replace this with use of the jstree "types" plugin, which permits
 /// changing a node's li_attr after node creation by changing the type
 /// of that node.
@@ -343,9 +302,9 @@ function twiddleVisibleStyle(node, shouldAdd)
     }
 
     if(shouldAdd) {
-        class_str = add_classname(class_str, VISIBLE_WIN_CLASS);
+        class_str = add_classname(class_str, K.VISIBLE_WIN_CLASS);
     } else {
-        class_str = remove_classname(class_str, VISIBLE_WIN_CLASS);
+        class_str = remove_classname(class_str, K.VISIBLE_WIN_CLASS);
     }
 
     if(isobj) {
@@ -355,9 +314,9 @@ function twiddleVisibleStyle(node, shouldAdd)
     }
 
     if(shouldAdd) {
-        $('#'+node.id).addClass(VISIBLE_WIN_CLASS);
+        $('#'+node.id).addClass(K.VISIBLE_WIN_CLASS);
     } else {
-        $('#'+node.id).removeClass(VISIBLE_WIN_CLASS);
+        $('#'+node.id).removeClass(K.VISIBLE_WIN_CLASS);
     }
 }
 
@@ -426,7 +385,7 @@ function getWindowSizeFromWindowRecord(win)
 function vscroll_function()
 { //TODO make this a closure over a specific win, jq
     log.info('Updating V positions');
-    $('.' + ACTION_GROUP_WIN_CLASS).each(function(idx, dom_elem) {
+    $('.' + K.ACTION_GROUP_WIN_CLASS).each(function(idx, dom_elem) {
         let jq = $(dom_elem);
         jq.css('top',jq.parent().offset().top - $(window).scrollTop());
     });
@@ -445,118 +404,13 @@ function install_vscroll_function(win, jq_tree)
     jq_tree.on('after_close.jstree', vscroll_function);
 } //install_vscroll_function()
 
-/// Set up a function to set the visibilities of the action buttons.
-/// We can't do this with straight CSS because, in each row, the wholerow
-/// div is a sibling, not a parent, of the icons, text, and action buttons.
-/// Therefore, mousing over the action buttons when the <a> extends under
-/// those buttons causes repeated mouseenter/mouseleave even within the
-/// borders of the wholerow.
-///
-/// This function assumes that items are infinitely wide, so only checks
-/// the Y coordinate. ** NOTE ** This enforces a single-column layout.
-///
-/// @param doc {DOM Document} the document
-/// @param jq_tree {JQuery element} the jQuery element for the tree as a whole
-/// @param overrides {mixed} Optional jQuery element or array of elements
-///                          which should hide the actions on mouseover
-///
-function install_action_visibility_function(doc, jq_tree, overrides)
-{
-    function showSpecificActions(evt) {
-        if(typeof evt.pageY === 'undefined') {
-            //if(isNaN(rel_y)) debugger;
-            // evt.pageY is undefined when the mouseout is triggered, e.g.,
-            // in response to a blur.jstree event.
-            // https://stackoverflow.com/q/18154966/2877364 by
-            // https://stackoverflow.com/users/2662630/raja-ramu
-
-            if(log.getLevel() <= log.levels.TRACE) {
-                console.log({['Ignoring '+evt.type]: evt});
-            }
-            return; // for now, ignore the synthetic events.
-        }
-
-        let jq_node = $(this);
-        let jq_a = jq_node.children('a');
-        if(!jq_a) return;
-
-        let wholerow_pageXY = jq_a.offset();
-        let wholerow_ht = jq_a.outerHeight();
-            // Use the anchor as a proxy for the height of the row
-
-        let rel_y = evt.pageY - wholerow_pageXY.top;
-        let should_show = ( (rel_y >= 0) && (rel_y < wholerow_ht));
-
-        jq_node[should_show ? 'addClass' : 'removeClass'](SHOW_ACTIONS_CLASS);
-
-        // Debugging output, at the lowest log level
-        if(log.getLevel() <= log.levels.TRACE) {
-            console.group(evt.type + ' ' +
-                    jq_tree.data('jstree').get_node(jq_node).id);
-            console.log({rel_y, should_show});
-            console.groupEnd();
-        }
-
-    } //showSpecificActions()
-
-    function hideAllActions() {
-        jq_tree.find('.' + SHOW_ACTIONS_CLASS).removeClass(SHOW_ACTIONS_CLASS);
-    } //hideAllActions()
-
-    jq_tree.on('mousemove', '.jstree-node', showSpecificActions);
-        // Have to use mousemove rather than mouseenter because jq_node
-        // is as tall as all its children if it's expanded.
-        // Also, mouseover only catches the actual children, not the rest of
-        // the wholerow bar.
-    jq_tree.on('mouseleave', '.jstree-node', showSpecificActions);
-
-    // Dedicated handler for when the mouse leaves the window, since
-    // .jstree-node mouseleave doesn't trigger at that time.
-    $(document).on('mouseleave', hideAllActions);
-
-    if(overrides) {
-        let ovrs = Array.isArray(overrides) ? overrides: [overrides];
-        for(let override of ovrs) {
-            override.on('mouseenter', hideAllActions);
-            override.on('mouseover', hideAllActions);
-        }
-    }
-} //install_action_visibility_function
-
-/// Forward mouse events from a div.tf-action-group to the underlying
-/// element.
-function mouse_event_forwarder(event)
-{
-    if(!event) return;
-    //if(!event.target.parentNode.id) return;
-    if(!event.clientX || !event.clientY) return;
-
-    //let target = event.target.parentNode;
-
-    let nodes = document.elementsFromPoint(event.clientX, event.clientY);
-    if(!nodes || !nodes[1]) return;
-
-    let target = nodes[1];  // nodes[0] is us, since we're topmost.
-
-    // Adapted from https://stackoverflow.com/a/5436015/2877364 by
-    // https://stackoverflow.com/users/183918/wildcard
-    var eventCopy = document.createEvent("MouseEvents");
-    eventCopy.initMouseEvent(event.type, event.bubbles, event.cancelable,
-            event.view, event.detail,
-            event.pageX || event.layerX, event.pageY || event.layerY,
-            event.clientX, event.clientY, event.ctrlKey, event.altKey,
-            event.shiftKey, event.metaKey, event.button,
-            event.relatedTarget);
-    target.dispatchEvent(eventCopy);
-} //mouse_event_forwarder
-
 //////////////////////////////////////////////////////////////////////////
 // Saving //
 
 /// Wrap up the save data with a magic header and the current version number
 function makeSaveData(data)
 {
-    return { tabfern: 42, version: SAVE_DATA_AS_VERSION, tree: data };
+    return { tabfern: 42, version: K.SAVE_DATA_AS_VERSION, tree: data };
 } //makeSaveData()
 
 /// Save the tree to Chrome local storage.
@@ -588,7 +442,7 @@ function saveTree(save_ephemeral_windows = true, cbk = undefined)
         if(!win_val) continue;
 
         // Don't save ephemeral windows unless we've been asked to.
-        let is_ephemeral = win_val.isOpen && (win_val.keep==WIN_NOKEEP);
+        let is_ephemeral = win_val.isOpen && (win_val.keep==K.WIN_NOKEEP);
         if( is_ephemeral && !save_ephemeral_windows ) continue;
 
         let result_win = {};       // what will hold our data
@@ -617,13 +471,13 @@ function saveTree(save_ephemeral_windows = true, cbk = undefined)
 
     // Save it
     let to_save = {};
-    to_save[STORAGE_KEY] = makeSaveData(result);
+    to_save[K.STORAGE_KEY] = makeSaveData(result);
         // storage automatically does JSON.stringify
     chrome.storage.local.set(to_save,
         function() {
             if(typeof(chrome.runtime.lastError) === 'undefined') {
                 if(typeof cbk === 'function') {
-                    cbk(to_save[STORAGE_KEY]);
+                    cbk(to_save[K.STORAGE_KEY]);
                 }
                 return;     // Saved OK
             }
@@ -649,7 +503,7 @@ function actionRenameWindow(node_id, node, unused_action_id, unused_action_el)
     if(win_name === null) return;   // user cancelled
 
     win_val.raw_title = win_name;
-    win_val.keep = WIN_KEEP;    // assume that a user who bothered to rename
+    win_val.keep = K.WIN_KEEP;    // assume that a user who bothered to rename
                                 // a node wants to keep it.
 
     treeobj.rename_node(node_id, Esc.escape(get_curr_raw_text(win_val)));
@@ -663,13 +517,13 @@ function actionRenameWindow(node_id, node, unused_action_id, unused_action_el)
     saveTree();
 } //actionRenameWindow()
 
-/// Mark a window as NOKEEP but don't close it
+/// Mark a window as K.NOKEEP but don't close it
 function actionForgetWindow(node_id, node, unused_action_id, unused_action_el)
 {
     let win_val = mdWindows.by_node_id(node_id);
     if(!win_val) return;
 
-    win_val.keep = WIN_NOKEEP;
+    win_val.keep = K.WIN_NOKEEP;
     if(win_val.raw_title !== null) {
         win_val.raw_title += ' (Unsaved)';
     }
@@ -694,8 +548,8 @@ function actionCloseWindow(node_id, node, unused_action_id, unused_action_el)
     // Mark the tree node closed
     win_val.win = undefined;
         // Prevents winOnRemoved() from calling us to handle the removal!
-    win_val.keep = WIN_KEEP;
-    mdWindows.change_key(win_val, 'win_id', NONE);
+    win_val.keep = K.WIN_KEEP;
+    mdWindows.change_key(win_val, 'win_id', K.NONE);
         // Can't access by win_id, but can still access by node_id.
 
     // TODO winOnFocusChanged(NONE) ?
@@ -727,10 +581,10 @@ function actionCloseWindow(node_id, node, unused_action_id, unused_action_el)
         if(!tab_val) continue;
 
         tab_val.tab = undefined;
-        tab_val.win_id = NONE;
-        tab_val.index = NONE;
+        tab_val.win_id = K.NONE;
+        tab_val.index = K.NONE;
         tab_val.isOpen = false;
-        mdTabs.change_key(tab_val, 'tab_id', NONE);
+        mdTabs.change_key(tab_val, 'tab_id', K.NONE);
         // raw_url and raw_title are left alone
     }
 } //actionCloseWindow
@@ -801,8 +655,8 @@ function createNodeForClosedTab(tab_data_v1, parent_node_id)
     };
     let tab_node_id = treeobj.create_node(parent_node_id, node_data);
 
-    mdTabs.add({tab_id: NONE, node_id: tab_node_id,
-        win_id: NONE, index: NONE, tab: undefined, isOpen: false,
+    mdTabs.add({tab_id: K.NONE, node_id: tab_node_id,
+        win_id: K.NONE, index: K.NONE, tab: undefined, isOpen: false,
         raw_url: tab_data_v1.raw_url, raw_title: tab_data_v1.raw_title
     });
     return tab_node_id;
@@ -810,47 +664,35 @@ function createNodeForClosedTab(tab_data_v1, parent_node_id)
 
 function addWindowNodeActions(win_node_id)
 {
-    let DBG_grouped = true;    // This is for ease of testing.
-    let DBG_group_class = ACTION_GROUP_WIN_CLASS; // + ' jstree-animated';
-    let DBG_selector = 'div.jstree-wholerow';    // null => the li
-
-    if(DBG_grouped) {
-        treeobj.make_group(win_node_id, {
-            selector: DBG_selector,     //'a',
-            child: true,    //after: true,
-            class: ACTION_GROUP_WIN_CLASS //+ ' jstree-animated'
-        });
-    }
+    treeobj.make_group(win_node_id, {
+        selector: 'div.jstree-wholerow',    // null => the li
+        child: true,
+        class: K.ACTION_GROUP_WIN_CLASS //+ ' jstree-animated'
+    });
 
     treeobj.add_action(win_node_id, {
         id: 'renameWindow',
-        class: 'fff-pencil ' + ACTION_BUTTON_WIN_CLASS,
+        class: 'fff-pencil ' + K.ACTION_BUTTON_WIN_CLASS,
         text: '&nbsp;',
-        grouped: DBG_grouped,
-        child: !DBG_grouped,
-        selector: DBG_grouped ? null : DBG_selector,
+        grouped: true,
         callback: actionRenameWindow,
         dataset: { action: 'renameWindow' }
     });
 
     treeobj.add_action(win_node_id, {
         id: 'closeWindow',
-        class: 'fff-picture-delete ' + ACTION_BUTTON_WIN_CLASS,
+        class: 'fff-picture-delete ' + K.ACTION_BUTTON_WIN_CLASS,
         text: '&nbsp;',
-        grouped: DBG_grouped,
-        child: !DBG_grouped,
-        selector: DBG_grouped ? null : DBG_selector,
+        grouped: true,
         callback: actionCloseWindow,
         dataset: { action: 'closeWindow' }
     });
 
     treeobj.add_action(win_node_id, {
         id: 'deleteWindow',
-        class: 'fff-cross ' + ACTION_BUTTON_WIN_CLASS,
+        class: 'fff-cross ' + K.ACTION_BUTTON_WIN_CLASS,
         text: '&nbsp;',
-        grouped: DBG_grouped,
-        child: !DBG_grouped,
-        selector: DBG_grouped ? null : DBG_selector,
+        grouped: true,
         callback: actionDeleteWindow,
         dataset: { action: 'deleteWindow' }
     });
@@ -871,7 +713,7 @@ function createNodeForWindow(win, keep)
             {     text: 'Window'
                 , icon: (keep ? 'visible-saved-window-icon' :
                                     'visible-window-icon')
-                , li_attr: { class: WIN_CLASS + ' ' + VISIBLE_WIN_CLASS }
+                , li_attr: { class: K.WIN_CLASS + ' ' + K.VISIBLE_WIN_CLASS }
                 , state: { 'opened': true }
             });
 
@@ -908,13 +750,13 @@ function createNodeForClosedWindow(win_data_v1)
     let win_node_id = treeobj.create_node(null,
             {   text: 'Closed window'
                 //, 'icon': 'visible-window-icon'   // use the default icon
-                , li_attr: { class: WIN_CLASS }
+                , li_attr: { class: K.WIN_CLASS }
                 , state: { 'opened': !shouldCollapse }
             });
 
     // Mark recovered windows
     if(is_ephemeral) {
-        treeobj.set_type(win_node_id, NTN_RECOVERED);
+        treeobj.set_type(win_node_id, K.NTN_RECOVERED);
     }
 
     // Update the model
@@ -929,11 +771,11 @@ function createNodeForClosedWindow(win_data_v1)
     }
 
     let win_val = mdWindows.add({
-        win_id: NONE, node_id: win_node_id,
+        win_id: K.NONE, node_id: win_node_id,
         win: undefined,
         raw_title: new_title,
         isOpen: false,
-        keep: WIN_KEEP  // even if it was ephemeral before
+        keep: K.WIN_KEEP  // even if it was ephemeral before
     });
     // TODO also highlight recovered tabs with a color
 
@@ -1051,7 +893,7 @@ let loadSavedWindowsFromData = (function(){
 /// @param {function} next_action If provided, will be called when loading
 ///                     is complete.
 function loadSavedWindowsIntoTree(next_action) {
-    chrome.storage.local.get(STORAGE_KEY, function(items) {
+    chrome.storage.local.get(K.STORAGE_KEY, function(items) {
 
         READIT:
         if(typeof(chrome.runtime.lastError) !== 'undefined') {
@@ -1065,8 +907,8 @@ function loadSavedWindowsIntoTree(next_action) {
             // we don't set was_loading_error here.  TODO figure out if
             // this makes sense.  Maybe check the specific error returned.
 
-        } else if(STORAGE_KEY in items) {       // Chrome did load the data
-            let parsed = items[STORAGE_KEY];    // auto JSON.parse
+        } else if(K.STORAGE_KEY in items) {       // Chrome did load the data
+            let parsed = items[K.STORAGE_KEY];    // auto JSON.parse
             if(!loadSavedWindowsFromData(parsed)) {
                 was_loading_error = true;
                 // HACK - we only use this during init, so
@@ -1088,11 +930,11 @@ function loadSavedWindowsIntoTree(next_action) {
 // Debug helper, so uses console.log() directly.
 function DBG_printSaveData()
 {
-    chrome.storage.local.get(STORAGE_KEY, function(items) {
+    chrome.storage.local.get(K.STORAGE_KEY, function(items) {
         if(typeof(chrome.runtime.lastError) !== 'undefined') {
             console.log(chrome.runtime.lastError);
         } else {
-            let parsed = items[STORAGE_KEY];
+            let parsed = items[K.STORAGE_KEY];
             console.log('Save data:');
             console.log(parsed);
         }
@@ -1139,7 +981,7 @@ function treeOnSelect(_evt_unused, evt_data)
         let e = evt_data.event;
         let elem = document.elementFromPoint(e.clientX, e.clientY);
         if(elem.tagName && elem.tagName.toLowerCase() == 'i' &&
-            $(elem).hasClass(ACTION_BUTTON_WIN_CLASS)) {
+            $(elem).hasClass(K.ACTION_BUTTON_WIN_CLASS)) {
             // The events were such that the user clicked a button but the
             // event went to the wholerow.  I think this is because of how
             // focus/blur happens when you focus a window by clicking on an
@@ -1168,7 +1010,7 @@ function treeOnSelect(_evt_unused, evt_data)
     // --------
     // Process the actual node click
 
-    if(treeobj.get_type(node) === NTN_RECOVERED) {
+    if(treeobj.get_type(node) === K.NTN_RECOVERED) {
         treeobj.set_type(node, 'default');
     }
 
@@ -1342,7 +1184,7 @@ function winOnCreated(win)
             // not entirely sure.
     }
 
-    createNodeForWindow(win, WIN_NOKEEP);
+    createNodeForWindow(win, K.WIN_NOKEEP);
     vscroll_function();
     saveTree();     // for now, brute-force save on any change.
 } //winOnCreated
@@ -1366,7 +1208,7 @@ function winOnRemoved(win_id)
     let node = treeobj.get_node(node_id);
     if(!node) return;
 
-    winOnFocusChanged(NONE);        // Clear the highlights.
+    winOnFocusChanged(K.NONE);        // Clear the highlights.
 
     if(node_val.keep) {
         node_val.isOpen = false;   // because it's already gone
@@ -1402,7 +1244,7 @@ function winOnFocusChanged(win_id)
     chrome.windows.getLastFocused({}, function(win){
         let new_win_id;
         if(!win.focused) {
-            new_win_id = NONE;
+            new_win_id = K.NONE;
         } else {
             new_win_id = win.id;
         }
@@ -1420,11 +1262,11 @@ function winOnFocusChanged(win_id)
         }
 
         //log.info('Clearing focus classes');
-        $('.' + WIN_CLASS + ' > a').removeClass(FOCUSED_WIN_CLASS);
+        $('.' + K.WIN_CLASS + ' > a').removeClass(K.FOCUSED_WIN_CLASS);
 
         currently_focused_winid = new_win_id;
 
-        if(new_win_id === NONE) return;
+        if(new_win_id === K.NONE) return;
 
         // Get the window
         let window_node_id = mdWindows.by_win_id(new_win_id, 'node_id');
@@ -1434,13 +1276,13 @@ function winOnFocusChanged(win_id)
 
         // Make the window's entry bold, but no other entries.
         // This seems to need to run after a yield when dragging
-        // tabs between windows, or else the FOCUSED_WIN_CLASS
+        // tabs between windows, or else the K.FOCUSED_WIN_CLASS
         // doesn't seem to stick.
 
         // TODO change this to use flag_node instead.
         setTimeout(function(){
             //log.info('Setting focus class');
-            $('#' + window_node_id + ' > a').addClass(FOCUSED_WIN_CLASS);
+            $('#' + window_node_id + ' > a').addClass(K.FOCUSED_WIN_CLASS);
             //log.info($('#' + window_node_id + ' > a'));
         },0);
     });
@@ -1660,7 +1502,7 @@ function saveViewSize(size_data)
     //log.info('Saving new size ' + size_data.toString());
 
     let to_save = {};
-    to_save[LOCN_KEY] = size_data;
+    to_save[K.LOCN_KEY] = size_data;
     chrome.storage.local.set(to_save,
             function() {
                 log.info('Saving size: error=' + chrome.runtime.lastError);
@@ -1700,7 +1542,7 @@ function timedResizeDetector()
     if(!ObjectCompare(size_data, last_saved_size)) {
         saveViewSize(size_data);
     }
-    setTimeout(timedResizeDetector, RESIZE_DETECTOR_INTERVAL_MS);
+    setTimeout(timedResizeDetector, K.RESIZE_DETECTOR_INTERVAL_MS);
 } //timedResizeDetector
 
 //////////////////////////////////////////////////////////////////////////
@@ -1740,7 +1582,7 @@ function hamAboutWindow()
     openWindowForURL('https://cxw42.github.io/TabFern/');
 } //hamAboutWindow()
 
-/// Open the Settings window.  If ShowWhatIsNew, also updates the LASTVER_KEY
+/// Open the Settings window.  If ShowWhatIsNew, also updates the K.LASTVER_KEY
 /// information used by checkWhatIsNew().
 function hamSettings()
 {
@@ -1755,7 +1597,7 @@ function hamSettings()
         ShowWhatIsNew = false;
 
         let to_save = {};
-        to_save[LASTVER_KEY] = TABFERN_VERSION;
+        to_save[K.LASTVER_KEY] = K.TABFERN_VERSION;
         chrome.storage.local.set(to_save, ignore_chrome_error);
     }
 } //hamSettings()
@@ -1853,7 +1695,7 @@ function hamSorter(compare_fn)
  * @returns {actionItemId: {label: string, action: function}, ...}, or
  *          false for no menu.
  */
-function getHamburgerMenuItems(node, UNUSED_proxyfunc, e)
+function getHamburgerMenuItems(node, _unused_proxyfunc, e)
 {
     let items = {};
     items.infoItem = {
@@ -1933,7 +1775,7 @@ function getHamburgerMenuItems(node, UNUSED_proxyfunc, e)
 //////////////////////////////////////////////////////////////////////////
 // Context menu for the main tree
 
-function getMainContextMenuItems(node, UNUSED_proxyfunc, e)
+function getMainContextMenuItems(node, _unused_proxyfunc, e)
 {
 
     // TODO move this to Bypasser.isBypassed(e)
@@ -1947,21 +1789,21 @@ function getMainContextMenuItems(node, UNUSED_proxyfunc, e)
     let nodeType, win_val, tab_val;
     {
         win_val = mdWindows.by_node_id(node.id);
-        if(win_val) nodeType = NT_WINDOW;
+        if(win_val) nodeType = K.NT_WINDOW;
     }
 
     if(!nodeType) {
         tab_val = mdTabs.by_node_id(node.id);
-        if(tab_val) nodeType = NT_TAB;
+        if(tab_val) nodeType = K.NT_TAB;
     }
 
     if(!nodeType) return false;     // A node type we don't know about
 
     // -------
 
-    if(nodeType === NT_TAB) return false;    // At present, no menu for tabs
+    if(nodeType === K.NT_TAB) return false;    // At present, no menu for tabs
 
-    if(nodeType === NT_WINDOW) {
+    if(nodeType === K.NT_WINDOW) {
         let winItems = {};
 
         winItems.renameItem = {
@@ -1975,7 +1817,7 @@ function getMainContextMenuItems(node, UNUSED_proxyfunc, e)
                 )
             };
 
-        if( win_val.isOpen && (win_val.keep == WIN_KEEP) ) {
+        if( win_val.isOpen && (win_val.keep == K.WIN_KEEP) ) {
             winItems.forgetItem = {
                 label: "Forget but don't close",
                 title: "Do not save this window when it is closed",
@@ -2001,7 +1843,7 @@ function getMainContextMenuItems(node, UNUSED_proxyfunc, e)
             };
 
         return winItems;
-    } //endif NT_WINDOW
+    } //endif K.NT_WINDOW
 
     return false;   // if it's a node we don't have a menu for
 
@@ -2032,7 +1874,7 @@ function dndIsDraggable(nodes, evt)
     // may someday support multiselect.
     for(let node of nodes) {
         let val = get_node_val(node.id);
-        if(val.ty !== NT_WINDOW) return false;
+        if(val.ty !== K.NT_WINDOW) return false;
     }
 
     return true;    // Otherwise, it is draggable
@@ -2083,7 +1925,7 @@ function treeCheckCallback(
             console.groupEnd();
         }
 
-        if(val.ty === NT_WINDOW && node_parent.id !== $.jstree.root)
+        if(val.ty === K.NT_WINDOW && node_parent.id !== $.jstree.root)
             return false;
     }
 
@@ -2103,17 +1945,17 @@ function treeCheckCallback(
 
 /// Check whether to show a "what's new" notification.
 /// Sets ShowWhatIsNew, used by getHamburgerMenuItems().
-/// Function hamSettings() updates the LASTVER_KEY information.
+/// Function hamSettings() updates the K.LASTVER_KEY information.
 function checkWhatIsNew(selector)
 {
-    chrome.storage.local.get(LASTVER_KEY, function(items) {
+    chrome.storage.local.get(K.LASTVER_KEY, function(items) {
         let should_notify = true;   // unless proven otherwise
 
         // Check whether the user has seen the notification
         if(typeof(chrome.runtime.lastError) === 'undefined') {
-            let lastver = items[LASTVER_KEY];
+            let lastver = items[K.LASTVER_KEY];
             if( (lastver !== null) && (typeof lastver === 'string') ) {
-                if(lastver === TABFERN_VERSION) {   // the user has already
+                if(lastver === K.TABFERN_VERSION) {   // the user has already
                     should_notify = false;          // seen the notification.
                 }
             }
@@ -2142,7 +1984,7 @@ function initTreeFinal()
     if(!was_loading_error) {
         did_init_complete = true;
         // Assume the document is loaded by this point.
-        $(INIT_MSG_SEL).css('display','none');    // just in case
+        $(K.INIT_MSG_SEL).css('display','none');    // just in case
     }
 } //initTreeFinal()
 
@@ -2152,7 +1994,7 @@ function initTree4(items)
     // accept the default size.
 
     if(typeof(chrome.runtime.lastError) === 'undefined') {
-        let parsed = items[LOCN_KEY];
+        let parsed = items[K.LOCN_KEY];
         if( (parsed !== null) && (typeof parsed === 'object') ) {
             // + and || are to provide some sensible defaults - thanks to
             // https://stackoverflow.com/a/7540412/2877364 by
@@ -2170,7 +2012,7 @@ function initTree4(items)
     } //endif no error
 
     // Start the detection of moved or resized windows
-    setTimeout(timedResizeDetector, RESIZE_DETECTOR_INTERVAL_MS);
+    setTimeout(timedResizeDetector, K.RESIZE_DETECTOR_INTERVAL_MS);
 
     initTreeFinal();
 } //initTree4()
@@ -2201,7 +2043,7 @@ function initTree3()
     //onZoomChange: not yet implemented, and we probably won't ever need it.
 
     // Move this view to where it was, if anywhere
-    chrome.storage.local.get(LOCN_KEY, initTree4);
+    chrome.storage.local.get(K.LOCN_KEY, initTree4);
 } //initTree3
 
 /// See whether a window corresponds to an already-saved, closed window.
@@ -2250,7 +2092,7 @@ function addOpenWindowsToTree(winarr)
 
         let existing_win = winAlreadyExists(win);
         if(!existing_win) {
-            createNodeForWindow(win, WIN_NOKEEP);
+            createNodeForWindow(win, K.WIN_NOKEEP);
         } else {
             log.info('Found existing window in the tree: ' + existing_win.val.raw_title);
             mdWindows.change_key(existing_win.val, 'win_id', win.id);
@@ -2311,8 +2153,8 @@ function initTree1(win_id)
 
     // Node types - use constants as the keys
     let jstreeTypes = {};
-    jstreeTypes[NTN_RECOVERED] = {
-        li_attr: { class: CLASS_RECOVERED }
+    jstreeTypes[K.NTN_RECOVERED] = {
+        li_attr: { class: K.CLASS_RECOVERED }
     };
 
     // The main config
@@ -2374,15 +2216,6 @@ function initTree1(win_id)
 
     // Add custom event handlers
     install_vscroll_function(window, jq_tree);
-    //install_action_visibility_function(window, jq_tree, $('#hamburger-menu') );
-
-    /*
-    $(document).on("click.debug",'.tf-action-group',
-            function(e){console.log({dbg_click: e.target.parentNode.id});}) //DEBUG
-    $(document).on("click.debug",'.tf-action-group', mouse_event_forwarder);
-    */
-
-    // --------
 
     // Install keyboard shortcuts.  This includes the keyboard listener for
     // context menus.
@@ -2413,14 +2246,12 @@ function initTree1(win_id)
 
 function initTree0()
 {
-    log.info('TabFern view.js initializing view - ' + TABFERN_VERSION);
+    log.info('TabFern view.js initializing view - ' + K.TABFERN_VERSION);
 
-    //$(document).on("click.debug",function(e){console.log({doc_click: e.target});}) //DEBUG
-
-    document.title = 'TabFern ' + TABFERN_VERSION;
+    document.title = 'TabFern ' + K.TABFERN_VERSION;
 
     Hamburger = M.hamburger('#hamburger-menu', getHamburgerMenuItems,
-            CONTEXT_MENU_MOUSEOUT_TIMEOUT_MS);
+            K.CONTEXT_MENU_MOUSEOUT_TIMEOUT_MS);
 
     checkWhatIsNew('#hamburger-menu');
 
@@ -2462,7 +2293,7 @@ function initIncompleteWarning()
 {
     if(!did_init_complete) {
         // Assume the document is loaded by this point.
-        $(INIT_MSG_SEL).css('display','block');
+        $(K.INIT_MSG_SEL).css('display','block');
     }
 } //initIncompleteWarning()
 
@@ -2481,6 +2312,7 @@ let dependencies = [
     'shortcuts', 'dmauro_keypress', 'shortcuts_keybindings_default',
 
     // Modules of TabFern itself
+    'view/const',
 ];
 
 /// Make short names in M for some modules.  shortname => longname
@@ -2502,6 +2334,8 @@ function main(...args)
         M[shortname] = M[module_shortnames[shortname]];
     }
 
+    K = M['view/const'];
+
     log = M.loglevel;   // global - HACK
     log.setDefaultLevel(log.levels.DEBUG);
 
@@ -2509,7 +2343,7 @@ function main(...args)
 
     // Timer to display the warning message if initialization doesn't complete
     // quickly enough.
-    window.setTimeout(initIncompleteWarning, INIT_TIME_ALLOWED_MS);
+    window.setTimeout(initIncompleteWarning, K.INIT_TIME_ALLOWED_MS);
 
     // Main events
     window.addEventListener('unload', shutdownTree, { 'once': true });
