@@ -30,8 +30,12 @@
     /// The module we are creating
     let module = {};
 
+    // Note: all data values we store must have a raw_title field so
+    // glue.js:get_curr_raw_text() will work.
+
     /// Map between open-tab IDs and node IDs
     module.tabs = multidex(
+        K.IT_TAB, //type
         [ //keys
             'tab_id'    // from Chrome
           , 'node_id'   // from jstree
@@ -48,6 +52,7 @@
 
     /// Map between open-window IDs and node IDs
     module.windows = multidex(
+        K.IT_WINDOW,  //type
         [ //keys
             'win_id'    // from Chrome
           , 'node_id'   // from jstree

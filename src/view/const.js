@@ -1,15 +1,6 @@
 // view/const.js: constants and generic helpers for the TabFern view
 // Copyright (c) 2017 Chris White, Jasmine Hegman.
 
-// Notation:
-// A "Fern" is the subtree for a particular window, including a node
-// representing the window and zero or more children of that node
-// representing tabs.  The fern ID is the node ID of the node
-// representing the window.
-//
-// An "item" is the combination of a node and the model value for that
-// node.  Current item types are window and tab.
-
 (function (root, factory) {
     let imports=['jquery','jstree','loglevel' ];
 
@@ -70,8 +61,8 @@
         CONTEXT_MENU_MOUSEOUT_TIMEOUT_MS:  1500,
 
         // --- Syntactic sugar ---
-        WIN_KEEP:  true,
-        WIN_NOKEEP:  false,
+        WIN_KEEP:  true,    // must be truthy
+        WIN_NOKEEP:  false, // must be falsy
         NONE:  chrome.windows.WINDOW_ID_NONE,
 
         // Item-type enumeration.  Here because there may be more item
@@ -80,14 +71,14 @@
         IT_WINDOW:  'window',   // strings are used for ease of debugging
         IT_TAB:     'tab',
 
-        // Node-type names - these control the display of the
+        // Node types - these control the display of the
         // corresponding list items.
-        NTN_WIN_CLOSED:     'win_closed',               // closed, saved
-        NTN_WIN_EPHEMERAL:  'win_ephemeral',            // open, unsaved
-        NTN_WIN_OPEN:       'win_open_saved',           // open, saved
-        NTN_WIN_RECOVERED:  'win_ephemeral_recovered',  // closed, saved, recovered
+        NT_WIN_CLOSED:     'win_closed',               // closed, saved
+        NT_WIN_EPHEMERAL:  'win_ephemeral',            // open, unsaved
+        NT_WIN_OPEN:       'win_open_saved',           // open, saved
+        NT_WIN_RECOVERED:  'win_ephemeral_recovered',  // closed, saved, recovered
 
-        NTN_TAB:            'tab',
+        NT_TAB:            'tab',
     };
 
     /// Ignore a Chrome callback error, and suppress Chrome's "runtime.lastError"

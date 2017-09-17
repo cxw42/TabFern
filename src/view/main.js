@@ -14,10 +14,20 @@
 // are version 0.  We must always support loading
 // backup files having versions earlier than the current version.
 
-// Notation: Windows can be open or closed, and can be saved or unsaved.
+// Notation:
+//
+// Windows can be open or closed, and can be saved or unsaved.
 // A closed, unsaved window isn't represented in TabFern, except in the
 // "Restore last deleted window" function.
 // An open, unsaved window is referred to for brevity as an "ephemeral" window.
+//
+// A "Fern" is the subtree for a particular window, including a node
+// representing the window and zero or more children of that node
+// representing tabs.  The fern ID is the node ID of the node
+// representing the window.
+//
+// An "item" is the combination of a node and the model value for that
+// node.  Current item types are window and tab.
 
 console.log('Loading TabFern ' + TABFERN_VERSION);
 
@@ -294,9 +304,9 @@ function actionRenameWindow(node_id, node, unused_action_id, unused_action_el)
     T.treeobj.rename_node(node_id, G.get_safe_text(win_val));
 
     if(win_val.isOpen) {
-        T.treeobj.set_type(node, K.NTN_WIN_OPEN);
+        T.treeobj.set_type(node, K.NT_WIN_OPEN);
     } else {
-        T.treeobj.set_type(node, K.NTN_WIN_CLOSED);
+        T.treeobj.set_type(node, K.NT_WIN_CLOSED);
     }
 
     T.vscroll_function();
@@ -320,7 +330,7 @@ function actionForgetWindow(node_id, node, unused_action_id, unused_action_el)
     T.treeobj.rename_node(node_id, G.get_safe_text(win_val));
 
     if(win_val.isOpen) {    // should always be true, but just in case...
-        T.treeobj.set_type(node, K.NTN_WIN_EPHEMERAL);
+        T.treeobj.set_type(node, K.NT_WIN_EPHEMERAL);
     }
 
     saveTree();
@@ -356,7 +366,7 @@ function actionCloseWindow(node_id, node, unused_action_id, unused_action_el)
     win_val.raw_title = T.remove_unsaved_markers(win_val.raw_title);
     T.treeobj.rename_node(node_id, G.get_safe_text(win_val));
 
-    T.treeobj.set_type(node_id, K.NTN_WIN_CLOSED);
+    T.treeobj.set_type(node_id, K.NT_WIN_CLOSED);
 
     // Collapse the tree, if the user wants that
     if(getBoolSetting("collapse-tree-on-window-close")) {
@@ -425,7 +435,7 @@ function createNodeForTab(ctab, parent_node_id)
     // TODO if the favicon doesn't load, replace the icon with the generic
     // page icon so we don't keep hitting the favIconUrl.
     let tab_node_id = T.treeobj.create_node(parent_node_id, node_data);
-    T.treeobj.set_type(tab_node_id, K.NTN_TAB);
+    T.treeobj.set_type(tab_node_id, K.NT_TAB);
 
     M.tabs.add({tab_id: ctab.id, node_id: tab_node_id,
         win_id: ctab.windowId, index: ctab.index, tab: ctab,
@@ -444,7 +454,7 @@ function createNodeForClosedTab(tab_data_v1, parent_node_id)
           text: Esc.escape(tab_data_v1.raw_title)
     };
     let tab_node_id = T.treeobj.create_node(parent_node_id, node_data);
-    T.treeobj.set_type(tab_node_id, K.NTN_TAB);
+    T.treeobj.set_type(tab_node_id, K.NT_TAB);
 
     M.tabs.add({tab_id: K.NONE, node_id: tab_node_id,
         win_id: K.NONE, index: K.NONE, tab: undefined, isOpen: false,
@@ -500,22 +510,19 @@ function createNodeForWindow(cwin, keep)
         return;
     }
 
-    let {win_node_id, win_val} = G.makeFernForWindow(cwin, keep);
-    if(!win_node_id) return;    //sanity check
+    let {node_id, val} = G.makeItemForWindow(cwin, keep);
+    if(!node_id) return;    //sanity check
 
-    T.treeobj.set_type(win_node_id,
-            keep ? K.NTN_WIN_OPEN : K.NTN_WIN_EPHEMERAL);
-
-    addWindowNodeActions(win_node_id);
+    addWindowNodeActions(node_id);
 
     if(cwin.tabs) {                      // new windows may have no tabs
         for(let tab of cwin.tabs) {
             log.info('   ' + tab.id.toString() + ': ' + tab.title);
-            createNodeForTab(tab, win_node_id);
+            createNodeForTab(tab, node_id);
         }
     }
 
-    return win_node_id;
+    return node_id;
 } //createNodeForWindow
 
 /// Create a tree node for a closed window
@@ -525,19 +532,14 @@ function createNodeForClosedWindow(win_data_v1)
     let is_ephemeral = Boolean(win_data_v1.ephemeral);  // missing => false
     let shouldCollapse = getBoolSetting('collapse-trees-on-startup');
 
-    log.info('Closed window ' + win_data_v1.raw_title + (is_ephemeral?' (ephemeral)':''));
+    log.info({'Closed window':win_data_v1.raw_title, 'is ephemeral?': is_ephemeral});
 
-    // Update the view
-    let win_node_id = T.treeobj.create_node(null,
-            {   text: 'Closed window'
-                //, 'icon': 'visible-window-icon'   // use the default icon
-                , li_attr: { class: K.WIN_CLASS }
-                , state: { 'opened': !shouldCollapse }
-            });
+    // Make a node for a closed window
+    let {node_id, val} = G.makeItemForWindow();
 
     // Mark recovered windows
     if(is_ephemeral) {
-        T.treeobj.set_type(win_node_id, K.NTN_RECOVERED);
+        T.treeobj.set_type(node_id, K.NT_RECOVERED);
     }
 
     // Update the model
@@ -551,27 +553,20 @@ function createNodeForClosedWindow(win_data_v1)
         new_title = (typeof n === 'string') ? n : null;
     }
 
-    let win_val = M.windows.add({
-        win_id: K.NONE, node_id: win_node_id,
-        win: undefined,
-        raw_title: new_title,
-        isOpen: false,
-        keep: K.WIN_KEEP  // even if it was ephemeral before
-    });
-    // TODO also highlight recovered tabs with a color
+    val.raw_title = new_title;
 
-    T.treeobj.rename_node(win_node_id, G.get_safe_text(win_val));
+    T.treeobj.rename_node(node_id, G.get_safe_text(val));
 
-    addWindowNodeActions(win_node_id);
+    addWindowNodeActions(node_id);
 
     if(win_data_v1.tabs) {
         for(let tab_data_v1 of win_data_v1.tabs) {
             //log.info('   ' + tab_data_v1.text);
-            createNodeForClosedTab(tab_data_v1, win_node_id);
+            createNodeForClosedTab(tab_data_v1, node_id);
         }
     }
 
-    return win_node_id;
+    return node_id;
 } //createNodeForClosedWindow
 
 //////////////////////////////////////////////////////////////////////////
@@ -791,7 +786,7 @@ function treeOnSelect(_evt_unused, evt_data)
     // --------
     // Process the actual node click
 
-    if(T.treeobj.get_type(node) === K.NTN_RECOVERED) {
+    if(T.treeobj.get_type(node) === K.NT_RECOVERED) {
         T.treeobj.set_type(node, 'default');
     }
 
@@ -854,7 +849,7 @@ function treeOnSelect(_evt_unused, evt_data)
                 win_val.isOpen = true;
                 win_val.keep = true;      // just in case
                 win_val.win = win;
-                T.treeobj.set_type(win_node.id, K.NTN_WIN_OPEN);
+                T.treeobj.set_type(win_node.id, K.NT_WIN_OPEN);
 
                 T.treeobj.open_node(win_node);
 
@@ -1756,8 +1751,9 @@ function initTree4(items)
                 {
                       'left': +parsed.left || 0
                     , 'top': +parsed.top || 0
-                    , 'width': +parsed.width || 300
-                    , 'height': +parsed.height || 600
+                    , 'width': Math.max(+parsed.width || 300, 100)
+                        // don't let it shrink too small, in case something went wrong
+                    , 'height': Math.max(+parsed.height || 600, 200)
                 };
             last_saved_size = $.extend({}, size_data);
             chrome.windows.update(my_winid, size_data);
@@ -1853,8 +1849,8 @@ function addOpenWindowsToTree(winarr)
             // don't change val.keep, which may have either value.
             existing_win.val.win = win;
             T.treeobj.set_type(existing_win.node,
-                    existing_win.val.keep ? K.NTN_WIN_OPEN :
-                                            K.NTN_WIN_EPHEMERAL );
+                    existing_win.val.keep ? K.NT_WIN_OPEN :
+                                            K.NT_WIN_EPHEMERAL );
 
             T.treeobj.open_node(existing_win.node);
 
@@ -1958,9 +1954,11 @@ function initTree0()
     // TODO? also make sure the TabFern window is at least 300px wide, or at
     // at least 30% of screen width if <640px.  Also make sure that the
     // TabFern window is tall enough.
+    // TODO? Snap the TabFern window to within n pixels of the Chrome window?
 
     // Get our Chrome-extensions-API window ID from the background page.
     // I don't know a way to get this directly from the JS window object.
+    // TODO maybe getCurrent?  Not sure if that's reliable.
     chrome.runtime.sendMessage(MSG_GET_VIEW_WIN_ID, initTree1);
 } //initTree0
 

@@ -59,12 +59,12 @@
         return M.get_node_val(node_id);
     }; //get_node_val()
 
-    /// Get the textual version of raw_title for a window
-    module.get_curr_raw_text = function(win_val)
+    /// Get the textual version of raw_title for a value
+    module.get_curr_raw_text = function(val)
     {
-        if(win_val.raw_title !== null) {
-            return win_val.raw_title;
-        } else if(win_val.keep) {
+        if(val.raw_title !== null) {
+            return val.raw_title;
+        } else if(val.keep) {
             return 'Saved tabs';
         } else {
             return 'Unsaved';
@@ -72,8 +72,8 @@
     }; //get_curr_raw_text()
 
     /// Get the escaped title
-    module.get_safe_text = function(win_val) {
-        return Esc.escape(module.get_curr_raw_text(win_val));
+    module.get_safe_text = function(val) {
+        return Esc.escape(module.get_curr_raw_text(val));
     };
 
     //////////////////////////////////////////////////////////////////////////
@@ -155,33 +155,82 @@
         return node.id;
     } //bindWindowToTree
 
-    /// Create a new fern for an open Chrome window.
-    /// @param cwin {Chrome Window record}
-    ///     The open window.  If #cwin is populated with its tabs, the child
-    ///     nodes in the fern will be created.
-    /// @return {object} {win_node_id (the fern's id), win_val}.  On error,
-    ///                 at least one of win_node_id or win_val will be falsy.
-    module.makeFernForWindow = function(cwin, keep) {
-        let error_return = {win_node_id:null, win_val:null};
+    /// Create a new fern, optionally for an open Chrome window.
+    /// ** Does not populate any tab nodes --- this is just for a window.
+    /// @param cwin {Chrome Window record} The open window.
+    ///                         If falsy, there is no Chrome window presently.
+    /// @param keep {boolean} If #cwin is truthy, determines whether the window
+    ///                         is (true) open and saved or (false) ephemeral.
+    ///                         If #cwin is falsy, #keep is ignored and treated
+    ///                         as if it were `true`.
+    /// @return {object} {node_id (the fern's id), val}.  On error,
+    ///                 at least one of node_id or val will be falsy.
+    module.makeItemForWindow = function(cwin, keep) {
+        if(!cwin) keep = K.WIN_KEEP;  //creating item for a closed window => keep
+        keep = (keep ? K.WIN_KEEP : K.WIN_NOKEEP);  //regularize
+
+        let error_return = {node_id:null, val:null};
 
         let win_node_id = T.treeobj.create_node(
                 $.jstree.root,                          // parent
                 {     text: 'Window'                    // node data
-                    , state: { 'opened': true }
+                    , state: { 'opened': !!cwin }
                 });
         if(win_node_id === false) return error_return;
+        T.treeobj.set_type(win_node_id,
+            ( !!cwin ?
+                (keep ? K.NT_WIN_OPEN : K.NT_WIN_EPHEMERAL ) :
+                K.NT_WIN_CLOSED)
+        );
 
-        loginfo('Adding nodeid map for cwinid ' + cwin.id);
+        loginfo({'Adding nodeid map for cwinid': cwin ? cwin.id : 'none'});
         let win_val = M.windows.add({
-            win_id: cwin.id, node_id: win_node_id, win: cwin,
+            win_id: (!!cwin ? cwin.id : K.NONE),
+            node_id: win_node_id,
+            win: (!!cwin ? cwin : undefined),
             raw_title: null,    // default name
-            isOpen: true, keep: keep
+            isOpen: !!cwin, keep: keep
         });
 
         T.treeobj.rename_node(win_node_id, module.get_safe_text(win_val));
 
-        return {win_node_id, win_val};
-    } //makeFernForWindow
+        return {node_id: win_node_id, val: win_val};
+    } //makeItemForWindow
+
+    /// Create a new node for a tab, optionally for an open Chrome tab.
+    /// @param parent_node_id {string} The parent's node ID (a window)
+    /// @param ctab {Chrome Tab record} The open tab.
+    ///                         If falsy, there is no Chrome tab presently.
+    /// @param raw_url {string} If #ctab is falsy, the URL of the tab
+    /// @param raw_title {string} If #ctab is falsy, the title of the tab
+    /// @return {object} {node_id, val}.  On error,
+    ///                 at least one of node_id or val will be falsy.
+    module.makeItemForTab = function(parent_node_id, ctab, raw_url, raw_title) {
+        let error_return = {node_id:null, val:null};
+        if(!parent_node_id) return error_return;
+
+        let tab_node_id = T.treeobj.create_node(
+                parent_node_id,
+                {   text: 'Tab',                   // node data
+                    state: { 'opened': !!cwin }
+                });
+        if(tab_node_id === false) return error_return;
+        T.treeobj.set_type(tab_node_id, K.NT_TAB);
+
+        M.tabs.add({tab_id: (!!ctab ? ctab.id : K.NONE),
+            node_id: tab_node_id,
+            win_id: (!!ctab ? ctab.windowId : K.NONE),
+            index: (!!ctab ? ctab.index : K.NONE),
+            tab: (!!ctab ? ctab : undefined),
+            raw_url: (!!ctab ? ctab.url : String(raw_url)),
+            raw_title: (!!ctab ? ctab.title : String(raw_title)),
+            isOpen: !!ctab,
+        });
+
+        T.treeobj.rename_node(tab_node_id, module.get_safe_text(tab_val));
+
+        return {node_id: tab_node_id, val: tab_val};
+    } //makeItemForTab
 
     return module;
 }));

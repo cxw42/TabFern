@@ -93,27 +93,27 @@
         // Node types - use constants as the keys
         let jstreeTypes = {};
 
-        jstreeTypes[K.NTN_WIN_CLOSED] = {
+        jstreeTypes[K.NT_WIN_CLOSED] = {
             li_attr: { class: K.WIN_CLASS },
             icon: true,     //default - folder
         };
 
-        jstreeTypes[K.NTN_WIN_EPHEMERAL] = {
+        jstreeTypes[K.NT_WIN_EPHEMERAL] = {
             li_attr: { class: K.WIN_CLASS + ' ' + K.VISIBLE_WIN_CLASS },
             icon: 'visible-window-icon',
         };
 
-        jstreeTypes[K.NTN_WIN_OPEN] = {
+        jstreeTypes[K.NT_WIN_OPEN] = {
             li_attr: { class: K.WIN_CLASS + ' ' + K.VISIBLE_WIN_CLASS },
             icon: 'visible-saved-window-icon',
         };
 
-        jstreeTypes[K.NTN_RECOVERED] = {
+        jstreeTypes[K.NT_RECOVERED] = {
             li_attr: { class: K.WIN_CLASS + ' ' + K.CLASS_RECOVERED },
             icon: true,     //default - folder
         };
 
-        jstreeTypes[K.NTN_TAB] = {
+        jstreeTypes[K.NT_TAB] = {
             li_attr: { class: K.TAB_CLASS },
             icon: 'fff-page',   // per-node icons will override this
         };
