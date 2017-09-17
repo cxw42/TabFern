@@ -45,7 +45,7 @@
     /// https://stackoverflow.com/users/939547/jsarma
     module.vscroll_function = function()
     { //TODO make this a closure over a specific win, jq
-        log.info('Updating V positions');
+        //log.info('Updating V positions');
         $('.' + K.ACTION_GROUP_WIN_CLASS).each(function(idx, dom_elem) {
             let jq = $(dom_elem);
             jq.css('top',jq.parent().offset().top - $(window).scrollTop());

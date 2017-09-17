@@ -1943,7 +1943,7 @@ function initTree1(win_id)
         getBoolSetting('ContextMenu.Enabled', true) ? getMainContextMenuItems
                                                     : false;
 
-    T.create('#maintree', treeCheckCallback, dndIsDraggable);
+    T.create('#maintree', treeCheckCallback, dndIsDraggable, contextmenu_items);
 
     // Install keyboard shortcuts.  This includes the keyboard listener for
     // context menus.
