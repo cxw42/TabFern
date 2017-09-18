@@ -2,7 +2,7 @@
 title: TabFern tab-management extension for Google Chrome
 ---
 
-![screenshot](https://raw.githubusercontent.com/cxw42/TabFern/gh-pages/screenshot.png)
+![screenshot](/screenshot.png)
 
 A single window showing all your open browser windows and tabs, listed
 vertically.  TabFern will also save browser windows so you can close them and
@@ -30,23 +30,26 @@ Check out the code or report issues [on GitHub](https://github.com/cxw42/TabFern
    the tree will update.
  - To mark a window to be saved, you have two choices:
 
-     1. Give the window a name using the pencil icon (![image](https://raw.githubusercontent.com/cxw42/TabFern/master/assets/icons/pencil.png)).
+     1. Give the window a name using the pencil icon
+        (![image](/assets/icons/pencil.png)).
      1. Hit the middle icon showing a rectangle with a red dot
-   (![image](https://raw.githubusercontent.com/cxw42/TabFern/master/assets/icons/picture_delete.png)).  The window will close.
+   (![image](/assets/icons/picture_delete.png)).  The window will close.
 
  - Folder icons are:
 
-     - Open, unsaved: a monitor (![image](https://raw.githubusercontent.com/cxw42/TabFern/master/assets/icons/monitor.png))
-     - Open, saved: a monitor with a green dot (![image](https://raw.githubusercontent.com/cxw42/TabFern/master/assets/icons/monitor_add.png)).
+     - Open, unsaved: a monitor
+       (![image](/assets/icons/monitor.png))
+     - Open, saved: a monitor with a green dot
+       (![image](/assets/icons/monitor_add.png)).
      - Closed, saved (closed unsaved aren't in the tree): a white file folder.
 
  - Saved windows will be saved even if you close them manually.  To remove them
    from the tree, hit the delete icon (red X,
-   ![image](https://raw.githubusercontent.com/cxw42/TabFern/master/assets/icons/cross.png)).
+   ![image](/assets/icons/cross.png)).
 
      - If you accidentally delete a window, look on the main menu (bottom-right
-       of the TabFern window --- see next section).  
-       There will be a "Restore last deleted" option that will 
+       of the TabFern window --- see next section).
+       There will be a "Restore last deleted" option that will
        bring the tabs back.
 
  - To change the text size in the TabFern window, click into the window,
@@ -87,7 +90,7 @@ more about current limitations, and where TabFern is going in the future!
 
 # Related information
 
- - [Privacy policy](/privacy.md)
+ - [Privacy policy](privacy.md)
 
 # Thanks
 
@@ -106,5 +109,6 @@ more about current limitations, and where TabFern is going in the future!
 
 Copyright (c) 2017 Chris White, Jasmine Hegman.  CC-BY-SA 4.0 International.
 
-![logo](https://raw.githubusercontent.com/cxw42/TabFern/master/assets/fern128.png)
+![logo](/assets/fern128.png)
 
+<!-- vi: set ts=2 sts=2 sw=2 et ai ft=markdown: -->
