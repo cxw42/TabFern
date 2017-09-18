@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+
+<!-- Begin Jekyll SEO tag v2.3.0 -->
+<title>TabFern tab-management extension for Google Chrome | TabFern</title>
+<meta property="og:title" content="TabFern tab-management extension for Google Chrome" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Google Chrome extension for displaying grouped, vertical tabs." />
+<meta property="og:description" content="Google Chrome extension for displaying grouped, vertical tabs." />
+<link rel="canonical" href="http://localhost:4000/" />
+<meta property="og:url" content="http://localhost:4000/" />
+<meta property="og:site_name" content="TabFern" />
+<script type="application/ld+json">
+{"name":"TabFern","description":"Google Chrome extension for displaying grouped, vertical tabs.","author":null,"@type":"WebSite","url":"http://localhost:4000/","publisher":null,"image":null,"headline":"TabFern tab-management extension for Google Chrome","dateModified":null,"datePublished":null,"sameAs":null,"mainEntityOfPage":null,"@context":"http://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+    <link rel="stylesheet" href="/assets/css/style.css?v=0e3e59f62d6ae3a75a184e99b10e470c418470b9">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script src="/assets/js/main.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
+  </head>
+  <body>
+
+      <header>
+        <h1>TabFern</h1>
+        <p>Google Chrome extension for displaying grouped, vertical tabs.</p>
+      </header>
+
+      <div id="banner">
+        <span id="logo"></span>
+
+        <a href="https://github.com/cxw42/TabFern" class="button fork"><strong>View On GitHub</strong></a>
+        
+      </div><!-- end banner -->
+
+    <div class="wrapper">
+      <nav>
+        <ul></ul>
+      </nav>
+      <section>
+        <p><img src="https://raw.githubusercontent.com/cxw42/TabFern/gh-pages/screenshot.png" alt="screenshot" /></p>
+
+<p>A single window showing all your open browser windows and tabs, listed
+vertically.  TabFern will also save browser windows so you can close them and
+come back to them later with all their tabs intact.</p>
+
+<h1 id="call-for-alpha-testers">Call for alpha testers!</h1>
+
+<p>If you are willing, please try TabFern and let us know how it goes!</p>
+
+<p><a href="https://chrome.google.com/webstore/detail/tabfern-tab-manager-and-b/hbajjpcdbninabigakflkhiogmmjaakm"><img src="/img/ChromeWebStore_Badge_v2_206x58.png" alt="badge" /></a></p>
+
+<p><a name="welcome"></a></p>
+
+<p><strong>TabFern is now available in the <a href="https://chrome.google.com/webstore/detail/tabfern-tab-manager-and-b/hbajjpcdbninabigakflkhiogmmjaakm">Chrome Web Store</a></strong></p>
+
+<p>Check out the code or report issues <a href="https://github.com/cxw42/TabFern">on GitHub</a>.</p>
+
+<h1 id="usage">Usage</h1>
+
+<ul>
+  <li>Click the icon to open the TabFern view.  The view will also open when
+you start Chrome.</li>
+  <li>When you open windows or tabs, or rearrange windows or tabs,
+the tree will update.</li>
+  <li>
+    <p>To mark a window to be saved, you have two choices:</p>
+
+    <ol>
+      <li>Give the window a name using the pencil icon (<img src="https://raw.githubusercontent.com/cxw42/TabFern/master/assets/icons/pencil.png" alt="image" />).</li>
+      <li>Hit the middle icon showing a rectangle with a red dot
+(<img src="https://raw.githubusercontent.com/cxw42/TabFern/master/assets/icons/picture_delete.png" alt="image" />).  The window will close.</li>
+    </ol>
+  </li>
+  <li>
+    <p>Folder icons are:</p>
+
+    <ul>
+      <li>Open, unsaved: a monitor (<img src="https://raw.githubusercontent.com/cxw42/TabFern/master/assets/icons/monitor.png" alt="image" />)</li>
+      <li>Open, saved: a monitor with a green dot (<img src="https://raw.githubusercontent.com/cxw42/TabFern/master/assets/icons/monitor_add.png" alt="image" />).</li>
+      <li>Closed, saved (closed unsaved aren’t in the tree): a white file folder.</li>
+    </ul>
+  </li>
+  <li>
+    <p>Saved windows will be saved even if you close them manually.  To remove them
+from the tree, hit the delete icon (red X,
+<img src="https://raw.githubusercontent.com/cxw42/TabFern/master/assets/icons/cross.png" alt="image" />).</p>
+
+    <ul>
+      <li>If you accidentally delete a window, look on the main menu (bottom-right
+of the TabFern window — see next section).<br />
+There will be a “Restore last deleted” option that will 
+bring the tabs back.</li>
+    </ul>
+  </li>
+  <li>
+    <p>To change the text size in the TabFern window, click into the window,
+then hit Control+Plus for larger or Control+Minus for smaller.  This is the
+normal Google Chrome browser zoom.</p>
+  </li>
+  <li>Note: windows you do not expressly save will not be saved when you exit!
+I am open to discussion of better ways to handle this.</li>
+</ul>
+
+<h1 id="backup-and-restore">Backup and Restore</h1>
+
+<p>On the menu in the bottom right, you have options for “Backup” and
+“Load contents”:</p>
+
+<p><img src="/img/hamburger-screenshot.png" alt="screenshot of hamburger menu" /></p>
+
+<ul>
+  <li>Click “Backup now” to save a backup as a <code class="highlighter-rouge">.tabfern</code> file in your Downloads
+directory.</li>
+  <li>Click “Load contents of a backup”, then choose the file you want and hit OK,
+to add the backed-up windows to your tree.</li>
+</ul>
+
+<p>Loading a backup is not a “restore” operation that takes you
+back to where you were.  Instead, it <em>adds</em> the loaded information to
+the windows and tabs you already have open or saved.  That way you don’t
+have to worry about losing your current place.</p>
+
+<h1 id="limitations">Limitations</h1>
+
+<ul>
+  <li>There is only a two-level hierarchy — tabs cannot be the children
+of other tabs in the tree.</li>
+  <li>You cannot open and close individual tabs — you have to open and close
+the window as a whole.</li>
+  <li>Windows will not necessarily open at the size of the last-closed window,
+like they do normally in Chrome.</li>
+</ul>
+
+<p>See the <a href="https://github.com/cxw42/TabFern/issues">issue tracker</a> on GitHub for
+more about current limitations, and where TabFern is going in the future!</p>
+
+<h1 id="related-information">Related information</h1>
+
+<ul>
+  <li><a href="/privacy.html">Privacy policy</a></li>
+</ul>
+
+<h1 id="thanks">Thanks</h1>
+
+<ul>
+  <li>Inspired by (but not in any way related to or affiliated with)
+<a href="https://chrome.google.com/webstore/detail/tabs-outliner/eggkanocgddhmamlbiijnphhppkpkmkl">Tabs Outliner</a>
+by Vladyslav Volovyk.</li>
+  <li><a href="https://extensionizr.com">Extensionizr</a></li>
+  <li><a href="https://www.jstree.com/">jstree</a></li>
+  <li><a href="https://github.com/alexandernst/jstree-actions">jstree-actions</a></li>
+  <li><a href="https://jquery.com/">jquery</a></li>
+  <li><a href="http://www.chradams.co.uk/fern/maker.html">Barnsley fern generator</a></li>
+  <li><a href="http://www.famfamfam.com/lab/icons/silk/">famfamfam Silk icons</a></li>
+  <li><a href="http://fontawesome.io/">Font Awesome</a></li>
+</ul>
+
+<h1 id="legal">Legal</h1>
+
+<p>Copyright (c) 2017 Chris White, Jasmine Hegman.  CC-BY-SA 4.0 International.</p>
+
+<p><img src="https://raw.githubusercontent.com/cxw42/TabFern/master/assets/fern128.png" alt="logo" /></p>
+
+
+
+      </section>
+      <footer>
+        
+          <p>Project maintained by <a href="http://github.com/cxw42">cxw42</a></p>
+        
+        <p><small>Hosted on GitHub Pages &mdash; Theme modified from
+			<a href="https://github.com/pages-themes/leap-day">Leap Day</a> by
+			<a href="https://twitter.com/michigangraham">mattgraham</a></small></p>
+      </footer>
+    </div>
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+
+    
+  </body>
+</html>
