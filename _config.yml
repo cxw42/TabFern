@@ -1,0 +1,14 @@
+github:
+        repository_url: 'https://github.com/cxw42/TabFern'
+
+show_downloads: false
+
+gem:
+ - jekyll-github-metadata
+
+exclude:
+ - _site
+
+include:
+ - .gitignore
+
