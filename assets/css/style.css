@@ -262,12 +262,13 @@ header p { color: #d8d8d8; text-shadow: rgba(0, 0, 0, 0.2) 0 1px 0; font-size: 1
 #banner .button { border: 1px solid #dba500; background: linear_gradient(#ffe788, #ffce38); border-radius: 2px; box-shadow: inset 0px 1px 0px rgba(255, 255, 255, 0.4), 0px 1px 1px rgba(0, 0, 0, 0.1); background-color: #FFE788; margin-left: 5px; padding: 10px 12px; margin-top: 6px; line-height: 14px; font-size: 14px; color: #333; font-weight: bold; display: inline-block; text-align: center; }
 #banner .button:hover { background: linear_gradient(#ffe788, #ffe788); background-color: #ffeca0; }
 #banner .fork { position: fixed; left: 50%; margin-left: -325px; padding: 10px 12px; margin-top: 6px; line-height: 14px; font-size: 14px; background-color: #FFE788; }
+#banner .webstore { margin-top: 6px; position: fixed; left: 50%; margin-right: 325px; min-width: 8em; }
 #banner .downloads { float: right; margin: 0 45px 0 0; }
 #banner .downloads span { float: left; line-height: 52px; font-size: 90%; color: #9d7f0d; text-transform: uppercase; text-shadow: rgba(255, 255, 255, 0.2) 0 1px 0; }
 #banner ul { list-style: none; height: 40px; padding: 0; float: left; margin-left: 10px; }
 #banner ul li { display: inline; }
 #banner ul li a.button { background-color: #FFE788; }
-#banner #logo { position: absolute; height: 36px; width: 36px; right: 7px; top: 7px; display: block; background: url(../images/octocat-logo.png); }
+#banner #logo { position: absolute; height: 36px; width: 36px; right: 7px; top: 7px; display: block; }
 
 section { width: 590px; padding: 30px 30px 50px 30px; margin: 20px 0; position: fixed; overflow: scroll; bottom: 0px; top: 165px; background: #fbfbfb; border-radius: 3px; border: 1px solid #cbcbcb; box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.09), inset 0px 0px 2px 2px rgba(255, 255, 255, 0.5), inset 0 0 5px 5px rgba(255, 255, 255, 0.4); }
 
@@ -291,7 +292,7 @@ footer { width: 180px; position: fixed; left: 50%; margin-left: -530px; bottom: 
   #banner { width: 100%; }
   #banner .downloads { margin-right: 60px; }
   #banner #logo { margin-right: 15px; }
-  section { border: 1px solid #e5e5e5; border-width: 1px 0; padding: 20px auto; margin: 0px auto 20px; top: 165px; max-width: 600px; bottom: 80px; }
+  section { border: 1px solid #e5e5e5; border-width: 1px 0; padding: 20px auto; margin: 0px auto 20px; top: 165px; max-width: 600px; }
   footer { text-align: center; left: auto; margin: 0; position: fixed; bottom: 0; padding-bottom: 6px; width: auto; } }
 @media print, screen and (max-width: 720px) { body { word-wrap: break-word; }
   header { padding: 20px 20px; margin: 0; }
