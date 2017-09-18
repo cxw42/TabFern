@@ -1,34 +1,29 @@
 // bypasser.js: Control a bypassable jstree context menu
+// Original by Jasmine Hegman.  Copyright (c) 2017 Chris White, Jasmine Hegman.
 // Uses jquery, jstree, loglevel, all of which must be loaded beforehand.
-
-//window._tabFernContextMenu = window._tabFernContextMenu || {};
 
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD
-        define(['jquery'], factory);
+        define(['jquery', 'jstree', 'loglevel'], factory);
     } else if (typeof exports === 'object') {
         // Node, CommonJS-like
-        module.exports = factory(require('jquery'));
+        module.exports = factory(require('jquery'), require('jstree'), require('loglevel'));
     } else {
-        // Browser globals (root is window)
-        root.ContextMenuBypasser = factory(root.jQuery);
+        // Browser globals (root is `window`)
+        root.ContextMenuBypasser = factory(root.jQuery, null, root.log);
+            // null because jstree doesn't actually have a module global - it
+            // just plugs in to jQuery.
     }
-}(this, function ($) {
-//(function(_tabFernContextMenu) {
+}(this, function ($, _unused_jstree_placeholder_, log) {
     "use strict";
 
-    var log = console.log.bind(console, 'TabFern bypasser.js:');
-
-    // --- Map jstree objects to bypassable-context-menu (BCM) objects ---
-
-//    /// A unique ID for a jstree
-//    const JSTREE_IDX_KEY = Symbol.symbol('bcm_jstree_idx');
-//    let jstree_curr_idx = 1;    ///< The next index to be assigned.
-//    const JSTREE_IDX_NONE = 0;  ///< A jstree we don't know about (falsy).
-//
-//    /// A mapping from tree object indices to BCM objects
-//    let bcm_by_jstree_idx = {};
+    function loginfo(...args) { log.info('TabFern bypasser.js: ', ...args); };
+        // for some reason, log.info.bind(log, ...) would capture the log level
+        // at the time of the binding, so it would not respond to later
+        // changes in the level.  Instead, use an actual function.
+        // Thankfully, `, ...args` behaves correctly even for zero-argument
+        // calls such as `loglevel();`.
 
     /// The prototype for a context-menu-bypass object
     let Proto = {};
@@ -42,17 +37,16 @@
     var shortcutNs = false;
 
     /**
-     *
      * @param {Window} win
      */
     function installEventHandler(win, _shortcutNs = false) {
         shortcutNs = _shortcutNs;
 
         if ( shortcutNs ) {
-            log("installing event handlers using Shortcuts module");
+            loginfo("installing event handlers using Shortcuts module");
             installKeyListenerFromShortcuts(shortcutNs);
         } else {
-            log("installing event handlers using internal");
+            loginfo("installing event handlers using internal");
             installKeyListener(win);
         }
     } //installEventHandler
@@ -67,18 +61,15 @@
             $(window).one('mousemove', function(e) {
                 if(e.shiftKey) {
                     bypass.engageBypass();
-                    log('bypass engaged when leaving built-in context menu');
+                    loginfo('bypass engaged when leaving built-in context menu');
                 } else {
                     bypass.disengageBypass();
-                    log('bypass disengaged when leaving built-in context menu');
+                    loginfo('bypass disengaged when leaving built-in context menu');
                 }
             });
         });
 
     } //installTreeEventHandler()
-
-    // <span class="contextMenu-entryTitle">Tip: Native Chrome context menu can be opened by Right Click with <span class="shortCutKey">Shift</span> pressed</span></il></il></ul>
-
 
     ///////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////
@@ -88,7 +79,7 @@
     ///////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////
 
-    // TODO RESUME HERE - make `bypass` per-instance.
+    // TODO make `bypass` per-instance.
 
     /// State tracker for the bypass
     var bypass = {
@@ -114,7 +105,7 @@
                 treeobj._data.contextmenu.bypass = true;
             }
         }
-    };
+    }; //bypass{}
 
     /// Listens for keyup events using jquery events.
     /// @param {Window} win
@@ -122,21 +113,16 @@
         $(win).on('keydown', function(e) {
             // Shift
             if ( e.which === 16 ) {
-                log('engage bypass');
+                loginfo('engage bypass');
                 bypass.engageBypass();
             }
         });
         $(win).on('keyup',function(e) {
             // Shift
             if ( e.which === 16 ) {
-                log('disengage bypass');
+                loginfo('disengage bypass');
                 bypass.disengageBypass();
             }
-
-            // Escape
-            //if ( e.which === 27 ) {
-            //    //toggleMenuOff();      // This seems to be a fossil - toggleMenuOff() is not defined anywhere I can see
-            //}
         });
 
     } //installKeyListener()
@@ -150,11 +136,11 @@
         if ( key && key.signal instanceof signals.Signal ) {
             key.signal.add(function (direction, args) {
                 if (direction === 'keydown') {
-                    log('bypassing context menu START', args[1]);
+                    loginfo('bypassing context menu START', args[1]);
                     bypass.engageBypass();
                 }
                 if (direction === 'keyup') {
-                    log('bypassing context menu STOP', args[1]);
+                    loginfo('bypassing context menu STOP', args[1]);
                     bypass.disengageBypass();
                 }
             });
@@ -191,13 +177,6 @@
         let retval = Object.create(Proto);
         retval.treeobj = treeobj;
 
-//        // Assign a unique ID to this tree object
-//        let treeidx = treeobj[JSTREE_IDX_KEY] || JSTREE_IDX_NONE;
-//        if(treeidx === JSTREE_IDX_NONE) {
-//            treeidx = treeobj[JSTREE_IDX_KEY] = jstree_curr_idx++;
-//        }
-//        bcm_by_jstree_idx[treeidx] = retval;
-
         installEventHandler(win, shortcuts);
         installTreeEventHandler(treeobj);
 
@@ -209,7 +188,6 @@
         create
     };
 }));
-//})(window._tabFernContextMenu);
 
 // Module-loader template thanks to
 // http://davidbcalhoun.com/2014/what-is-amd-commonjs-and-umd/

@@ -128,6 +128,7 @@
     '<li>Numeric sort order options (on the '+ham+' '+gt+' Sort menu)</li>'+
     '<li>"Restore last deleted" option on the '+ham+' menu</li>'+
     '<li>To close the '+ham+' menu without the keyboard, move the mouse off of it for a second or two</li>'+
+    '<li>Improvements under the hood for robustness</li>'+
     '</ul>'
             },
             {
