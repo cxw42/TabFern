@@ -47,6 +47,13 @@
                 "label": i18n.get("Close a window, collapse its tree")
                 //"text": i18n.get("x-characters")
             },
+            {
+                "tab": i18n.get("Behaviour"),
+                "group": i18n.get("When I..."),
+                "name": CFG_RESTORE_ON_LAST_DELETED,
+                "type": "checkbox",
+                "label": i18n.get("Restore the last-deleted window, reopen its tabs")
+            },
 
             // Features
             {
@@ -111,6 +118,19 @@
             },
 
             // Changelog
+            {
+                "tab": i18n.get("What's new?"),
+                "group": "Version 0.1.7",
+                "name": "changelog-0_1_7",
+                "type": "description",
+                "text":
+    '<ul>' +
+    '<li>Numeric sort order options (on the '+ham+' '+gt+' Sort menu)</li>'+
+    '<li>"Restore last deleted" option on the '+ham+' menu</li>'+
+    '<li>To close the '+ham+' menu without the keyboard, move the mouse off of it for a second or two</li>'+
+    '<li>Improvements under the hood for robustness</li>'+
+    '</ul>'
+            },
             {
                 "tab": i18n.get("What's new?"),
                 "group": "Version 0.1.6",

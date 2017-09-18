@@ -5,7 +5,7 @@
 <head>
 <title>TabFern</title>
 <meta http-equiv="Content-Type" content="text/html" />
-<!--link href="../../css/382.css" rel="stylesheet" type="text/css" /-->
+
 <link href="/js/jstree-3.3.4/themes/default-dark/style.css" rel="stylesheet" type="text/css" />
 <link href="/js/fontawesome/css/font-awesome.css" rel="stylesheet" type="text/css" />
 
@@ -15,10 +15,12 @@
 <script src="/js/jstree-3.3.4/jstree.js" type="text/javascript"></script>
 <script src="/js/jstree-actions-cw.js" type="text/javascript"></script>
 <script src="/js/jstree-flagnode.js" type="text/javascript"></script>
-<script src="/js/hamburger.js" type="text/javascript"></script>
-<script src="bypasser.js" type="text/javascript"></script>
 
-<script src="/js/loglevel-3451d42.js" type="text/javascript"></script>
+<script src="/js/loglevel.js" type="text/javascript"></script>
+
+<script src="/js/hamburger.js" type="text/javascript"></script>
+
+<script src="bypasser.js" type="text/javascript"></script>
 <script src="/js/multidex.js" type="text/javascript"></script>
 <script src="../common/common.js" type="text/javascript"></script>
 <script src="../fileops/export.js" type="text/javascript"></script>
@@ -35,6 +37,7 @@
 <body class="jstree-default-dark">
 <!-- jstree-default-dark to set background, text colors -->
 
+<div id="tabfern-container">
 <!-- Content ------------------------------------------------------------- -->
 <div id="maintree"></div><!-- the window tree -->
 <div id="view-messages"></div><!-- for error messages -->
@@ -47,6 +50,14 @@ be saved.</div><!-- hidden if init does complete. -->
 </div>
 
 <div id="hamburger-menu" class="hamburger-menu"></div><!-- a jstree to use as a hamburger menu -->
+</div><!-- tabfern-container -->
+
+<!-- Room for plugins ---------------------------------------------------- -->
+<div id="plugin-container"></div>
+<!-- Maybe use something like https://stackoverflow.com/q/13741871/2877364 or
+https://benfrain.com/independent-scrolling-panels-body-scroll-using-just-css/
+to give the plugin room at the bottom while permitting TabFern operation
+to continue as usual above. -->
 
 <!-- Scripts ------------------------------------------------------------- -->
 <script src="shortcuts/keybindings/defaults.js" type="text/javascript"></script>
@@ -55,7 +66,7 @@ be saved.</div><!-- hidden if init does complete. -->
 <script src="shortcuts/shortcuts.js" type="text/javascript"></script>
 <script src="contextMenu/contextMenu.js" type="text/javascript"></script>
 
-<script src="view.js" type="text/javascript"></script>
+<script src="view.js" type="text/javascript"></script><!-- the main one -->
 
 </body>
 </html>

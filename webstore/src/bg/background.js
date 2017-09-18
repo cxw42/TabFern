@@ -24,14 +24,26 @@ function loadView()
 //////////////////////////////////////////////////////////////////////////
 // Action button //
 
-/// Move the TabFern window to #win.  This helps if the
+/// Move the TabFern window to #reference_win.  This helps if the
 /// TabFern window winds up off-screen.
-function moveTabFernViewToWindow(win)
+function moveTabFernViewToWindow(reference_cwin)
 {
+    function clip(x, lo, hi) { if(hi<lo) hi=lo; return Math.min(hi, Math.max(lo, x)); }
+
     if(typeof(chrome.runtime.lastError) === 'undefined') {
         if(!viewWindowID) return;
-        chrome.windows.update(viewWindowID,
-                {left: win.left+16, top: win.top+16});
+        chrome.windows.get(viewWindowID, function(view_cwin) {
+            let updates = {left: reference_cwin.left+16,
+                            top: reference_cwin.top+16,
+                            state: 'normal',    // not minimized or maximized
+            };
+
+            // Don't let it be too large or too small
+            updates.width = clip(view_cwin.width, 200, reference_cwin.width-32);
+            updates.height = clip(view_cwin.height, 100, reference_cwin.height-32);
+
+            chrome.windows.update(viewWindowID, updates);
+        });
     }
 } //moveTabFernViewToWindow()
 

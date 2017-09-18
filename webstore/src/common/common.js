@@ -6,8 +6,8 @@ console.log('TabFern common.js loading');
 // General constants //
 
 /// The TabFern extension friendly version number.  Displayed in the
-/// title bar of the popup window.
-const TABFERN_VERSION='0.1.6 alpha \u26a0'
+/// title bar of the popup window, so lowercase (no shouting!).
+const TABFERN_VERSION='0.1.7 alpha \u26a0'
     // Don't forget to update BOTH the version and version_name in
     // manifest.json when you change this!
 
@@ -27,6 +27,8 @@ const MSG_GET_VIEW_WIN_ID = 'getViewWindowID';
 
 //////////////////////////////////////////////////////////////////////////
 // Names of settings //
+
+const CFG_RESTORE_ON_LAST_DELETED = "open-tree-on-restore-last-deleted";
 
 //////////////////////////////////////////////////////////////////////////
 // Helper functions //
