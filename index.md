@@ -26,6 +26,11 @@ Check out the code or report issues [on GitHub](https://github.com/cxw42/TabFern
 
  - Click the icon to open the TabFern view.  The view will also open when
    you start Chrome.
+     - If you can't find the TabFern window, double-click the fern icon
+       (![image](/assets/fern16icon.png)) in the
+       taskbar in any Chrome window.  That will summon the TabFern window
+       to that Chrome window.
+
  - When you open windows or tabs, or rearrange windows or tabs,
    the tree will update.
  - To mark a window to be saved, you have two choices:
