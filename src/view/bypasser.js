@@ -25,6 +25,10 @@
         // Thankfully, `, ...args` behaves correctly even for zero-argument
         // calls such as `loglevel();`.
         // TODO make it show the right line number
+        // ==>  This is because changing the level actually rebinds the
+        //      log.* functions.  TODO make a loglevel plugin to handle 
+        //      name prefixing?  See, e.g., the Plugins section on
+        //      https://pimterry.github.io/loglevel/
 
     /// The prototype for a context-menu-bypass object
     let Proto = Object.create(null);
