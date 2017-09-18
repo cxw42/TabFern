@@ -14,9 +14,13 @@ If you are willing, please try TabFern and let us know how it goes!
 
 [![badge](/img/ChromeWebStore_Badge_v2_206x58.png)](https://chrome.google.com/webstore/detail/tabfern-tab-manager-and-b/hbajjpcdbninabigakflkhiogmmjaakm)
 
+<a name="welcome"></a>
+
 <strong>TabFern is now available in the [Chrome Web Store](https://chrome.google.com/webstore/detail/tabfern-tab-manager-and-b/hbajjpcdbninabigakflkhiogmmjaakm)</strong>
 
+
 Check out the code or report issues [on GitHub](https://github.com/cxw42/TabFern).
+
 
 # Usage
 
@@ -40,7 +44,16 @@ Check out the code or report issues [on GitHub](https://github.com/cxw42/TabFern
    from the tree, hit the delete icon (red X,
    ![image](https://raw.githubusercontent.com/cxw42/TabFern/master/assets/icons/cross.png)).
 
- - Windows you do not expressly save will not be saved when you exit!
+     - If you accidentally delete a window, look on the main menu (bottom-right
+       of the TabFern window --- see next section).  
+       There will be a "Restore last deleted" option that will 
+       bring the tabs back.
+
+ - To change the text size in the TabFern window, click into the window,
+   then hit Control+Plus for larger or Control+Minus for smaller.  This is the
+   normal Google Chrome browser zoom.
+
+ - Note: windows you do not expressly save will not be saved when you exit!
    I am open to discussion of better ways to handle this.
 
 # Backup and Restore
