@@ -61,6 +61,10 @@ li.ephemeral-recovered {
     background: darkslategray !important;
 }
 
+.tabfern-tab-bordered {
+    border-top: 1px solid #ffa;
+}
+
 /* Notification icon ------------------------------------------------------ */
 
 /* Need the parents of notification icons to have position other than static.

@@ -120,6 +120,17 @@
             // Changelog
             {
                 "tab": i18n.get("What's new?"),
+                "group": "Version 0.1.8",
+                "name": "changelog-0_1_8",
+                "type": "description",
+                "text":
+    '<ul>' +
+    '<li>You can right-click a tab to give it a top border.  This lets you ' +
+        'visually separate tabs in the tree at any point.</li>'+
+    '</ul>'
+            },
+            {
+                "tab": i18n.get("What's new?"),
                 "group": "Version 0.1.7",
                 "name": "changelog-0_1_7",
                 "type": "description",

@@ -77,7 +77,7 @@
     };
 
     //////////////////////////////////////////////////////////////////////////
-    // Data-manipulation routines //
+    // Item manipulation //
 
     /// Update the tree-node text for an item.
     /// @param node_id {string} the node's ID (which doubles as the item's id)
@@ -86,8 +86,38 @@
         if(!node_id) return false;
         let {ty, val} = M.get_node_val(node_id);
         if(!val) return false;
-        return T.treeobj.rename_node(node_id, module.get_safe_text(val));
+        let retval = T.treeobj.rename_node(node_id, module.get_safe_text(val));
+        // TODO also update the icon?
+
+        T.vscroll_function();
+            // Not sure why this is necessary, but I saw a vposition glitch
+            // without it.
+
+        return retval;
     };
+
+    /// Mark the window identified by #win_node_id as to be kept.
+    /// @return truthy on success; falsy on failure
+    module.remember = function(win_node_id) {
+        if(!win_node_id) return false;
+        let {ty, val} = M.get_node_val(win_node_id);
+        if(!val) return false;
+        if(ty !== K.IT_WINDOW) return false;
+
+        val.keep = K.WIN_KEEP;
+
+        if(val.isOpen) {
+            T.treeobj.set_type(win_node_id, K.NT_WIN_OPEN);
+                // open implies saved, since open != ephemeral.
+        } else {
+            T.treeobj.set_type(win_node_id, K.NT_WIN_CLOSED);
+        }
+
+        module.refresh_label(win_node_id);
+    }; //remember()
+
+    //////////////////////////////////////////////////////////////////////////
+    // Item creation //
 
     /// Make a node and its associated value.
     /// @param {K.IT_* constant} node_ty The type of the node to create
@@ -214,9 +244,11 @@
     ///                         If falsy, there is no Chrome tab presently.
     /// @param raw_url {string} If #ctab is falsy, the URL of the tab
     /// @param raw_title {string} If #ctab is falsy, the title of the tab
+    /// @param node_type {string} If provided, used for the node type.
     /// @return {object} {node_id, val}.  On error,
     ///                 at least one of node_id or val will be falsy.
-    module.makeItemForTab = function(parent_node_id, ctab, raw_url, raw_title) {
+    module.makeItemForTab = function(parent_node_id, ctab, raw_url, raw_title,
+                                        node_type) {
         let error_return = {node_id:null, val:null};
         if(!parent_node_id) return error_return;
 
@@ -226,7 +258,11 @@
         );
         if(tab_node_id === false) return error_return;
 
-        T.treeobj.set_type(tab_node_id, K.NT_TAB);
+        if(node_type && typeof node_type === 'string') {
+            T.treeobj.set_type(tab_node_id, node_type);
+        } else {
+            T.treeobj.set_type(tab_node_id, K.NT_TAB);
+        }
 
         let tab_val = M.tabs.add({
             tab_id: (ctab ? ctab.id : K.NONE),

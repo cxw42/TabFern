@@ -41,6 +41,7 @@
 
         WIN_CLASS: 'tabfern-window',    // class on all <li>s representing windows
         TAB_CLASS: 'tabfern-tab',       // class on all <li>s representing tabs
+        BORDERED_TAB_CLASS: 'tabfern-tab-bordered',     // class on <li>s with a top border
         FOCUSED_WIN_CLASS: 'tf-focused-window',  // Class on the currently-focused win
         VISIBLE_WIN_CLASS: 'tf-visible-window',  // Class on all visible wins
         ACTION_GROUP_WIN_CLASS: 'tf-action-group',   // Class on action-group div
@@ -73,16 +74,18 @@
 
         // Node types - these control the display of the
         // corresponding list items.
-        NT_WIN_CLOSED:     'win_closed',               // closed, saved
-        NT_WIN_EPHEMERAL:  'win_ephemeral',            // open, unsaved
-        NT_WIN_OPEN:       'win_open_saved',           // open, saved
-        NT_WIN_RECOVERED:  'win_ephemeral_recovered',  // closed, saved, recovered
+        NT_WIN_CLOSED:      'win_closed',               // closed, saved
+        NT_WIN_EPHEMERAL:   'win_ephemeral',            // open, unsaved
+        NT_WIN_OPEN:        'win_open_saved',           // open, saved
+        NT_WIN_RECOVERED:   'win_ephemeral_recovered',  // closed, saved, recovered
 
-        NT_TAB:            'tab',
+        NT_TAB:             'tab',              // a normal tab
+        NT_TAB_BORDERED:    'tab-bordered',     // a tab with a border on top
+                                    // (this is a hack until I can add dividers)
     };
 
-    /// Ignore a Chrome callback error, and suppress Chrome's "runtime.lastError"
-    /// diagnostic.
+    /// Ignore a Chrome callback error, and suppress Chrome's
+    /// `runtime.lastError` diagnostic.
     retval.ignore_chrome_error = function() { void chrome.runtime.lastError; }
 
     /// Make a callback function that will forward to #fn on a later tick.

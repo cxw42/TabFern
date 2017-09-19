@@ -260,6 +260,10 @@ function saveTree(save_ephemeral_windows = true, cbk = undefined)
                 thistab.raw_title = tab_val.raw_title;
                 thistab.raw_url = tab_val.raw_url;
                 // TODO save favIconUrl?
+
+                if(T.treeobj.get_type(tab_node_id) === K.NT_TAB_BORDERED) {
+                    thistab.bordered = true;
+                }
                 result_win.tabs.push(thistab);
             }
         }
@@ -290,6 +294,19 @@ function saveTree(save_ephemeral_windows = true, cbk = undefined)
 //////////////////////////////////////////////////////////////////////////
 // jstree-action callbacks //
 
+/// Wrapper to call jstree-action style callbacks from jstree contextmenu
+/// actions
+function actionAsContextMenuCallback(action_function)
+{
+    return function(data) {
+        // data.item, reference, element, position exist
+        let node = T.treeobj.get_node(data.reference);
+        action_function(node.id, node, null, data.element);
+    };
+} //actionAsContextMenuCallback
+
+/// Prompt the user for a new name for a window, and rename if the user
+/// hits OK.
 function actionRenameWindow(node_id, node, unused_action_id, unused_action_el)
 {
     let win_val = M.windows.by_node_id(node_id);
@@ -301,17 +318,9 @@ function actionRenameWindow(node_id, node, unused_action_id, unused_action_el)
     if(win_name === null) return;   // user cancelled
 
     win_val.raw_title = win_name;
-    win_val.keep = K.WIN_KEEP;
+    G.remember(node_id);
         // assume that a user who bothered to rename a node
         // wants to keep it.
-
-    G.refresh_label(node_id);
-
-    if(win_val.isOpen) {
-        T.treeobj.set_type(node, K.NT_WIN_OPEN);
-    } else {
-        T.treeobj.set_type(node, K.NT_WIN_CLOSED);
-    }
 
     T.vscroll_function();
         // Not sure why this is necessary, but I saw a vposition glitch
@@ -351,7 +360,6 @@ function actionCloseWindow(node_id, node, unused_action_id, unused_action_el)
     // Mark the tree node closed
     win_val.win = undefined;
         // Prevents winOnRemoved() from calling us to handle the removal!
-    win_val.keep = K.WIN_KEEP;
     M.windows.change_key(win_val, 'win_id', K.NONE);
         // Can't access by win_id, but can still access by node_id.
 
@@ -359,6 +367,9 @@ function actionCloseWindow(node_id, node, unused_action_id, unused_action_el)
 
     // Close the window
     if(win_val.isOpen && win) {
+        win_val.keep = K.WIN_KEEP;
+            // has to be before winOnRemoved fires.  TODO cleanup -
+            // maybe add an `is_closing` flag to `win_val`?
         chrome.windows.remove(win.id, K.ignore_chrome_error);
         // Don't try to close an already-closed window.
         // Ignore exceptions - when we are called from winOnRemoved,
@@ -368,9 +379,7 @@ function actionCloseWindow(node_id, node, unused_action_id, unused_action_el)
 
     win_val.isOpen = false;
     win_val.raw_title = T.remove_unsaved_markers(win_val.raw_title);
-    G.refresh_label(node_id);
-
-    T.treeobj.set_type(node_id, K.NT_WIN_CLOSED);
+    G.remember(node_id);
 
     // Collapse the tree, if the user wants that
     if(getBoolSetting("collapse-tree-on-window-close")) {
@@ -417,6 +426,26 @@ function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el)
     saveTree();
 } //actionDeleteWindow
 
+/// Toggle the top border on a node.  This is a hack until I can add
+/// dividers.
+function actionToggleTabTopBorder(node_id, node, unused_action_id, unused_action_el)
+        //node_id, node, unused_action_id, unused_action_el)
+{
+    let tab_val = M.tabs.by_node_id(node_id);
+    if(!tab_val) return;
+
+    // Note: adjust this if you add another NT_TAB type.
+    if(T.treeobj.get_type(node_id) !== K.NT_TAB_BORDERED) {
+        T.treeobj.set_type(node_id, K.NT_TAB_BORDERED);
+    } else {
+        T.treeobj.set_type(node_id, K.NT_TAB);
+    }
+
+    G.remember(node.parent);
+
+    saveTree();
+} //actionToggleTabTopBorder
+
 //////////////////////////////////////////////////////////////////////////
 // Tree-node creation //
 
@@ -442,10 +471,13 @@ function createNodeForTab(ctab, parent_node_id)
 /// @return node_id         The node id for the new tab
 function createNodeForClosedTab(tab_data_v1, parent_node_id)
 {
+    let node_type = (tab_data_v1.bordered ? K.NT_TAB_BORDERED : K.NT_TAB);
     let {node_id, val} = G.makeItemForTab(
             parent_node_id, false,      // false => no Chrome window open
             tab_data_v1.raw_url,
-            tab_data_v1.raw_title);
+            tab_data_v1.raw_title,
+            node_type);
+
     return node_id;
 } //createNodeForClosedTab
 
@@ -594,9 +626,11 @@ let loadSavedWindowsFromData = (function(){
     /// Populate the tree from version-1 save data in #data.
     /// V1 format: { ... , tree:[win, win, ...] }
     /// Each win is {raw_title: "foo", tabs: [tab, tab, ...]}
-    ///     A V1 win may optionally include { ephemeral:<truthy> } to mark
-    ///     ephemeral windows.  The default for `ephemeral` is false.
+    ///     A V1 win may optionally include:
+    ///     - ephemeral:<truthy> (default false) to mark ephemeral windows.
     /// Each tab is {raw_title: "foo", raw_url: "bar"}
+    ///     A V1 tab may optionally include:
+    ///     - bordered:<truthy> (default false) to mark windows with borders
     function loadSaveDataV1(data) {
         if(!data.tree) return false;
         let numwins=0;
@@ -1552,7 +1586,16 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
 
     // -------
 
-    if(nodeType === K.IT_TAB) return false;    // At present, no menu for tabs
+    if(nodeType === K.IT_TAB) {
+        let tabItems = {
+            toggleBorderItem: {
+                label: 'Toggle top border',
+                action: function(){actionToggleTabTopBorder(node.id, node, null, null)}
+            }
+        };
+
+        return tabItems;
+    }
 
     if(nodeType === K.IT_WINDOW) {
         let winItems = {};
