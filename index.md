@@ -11,6 +11,7 @@ come back to them later with all their tabs intact.
 # Call for alpha testers!
 
 If you are willing, please try TabFern and let us know how it goes!
+Huge thanks to those who have done so already!
 
 [![badge](/img/ChromeWebStore_Badge_v2_206x58.png)](https://chrome.google.com/webstore/detail/tabfern-tab-manager-and-b/hbajjpcdbninabigakflkhiogmmjaakm)
 
@@ -24,15 +25,21 @@ Check out the code or report issues [on GitHub](https://github.com/cxw42/TabFern
 
 # Usage
 
- - Click the icon to open the TabFern view.  The view will also open when
-   you start Chrome.
-     - If you can't find the TabFern window, double-click the fern icon
-       (![image](/assets/fern16icon.png)) in the
+ - Click the fern icon (![image](/assets/fern16icon.png))
+   in the Chrome toolbar to open the TabFern view.
+   The view will also open when you start Chrome.
+     - If you can't find the TabFern window, double-click the fern icon in the
        taskbar in any Chrome window.  That will summon the TabFern window
        to that Chrome window.
 
- - When you open windows or tabs, or rearrange windows or tabs,
-   the tree will update.
+ - The TabFern view shows a list of all your open windows and tabs, in white.
+   It shows you saved windows and tabs in gray.
+
+ - You can control other Chrome windows from the TabFern window by
+   right-clicking their entries, or by clicking the corresponding
+   buttons that appear at the right when you hover
+   the mouse pointer over the window's name.
+
  - To mark a window to be saved, you have two choices:
 
      1. Give the window a name using the pencil icon
@@ -61,12 +68,15 @@ Check out the code or report issues [on GitHub](https://github.com/cxw42/TabFern
    then hit Control+Plus for larger or Control+Minus for smaller.  This is the
    normal Google Chrome browser zoom.
 
+ - For help, sorting, options, or more functions, click the menu icon
+   (**&equiv;**) at the bottom right of the TabFern window.
+
  - Note: windows you do not expressly save will not be saved when you exit!
    I am open to discussion of better ways to handle this.
 
 # Backup and Restore
 
-On the menu in the bottom right, you have options for "Backup" and
+On the menu in the bottom right (**&equiv;**), you have options for "Backup" and
 "Load contents":
 
 ![screenshot of hamburger menu](/img/hamburger-screenshot.png)
@@ -109,6 +119,9 @@ more about current limitations, and where TabFern is going in the future!
  - [Barnsley fern generator](http://www.chradams.co.uk/fern/maker.html)
  - [famfamfam Silk icons](http://www.famfamfam.com/lab/icons/silk/)
  - [Font Awesome](http://fontawesome.io/)
+ - Hosted on GitHub Pages &mdash; Theme modified from
+   [Leap Day](https://github.com/pages-themes/leap-day) by
+   [mattgraham](https://twitter.com/michigangraham)
 
 # Legal
 

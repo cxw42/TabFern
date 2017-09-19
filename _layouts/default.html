@@ -25,7 +25,9 @@
       <div id="banner">
         <span id="logo"></span>
 
-        <a href="{{ site.github.repository_url }}" class="button fork"><strong>View On GitHub</strong></a>
+        <a href="{{ site.github.repository_url }}" class="button fork"><strong>View on GitHub</strong></a>
+        <a href="{{ site.chrome_web_store_url }}" class="button webstore"><strong>Add to Chrome</strong></a>
+
         {% if site.show_downloads %}
           <div class="downloads">
             <span>Downloads:</span>
@@ -45,14 +47,14 @@
         {{ content }}
 
       </section>
-      <footer>
+      <!-- footer>
         {% if site.github.is_project_page %}
           <p>Project maintained by <a href="{{ site.github.owner_url }}">{{ site.github.owner_name }}</a></p>
         {% endif %}
         <p><small>Hosted on GitHub Pages &mdash; Theme modified from
-			<a href="https://github.com/pages-themes/leap-day">Leap Day</a> by
-			<a href="https://twitter.com/michigangraham">mattgraham</a></small></p>
-      </footer>
+      <a href="https://github.com/pages-themes/leap-day">Leap Day</a> by
+      <a href="https://twitter.com/michigangraham">mattgraham</a></small></p>
+      </footer -->
     </div>
     <!--[if !IE]><script>fixScale(document);</script><![endif]-->
 
@@ -68,3 +70,4 @@
     {% endif %}
   </body>
 </html>
+<!-- vi: set ts=2 sts=2 sw=2 et ai: -->

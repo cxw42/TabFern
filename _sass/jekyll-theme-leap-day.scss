@@ -230,6 +230,20 @@ header {
     background-color: #FFE788;
   }
 
+  .webstore {
+    //position:absolute;
+    //right:7px;
+    //top:7px;
+    //display: block;
+    //position: relative;
+    margin-top: 6px;
+    position: fixed;
+    left: 50%;
+    margin-right: 325px;
+    min-width:8em;
+  }
+
+
   .downloads {
     float: right;
     margin:0 45px 0 0;
@@ -267,8 +281,9 @@ header {
     right:7px;
     top:7px;
     display: block;
-    background: url(../images/octocat-logo.png);
+    //background: url(../images/octocat-logo.png);
   }
+
 }
 
 section {
@@ -404,7 +419,8 @@ footer {
     margin: 0px auto 20px;
     top: 165px;
     max-width: 600px;
-    bottom: 80px;
+    // TODO center the section
+    //bottom: 80px;
   }
 
   footer{

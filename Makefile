@@ -8,11 +8,11 @@ all:
 	@echo '         test (to serve via localhost:4000)'
 
 build:
-	bundle exec jekyll b
+	time bundle exec jekyll b
 
 deploy:
-	bundle exec jekyll b -d ../gh-pages
+	time bundle exec jekyll b -d ../gh-pages
 
 test:
-	sh -c 'bundle exec jekyll serve --baseurl ""'
+	sh -c 'time bundle exec jekyll serve --baseurl ""'
 

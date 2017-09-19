@@ -1,6 +1,8 @@
 github:
         repository_url: 'https://github.com/cxw42/TabFern'
 
+chrome_web_store_url: 'https://chrome.google.com/webstore/detail/tabfern-tab-manager-and-b/hbajjpcdbninabigakflkhiogmmjaakm'
+
 show_downloads: false
 
 gem:
