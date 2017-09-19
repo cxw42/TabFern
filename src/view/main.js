@@ -1695,12 +1695,14 @@ function treeCheckCallback(
 function checkWhatIsNew(selector)
 {
     chrome.storage.local.get(K.LASTVER_KEY, function(items) {
-        let should_notify = true;   // unless proven otherwise
+        let should_notify = true;           // unless proven otherwise
+        let first_installation = true;      // ditto
 
         // Check whether the user has seen the notification
         if(typeof(chrome.runtime.lastError) === 'undefined') {
             let lastver = items[K.LASTVER_KEY];
             if( (lastver !== null) && (typeof lastver === 'string') ) {
+                first_installation = false;
                 if(lastver === TABFERN_VERSION) {   // the user has already
                     should_notify = false;          // seen the notification.
                 }
@@ -1714,6 +1716,17 @@ function checkWhatIsNew(selector)
             i.addClass('tf-notification');
             i.one('click', function() { i.removeClass('tf-notification'); });
         }
+
+        if(first_installation) {
+            chrome.storage.local.set(
+                { [K.LASTVER_KEY]: 'installed, but no version viewed yet' },
+                function() {
+                    ignore_chrome_error();
+                    openWindowForURL('https://cxw42.github.io/TabFern/#usage');
+                }
+            );
+        }
+
     });
 } //checkWhatIsNew
 

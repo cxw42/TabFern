@@ -14,7 +14,11 @@ find webstore -name \*.swp -o -type f -print | (
 
 # Check for files in the master tree that don't exist in webstore
 echo === Files in master but not in webstore/ ===
-find . \( -wholename ./assets/icons -prune -o -name \*.swp -prune -o -name webstore -prune -o -name .git\* -prune \) -o \( -type f \( -exec test -f webstore/{} \; -o -print \) \)
+find . \( -wholename ./assets/icons -prune -o -name \*.swp -prune -o \
+            -wholename ./webstore -prune -o -name .git\* -prune -o \
+            -wholename ./scraps -prune -o -wholename ./webstore.js -prune -o \
+            -wholename ./webstore.zip -prune \) \
+    -o \( -type f \( -exec test -f webstore/{} \; -o -print \) \)
 
 cat <<EOF
 

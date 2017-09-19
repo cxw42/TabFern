@@ -134,6 +134,7 @@
 
             /// Add a value created with new_value or clone_value to the
             /// multidex.  Overwrites index entries for any key fields.
+            /// @return The new value
             function add_value(val)
             {
                 this.remove_value(val);  // just in case
@@ -141,10 +142,12 @@
                 for(let key_name of key_names) {    // Add to indices
                     this[IDX+key_name][val[key_name]] = val;
                 }
+                return val;
             } //add_value
 
             /// Create a new value using the given data and add the new
-            /// value to the multidex.  Returns the new value.
+            /// value to the multidex.
+            /// @return The new value
             function add(new_data)
             {
                 let val = this.new_value();
@@ -152,17 +155,18 @@
                     if(field_name in new_data)
                         val[field_name] = new_data[field_name];
                 }
-                this.add_value(val);
-                return val;
+                return this.add_value(val);
             } //add
 
             /// Change a key in a value, and update the indices
+            /// @return The value, for chaining
             function change_key(val, key_name, new_value)
             {
                 if(!(val in this.all_values)) return;
                 delete this[IDX+key_name][val[key_name]];   // rm old index
                 val[key_name] = new_value;                  // mutate val
                 this[IDX+key_name][new_value] = val;        // add new index
+                return val;
             } //change_key
 
             // The prototype
