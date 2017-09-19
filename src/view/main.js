@@ -1215,6 +1215,25 @@ function tabOnRemoved(tabid, removeinfo)
     saveTree();
 } //tabOnRemoved
 
+// Sequence of events for a test tab detach:
+//{Window created: 146, Restore?: "no", win: {…}}
+//item.js:34 TabFern view/item.js:  {Adding nodeid map for cwinid: 146}
+//main.js:1222 {Tab detached: 140, detachinfo: {…}}Tab detached: 140detachinfo: {oldPosition: 0, oldWindowId: 139}__proto__: Object
+//main.js:1183 {Tab removed: 140, removeinfo: {…}}Tab removed: 140removeinfo: {isWindowClosing: false, windowId: 139}__proto__: Object <-- this also comes from us
+//main.js:1161 {Tab activated: 142, activeinfo: {…}}Tab activated: 142activeinfo: {tabId: 142, windowId: 139}__proto__: Object
+//main.js:1236 {Tab attached: 140, attachinfo: {…}}Tab attached: 140attachinfo: {newPosition: 0, newWindowId: 146}__proto__: Object
+//main.js:1161 {Tab activated: 140, activeinfo: {…}}Tab activated: 140activeinfo: {tabId: 140, windowId: 146}__proto__: Object
+//main.js:1012 Focus change from 139 to -1; lastfocused 146
+//main.js:1012 Focus change from 146 to 139; lastfocused 146
+//main.js:1057 {Tab created: 140, tab: {…}}     <-- this one comes from us - currently attach delegates to create.
+
+// So the actual sequence is:
+// - window created
+// - detach
+// - activate the new current tab in the existing window
+// - attach
+// TODO RESUME HERE - implement this
+
 function tabOnDetached(tabid, detachinfo)
 {
     // Don't save here?  Do we get a WindowCreated if the tab is not
@@ -1227,7 +1246,7 @@ function tabOnDetached(tabid, detachinfo)
     // re-create it when it lands in its new home.  This seems to work OK.
     // TODO change this so that we can preserve per-tab data.
     tabOnRemoved(tabid,
-            {isWindowClosing: false, windowId: detachinfo.oldWindowId}
+            {isWindowClosing: false, windowId: detachinfo.oldWindowId, tf_delegate: true}
     );
 } //tabOnDetached
 
