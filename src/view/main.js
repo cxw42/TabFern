@@ -26,8 +26,12 @@
 // representing tabs.  The fern ID is the node ID of the node
 // representing the window.
 //
-// An "item" is the combination of a node and the model value for that
-// node.  Current item types are window and tab.
+// An "item" is the combination of a node (view/item_tree.js) and a
+// details value (view/item_details.js) for that node.  An item may be
+// associated with a Chrome widget (Window or Tab) or not.  Each Chrome widget
+// is associated with exactly one item.
+// Current item types are window and tab.
+// Items are uniquely identified by their node_ids in the tree.
 
 console.log('Loading TabFern ' + TABFERN_VERSION);
 
@@ -44,13 +48,13 @@ let Modules = {};
 /// Constants loaded from view/const.js, for ease of access
 let K;
 
-/// Shorthand access to the data model, view/model.js
+/// Shorthand access to the details, view/item_details.js (formerly "Model")
 let M;
 
-/// Shorthand access to the tree, view/tree.js
+/// Shorthand access to the tree, view/item_tree.js ("Tree")
 let T;
 
-/// Shorthand access to the glue routines, view/glue.js
+/// Shorthand access to the item routines, view/item.js (formerly "Glue")
 let G;
 
 /// HACK - a global for loglevel because typing `Modules.log` everywhere is a pain.
@@ -112,9 +116,9 @@ function local_init()
 
     Esc = Modules.justhtmlescape;
     K = Modules['view/const'];
-    M = Modules['view/model'];
-    T = Modules['view/tree'];
-    G = Modules['view/glue'];
+    M = Modules['view/item_details'];
+    T = Modules['view/item_tree'];
+    G = Modules['view/item'];
 } //init()
 
 //////////////////////////////////////////////////////////////////////////
@@ -301,7 +305,7 @@ function actionRenameWindow(node_id, node, unused_action_id, unused_action_el)
         // assume that a user who bothered to rename a node
         // wants to keep it.
 
-    T.treeobj.rename_node(node_id, G.get_safe_text(win_val));
+    G.refresh_label(node_id);
 
     if(win_val.isOpen) {
         T.treeobj.set_type(node, K.NT_WIN_OPEN);
@@ -327,7 +331,7 @@ function actionForgetWindow(node_id, node, unused_action_id, unused_action_el)
         win_val.raw_title += ' (Unsaved)';
     }
 
-    T.treeobj.rename_node(node_id, G.get_safe_text(win_val));
+    G.refresh_label(node_id);
 
     if(win_val.isOpen) {    // should always be true, but just in case...
         T.treeobj.set_type(node, K.NT_WIN_EPHEMERAL);
@@ -364,7 +368,7 @@ function actionCloseWindow(node_id, node, unused_action_id, unused_action_el)
 
     win_val.isOpen = false;
     win_val.raw_title = T.remove_unsaved_markers(win_val.raw_title);
-    T.treeobj.rename_node(node_id, G.get_safe_text(win_val));
+    G.refresh_label(node_id);
 
     T.treeobj.set_type(node_id, K.NT_WIN_CLOSED);
 
@@ -428,47 +432,29 @@ function createNodeForTab(ctab, parent_node_id)
         }
     } // /debug
 
-    let node_data = {
-          text: Esc.escape(ctab.title)
-        , icon: (ctab.favIconUrl ? encodeURI(ctab.favIconUrl) : 'fff-page')
-    };
-    // TODO if the favicon doesn't load, replace the icon with the generic
-    // page icon so we don't keep hitting the favIconUrl.
-    let tab_node_id = T.treeobj.create_node(parent_node_id, node_data);
-    T.treeobj.set_type(tab_node_id, K.NT_TAB);
-
-    M.tabs.add({tab_id: ctab.id, node_id: tab_node_id,
-        win_id: ctab.windowId, index: ctab.index, tab: ctab,
-        raw_url: ctab.url, raw_title: ctab.title, isOpen: true
-    });
-
-    return tab_node_id;
+    let {node_id, val} = G.makeItemForTab(parent_node_id, ctab);
+    return node_id;
 } //createNodeForTab
 
 /// Create a tree node for a closed tab
 /// @param tab_data_v1      V1 save data for the tab
 /// @param parent_node_id   The node id for a closed window
+/// @return node_id         The node id for the new tab
 function createNodeForClosedTab(tab_data_v1, parent_node_id)
 {
-    let node_data = {
-          text: Esc.escape(tab_data_v1.raw_title)
-    };
-    let tab_node_id = T.treeobj.create_node(parent_node_id, node_data);
-    T.treeobj.set_type(tab_node_id, K.NT_TAB);
-
-    M.tabs.add({tab_id: K.NONE, node_id: tab_node_id,
-        win_id: K.NONE, index: K.NONE, tab: undefined, isOpen: false,
-        raw_url: tab_data_v1.raw_url, raw_title: tab_data_v1.raw_title
-    });
-    return tab_node_id;
+    let {node_id, val} = G.makeItemForTab(
+            parent_node_id, false,      // false => no Chrome window open
+            tab_data_v1.raw_url,
+            tab_data_v1.raw_title);
+    return node_id;
 } //createNodeForClosedTab
 
 function addWindowNodeActions(win_node_id)
 {
     T.treeobj.make_group(win_node_id, {
-        selector: 'div.jstree-wholerow',    // null => the li
+        selector: 'div.jstree-wholerow',
         child: true,
-        class: K.ACTION_GROUP_WIN_CLASS //+ ' jstree-animated'
+        class: K.ACTION_GROUP_WIN_CLASS // + ' jstree-animated' //TODO?
     });
 
     T.treeobj.add_action(win_node_id, {
@@ -555,7 +541,7 @@ function createNodeForClosedWindow(win_data_v1)
 
     val.raw_title = new_title;
 
-    T.treeobj.rename_node(node_id, G.get_safe_text(val));
+    G.refresh_label(node_id);
 
     addWindowNodeActions(node_id);
 
@@ -2016,7 +2002,8 @@ let dependencies = [
     'shortcuts', 'dmauro_keypress', 'shortcuts_keybindings_default',
 
     // Modules of TabFern itself
-    'view/const', 'view/model', 'view/sorts', 'view/tree', 'view/glue',
+    'view/const', 'view/item_details', 'view/sorts', 'view/item_tree',
+    'view/item',
 ];
 
 /// Make short names in Modules for some modules.  shortname => longname

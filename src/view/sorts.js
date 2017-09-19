@@ -2,7 +2,7 @@
 // Copyright (c) 2017 Chris White, Jasmine Hegman.
 
 (function (root, factory) {
-    let imports=['jquery','jstree','loglevel', 'view/const', 'view/tree' ];
+    let imports=['jquery','jstree','loglevel', 'view/const', 'view/item_tree' ];
 
     if (typeof define === 'function' && define.amd) {
         // AMD

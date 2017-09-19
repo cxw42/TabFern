@@ -1,14 +1,14 @@
-// view/glue.js: Routines for connecting and disconnecting the model
-// and the tree.  Part of TabFern.
+// view/item.js: Routines for managing items as a whole (both tree nodes
+// and detail records).  Part of TabFern.
 // Copyright (c) 2017 Chris White, Jasmine Hegman.
 
-// The glue module enforces that invariant that, except during calls to glue
+// The item module enforces that invariant that, except during calls to these
 // routines, each node in the treeobj has a 1-1 relationship with a value in
-// the model.
+// the details.
 
 (function (root, factory) {
-    let imports=['jquery','jstree','loglevel', 'view/const', 'view/model',
-                    'view/tree', 'justhtmlescape'];
+    let imports=['jquery','jstree','loglevel', 'view/const', 'view/item_details',
+                    'view/item_tree', 'justhtmlescape'];
 
     if (typeof define === 'function' && define.amd) {
         // AMD
@@ -31,7 +31,7 @@
 }(this, function ($, _unused_jstree_placeholder_, log, K, M, T, Esc ) {
     "use strict";
 
-    function loginfo(...args) { log.info('TabFern view/glue.js: ', ...args); };
+    function loginfo(...args) { log.info('TabFern view/item.js: ', ...args); };
 
     /// The module we are creating
     let module = {};
@@ -78,6 +78,16 @@
 
     //////////////////////////////////////////////////////////////////////////
     // Data-manipulation routines //
+
+    /// Update the tree-node text for an item.
+    /// @param node_id {string} the node's ID (which doubles as the item's id)
+    /// @return truthy on success, falsy on failure.
+    module.refresh_label = function(node_id) {
+        if(!node_id) return false;
+        let {ty, val} = M.get_node_val(node_id);
+        if(!val) return false;
+        return T.treeobj.rename_node(node_id, module.get_safe_text(val));
+    };
 
     /// Make a node and its associated value.
     /// @param {K.IT_* constant} node_ty The type of the node to create
@@ -178,18 +188,19 @@
                 });
         if(win_node_id === false) return error_return;
         T.treeobj.set_type(win_node_id,
-            ( !!cwin ?
+            ( cwin ?
                 (keep ? K.NT_WIN_OPEN : K.NT_WIN_EPHEMERAL ) :
                 K.NT_WIN_CLOSED)
         );
 
         loginfo({'Adding nodeid map for cwinid': cwin ? cwin.id : 'none'});
         let win_val = M.windows.add({
-            win_id: (!!cwin ? cwin.id : K.NONE),
+            win_id: (cwin ? cwin.id : K.NONE),
             node_id: win_node_id,
-            win: (!!cwin ? cwin : undefined),
+            win: (cwin ? cwin : undefined),
             raw_title: null,    // default name
-            isOpen: !!cwin, keep: keep
+            isOpen: !!cwin,
+            keep: keep
         });
 
         T.treeobj.rename_node(win_node_id, module.get_safe_text(win_val));
@@ -211,23 +222,29 @@
 
         let tab_node_id = T.treeobj.create_node(
                 parent_node_id,
-                {   text: 'Tab',                   // node data
-                    state: { 'opened': !!cwin }
-                });
+                { text: 'Tab' }
+        );
         if(tab_node_id === false) return error_return;
+
         T.treeobj.set_type(tab_node_id, K.NT_TAB);
 
-        M.tabs.add({tab_id: (!!ctab ? ctab.id : K.NONE),
+        let tab_val = M.tabs.add({
+            tab_id: (ctab ? ctab.id : K.NONE),
             node_id: tab_node_id,
-            win_id: (!!ctab ? ctab.windowId : K.NONE),
-            index: (!!ctab ? ctab.index : K.NONE),
-            tab: (!!ctab ? ctab : undefined),
-            raw_url: (!!ctab ? ctab.url : String(raw_url)),
-            raw_title: (!!ctab ? ctab.title : String(raw_title)),
+            win_id: (ctab ? ctab.windowId : K.NONE),
+            index: (ctab ? ctab.index : K.NONE),
+            tab: (ctab || undefined),
+            raw_url: (ctab ? ctab.url : String(raw_url)),
+            raw_title: (ctab ? ctab.title : String(raw_title)),
             isOpen: !!ctab,
         });
 
         T.treeobj.rename_node(tab_node_id, module.get_safe_text(tab_val));
+        T.treeobj.set_icon(tab_node_id,
+            (ctab && ctab.favIconUrl ? encodeURI(ctab.favIconUrl) : 'fff-page')
+        );
+        // TODO if the favicon doesn't load, replace the icon with the generic
+        // page icon so we don't keep hitting the favIconUrl.
 
         return {node_id: tab_node_id, val: tab_val};
     } //makeItemForTab

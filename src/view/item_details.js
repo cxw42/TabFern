@@ -1,4 +1,5 @@
-// view/model.js: Data model and related utilities for TabFern main popup. The
+// view/item_details.js: Detail records and related utilities for
+// TabFern items.
 // Copyright (c) 2017 Chris White, Jasmine Hegman.
 
 (function (root, factory) {
@@ -25,7 +26,7 @@
 }(this, function ($, _unused_jstree_placeholder_, log, multidex, K ) {
     "use strict";
 
-    function loginfo(...args) { log.info('TabFern view/model.js: ', ...args); };
+    function loginfo(...args) { log.info('TabFern view/item_details.js: ', ...args); };
 
     /// The module we are creating
     let module = {};

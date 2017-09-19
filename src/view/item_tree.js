@@ -1,4 +1,4 @@
-// view/tree.js: Tree view and related utilities for TabFern
+// view/item_tree.js: Item tree view and related utilities for TabFern
 // Copyright (c) 2017 Chris White, Jasmine Hegman.
 
 (function (root, factory) {
@@ -26,7 +26,7 @@
 }(this, function ($, _jstree, _actions, _flagnode, log_orig, K ) {
     "use strict";
 
-    function loginfo(...args) { log_orig.info('TabFern view/tree.js: ', ...args); };
+    function loginfo(...args) { log_orig.info('TabFern view/item_tree.js: ', ...args); };
 
     /// The module we are creating
     let module = {
