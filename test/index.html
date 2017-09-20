@@ -10,20 +10,15 @@
   <script src="/conf/require-config.js"></script>
   <script src="/js/require.js"></script>
 
-  <!-- TODO One of:
-    - https://medium.com/sons-of-javascript/angular-integrating-jasmine-with-requirejs-amd-7cde3e28895e
-    - https://stackoverflow.com/q/19240302/2877364
-    - https://stackoverflow.com/q/16423156/2877364
-  -->
   <script src="lib/jasmine-2.8.0/jasmine.js"></script>
   <script src="lib/jasmine-2.8.0/jasmine-html.js"></script>
   <script src="lib/jasmine-2.8.0/boot.js"></script>
 
-  <!-- include source files here... -->
-  <!-- script src="src/Player.js"></script -->
+  <script src="asyncinator.js"></script>
 
-  <!-- include spec files here... -->
-  <!-- script src="spec/SpecHelper.js"></script -->
+  <!-- include spec files here.  Each spec file loads its own modules
+       using R() from asyncinator.js. -->
+  <script src="spec/multidex.js"></script>
 
 </head>
 

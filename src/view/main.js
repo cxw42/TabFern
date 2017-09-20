@@ -1003,6 +1003,7 @@ function winOnRemoved(win_id)
     // Stash the size of the window being closed as the size for
     // reopened windows.
     if(win_id in winSizes) {
+        // TODO only do this is win_id's type is "normal"
         newWinSize = winSizes[win_id];
         delete winSizes[win_id];
     }
