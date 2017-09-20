@@ -93,6 +93,9 @@ let lastDeletedWindow;
 /// Did initialization complete successfully?
 let did_init_complete = false;
 
+/// Are we running in development mode (unpacked)?
+let is_devel_mode = false;
+
 // - Module instances -
 
 /// The hamburger menu
@@ -119,6 +122,15 @@ function local_init()
     M = Modules['view/item_details'];
     T = Modules['view/item_tree'];
     G = Modules['view/item'];
+
+    // Check development status.  Thanks to
+    // https://stackoverflow.com/a/12833511/2877364 by
+    // https://stackoverflow.com/users/1143495/konrad-dzwinel and
+    // https://stackoverflow.com/users/934239/xan
+    chrome.management.getSelf(function(info){
+        if(info.installType === 'development') is_devel_mode = true;
+    });
+
 } //init()
 
 //////////////////////////////////////////////////////////////////////////
@@ -1488,6 +1500,11 @@ function hamSorter(compare_fn)
     };
 } //hamSorter
 
+function hamRunJasmineTests()
+{
+    K.openWindowForURL(chrome.extension.getURL('/test/index.html'));
+} // hamRunJasmineTests
+
 /**
  * You can call proxyfunc with the items or just return them, so we just
  * return them.
@@ -1505,6 +1522,17 @@ function hamSorter(compare_fn)
 function getHamburgerMenuItems(node, _unused_proxyfunc, e)
 {
     let items = {};
+
+    // Add development-specific items, if any
+    if(is_devel_mode) {
+        items.jasmineItem = {
+            label: 'Run Jasmine tests',
+            action: hamRunJasmineTests,
+            icon: 'fa fa-fort-awesome',
+            separator_after: true,
+        };
+    }
+
     items.infoItem = {
             label: "About, help, and credits",
             title: "Online - the TabFern web site",
@@ -1541,26 +1569,31 @@ function getHamburgerMenuItems(node, _unused_proxyfunc, e)
 
     items.sortItem = {
             label: 'Sort',
+            icon: 'fa fa-sort',
             submenu: {
                 azItem: {
                     label: 'A-Z',
                     title: 'Sort ascending by window name, case-insensitive',
-                    action: hamSorter(Modules['view/sorts'].compare_node_text)
+                    action: hamSorter(Modules['view/sorts'].compare_node_text),
+                    icon: 'fa fa-sort-alpha-asc',
                 }
                 , zaItem: {
                     label: 'Z-A',
                     title: 'Sort descending by window name, case-insensitive',
-                    action: hamSorter(Modules['view/sorts'].compare_node_text_desc)
+                    action: hamSorter(Modules['view/sorts'].compare_node_text_desc),
+                    icon: 'fa fa-sort-alpha-desc',
                 }
                 , numItem09: {
                     label: '0-9',
                     title: 'Sort ascending by window name, numeric, case-insensitive',
-                    action: hamSorter(Modules['view/sorts'].compare_node_num)
+                    action: hamSorter(Modules['view/sorts'].compare_node_num),
+                    icon: 'fa fa-sort-numeric-asc',
                 }
                 , numItem90: {
                     label: '9-0',
                     title: 'Sort descending by window name, numeric, case-insensitive',
-                    action: hamSorter(Modules['view/sorts'].compare_node_num_desc)
+                    action: hamSorter(Modules['view/sorts'].compare_node_num_desc),
+                    icon: 'fa fa-sort-numeric-desc',
                 }
             } //submenu
         }; //sortItem
