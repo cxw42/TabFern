@@ -1276,21 +1276,43 @@ function tabOnDetached(tabid, detachinfo)
 
     T.treeobj.clear_flags();  //just to be on the safe side
 
-    // Rather than stashing the tab's data, for now, just trash it and
-    // re-create it when it lands in its new home.  This seems to work OK.
-    // TODO change this so that we can preserve per-tab data.
-    tabOnRemoved(tabid,
-            {isWindowClosing: false, windowId: detachinfo.oldWindowId, tf_delegate: true}
-    );
+    let tab_val = M.tabs.by_tab_id(tabid);
+
+    if(!tab_val)    // An express failure message - this would be bad
+        throw new Error("Unknown tab to detach???? "+tabid+' '+detachinfo.toString());
+
+    let old_win_val = M.windows.by_win_id(detachinfo.oldWindowId);
+    if(!old_win_val)    // ditto
+        throw new Error("Unknown window detaching from???? "+attachinfo.newWindowId+' '+attachinfo.toString());
+
+    T.treeobj.move_node(tab_val.node_id, T.holding_node_id);
+    tab_val.win_id = K.NONE;
+    tab_val.index = K.NONE;
+
+    updateTabIndexValues(old_win_val.node_id);
+
 } //tabOnDetached
 
 function tabOnAttached(tabid, attachinfo)
 {
     log.info({'Tab attached': tabid, attachinfo});
 
-    // Since we forgot about the tab in tabOnDetached, re-create it
-    // now that it's back.
-    chrome.tabs.get(tabid, tabOnCreated);
+    let tab_val = M.tabs.by_tab_id(tabid);
+
+    if(!tab_val)        // An express failure message - this would be bad
+        throw new Error("Unknown tab to attach???? "+tabid+' '+attachinfo.toString());
+
+    let new_win_val = M.windows.by_win_id(attachinfo.newWindowId);
+    if(!new_win_val)    // ditto
+        throw new Error("Unknown window attaching to???? "+attachinfo.newWindowId+' '+attachinfo.toString());
+
+    T.treeobj.move_node(tab_val.node_id, new_win_val.node_id,
+            attachinfo.newPosition);
+
+    tab_val.win_id = attachinfo.newWindowId;
+    tab_val.index = attachinfo.newPosition;
+
+    updateTabIndexValues(new_win_val.node_id);
 } //tabOnAttached
 
 function tabOnReplaced(addedTabId, removedTabId)
@@ -1865,8 +1887,10 @@ function winAlreadyExists(new_win)
     for(let existing_win_node_id of T.treeobj.get_node($.jstree.root).children) {
 
         // Is it already open?  If so, don't hijack it.
+        // This also catches non-window nodes such as the holding pen.
         let existing_win_val = M.windows.by_node_id(existing_win_node_id);
-        if(existing_win_val.isOpen) continue WIN;
+        if(!existing_win_val || typeof existing_win_val.isOpen === 'undefined' ||
+                existing_win_val.isOpen ) continue WIN;
 
         // Does it have the same number of tabs?  If not, skip it.
         let existing_win_node = T.treeobj.get_node(existing_win_node_id);

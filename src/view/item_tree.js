@@ -185,6 +185,17 @@
         // Add custom event handlers
         module.install_vscroll_function(window, jq_tree);
 
+        // Add a spare node that will be hidden and that will serve as a
+        // holding pen when tabs are being attached and detached.
+        module.holding_node_id = module.treeobj.create_node(
+                $.jstree.root,
+                {   text: '** Holding pen',
+                    state:  { hidden: true    //DEBUG - uncomment for production
+                            },
+                    //data: { skip: true }    // Skip this window while processing,
+                }                           // unless you're expressly looking for it.
+        );
+
         // TODO move this to a constructor so you can create multiple,
         // separate treeobjs.
         // TODO? make treeobj the prototype of module?  Then, e.g., T.get_node
