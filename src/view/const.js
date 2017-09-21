@@ -49,6 +49,8 @@
         SHOW_ACTIONS_CLASS:  'tf-show-actions',
             // Class on a .jstree-node to indicate its actions should be shown
 
+        BULLET_CLASS: 'tf-bullet',      // class on spans showing bullets for items
+
         INIT_TIME_ALLOWED_MS:  3000,  // After this time, if init isn't done,
                                             // display an error message.
         INIT_MSG_SEL:  'div#init-incomplete',     // Selector for that message

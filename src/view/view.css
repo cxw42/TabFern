@@ -65,6 +65,10 @@ li.ephemeral-recovered {
     border-top: 1px solid #ffa;
 }
 
+.tf-bullet {
+    font-family: serif; /* since the default is sans */
+}
+
 /* Notification icon ------------------------------------------------------ */
 
 /* Need the parents of notification icons to have position other than static.

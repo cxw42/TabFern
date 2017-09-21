@@ -31,38 +31,40 @@
     /// The module we are creating
     let module = {};
 
-    // Note: all data values we store must have a raw_title field so
-    // glue.js:get_curr_raw_text() will work.
-
     /// Map between open-tab IDs and node IDs
     module.tabs = multidex(
         K.IT_TAB, //type
         [ //keys
-            'tab_id'    // from Chrome
-          , 'node_id'   // from jstree
+            'tab_id',   // from Chrome
+            'node_id',  // from jstree
         ],
         [ //other data
-            'win_id'    // from Chrome
-          , 'index'     // in the current window
-          , 'tab'       // the actual Tab record from Chrome
-          , 'raw_url'   // the tab's URL
-          , 'raw_title' // the tab's title.  null => default.
-          , 'isOpen'    // open or not
+            'win_id',       // from Chrome
+            'index',        // in the current window
+            'tab',          // the actual Tab record from Chrome
+            'raw_url',      // the tab's URL
+            'raw_title',    // the tab's title.  null => default.
+            'isOpen',       // open or not
           // TODO save favIconUrl?
+            'raw_bullet',   // User-provided descriptive text (brief).
+                            // null => none.
+                            // It's not called a "note" because we may
+                            // someday add a long-form notes field.
         ]);
 
     /// Map between open-window IDs and node IDs
     module.windows = multidex(
         K.IT_WINDOW,  //type
         [ //keys
-            'win_id'    // from Chrome
-          , 'node_id'   // from jstree
+            'win_id',   // from Chrome
+            'node_id',  // from jstree
         ],
         [ //other data
-            'win'       // the actual Window record from chrome
-          , 'raw_title' // the window's title (e.g., "Window")
-          , 'isOpen'    // whether the window is open or not
-          , 'keep'      // whether the window should be saved or not
+            'win',          // the actual Window record from chrome
+            'raw_title',    // the window's title (e.g., "Window")
+            'isOpen',       // whether the window is open or not
+            'keep',         // whether the window should be saved or not
+            'raw_bullet',   // User-provided text (brief).  null => none
         ]);
 
     /// Find a node's value in the model, regardless of type.

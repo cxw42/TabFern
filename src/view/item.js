@@ -6,6 +6,9 @@
 // routines, each node in the treeobj has a 1-1 relationship with a value in
 // the details.
 
+// TODO name these functions with some kind of Hungarian notation so you know
+// whether they take node_id, val, or something else.
+
 (function (root, factory) {
     let imports=['jquery','jstree','loglevel', 'view/const', 'view/item_details',
                     'view/item_tree', 'justhtmlescape'];
@@ -59,8 +62,8 @@
         return M.get_node_val(node_id);
     }; //get_node_val()
 
-    /// Get the textual version of raw_title for a value
-    module.get_curr_raw_text = function(val)
+    /// Get the textual version of raw_title for a window's value
+    module.get_win_raw_text = function(val)
     {
         if(val.raw_title !== null) {
             return val.raw_title;
@@ -69,11 +72,25 @@
         } else {
             return 'Unsaved';
         }
-    }; //get_curr_raw_text()
+    }; //get_win_raw_text()
 
-    /// Get the escaped title
-    module.get_safe_text = function(val) {
-        return Esc.escape(module.get_curr_raw_text(val));
+    /// Get the HTML for the node's label.  The output can be passed
+    /// directly to jstree.rename_node().
+    /// @param val The multidex value for the item of interest
+    /// @return A string
+    module.get_html_label = function(val) {
+        let retval = '';
+        if(val.raw_bullet && typeof val.raw_bullet === 'string') {
+            // The first condition checks for null/undefined/&c., and also for
+            // empty strings.
+            retval += '<span class="' + K.BULLET_CLASS + '">';
+            retval += Esc.escape(val.raw_bullet);
+            retval += '</span>';
+            retval += ' &ndash; ';   // en dash for a tighter view
+        }
+
+        retval += Esc.escape(module.get_win_raw_text(val));
+        return retval;
     };
 
     //////////////////////////////////////////////////////////////////////////
@@ -86,7 +103,7 @@
         if(!node_id) return false;
         let {ty, val} = M.get_node_val(node_id);
         if(!val) return false;
-        let retval = T.treeobj.rename_node(node_id, module.get_safe_text(val));
+        let retval = T.treeobj.rename_node(node_id, module.get_html_label(val));
         // TODO also update the icon?
 
         T.vscroll_function();
@@ -114,6 +131,7 @@
         }
 
         module.refresh_label(win_node_id);
+        return true;
     }; //remember()
 
     //////////////////////////////////////////////////////////////////////////
@@ -123,7 +141,7 @@
     /// @param {K.IT_* constant} node_ty The type of the node to create
     /// @param {number} chrome_id   The Chrome window/tab id, if any.
     /// @return {object} {node, val}.  On failure, members are falsy.
-    module.makeNodeAndValue = function(node_ty, chrome_id = K.NONE) {
+    module.makeNodeAndValue_NOTYETDONE = function(node_ty, chrome_id = K.NONE) {
         let retval = {node: null, val: null};
         switch(node_ty) {
             // TODO
@@ -141,7 +159,7 @@
     /// @param ctab {Chrome Tab} the open tab
     /// @param node_ref {mixed} a reference to the fern for the window
     /// @return The node ID of the tab's node, or false on error
-    module.bindTabToTree = function(ctab, node_ref)
+    module.bindTabToTree_NOTYETDONE = function(ctab, node_ref)
     {
         // Sanity check
         let tab_val = M.tabs.by_tab_id(ctab.id);
@@ -163,7 +181,8 @@
 
         M.tabs.add({tab_id: ctab.id, node_id: node.id,
             win_id: ctab.windowId, index: ctab.index, tab: ctab,
-            raw_url: ctab.url, raw_title: ctab.title, isOpen: true
+            raw_url: ctab.url, raw_title: ctab.title, isOpen: true,
+            raw_bullet: null,
         });
 
         return node.id;
@@ -173,7 +192,7 @@
     /// @param cwin {Chrome Window} the open window
     /// @param fern_node_ref {mixed} a reference to the fern for the window
     /// @return The node ID of the fern's node, or false on error.
-    module.bindWindowToTree = function(cwin, fern_node_ref)
+    module.bindWindowToTree_NOTYETDONE = function(cwin, fern_node_ref)
     {
         // Sanity check
         let win_val = M.windows.by_win_id(cwin.id);
@@ -189,6 +208,7 @@
         win_val = M.windows.add({
             win_id: cwin.id, node_id: node.id, win: cwin,
             raw_title: null,    // default name
+            raw_bullet: null,
             isOpen: true, keep: keep
         });
 
@@ -229,11 +249,12 @@
             node_id: win_node_id,
             win: (cwin ? cwin : undefined),
             raw_title: null,    // default name
+            raw_bullet: null,
             isOpen: !!cwin,
             keep: keep
         });
 
-        T.treeobj.rename_node(win_node_id, module.get_safe_text(win_val));
+        T.treeobj.rename_node(win_node_id, module.get_html_label(win_val));
 
         return {node_id: win_node_id, val: win_val};
     } //makeItemForWindow
@@ -272,10 +293,11 @@
             tab: (ctab || undefined),
             raw_url: (ctab ? ctab.url : String(raw_url)),
             raw_title: (ctab ? ctab.title : String(raw_title)),
+            raw_bullet: null,
             isOpen: !!ctab,
         });
 
-        T.treeobj.rename_node(tab_node_id, module.get_safe_text(tab_val));
+        T.treeobj.rename_node(tab_node_id, module.get_html_label(tab_val));
         T.treeobj.set_icon(tab_node_id,
             (ctab && ctab.favIconUrl ? encodeURI(ctab.favIconUrl) : 'fff-page')
         );

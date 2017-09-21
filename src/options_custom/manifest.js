@@ -127,6 +127,10 @@
     '<ul>' +
     '<li>You can right-click a tab to give it a top border.  This lets you ' +
         'visually separate tabs in the tree at any point.</li>'+
+    '<li>You can also right-click a tab to add a note to yourself!  ' +
+        'The note will be displayed on the tab\'s item in the tree.  '+
+        'Notes are saved with the tree, so your notes will stick around '+
+        'as long as you want.</li>' +
     '</ul>'
             },
             {

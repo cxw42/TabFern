@@ -13,6 +13,11 @@
 // (`tabfern: 42` is magic :) )  Current [] save data
 // are version 0.  We must always support loading
 // backup files having versions earlier than the current version.
+// In any save file, missing fields are assumed to be falsy.  Do not assume
+// any specific false value.
+// Bump the version number of the save file only when:
+//  - You move or delete an existing field; or
+//  - You add a new field for which a default falsy value is unworkable.
 
 // Notation:
 //
@@ -276,6 +281,8 @@ function saveTree(save_ephemeral_windows = true, cbk = undefined)
                 if(T.treeobj.get_type(tab_node_id) === K.NT_TAB_BORDERED) {
                     thistab.bordered = true;
                 }
+
+                if(tab_val.raw_bullet) thistab.raw_bullet = tab_val.raw_bullet;
                 result_win.tabs.push(thistab);
             }
         }
@@ -326,17 +333,13 @@ function actionRenameWindow(node_id, node, unused_action_id, unused_action_el)
 
     // TODO replace window.prompt with an in-DOM GUI.
     let win_name = window.prompt('New window name?',
-            T.remove_unsaved_markers(G.get_curr_raw_text(win_val)));
+            T.remove_unsaved_markers(G.get_win_raw_text(win_val)));
     if(win_name === null) return;   // user cancelled
 
     win_val.raw_title = win_name;
     G.remember(node_id);
         // assume that a user who bothered to rename a node
         // wants to keep it.
-
-    T.vscroll_function();
-        // Not sure why this is necessary, but I saw a vposition glitch
-        // without it.
 
     saveTree();
 } //actionRenameWindow()
@@ -458,6 +461,28 @@ function actionToggleTabTopBorder(node_id, node, unused_action_id, unused_action
     saveTree();
 } //actionToggleTabTopBorder
 
+/// Edit a node's bullet
+function actionEditBullet(node_id, node, unused_action_id, unused_action_el)
+{
+    let {ty, val} = G.get_node_val(node_id);
+    if(!val) return;
+
+    // TODO replace window.prompt with an in-DOM GUI.
+    let new_bullet = window.prompt('Note for this ' +
+            (ty === K.IT_WINDOW ? 'window' : 'tab') + '?',
+            val.raw_bullet || '');
+    if(new_bullet === null) return;   // user cancelled
+
+    val.raw_bullet = new_bullet;
+    G.refresh_label(node_id);
+
+    G.remember(node.parent);
+        // assume that a user who bothered to add a note
+        // wants to keep the window the note is in.
+
+    saveTree();
+} //actionEditBullet
+
 //////////////////////////////////////////////////////////////////////////
 // Tree-node creation //
 
@@ -489,6 +514,11 @@ function createNodeForClosedTab(tab_data_v1, parent_node_id)
             tab_data_v1.raw_url,
             tab_data_v1.raw_title,
             node_type);
+
+    if(tab_data_v1.raw_bullet) {
+        val.raw_bullet = String(tab_data_v1.raw_bullet);
+        G.refresh_label(node_id);
+    }
 
     return node_id;
 } //createNodeForClosedTab
@@ -1146,7 +1176,7 @@ function tabOnUpdated(tabid, changeinfo, tab)
     } else {
         tab_node_val.raw_title = 'Tab';
     }
-    T.treeobj.rename_node(tab_node_id, Esc.escape(tab_node_val.raw_title));
+    G.refresh_label(tab_node_id);
 
     {   // set the icon
         let icon_text;
@@ -1647,7 +1677,17 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
             toggleBorderItem: {
                 label: 'Toggle top border',
                 action: function(){actionToggleTabTopBorder(node.id, node, null, null)}
-            }
+            },
+            editBulletItem: {
+                label: 'Add/edit a note',
+                icon: 'fff-pencil',
+
+                // Use K.nextTickRunner so the context menu can be
+                // hidden before actionRenameWindow() calls window.prompt().
+                action: K.nextTickRunner(
+                    function(){actionEditBullet(node.id, node, null, null);}
+                )
+            },
         };
 
         return tabItems;
