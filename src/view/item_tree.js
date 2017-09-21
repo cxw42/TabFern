@@ -189,7 +189,8 @@
         // holding pen when tabs are being attached and detached.
         module.holding_node_id = module.treeobj.create_node(
                 $.jstree.root,
-                {   text: '** Holding pen',
+                {   id: 'ord',
+                    text: '** Holding pen',
                     state:  { hidden: true },
                     data: { skip: true },
                         // Skip this window while processing, unless you're

@@ -47,10 +47,12 @@
     ///                         that can be passed to jstree.get_node.
     /// @return ret {object} .ty = K.IT_*; .val = the value, or
     ///                         .ty=false if the node wasn't found.
-    module.get_node_val = function(node_ref)
+    module.get_node_tyval = function(node_ref)
     {
         // Get the node ID
         let node_id;
+        let retval = {ty: false, val: null};
+
         if(typeof node_ref === 'string') {
             node_id = node_ref;
         } else {
@@ -59,8 +61,8 @@
             node_id = node.id;
         }
 
-        return M.get_node_val(node_id);
-    }; //get_node_val()
+        return M.get_node_tyval(node_id);
+    }; //get_node_tyval()
 
     /// Get the textual version of raw_title for a window's value
     module.get_win_raw_text = function(val)
@@ -101,7 +103,7 @@
     /// @return truthy on success, falsy on failure.
     module.refresh_label = function(node_id) {
         if(!node_id) return false;
-        let {ty, val} = M.get_node_val(node_id);
+        let {ty, val} = M.get_node_tyval(node_id);
         if(!val) return false;
         let retval = T.treeobj.rename_node(node_id, module.get_html_label(val));
         // TODO also update the icon?
@@ -117,7 +119,7 @@
     /// @return truthy on success; falsy on failure
     module.remember = function(win_node_id) {
         if(!win_node_id) return false;
-        let {ty, val} = M.get_node_val(win_node_id);
+        let {ty, val} = M.get_node_tyval(win_node_id);
         if(!val) return false;
         if(ty !== K.IT_WINDOW) return false;
 

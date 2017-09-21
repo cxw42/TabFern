@@ -71,7 +71,7 @@
     /// @param node_id {string} The node ID
     /// @return ret {object} .ty = K.IT_*; .val = the value, or
     ///                         .ty=false if the node wasn't found.
-    module.get_node_val = function(node_id)
+    module.get_node_tyval = function(node_id)
     {
         let retval = {ty: false, val: null};
         if(typeof node_id !== 'string') return retval;
@@ -93,7 +93,7 @@
         }
 
         return retval;
-    } //get_node_val
+    } //get_node_tyval
 
     return module;
 }));

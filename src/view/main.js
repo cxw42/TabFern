@@ -464,7 +464,7 @@ function actionToggleTabTopBorder(node_id, node, unused_action_id, unused_action
 /// Edit a node's bullet
 function actionEditBullet(node_id, node, unused_action_id, unused_action_el)
 {
-    let {ty, val} = G.get_node_val(node_id);
+    let {ty, val} = G.get_node_tyval(node_id);
     if(!val) return;
 
     // TODO replace window.prompt with an in-DOM GUI.
@@ -1805,6 +1805,7 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
 
 /// Determine whether a node or set of nodes can be dragged.
 /// At present, we only support reordering windows.
+/// @param {array} nodes The full jstree node record(s) being dragged
 function dndIsDraggable(nodes, evt)
 {
     if(log.getLevel() <= log.levels.TRACE) {
@@ -1814,13 +1815,26 @@ function dndIsDraggable(nodes, evt)
         //console.log($.jstree.reference(evt.target));
     }
 
-    // If any node being dragged is anything other than a window,
-    // it's not draggable.  Check all nodes for future-proofing, since we
+    // If any node being dragged is anything other than a window or a closed
+    // tab, it's not draggable.  Check all nodes for future-proofing, since we
     // may someday support multiselect.
     for(let node of nodes) {
-        let val = G.get_node_val(node.id);
-        if(val.ty !== K.IT_WINDOW) return false;
-    }
+        let tyval = G.get_node_tyval(node.id);
+        if(!tyval) return false;    // don't drag nodes we don't know about
+
+        // Can't drag open tabs
+        if(tyval.ty === K.IT_TAB) {
+            if(tyval.val.isOpen) return false;
+
+            // Can't drag tabs that belong to open windows.  This is
+            // for futureproofing --- at present, tabs cannot be closed
+            // while their windows are open.
+            if(node.parent !== $.jstree.root) {
+                let parent_tyval = G.get_node_tyval(node.parent);
+                if(!parent_tyval || parent_tyval.val.isOpen) return false;
+            }
+        }
+    } //foreach node
 
     return true;    // Otherwise, it is draggable
 } //dndIsDraggable
@@ -1828,6 +1842,14 @@ function dndIsDraggable(nodes, evt)
 /// Determine whether a node is a valid drop target.
 /// This function actually gets called for all changes to the tree,
 /// so we permit everything except for invalid drops.
+/// @param operation {string}
+/// @param node {Object} The full jstree node record of the node that might
+///                      be affected
+/// @param node_parent {Object} The full jstree node record of the
+///                             node to be the parent
+/// @param more {mixed} optional object of additional data.
+/// @return {boolean} whether or not the operation is permitted
+///
 function treeCheckCallback(
             operation, node, node_parent, node_position, more)
 {
@@ -1844,35 +1866,64 @@ function treeCheckCallback(
             console.groupEnd();
         }
         console.groupEnd();
+    } //logging
+
+    let tyval = G.get_node_tyval(node.id);
+    if(!tyval) return false;    // sanity check
+
+    let parent_tyval;
+    if(node_parent.id !== $.jstree.root) {
+        parent_tyval = G.get_node_tyval(node_parent.id);
     }
 
-    // When dragging, you can't drag into another node, or anywhere but the root.
+    // When dragging, you can't drag windows into another node, or
+    // anywhere but the root.  You can drag closed tabs only into and
+    // out of closed windows.
     if(more && more.dnd && operation==='move_node') {
 
-        // Can't drop inside - only before or after
-        if(more.pos==='i') return false;
+        if(tyval.ty === K.IT_WINDOW) {
+            // Can't drop inside - only before or after
+            if(more.pos==='i') return false;
 
-        // Can't drop other than in the root
-        if(node_parent.id !== $.jstree.root) return false;
+            // Can't drop other than in the root
+            if(node_parent.id !== $.jstree.root) return false;
+
+        } else if(tyval.ty === K.IT_TAB) {
+            // Tabs: Can only drop closed tabs in closed windows
+            if(tyval.val.isOpen) return false;
+            if(!parent_tyval || parent_tyval.val.isOpen) return false;
+            if(parent_tyval.ty !== K.IT_WINDOW) return false;
+        }
     }
 
     // When moving, e.g., at drag end, you can't drop a window other than
     // in the root.
     if(operation==='move_node') {
-        let val = G.get_node_val(node.id);
 
         if(log.getLevel() <= log.levels.TRACE) {
             console.group('check callback for ' + operation);
-            console.log(val);
+            console.log(tyval);
             console.log(node);
             console.log(node_parent);
             if(more) console.log(more);
             console.groupEnd();
         }
 
-        if(val.ty === K.IT_WINDOW && node_parent.id !== $.jstree.root)
-            return false;
-    }
+        // Windows: can only drop in root
+        if(tyval.ty === K.IT_WINDOW) {
+            if(node_parent.id !== $.jstree.root) return false;
+
+        } else if(tyval.ty === K.IT_TAB) {
+            // Can't move tabs between windows, except in and out of the
+            // holding pen.
+            let curr_parent_id = node.parent;
+            let new_parent_id = node_parent.id;
+
+            if( curr_parent_id !== T.holding_node_id &&
+                new_parent_id !== T.holding_node_id &&
+                curr_parent_id !== new_parent_id) return false;
+        }
+    } //endif move_node
 
     // See https://github.com/vakata/jstree/issues/815 - the final node move
     // doesn't come from the dnd plugin, so doesn't have more.dnd.
