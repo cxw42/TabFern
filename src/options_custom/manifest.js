@@ -4,8 +4,9 @@
 // first appear in the manifest.
 (function(root){
     // Shortcuts for frequently-used items
-    let ham = '<i class="fa fa-bars"></i>';
-    let gt = '<i class="fa fa-lg fa-caret-right"></i>';
+    function icon(cls) { return `<i class="${cls}"></i>`; }
+    let ham = icon('fa fa-bars');
+    let gt = icon('fa fa-lg fa-caret-right');
 
     // Assign the settings
     root.manifest = {
@@ -124,14 +125,17 @@
                 "name": "changelog-0_1_8",
                 "type": "description",
                 "text":
-    '<ul>' +
-    '<li>You can right-click a tab to give it a top border.  This lets you ' +
-        'visually separate tabs in the tree at any point.</li>'+
-    '<li>You can also right-click a tab to add a note to yourself!  ' +
-        'The note will be displayed on the tab\'s item in the tree.  '+
-        'Notes are saved with the tree, so your notes will stick around '+
-        'as long as you want.</li>' +
-    '</ul>'
+`<ul>
+<li>You can right-click a tab to give it a top border.  This lets you
+visually separate tabs in the tree at any point.</li>
+<li>You can also right-click a tab to add a note to yourself!
+The note will be displayed on the tab's item in the tree.
+Notes are saved with the tree, so your notes will stick around
+as long as you want.</li>
+<li>Sorting open windows to the top, to make it easier to find them!
+${ham} ${gt} Sort ${gt} ${icon('fff-text-padding-top')}</li>
+</ul>`
+
             },
             {
                 "tab": i18n.get("What's new?"),

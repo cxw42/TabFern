@@ -6297,6 +6297,8 @@
 					}
 				}
 
+				// TODO? sub-submenus don't seem to be constrained properly
+				// to stay on narrow viewports.
 				e.show();
 			},
 			show : function (reference, position, data) {

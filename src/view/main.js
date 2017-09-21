@@ -1660,6 +1660,10 @@ function getHamburgerMenuItems(node, _unused_proxyfunc, e)
                     action: hamSorter(Modules['view/sorts'].compare_node_num),
                     icon: 'fa fa-sort-numeric-asc',
                 },
+                // Test of sub-submenus --- jstree doesn't seem to correctly
+                // constrain them to the viewport.
+                //test: { label: 'test', submenu:
+                //  { foo: {label:'foo'},bar:{label:'bar'},bat:{label:'bat'}}},
                 numItem90: {
                     label: '9-0',
                     title: 'Sort descending by window name, numeric, case-insensitive',
@@ -2138,8 +2142,9 @@ function initTree0()
 
     document.title = 'TabFern ' + TABFERN_VERSION;
 
-    Hamburger = Modules.hamburger('#hamburger-menu', getHamburgerMenuItems,
-            K.CONTEXT_MENU_MOUSEOUT_TIMEOUT_MS);
+    Hamburger = Modules.hamburger('#hamburger-menu', getHamburgerMenuItems
+            , K.CONTEXT_MENU_MOUSEOUT_TIMEOUT_MS
+            );
 
     checkWhatIsNew('#hamburger-menu');
 
