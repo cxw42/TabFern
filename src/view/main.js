@@ -486,6 +486,26 @@ function actionEditBullet(node_id, node, unused_action_id, unused_action_el)
 //////////////////////////////////////////////////////////////////////////
 // Tree-node creation //
 
+// = = = Tabs = = = = = = = = = = = = = = = = = =
+
+function addTabNodeActions(win_node_id)
+{
+    T.treeobj.make_group(win_node_id, {
+        selector: 'div.jstree-wholerow',
+        child: true,
+        class: K.ACTION_GROUP_WIN_CLASS // + ' jstree-animated' //TODO?
+    });
+
+    T.treeobj.add_action(win_node_id, {
+        id: 'editBullet',
+        class: 'fff-pencil ' + K.ACTION_BUTTON_WIN_CLASS,
+        text: '&nbsp;',
+        grouped: true,
+        callback: actionEditBullet,
+        dataset: { action: 'editBullet' }
+    });
+} //addTabNodeActions
+
 /// Create a tree node for an open tab.
 /// @param ctab {Chrome Tab} the tab record
 function createNodeForTab(ctab, parent_node_id)
@@ -499,6 +519,8 @@ function createNodeForTab(ctab, parent_node_id)
     } // /debug
 
     let {node_id, val} = G.makeItemForTab(parent_node_id, ctab);
+    addTabNodeActions(node_id);
+
     return node_id;
 } //createNodeForTab
 
@@ -520,8 +542,12 @@ function createNodeForClosedTab(tab_data_v1, parent_node_id)
         G.refresh_label(node_id);
     }
 
+    addTabNodeActions(node_id);
+
     return node_id;
 } //createNodeForClosedTab
+
+// = = = Windows = = = = = = = = = = = = = = = = =
 
 function addWindowNodeActions(win_node_id)
 {
@@ -818,23 +844,29 @@ function treeOnSelect(_evt_unused, evt_data)
     if(evt_data.event && evt_data.event.clientX) {
         let e = evt_data.event;
         let elem = document.elementFromPoint(e.clientX, e.clientY);
-        if(elem.tagName && elem.tagName.toLowerCase() == 'i' &&
-            $(elem).hasClass(K.ACTION_BUTTON_WIN_CLASS)) {
+        if(elem && $(elem).hasClass(K.ACTION_BUTTON_WIN_CLASS)) {
             // The events were such that the user clicked a button but the
             // event went to the wholerow.  I think this is because of how
             // focus/blur happens when you focus a window by clicking on an
-            // element in it.  For now, ignore the click.
-            // TODO dispatch the actual action.
-            log.info({'Actually, button press':elem, action:elem.dataset.action});
+            // element in it.  Maybe the mousedown is being
+            // lost to the focus change, so the mouseup doesn't trigger a
+            // click?  Not sure.
+            // Anyway, dispatch the actual action.
+            let action = (elem.dataset && elem.dataset.action) ?
+                            elem.dataset.action : '** unknown action **';
 
-            switch(elem.dataset.action) {
+            log.info({'Actually, button press':elem, action});
+
+            switch(action) {
                 case 'renameWindow':
                     actionRenameWindow(node.id, node, null, null); break;
                 case 'closeWindow':
                     actionCloseWindow(node.id, node, null, null); break;
                 case 'deleteWindow':
                     actionDeleteWindow(node.id, node, null, null); break;
-                default: break;     //no-op (e.g., if dataset.action missing)
+                case 'editBullet':
+                    actionEditBullet(node.id, node, null, null); break;
+                default: break;     //no-op if unknown
             }
 
             // Whether or not we were able to process the click, it wasn't

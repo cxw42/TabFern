@@ -1,17 +1,26 @@
-// spec/multidex.js: Test multidex
+// spec/multidex.js: Test multidex.  Also test the loader, which doesn't really
+// need its own spec file.
 
-describe('multidex', function() {
+describe('asyncinator', function() {
     let M={};       // loaded modules
-    let dex;        // a multidex we will test
     let was_extra_work_called = false;
 
     beforeAll(R('multidex',M, function() { was_extra_work_called = true; }));
 
-    describe('the extra_work function', function() {
-        it('was called', function() {
-            expect(was_extra_work_called).toBe(true);
-        });
+    it('loads modules', function() {
+        expect(M.multidex).not.toBeUndefined();
     });
+
+    it('calls the extra-work function', function() {
+        expect(was_extra_work_called).toBe(true);
+    });
+});
+
+describe('multidex', function() {
+    let M={};       // loaded modules
+    let dex;        // a multidex we will test
+
+    beforeAll(R('multidex',M));
 
     it('can be loaded successfully',
         function() { expect(M.multidex).not.toBeUndefined(); });

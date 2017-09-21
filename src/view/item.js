@@ -86,7 +86,7 @@
             retval += '<span class="' + K.BULLET_CLASS + '">';
             retval += Esc.escape(val.raw_bullet);
             retval += '</span>';
-            retval += ' &ndash; ';   // en dash for a tighter view
+            retval += ' &#x2726; ';   // a dingbat
         }
 
         retval += Esc.escape(module.get_win_raw_text(val));
