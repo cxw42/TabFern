@@ -256,6 +256,10 @@ div#maintree {
     content: url(/assets/icons/picture_delete.png);
 }
 
+.fff-text-padding-top {
+    content: url(/assets/icons/text_padding_top.png);
+}
+
 /* ////////////////////////////////////////////////////////////////////// */
 /* Tweak up jstree */
 

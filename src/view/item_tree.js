@@ -190,11 +190,12 @@
         module.holding_node_id = module.treeobj.create_node(
                 $.jstree.root,
                 {   text: '** Holding pen',
-                    state:  { hidden: true    //DEBUG - uncomment for production
-                            },
-                    //data: { skip: true }    // Skip this window while processing,
-                }                           // unless you're expressly looking for it.
-        );
+                    state:  { hidden: true },
+                    data: { skip: true },
+                        // Skip this window while processing, unless you're
+                        // expressly looking for it.  Skipped nodes should
+                        // be kept at the top, just for regularity.
+                });
 
         // TODO move this to a constructor so you can create multiple,
         // separate treeobjs.

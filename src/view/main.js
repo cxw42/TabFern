@@ -1415,12 +1415,12 @@ function saveViewSize(size_data)
     to_save[K.LOCN_KEY] = size_data;
     chrome.storage.local.set(to_save,
             function() {
-                log.info('Saving size: error=' + chrome.runtime.lastError);
-                if(typeof(chrome.runtime.lastError) === 'undefined') {
+                let err = chrome.runtime.lastError;
+                if(typeof(err) === 'undefined') {
                     last_saved_size = $.extend({}, size_data);
+                    log.info('Saved size');
                 } else {
-                    log.error("TabFern: couldn't save location: " +
-                                chrome.runtime.lastError.toString());
+                    log.error("TabFern: couldn't save location: " + err);
                 }
             });
 } //saveViewSize()
@@ -1559,6 +1559,7 @@ function hamSorter(compare_fn)
 {
     return function() {
         T.treeobj.get_node($.jstree.root).children.sort(compare_fn);
+            // children[] holds node IDs, so compare_fn will always get strings.
         T.treeobj.redraw(true);   // true => full redraw
     };
 } //hamSorter
@@ -1621,55 +1622,62 @@ function getHamburgerMenuItems(node, _unused_proxyfunc, e)
     items.backupItem = {
             label: "Backup now",
             icon: 'fa fa-floppy-o',
-            action: hamBackup
+            action: hamBackup,
         };
     items.restoreItem = {
             label: "Load contents of a backup",
             action: hamRestoreFromBackup,
             icon: 'fa fa-folder-open-o',
-            separator_after: true
+            separator_after: true,
         };
 
     items.sortItem = {
             label: 'Sort',
             icon: 'fa fa-sort',
             submenu: {
+                openToTopItem: {
+                    label: 'Open windows to top',
+                    title: 'Sort ascending by window name, case-insensitive, '+
+                            'and put the open windows at the top of the list.',
+                    action: hamSorter(Modules['view/sorts'].open_windows_to_top),
+                    icon: 'fff-text-padding-top'
+                },
                 azItem: {
                     label: 'A-Z',
                     title: 'Sort ascending by window name, case-insensitive',
                     action: hamSorter(Modules['view/sorts'].compare_node_text),
                     icon: 'fa fa-sort-alpha-asc',
-                }
-                , zaItem: {
+                },
+                zaItem: {
                     label: 'Z-A',
                     title: 'Sort descending by window name, case-insensitive',
                     action: hamSorter(Modules['view/sorts'].compare_node_text_desc),
                     icon: 'fa fa-sort-alpha-desc',
-                }
-                , numItem09: {
+                },
+                numItem09: {
                     label: '0-9',
                     title: 'Sort ascending by window name, numeric, case-insensitive',
                     action: hamSorter(Modules['view/sorts'].compare_node_num),
                     icon: 'fa fa-sort-numeric-asc',
-                }
-                , numItem90: {
+                },
+                numItem90: {
                     label: '9-0',
                     title: 'Sort descending by window name, numeric, case-insensitive',
                     action: hamSorter(Modules['view/sorts'].compare_node_num_desc),
                     icon: 'fa fa-sort-numeric-desc',
-                }
+                },
             } //submenu
         }; //sortItem
 
     items.expandItem = {
             label: "Expand all",
             icon: 'fa fa-plus-square',
-            action: hamExpandAll
+            action: hamExpandAll,
         };
     items.collapseItem = {
             label: "Collapse all",
             icon: 'fa fa-minus-square',
-            action: hamCollapseAll
+            action: hamCollapseAll,
         };
 
     return items;
