@@ -616,7 +616,7 @@ function createNodeForWindow(cwin, keep)
 function createNodeForClosedWindow(win_data_v1)
 {
     let is_ephemeral = Boolean(win_data_v1.ephemeral);  // missing => false
-    let shouldCollapse = getBoolSetting('collapse-trees-on-startup');
+    let shouldCollapse = getBoolSetting(CFG_COLLAPSE_ON_STARTUP);
 
     log.info({'Closed window':win_data_v1.raw_title, 'is ephemeral?': is_ephemeral});
 
@@ -1569,6 +1569,17 @@ function hamRunJasmineTests()
     K.openWindowForURL(chrome.extension.getURL('/test/index.html'));
 } // hamRunJasmineTests
 
+function hamSortOpenToTop()
+{
+    hamSorter(Modules['view/sorts'].open_windows_to_top)();     //do the sort
+
+    if(getBoolSetting(CFG_JUMP_WITH_SORT_OPEN_TOP, true)) {
+        let h = $('html');
+        if(h.scrollTop != 0) h.animate({scrollTop:0});
+            // https://stackoverflow.com/a/3442125/2877364 by
+            // https://stackoverflow.com/users/415290/todd
+    }
+}
 /**
  * You can call proxyfunc with the items or just return them, so we just
  * return them.
@@ -1639,7 +1650,7 @@ function getHamburgerMenuItems(node, _unused_proxyfunc, e)
                     label: 'Open windows to top',
                     title: 'Sort ascending by window name, case-insensitive, '+
                             'and put the open windows at the top of the list.',
-                    action: hamSorter(Modules['view/sorts'].open_windows_to_top),
+                    action: hamSortOpenToTop,
                     icon: 'fff-text-padding-top'
                 },
                 azItem: {
@@ -2105,7 +2116,7 @@ function initTree1(win_id)
     log.info('TabFern view.js initializing tree in window ' + win_id.toString());
 
     let contextmenu_items =
-        getBoolSetting('ContextMenu.Enabled', true) ? getMainContextMenuItems
+        getBoolSetting(CFG_ENB_CONTEXT_MENU, true) ? getMainContextMenuItems
                                                     : false;
 
     T.create('#maintree', treeCheckCallback, dndIsDraggable, contextmenu_items);

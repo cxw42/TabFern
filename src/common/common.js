@@ -30,9 +30,20 @@ const TABFERN_VERSION='0.1.8-pre.1 alpha \u26a0'
 const MSG_GET_VIEW_WIN_ID = 'getViewWindowID';
 
 //////////////////////////////////////////////////////////////////////////
-// Names of settings //
+// Names of settings, and their defaults //
 
-const CFG_RESTORE_ON_LAST_DELETED = "open-tree-on-restore-last-deleted";
+const CFG_ENB_CONTEXT_MENU = 'ContextMenu.Enabled';
+const CFG_RESTORE_ON_LAST_DELETED = 'open-tree-on-restore-last-deleted';
+const CFG_JUMP_WITH_SORT_OPEN_TOP = 'jump-to-top-when-sort-open-to-top';
+const CFG_COLLAPSE_ON_STARTUP = 'collapse-trees-on-startup';
+
+const CFG_DEFAULTS = {
+    __proto__: null,
+    [CFG_ENB_CONTEXT_MENU]: true,
+    [CFG_RESTORE_ON_LAST_DELETED]: false,
+    [CFG_JUMP_WITH_SORT_OPEN_TOP]: true,
+    [CFG_COLLAPSE_ON_STARTUP]: true,
+};
 
 //////////////////////////////////////////////////////////////////////////
 // Helper functions //

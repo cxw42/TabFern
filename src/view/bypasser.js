@@ -26,7 +26,7 @@
         // calls such as `loglevel();`.
         // TODO make it show the right line number
         // ==>  This is because changing the level actually rebinds the
-        //      log.* functions.  TODO make a loglevel plugin to handle 
+        //      log.* functions.  TODO make a loglevel plugin to handle
         //      name prefixing?  See, e.g., the Plugins section on
         //      https://pimterry.github.io/loglevel/
 
@@ -35,7 +35,7 @@
 
     Proto.isEnabled = function() {
         // TODO improve this so it is reactive to disabling it in options
-        return getBoolSetting('ContextMenu.Enabled', true);
+        return getBoolSetting(CFG_ENB_CONTEXT_MENU, true);
     };
 
     //////////////////////////////////////////////////////////////////////////

@@ -34,9 +34,9 @@
             {
                 "tab": i18n.get("Behaviour"),
                 "group": i18n.get("When I..."),
-                "name": "collapse-trees-on-startup",
+                "name": CFG_COLLAPSE_ON_STARTUP,
                 "type": "checkbox",
-                "label": i18n.get("Start up, collapse all the saved trees")
+                "label": i18n.get("Start up, collapse all the saved trees"),
                 //"text": i18n.get("x-characters")
             },
 
@@ -45,7 +45,7 @@
                 "group": i18n.get("When I..."),
                 "name": "collapse-tree-on-window-close",
                 "type": "checkbox",
-                "label": i18n.get("Close a window, collapse its tree")
+                "label": i18n.get("Close a window, collapse its tree"),
                 //"text": i18n.get("x-characters")
             },
             {
@@ -53,14 +53,21 @@
                 "group": i18n.get("When I..."),
                 "name": CFG_RESTORE_ON_LAST_DELETED,
                 "type": "checkbox",
-                "label": i18n.get("Restore the last-deleted window, reopen its tabs")
+                "label": i18n.get("Restore the last-deleted window, reopen its tabs"),
+            },
+            {
+                "tab": i18n.get("Behaviour"),
+                "group": i18n.get("When I..."),
+                "name": CFG_JUMP_WITH_SORT_OPEN_TOP,
+                "type": "checkbox",
+                "label": i18n.get('Sort open windows to the top, scroll to the top of the list'),
             },
 
             // Features
             {
                 "tab": "Features",
                 "group": "Context Menu",
-                "name": "ContextMenu.Enabled",
+                "name": CFG_ENB_CONTEXT_MENU,
                 "type": "checkbox",
                 "label": "Enable right-click menus (refresh the TabFern window after you change this to make the change take effect)"
             },

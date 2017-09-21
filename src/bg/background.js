@@ -127,12 +127,13 @@ window.addEventListener('load',
         setTimeout(loadView, 500);
     },
     { 'once': true }
-)
+);
 
-// Set the defaults for some of the options.  options_custom does not appear
+// Set the defaults for the options.  options_custom does not appear
 // to have this facility.
-setSettingIfNonexistent('ContextMenu.Enabled', true);
-setSettingIfNonexistent("collapse-trees-on-startup", true);
+for(opt in CFG_DEFAULTS) {
+    setSettingIfNonexistent(opt, CFG_DEFAULTS[opt]);
+}
 
 console.log('TabFern: done running background.js');
 
