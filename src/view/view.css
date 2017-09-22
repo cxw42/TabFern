@@ -61,6 +61,14 @@ li.ephemeral-recovered {
     background: darkslategray !important;
 }
 
+.tabfern-tab-bordered {
+    border-top: 1px solid #ffa;
+}
+
+.tf-bullet {
+    font-family: serif; /* since the default is sans */
+}
+
 /* Notification icon ------------------------------------------------------ */
 
 /* Need the parents of notification icons to have position other than static.
@@ -223,31 +231,6 @@ div#maintree {
     margin-bottom: 30px;    /* empirical, based on the hamburger menu's box */
 }
 
-/* Icons ------------------------------------------------------------------ */
-
-.visible-window-icon {
-    content: url(/assets/icons/monitor.png);    /* or folder.png? */
-}
-
-.visible-saved-window-icon {
-    content: url(/assets/icons/monitor_add.png);    /* or folder.png? */
-}
-
-.fff-page {
-    content: url(/assets/icons/page_white.png);
-}
-.fff-pencil {
-    content: url(/assets/icons/pencil.png);
-}
-
-.fff-cross {
-    content: url(/assets/icons/cross.png);
-}
-
-.fff-picture-delete {
-    content: url(/assets/icons/picture_delete.png);
-}
-
 /* ////////////////////////////////////////////////////////////////////// */
 /* Tweak up jstree */
 
@@ -266,6 +249,13 @@ div#maintree {
 /* Don't expand icons in the context menu - leave them at their native size */
 ul.jstree-contextmenu i {
     object-fit: none;
+}
+
+/* Make icons from the main menu not appear through the submenu.  The jstree
+ * css sets position:absolute, so setting z-index creates a new stacking
+ * context for the submenu. */
+.vakata-context ul {
+    z-index: 1;
 }
 
 /* vi: set ts=4 sts=4 sw=4 et ai: */

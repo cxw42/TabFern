@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<!-- view/index.html: TabFern popup main source.
+     CC-BY-SA 4.0 International -->
+<head>
+    <title>TabFern</title>
+    <meta http-equiv="Content-Type" content="text/html" />
+
+    <!-- Stylesheets --------------------------------------------------------- -->
+
+    <link href="/js/jstree-3.3.4/themes/default-dark/style.css" rel="stylesheet" type="text/css" />
+    <link href="/js/fontawesome/css/font-awesome.css" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" type="text/css" media="all" href="/conf/icons.css" /><!-- this one should always be the last stylesheet listed -->
+    <link rel="stylesheet" type="text/css" media="all" href="view.css" /><!-- this one should always be the last stylesheet listed -->
+
+    <!-- Scripts, except for those loaded by require.js  --------------------- -->
+    <script src="../common/common.js" type="text/javascript"></script>  <!-- not requirejs -->
+
+    <script src="/conf/require-config.js"></script> <!-- load before require.js -->
+    <script src="/js/require.js"></script>
+
+</head>
+
+<body class="jstree-default-dark">
+<!-- jstree-default-dark to set background, text colors -->
+
+    <div id="tabfern-container">
+
+        <!-- Content ------------------------------------------------------------- -->
+        <div id="maintree"></div><!-- the window tree -->
+        <div id="view-messages"></div><!-- for error messages -->
+        <div id="init-incomplete">Initialization not complete.  Changes will not
+        be saved.</div><!-- hidden if init does complete. -->
+
+        <!-- Some content for no-styles, no-JS, or screen-reader users -->
+        <div id="static-about" class="hidden-but-accessible">
+            <a href="https://cxw42.github.io/TabFern/">About, help, and credits</a>
+        </div>
+
+        <div id="hamburger-menu" class="hamburger-menu"></div><!-- a jstree to use as a hamburger menu -->
+
+    </div><!-- tabfern-container -->
+
+    <!-- Room for plugins ---------------------------------------------------- -->
+    <div id="plugin-container"></div>
+    <!-- Maybe use something like https://stackoverflow.com/q/13741871/2877364 or
+    https://benfrain.com/independent-scrolling-panels-body-scroll-using-just-css/
+    to give the plugin room at the bottom while permitting TabFern operation
+    to continue as usual above. -->
+
+    <!-- Main script --------------------------------------------------------- -->
+    <script src="main.js" type="text/javascript"></script>
+
+</body>
+</html>
+<!-- vi: set ts=4 sts=4 sw=4 et ai: -->

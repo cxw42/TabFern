@@ -1,163 +1,162 @@
 // bypasser.js: Control a bypassable jstree context menu
 // Original by Jasmine Hegman.  Copyright (c) 2017 Chris White, Jasmine Hegman.
-// Uses jquery, jstree, loglevel, all of which must be loaded beforehand.
 
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD
-        define(['jquery', 'jstree', 'loglevel'], factory);
+        define(['jquery', 'jstree', 'loglevel', 'signals'], factory);
     } else if (typeof exports === 'object') {
         // Node, CommonJS-like
-        module.exports = factory(require('jquery'), require('jstree'), require('loglevel'));
+        module.exports = factory(require('jquery'), require('jstree'),
+            require('loglevel'), require('signals'));
     } else {
         // Browser globals (root is `window`)
-        root.ContextMenuBypasser = factory(root.jQuery, null, root.log);
+        root.ContextMenuBypasser = factory(root.jQuery, null, root.log, root.signals);
             // null because jstree doesn't actually have a module global - it
             // just plugs in to jQuery.
     }
-}(this, function ($, _unused_jstree_placeholder_, log) {
+}(this, function ($, _unused_jstree_placeholder_, log_orig, signals) {
     "use strict";
 
-    function loginfo(...args) { log.info('TabFern bypasser.js: ', ...args); };
+    function loginfo(...args) { log_orig.info('TabFern bypasser.js: ', ...args); };
         // for some reason, log.info.bind(log, ...) would capture the log level
         // at the time of the binding, so it would not respond to later
         // changes in the level.  Instead, use an actual function.
         // Thankfully, `, ...args` behaves correctly even for zero-argument
         // calls such as `loglevel();`.
+        // TODO make it show the right line number
+        // ==>  This is because changing the level actually rebinds the
+        //      log.* functions.  TODO make a loglevel plugin to handle
+        //      name prefixing?  See, e.g., the Plugins section on
+        //      https://pimterry.github.io/loglevel/
 
     /// The prototype for a context-menu-bypass object
-    let Proto = {};
+    let Proto = Object.create(null);
 
-    function isEnabled() {
+    Proto.isEnabled = function() {
         // TODO improve this so it is reactive to disabling it in options
-        return getBoolSetting('ContextMenu.Enabled', true);
+        return getBoolSetting(CFG_ENB_CONTEXT_MENU, true);
     };
 
-    /// The shortcuts module, if any
-    var shortcutNs = false;
+    //////////////////////////////////////////////////////////////////////////
+    /// State tracker for the bypass ///
+
+    Proto.isBypassDisengaged = function () {
+        return !this.isBypassEngaged();
+    };
+
+    Proto.isBypassEngaged =  function () {
+        return !!this.engaged;
+    };
+
+    /// Tell the tree to enable the context menu
+    Proto.disengageBypass =  function () {
+        if(this.treeobj && this.treeobj._data && this.treeobj._data.contextmenu) {
+            // not loaded if context menu is disabled.
+            // TODO? update this so it can be used to bypass other
+            // menus?  E.g., the hamburger menu.
+            this.treeobj._data.contextmenu.bypass = false;
+            this.engaged = false;
+        }
+    };
+
+    /// Tell the tree to disable the context menu
+    Proto.engageBypass =  function () {
+        if(this.treeobj && this.treeobj._data && this.treeobj._data.contextmenu) {
+            this.treeobj._data.contextmenu.bypass = true;
+            this.engaged = true;
+        }
+    };
 
     /**
      * @param {Window} win
+     * @param _shortcutNs The shortcut module, if any
      */
-    function installEventHandler(win, _shortcutNs = false) {
-        shortcutNs = _shortcutNs;
+    Proto.installEventHandler = function(win, shortcutNs = false) {
+        this.win = win;
 
         if ( shortcutNs ) {
             loginfo("installing event handlers using Shortcuts module");
-            installKeyListenerFromShortcuts(shortcutNs);
+            this.installKeyListenerFromShortcuts(shortcutNs);
         } else {
             loginfo("installing event handlers using internal");
-            installKeyListener(win);
+            this.installKeyListener();
         }
     } //installEventHandler
 
-    function installTreeEventHandler(treeobj) {
+    Proto.installTreeEventHandler = function() {
         // The standard right-click menu swallows the keyup, so we need
         // to track disengagement of the bypass a different way.
+        let self=this;
 
-        treeobj.element.on('bypass_contextmenu.jstree', function(e, data) {
+        this.treeobj.element.on('bypass_contextmenu.jstree', function(e, data) {
             // Thanks to https://stackoverflow.com/questions/12801898#comment67451213_12802008
             // by https://stackoverflow.com/users/1543318/brant-sterling-wedel for this idea
-            $(window).one('mousemove', function(e) {
+            $(self.win).one('mousemove', function(e) {
                 if(e.shiftKey) {
-                    bypass.engageBypass();
+                    self.engageBypass();
                     loginfo('bypass engaged when leaving built-in context menu');
                 } else {
-                    bypass.disengageBypass();
+                    self.disengageBypass();
                     loginfo('bypass disengaged when leaving built-in context menu');
                 }
             });
-        });
+        }); //on(bypass)
 
     } //installTreeEventHandler()
 
-    ///////////////////////////////////////////////////////////////////////
-    ///////////////////////////////////////////////////////////////////////
-    //
-    // H E L P E R    F U N C T I O N S
-    //
-    ///////////////////////////////////////////////////////////////////////
-    ///////////////////////////////////////////////////////////////////////
-
-    // TODO make `bypass` per-instance.
-
-    /// State tracker for the bypass
-    var bypass = {
-        engaged: false,
-        isBypassDisengaged: function () {
-            return !this.isBypassEngaged();
-        },
-        isBypassEngaged: function () {
-            return !!this.engaged;
-        },
-        disengageBypass: function () {
-            this.engaged = false;
-            if(treeobj && treeobj._data && treeobj._data.contextmenu) {
-                // not loaded if context menu is disabled.
-                // TODO? update this so it can be used to bypass other
-                // menus?  E.g., the hamburger menu.
-                treeobj._data.contextmenu.bypass = false;
-            }
-        },
-        engageBypass: function () {
-            this.engaged = true;
-            if(treeobj && treeobj._data && treeobj._data.contextmenu) {
-                treeobj._data.contextmenu.bypass = true;
-            }
-        }
-    }; //bypass{}
-
     /// Listens for keyup events using jquery events.
     /// @param {Window} win
-    function installKeyListener(win) {
-        $(win).on('keydown', function(e) {
+    Proto.installKeyListener = function() {
+        let self = this;
+        $(this.win).on('keydown', function(e) {
             // Shift
             if ( e.which === 16 ) {
                 loginfo('engage bypass');
-                bypass.engageBypass();
+                self.engageBypass();
             }
         });
-        $(win).on('keyup',function(e) {
+        $(this.win).on('keyup',function(e) {
             // Shift
             if ( e.which === 16 ) {
                 loginfo('disengage bypass');
-                bypass.disengageBypass();
+                self.disengageBypass();
             }
         });
 
-    } //installKeyListener()
+    }; //installKeyListener()
 
     /// Listens for keyup events using shortcut driver
-    /// @param {_tabFernShortcuts} shortcutNs
-    function installKeyListenerFromShortcuts(shortcutNs) {
-        var key;
+    Proto.installKeyListenerFromShortcuts = function(shortcutNs) {
+        let self = this;
+        this.shortcutNs = shortcutNs;
 
-        key = shortcutNs.getKeyBindingFor('BYPASS_CONTEXT_MENU_MOMENTARY_LATCH');
+        let key = this.shortcutNs.getKeyBindingFor('BYPASS_CONTEXT_MENU_MOMENTARY_LATCH');
         if ( key && key.signal instanceof signals.Signal ) {
             key.signal.add(function (direction, args) {
                 if (direction === 'keydown') {
                     loginfo('bypassing context menu START', args[1]);
-                    bypass.engageBypass();
+                    self.engageBypass();
                 }
                 if (direction === 'keyup') {
                     loginfo('bypassing context menu STOP', args[1]);
-                    bypass.disengageBypass();
+                    self.disengageBypass();
                 }
             });
         }
 
-        key = shortcutNs.getKeyBindingFor('ESC');
+        key = this.shortcutNs.getKeyBindingFor('ESC');
         if ( !key || !(key.signal instanceof signals.Signal) ) {
             throw new Error('Unexpected ESC key bind unavailable?');
         }
         key.signal.add(function(direction, args) {
             // TODO jstree close context menu
         });
-    }
+    };
 
-    function isBypassed()
+    Proto.isBypassed = function()
     {
-        return bypass.isBypassEngaged();
+        return this.isBypassEngaged();
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -170,26 +169,23 @@
     /// @param treeobj {JSTree} the main jsTree object
     /// @param shortcuts        A keyboard-shortcut helper, if any
     /// @return {mixed} Object on success; null on failure.
-    function create(win, treeobj, shortcuts)
+    function create(win, the_treeobj, shortcuts)
     {
-        if(!treeobj) return null;
+        if(!win || !the_treeobj) return null;
 
         let retval = Object.create(Proto);
-        retval.treeobj = treeobj;
+        retval.treeobj = the_treeobj;
+        retval.engaged = false;     // initial assumption
 
-        installEventHandler(win, shortcuts);
-        installTreeEventHandler(treeobj);
+        retval.installEventHandler(win, shortcuts);
+        retval.installTreeEventHandler();
 
-        retval.isBypassed = isBypassed;
-        return retval;
+        return Object.seal(retval);
     } //ctor
 
     return {
         create
     };
 }));
-
-// Module-loader template thanks to
-// http://davidbcalhoun.com/2014/what-is-amd-commonjs-and-umd/
 
 // vi: set ts=4 sts=4 sw=4 et ai fo-=o fo-=r: //

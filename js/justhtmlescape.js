@@ -3,8 +3,7 @@
 /// Adapted from https://github.com/janl/mustache.js/blob/master/mustache.js
 /// MIT license --- see end of file
 
-// Defines HTMLEscaper, which, when called returns an object with
-// escape(text) and unescape(text) functions.
+// Defines HTMLEscaper, which has escape(text) and unescape(text) functions.
 
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
@@ -78,11 +77,7 @@
         );
     }
 
-    function ctor() {
-        return Object.seal({ 'escape': escapeHTML, 'unescape': unescapeHTML });
-    } //ctor()
-
-    return ctor;
+    return Object.seal({ 'escape': escapeHTML, 'unescape': unescapeHTML });
 }));
 
 // Module-loader template thanks to

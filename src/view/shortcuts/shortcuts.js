@@ -1,19 +1,32 @@
-window._tabFernShortcuts = window._tabFernShortcuts || {};
+(function (root, factory) {
+    if (typeof define === 'function' && define.amd) {
+        // AMD
+        define(['loglevel'], factory);
+    } else if (typeof exports === 'object') {
+        // Node, CommonJS-like
+        module.exports = factory(require('loglevel'));
+    } else {
+        // Browser globals (root is window)
+        root.Shortcuts = factory(root.log);
+    }
+}(this, function (log_orig) {
 
-(function(_tabFernShortcuts) {
+    function loginfo(...args) { log_orig.info('TabFern shortcuts.js: ', ...args); };
 
-    var log = console.log.bind(console, 'TabFern _tabFernShortcuts.js:');
+    /// The module we will export
+    let retval = {};
 
-    _tabFernShortcuts.isEnabled = function isEnabled() {
+    retval.isEnabled = function() {
         // TODO improve this so it is reactive to disabling it in options
         return getBoolSetting('KeyBinds.Enabled', false);
     };
 
+    /// Gets the driver as `this`
     function driverLoaded(err) {
         if ( err ) {
-            log('Driver ' + this.name + ' failed to load.');
+            loginfo('Driver ' + this.name + ' failed to load.');
         } else {
-            log('Driver ' + this.name + ' loaded.');
+            loginfo('Driver ' + this.name + ' loaded.');
         }
     }
 
@@ -24,7 +37,7 @@ window._tabFernShortcuts = window._tabFernShortcuts || {};
      * Return a clone of the current key bindings.
      * @returns {*}
      */
-    _tabFernShortcuts.getCurrentKeyBindings = function() {
+    retval.getCurrentKeyBindings = function() {
         return {... currentBindings};
     };
 
@@ -32,7 +45,7 @@ window._tabFernShortcuts = window._tabFernShortcuts || {};
      * Merge new keybindings object with current key bindings.
      * @returns {*}
      */
-    _tabFernShortcuts.updateKeyBindings = function(newKeybindings) {
+    retval.updateKeyBindings = function(newKeybindings) {
         currentBindings = {... currentBindings, ... newKeybindings};
     };
 
@@ -40,12 +53,12 @@ window._tabFernShortcuts = window._tabFernShortcuts || {};
      * Wholesale replace current key bindings.
      * @returns {*}
      */
-    _tabFernShortcuts.replaceKeyBindings = function(newKeybindings) {
+    retval.replaceKeyBindings = function(newKeybindings) {
         currentBindings = newKeybindings;
     };
 
 
-    _tabFernShortcuts.getKeyBindingFor = function(key) {
+    retval.getKeyBindingFor = function(key) {
         return currentBindings[key];
     };
 
@@ -57,19 +70,19 @@ window._tabFernShortcuts = window._tabFernShortcuts || {};
      * @param {Object} obj.driver
      * @
      */
-    _tabFernShortcuts.install = function (obj, cb) {
+    retval.install = function (obj, cb) {
         if ( !obj.window) { throw new Error('win is required'); }
         if ( !obj.drivers || !obj.drivers.length ) { throw new Error('driver is required'); }
         if ( !cb || typeof cb !== 'function' ) { throw new Error('cb is required'); }
 
-        if ( _tabFernShortcuts.isEnabled() === false ) {
-            log('Disabled, bailing');
+        if ( retval.isEnabled() === false ) {
+            loginfo('Disabled, bailing');
             cb('disabled');
             return;
         }
 
-        log("Installing keyboard listeners");
-        log("Initializing keyboard listener drivers");
+        loginfo("Installing keyboard listeners");
+        loginfo("Initializing keyboard listener drivers");
         var driversLoadedPromises = obj.drivers.map((driver) => {
             // Validate driver
             if ( !driver.name || !driver.load ) {
@@ -100,14 +113,14 @@ window._tabFernShortcuts = window._tabFernShortcuts || {};
         driversLoadedPromise.then(function() {
 
             if ( obj.keybindings ) {
-                log("Installing keybind configuration");
-                _tabFernShortcuts.updateKeyBindings(obj.keybindings);
+                loginfo("Installing keybind configuration");
+                retval.updateKeyBindings(obj.keybindings);
             } else {
-                log("No keybind configuration provided");
+                loginfo("No keybind configuration provided");
             }
 
             currentDrivers.forEach((driver) => {
-                driver.applyKeyBindingHooks(_tabFernShortcuts.getCurrentKeyBindings())
+                driver.applyKeyBindingHooks(retval.getCurrentKeyBindings())
             });
 
             cb(null);
@@ -116,4 +129,7 @@ window._tabFernShortcuts = window._tabFernShortcuts || {};
         });
     };
 
-})(window._tabFernShortcuts);
+    return retval;
+
+}));
+// vi: set ts=4 sts=4 sw=4 et ai fo-=o fo-=r: //

@@ -2,7 +2,6 @@
 /// Requires HTML5 File API (for Blob).
 /// Copyright (c) 2017 Chris White.  CC-BY 4.0 International.
 
-// TODO remove jquery if we don't wind up needing it.
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD

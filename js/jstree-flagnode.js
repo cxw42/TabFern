@@ -10,7 +10,7 @@
 (function (factory) {
 	"use strict";
 	if (typeof define === 'function' && define.amd) {
-		define('jstree.search', ['jquery','jstree'], factory);
+		define(['jquery','jstree'], factory);
 	}
 	else if(typeof exports === 'object') {
 		factory(require('jquery'), require('jstree'));
@@ -18,7 +18,7 @@
 	else {
 		factory(jQuery, jQuery.jstree);
 	}
-}(function ($, jstree, undefined) {
+}(function ($, _jstree_unused, undefined) {
 	"use strict";
 
 	if($.jstree.plugins.flagnode) { return; }
