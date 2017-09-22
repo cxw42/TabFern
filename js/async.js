@@ -15,11 +15,12 @@ define(function(){
         t = document.getElementsByTagName('script')[0]; t.parentNode.insertBefore(s,t);
     }
 
-    function formatUrl(name, id){
-        var paramRegex = /!(.+)/,
+    function formatUrl(name, id, useHash){
+        var separ = (useHash ? '#' : '?'),
+            paramRegex = /!(.+)/,
             url = name.replace(paramRegex, ''),
-            param = (paramRegex.test(name))? name.replace(/.+!/, '') : DEFAULT_PARAM_NAME;
-        url += (url.indexOf('?') < 0)? '?' : '&';
+            param = (paramRegex.test(name)) ? name.replace(/.+!/, '') : DEFAULT_PARAM_NAME;
+        url += (url.indexOf(separ) < 0) ? separ : '&';
         return url + param +'='+ id;
     }
 
@@ -37,8 +38,9 @@ define(function(){
                 //create a global variable that stores onLoad so callback
                 //function can define new module after async load
                 window[id] = onLoad;
-                injectScript(formatUrl(req.toUrl(name), id));
+                injectScript(formatUrl(req.toUrl(name), id, config.async.useHash));
             }
         }
     };
 });
+// vi: set ts=4 sts=4 sw=4 et ai fo-=o fo-=r: //
