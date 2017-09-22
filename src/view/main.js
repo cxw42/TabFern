@@ -19,6 +19,10 @@
 //  - You move or delete an existing field; or
 //  - You add a new field for which a default falsy value is unworkable.
 
+// Design decision: At present, windows with no tabs are not supported.
+// The only exception is the holding pen, which we use while attaching
+// and detaching tabs.
+
 // Notation:
 //
 // Windows can be open or closed, and can be saved or unsaved.
@@ -1852,95 +1856,144 @@ function dndIsDraggable(nodes, evt)
 /// @param operation {string}
 /// @param node {Object} The full jstree node record of the node that might
 ///                      be affected
-/// @param node_parent {Object} The full jstree node record of the
+/// @param new_parent {Object} The full jstree node record of the
 ///                             node to be the parent
 /// @param more {mixed} optional object of additional data.
 /// @return {boolean} whether or not the operation is permitted
 ///
-function treeCheckCallback(
-            operation, node, node_parent, node_position, more)
-{
-    // Fast bail when possible
-    if(operation === 'copy_node') return false; // we can't handle copies at present
-    if(operation !== 'move_node') return true;
+let treeCheckCallback = (function(){
 
-    // Don't log checks during initial tree population
-    if(did_init_complete && (log.getLevel() <= log.levels.TRACE) ) {
-        console.group('check callback for ' + operation);
-        console.log(node);
-        console.log(node_parent);
-        //console.log(node_position);
-        if(more) console.log(more);
-        if(!more || !more.dnd) {
-            console.group('Not drag and drop');
-            console.trace();
-            console.groupEnd();
-        }
-        console.groupEnd();
-    } //logging
-
-    let tyval = I.get_node_tyval(node.id);
-    if(!tyval) return false;    // sanity check
-
-    let parent_tyval;
-    if(node_parent.id !== $.jstree.root) {
-        parent_tyval = I.get_node_tyval(node_parent.id);
-    }
-
-    // The "can I drop here?" check.
-    if(more && more.dnd && operation==='move_node') {
-
-        if(tyval.ty === K.IT_WINDOW) {              // Dragging windows
-            // Can't drop inside another window - only before or after
-            if(more.pos==='i') return false;
-
-            // Can't drop other than in the root
-            if(node_parent.id !== $.jstree.root) return false;
-
-        } else if(tyval.ty === K.IT_TAB) {          // Dragging tabs
-            // Tabs: Can only drop closed tabs in closed windows
-            if(tyval.val.isOpen) return false;
-            if(!parent_tyval || parent_tyval.val.isOpen) return false;
-            if(parent_tyval.ty !== K.IT_WINDOW) return false;
-        }
-        if(log.getLevel()<=log.levels.TRACE) console.log('OK to drop here');
-    }
-
-    // The "I'm about to move it here --- OK?" check.  This happens for
-    // drag and also for express calls to move_node.
-    if(operation==='move_node') {
-
+    /// The move_node callback we will use to remove empty windows
+    /// when dragging the last tab out of a window
+    function remove_empty_window(evt, data)
+    {   // Note: data.old_parent is the node ID of the former parent
         if(log.getLevel() <= log.levels.TRACE) {
-            console.group('check callback for node move');
-            console.log(tyval);
-            console.log(node);
-            console.log(node_parent);
-            if(more) console.log(more);
+            console.group('remove_empty_window');
+            console.log(evt);
+            console.log(data);
             console.groupEnd();
         }
 
-        // Windows: can only drop in root
-        if(tyval.ty === K.IT_WINDOW) {
-            if(node_parent.id !== $.jstree.root) return false;
+        // Don't know if we need to delay until the next tick, but I'm going
+        // to just to be on the safe side.  This will give T.treeobj.move_node
+        // a chance to finish.
+        setTimeout(function(){
+            T.treeobj.delete_node(data.old_parent);
+        },0);
+    } //remove_empty_window
 
-        } else if(tyval.ty === K.IT_TAB) {
-            let curr_parent_id = node.parent;
-            let new_parent_id = node_parent.id;
+    // The main callback
+    function inner(operation, node, new_parent, node_position, more)
+    {
+        // Fast bail when possible
+        if(operation === 'copy_node') return false; // we can't handle copies at present
+        if(operation !== 'move_node') return true;
 
-            if(tyval.val.isOpen) {
-                // Can't move open tabs between windows, except in and out of
-                // the holding pen.
-                if( curr_parent_id !== T.holding_node_id &&
-                    new_parent_id !== T.holding_node_id &&
-                    curr_parent_id !== new_parent_id) return false;
-            } else {
-                // Can move closed tabs to any closed window
+        // Don't log checks during initial tree population
+        if(did_init_complete && (log.getLevel() <= log.levels.TRACE) ) {
+            console.group('check callback for ' + operation);
+            console.log(node);
+            console.log(new_parent);
+            //console.log(node_position);
+            if(more) console.log(more);
+            if(!more || !more.dnd) {
+                console.group('Not drag and drop');
+                console.trace();
+                console.groupEnd();
+            }
+            console.groupEnd();
+        } //logging
+
+        let tyval = I.get_node_tyval(node.id);
+        if(!tyval) return false;    // sanity check
+
+        let parent_tyval;
+        if(new_parent.id !== $.jstree.root) {
+            parent_tyval = I.get_node_tyval(new_parent.id);
+        }
+
+        // The "can I drop here?" check.
+        if(more && more.dnd && operation==='move_node') {
+
+            node_being_dragged = node.id;
+
+            if(tyval.ty === K.IT_WINDOW) {              // Dragging windows
+                // Can't drop inside another window - only before or after
+                if(more.pos==='i') return false;
+
+                // Can't drop other than in the root
+                if(new_parent.id !== $.jstree.root) return false;
+
+            } else if(tyval.ty === K.IT_TAB) {          // Dragging tabs
+                // Tabs: Can only drop closed tabs in closed windows
+                if(tyval.val.isOpen) return false;
                 if(!parent_tyval || parent_tyval.val.isOpen) return false;
+                if(parent_tyval.ty !== K.IT_WINDOW) return false;
+            }
+            if(log.getLevel()<=log.levels.TRACE) console.log('OK to drop here');
+        }
+
+        // The "I'm about to move it here --- OK?" check.  This happens for
+        // drag and also for express calls to move_node.
+        if(operation==='move_node') {
+
+            if(log.getLevel() <= log.levels.TRACE) {
+                console.group('check callback for node move');
+                console.log(tyval);
+                console.log(node);
+                console.log(new_parent);
+                if(more) console.log(more);
+                console.groupEnd();
+            }
+
+            // Windows: can only drop in root
+            if(tyval.ty === K.IT_WINDOW) {
+                if(new_parent.id !== $.jstree.root) return false;
+
+            } else if(tyval.ty === K.IT_TAB) {
+                let curr_parent_id = node.parent;
+                let new_parent_id = new_parent.id;
+
+                if(tyval.val.isOpen) {
+                    // Can't move open tabs between windows, except in and out of
+                    // the holding pen.
+                    if( curr_parent_id !== T.holding_node_id &&
+                        new_parent_id !== T.holding_node_id &&
+                        curr_parent_id !== new_parent_id) return false;
+                } else {
+                    // Can move closed tabs to any closed window
+                    if(!parent_tyval || parent_tyval.val.isOpen) return false;
+                }
+            }
+            if(log.getLevel()<=log.levels.TRACE) console.log('OK to move');
+        } //endif move_node
+
+        // If we made it here, the operation is OK.
+
+        // If we are moving the last tab out of a window other than the
+        // holding pen, set up the window to be deleted once the move completes.
+        if(!more || !more.dnd) {
+            let old_parent = T.treeobj.get_node(node.parent);
+
+            if( (operation==='move_node') &&
+                old_parent &&
+                old_parent.children &&
+                (node.id !== T.holding_node_id) &&
+                (old_parent.id !== T.holding_node_id) &&
+                (new_parent.id !== T.holding_node_id) &&
+                (new_parent.id !== old_parent.id) &&
+                (old_parent.children.length === 1)
+            ) {
+                T.treeobj.element.one('move_node.jstree', remove_empty_window);
             }
         }
-        if(log.getLevel()<=log.levels.TRACE) console.log('OK to move');
-    } //endif move_node
 
+        return true;
+    } //inner
+
+    return inner;
+
+    // Note on the code that doesn't check for more.dnd:
     // See https://github.com/vakata/jstree/issues/815 - the final node move
     // doesn't come from the dnd plugin, so doesn't have more.dnd.
     // It does have more.core, however.  We may need to save state from an
@@ -1949,8 +2002,7 @@ function treeCheckCallback(
     // Note: if settings.dnd.check_while_dragging is false, we never get
     // a call to this function from the dnd plugin!
 
-    return true;    // If we made it here, we're OK.
-} //treeCheckCallback
+})(); //treeCheckCallback
 
 //////////////////////////////////////////////////////////////////////////
 // What's New //
