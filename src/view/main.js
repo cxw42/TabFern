@@ -347,7 +347,14 @@ function actionRenameWindow(node_id, node, unused_action_id, unused_action_el)
             I.remove_unsaved_markers(I.get_win_raw_text(win_val)));
     if(win_name === null) return;   // user cancelled
 
-    win_val.raw_title = win_name;
+    // A bit of a hack --- if the user hits OK on the default text for a
+    // no-name window, change it to "Saved tabs."  TODO find a better way.
+    if(win_name === 'Unsaved') {
+        win_val.raw_title = 'Saved tabs';
+    } else {
+        win_val.raw_title = win_name;
+    }
+
     I.remember(node_id, false);
         // assume that a user who bothered to rename a node
         // wants to keep it.  false => do not change the raw_title,
@@ -950,7 +957,7 @@ function treeOnSelect(_evt_unused, evt_data)
                 D.windows.change_key(win_val, 'win_id', win.id);
 
                 win_val.isOpen = true;
-                win_val.keep = true;      // just in case
+                win_val.keep = K.WIN_KEEP;      // just in case
                 win_val.win = win;
                 T.treeobj.set_type(win_node.id, K.NT_WIN_OPEN);
 
@@ -1071,6 +1078,8 @@ function winOnRemoved(win_id)
 {
     if(win_id == my_winid) return;  // does this happen?
 
+    log.info({'Window removed': win_id});
+
     // Stash the size of the window being closed as the size for
     // reopened windows.
     if(win_id in winSizes) {
@@ -1086,9 +1095,18 @@ function winOnRemoved(win_id)
     let node = T.treeobj.get_node(node_id);
     if(!node) return;
 
+    log.debug({'Node for window being removed':node});
+
     winOnFocusChanged(K.NONE);        // Clear the highlights.
 
-    if(node_val.keep) {
+    // Keep the window record in place if it is saved and still has children.
+    // If it's not saved, toss it.
+    // If it is saved, but no longer has any children, toss it.  This can
+    // happen, e.g., when dragging the last tab(s) in the Chrome window to
+    // attach them to another window.
+    if(node_val.keep === K.WIN_KEEP &&
+            node.children && node.children.length > 0
+    ) {
         node_val.isOpen = false;   // because it's already gone
         if(node_val.win) actionCloseWindow(node_id, node, null, null);
             // Since it was saved, leave it saved.  You can only get rid
@@ -1112,7 +1130,7 @@ function winOnRemoved(win_id)
 /// is known to be a bit flaky.
 function winOnFocusChanged(win_id)
 {
-    //log.info('Window focus-change triggered: ' + win_id);
+    log.info({'Window focus-change triggered': win_id});
 
     if(win_id == my_winid) {
         //log.info('Clearing flags winonfocuschanged to popup');
@@ -2185,8 +2203,8 @@ function addOpenWindowsToTree(winarr)
             // don't change val.keep, which may have either value.
             existing_win.val.win = win;
             T.treeobj.set_type(existing_win.node,
-                    existing_win.val.keep ? K.NT_WIN_OPEN :
-                                            K.NT_WIN_EPHEMERAL );
+                    existing_win.val.keep === K.WIN_KEEP ? K.NT_WIN_OPEN :
+                                                        K.NT_WIN_EPHEMERAL );
 
             T.treeobj.open_node(existing_win.node);
 
