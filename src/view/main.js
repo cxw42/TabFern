@@ -46,6 +46,11 @@ console.log('Loading TabFern ' + TABFERN_VERSION);
 // Hacks so I can keep everything in the global scope for ease of
 // use or inspection in the console while developing.
 // TODO figure out a better way.
+//  --> TODO make this a requirejs module and move the loader into a
+//      standalone file.  Then the loader can populate the globals if
+//      running in development mode, and not otherwise.  The loader can also
+//      have a user-callable function to populate the globals, e.g., for
+//      debugging in the deployed package.
 
 /// Modules loaded via requirejs
 let Modules = {};
@@ -53,14 +58,14 @@ let Modules = {};
 /// Constants loaded from view/const.js, for ease of access
 let K;
 
-/// Shorthand access to the details, view/item_details.js (formerly "Model")
-let M;
+/// Shorthand access to the details, view/item_details.js
+let D;
 
 /// Shorthand access to the tree, view/item_tree.js ("Tree")
 let T;
 
-/// Shorthand access to the item routines, view/item.js (formerly "Glue")
-let G;
+/// Shorthand access to the item routines, view/item.js ("Item")
+let I;
 
 /// HACK - a global for loglevel because typing `Modules.log` everywhere is a pain.
 let log;
@@ -124,9 +129,9 @@ function local_init()
 
     Esc = Modules.justhtmlescape;
     K = Modules['view/const'];
-    M = Modules['view/item_details'];
+    D = Modules['view/item_details'];
     T = Modules['view/item_tree'];
-    G = Modules['view/item'];
+    I = Modules['view/item'];
 
     // Check development status.  Thanks to
     // https://stackoverflow.com/a/12833511/2877364 by
@@ -182,7 +187,7 @@ function updateTabIndexValues(win_node_id)
 
     let tab_index=0;
     for(let tab_node_id of win_node.children) {
-        let tab_val = M.tabs.by_node_id(tab_node_id);
+        let tab_val = D.tabs.by_node_id(tab_node_id);
         if(tab_val) tab_val.index = tab_index;
         ++tab_index;
     }
@@ -255,11 +260,11 @@ function saveTree(save_ephemeral_windows = true, cbk = undefined)
             continue;
         }
 
-        let win_val = M.windows.by_node_id(win_node.id);
+        let win_val = D.windows.by_node_id(win_node.id);
         if(!win_val) continue;
 
         // Don't save ephemeral windows unless we've been asked to.
-        let is_ephemeral = win_val.isOpen && (win_val.keep==K.WIN_NOKEEP);
+        let is_ephemeral = win_val.isOpen && (win_val.keep===K.WIN_NOKEEP);
         if( is_ephemeral && !save_ephemeral_windows ) continue;
 
         let result_win = {};       // what will hold our data
@@ -272,7 +277,7 @@ function saveTree(save_ephemeral_windows = true, cbk = undefined)
         // Stash the tabs.  No recursion at this time.
         if(win_node.children) {
             for(let tab_node_id of win_node.children) {
-                let tab_val = M.tabs.by_node_id(tab_node_id);
+                let tab_val = D.tabs.by_node_id(tab_node_id);
                 if(!tab_val) continue;
 
                 let thistab = {};
@@ -330,18 +335,19 @@ function actionAsContextMenuCallback(action_function)
 /// hits OK.
 function actionRenameWindow(node_id, node, unused_action_id, unused_action_el)
 {
-    let win_val = M.windows.by_node_id(node_id);
+    let win_val = D.windows.by_node_id(node_id);
     if(!win_val) return;
 
     // TODO replace window.prompt with an in-DOM GUI.
     let win_name = window.prompt('New window name?',
-            T.remove_unsaved_markers(G.get_win_raw_text(win_val)));
+            I.remove_unsaved_markers(I.get_win_raw_text(win_val)));
     if(win_name === null) return;   // user cancelled
 
     win_val.raw_title = win_name;
-    G.remember(node_id);
+    I.remember(node_id, false);
         // assume that a user who bothered to rename a node
-        // wants to keep it.
+        // wants to keep it.  false => do not change the raw_title,
+        // since the user just specified it.
 
     saveTree();
 } //actionRenameWindow()
@@ -349,15 +355,11 @@ function actionRenameWindow(node_id, node, unused_action_id, unused_action_el)
 /// Mark a window as K.NOKEEP but don't close it
 function actionForgetWindow(node_id, node, unused_action_id, unused_action_el)
 {
-    let win_val = M.windows.by_node_id(node_id);
+    let win_val = D.windows.by_node_id(node_id);
     if(!win_val) return;
 
-    win_val.keep = K.WIN_NOKEEP;
-    if(win_val.raw_title !== null) {
-        win_val.raw_title += ' (Unsaved)';
-    }
-
-    G.refresh_label(node_id);
+    I.mark_as_unsaved(win_val);
+    I.refresh_label(node_id);
 
     if(win_val.isOpen) {    // should always be true, but just in case...
         T.treeobj.set_type(node, K.NT_WIN_EPHEMERAL);
@@ -370,14 +372,14 @@ function actionForgetWindow(node_id, node, unused_action_id, unused_action_el)
 /// ** The caller must call saveTree() --- actionCloseWindow() does not.
 function actionCloseWindow(node_id, node, unused_action_id, unused_action_el)
 {
-    let win_val = M.windows.by_node_id(node_id);
+    let win_val = D.windows.by_node_id(node_id);
     if(!win_val) return;
     let win = win_val.win;
 
     // Mark the tree node closed
     win_val.win = undefined;
         // Prevents winOnRemoved() from calling us to handle the removal!
-    M.windows.change_key(win_val, 'win_id', K.NONE);
+    D.windows.change_key(win_val, 'win_id', K.NONE);
         // Can't access by win_id, but can still access by node_id.
 
     // TODO winOnFocusChanged(NONE) ?
@@ -395,8 +397,7 @@ function actionCloseWindow(node_id, node, unused_action_id, unused_action_el)
     }
 
     win_val.isOpen = false;
-    win_val.raw_title = T.remove_unsaved_markers(win_val.raw_title);
-    G.remember(node_id);
+    I.remember(node_id);
 
     // Collapse the tree, if the user wants that
     if(getBoolSetting("collapse-tree-on-window-close")) {
@@ -405,14 +406,14 @@ function actionCloseWindow(node_id, node, unused_action_id, unused_action_el)
 
     // Mark the tabs in the tree node closed.
     for(let tab_node_id of node.children) {
-        let tab_val = M.tabs.by_node_id(tab_node_id);
+        let tab_val = D.tabs.by_node_id(tab_node_id);
         if(!tab_val) continue;
 
         tab_val.tab = undefined;
         tab_val.win_id = K.NONE;
         tab_val.index = K.NONE;
         tab_val.isOpen = false;
-        M.tabs.change_key(tab_val, 'tab_id', K.NONE);
+        D.tabs.change_key(tab_val, 'tab_id', K.NONE);
         // raw_url and raw_title are left alone
     }
 } //actionCloseWindow
@@ -423,11 +424,11 @@ function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el)
     actionCloseWindow(node_id, node, unused_action_id, unused_action_el);
 
     lastDeletedWindow = [];
-    // Remove the tabs from M.tabs
+    // Remove the tabs from D.tabs
     for(let tab_node_id of node.children) {
-        let tab_val = M.tabs.by_node_id(tab_node_id);
+        let tab_val = D.tabs.by_node_id(tab_node_id);
         if(!tab_val) continue;
-        M.tabs.remove_value(tab_val);
+        D.tabs.remove_value(tab_val);
         // Save the URLs for "Restore last deleted"
         lastDeletedWindow.push(tab_val.raw_url);
     }
@@ -437,8 +438,8 @@ function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el)
     T.treeobj.delete_node(node_id);   //also deletes child nodes
     window.scrollTo(...scrollOffsets);
 
-    let win_val = M.windows.by_node_id(node_id);
-    M.windows.remove_value(win_val);
+    let win_val = D.windows.by_node_id(node_id);
+    D.windows.remove_value(win_val);
 
     saveTree();
 } //actionDeleteWindow
@@ -448,7 +449,7 @@ function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el)
 function actionToggleTabTopBorder(node_id, node, unused_action_id, unused_action_el)
         //node_id, node, unused_action_id, unused_action_el)
 {
-    let tab_val = M.tabs.by_node_id(node_id);
+    let tab_val = D.tabs.by_node_id(node_id);
     if(!tab_val) return;
 
     // Note: adjust this if you add another NT_TAB type.
@@ -458,7 +459,9 @@ function actionToggleTabTopBorder(node_id, node, unused_action_id, unused_action
         T.treeobj.set_type(node_id, K.NT_TAB);
     }
 
-    G.remember(node.parent);
+    I.remember(node.parent);
+        // assume that a user who bothered to add a divider to a tab
+        // wants to keep the window the tab is in.
 
     saveTree();
 } //actionToggleTabTopBorder
@@ -466,7 +469,7 @@ function actionToggleTabTopBorder(node_id, node, unused_action_id, unused_action
 /// Edit a node's bullet
 function actionEditBullet(node_id, node, unused_action_id, unused_action_el)
 {
-    let {ty, val} = G.get_node_tyval(node_id);
+    let {ty, val} = I.get_node_tyval(node_id);
     if(!val) return;
 
     // TODO replace window.prompt with an in-DOM GUI.
@@ -476,9 +479,9 @@ function actionEditBullet(node_id, node, unused_action_id, unused_action_el)
     if(new_bullet === null) return;   // user cancelled
 
     val.raw_bullet = new_bullet;
-    G.refresh_label(node_id);
+    I.refresh_label(node_id);
 
-    G.remember(node.parent);
+    I.remember(node.parent);
         // assume that a user who bothered to add a note
         // wants to keep the window the note is in.
 
@@ -513,14 +516,14 @@ function addTabNodeActions(win_node_id)
 function createNodeForTab(ctab, parent_node_id)
 {
     { //  debug
-        let tab_val = M.tabs.by_tab_id(ctab.id);
+        let tab_val = D.tabs.by_tab_id(ctab.id);
         if(tab_val) {
             log.error('Refusing to create node for existing tab ' + ctab.id);
             return;
         }
     } // /debug
 
-    let {node_id, val} = G.makeItemForTab(parent_node_id, ctab);
+    let {node_id, val} = I.makeItemForTab(parent_node_id, ctab);
     addTabNodeActions(node_id);
 
     return node_id;
@@ -533,7 +536,7 @@ function createNodeForTab(ctab, parent_node_id)
 function createNodeForClosedTab(tab_data_v1, parent_node_id)
 {
     let node_type = (tab_data_v1.bordered ? K.NT_TAB_BORDERED : K.NT_TAB);
-    let {node_id, val} = G.makeItemForTab(
+    let {node_id, val} = I.makeItemForTab(
             parent_node_id, false,      // false => no Chrome window open
             tab_data_v1.raw_url,
             tab_data_v1.raw_title,
@@ -541,7 +544,7 @@ function createNodeForClosedTab(tab_data_v1, parent_node_id)
 
     if(tab_data_v1.raw_bullet) {
         val.raw_bullet = String(tab_data_v1.raw_bullet);
-        G.refresh_label(node_id);
+        I.refresh_label(node_id);
     }
 
     addTabNodeActions(node_id);
@@ -598,7 +601,7 @@ function createNodeForWindow(cwin, keep)
         return;
     }
 
-    let {node_id, val} = G.makeItemForWindow(cwin, keep);
+    let {node_id, val} = I.makeItemForWindow(cwin, keep);
     if(!node_id) return;    //sanity check
 
     addWindowNodeActions(node_id);
@@ -623,7 +626,7 @@ function createNodeForClosedWindow(win_data_v1)
     log.info({'Closed window':win_data_v1.raw_title, 'is ephemeral?': is_ephemeral});
 
     // Make a node for a closed window
-    let {node_id, val} = G.makeItemForWindow();
+    let {node_id, val} = I.makeItemForWindow();
 
     // Mark recovered windows
     if(is_ephemeral) {
@@ -643,7 +646,7 @@ function createNodeForClosedWindow(win_data_v1)
 
     val.raw_title = new_title;
 
-    G.refresh_label(node_id);
+    I.refresh_label(node_id);
 
     addWindowNodeActions(node_id);
 
@@ -824,9 +827,9 @@ function treeOnSelect(_evt_unused, evt_data)
     let win_id;     // If assigned, this window will be brought to the front
                     // at the end of this function.
 
-    if(node_val = M.tabs.by_node_id(node.id)) {
+    if(node_val = D.tabs.by_node_id(node.id)) {
         is_tab = true;
-    } else if(node_val = M.windows.by_node_id(node.id)) {
+    } else if(node_val = D.windows.by_node_id(node.id)) {
         is_win = true;
     } else {
         log.error('Selection of unknown node '+node);
@@ -914,7 +917,7 @@ function treeOnSelect(_evt_unused, evt_data)
             if(!parent_node) return;
 
             win_node = parent_node;
-            win_val = M.windows.by_node_id(parent_node_id);
+            win_val = D.windows.by_node_id(parent_node_id);
             if(!win_val) return;
         }
 
@@ -922,7 +925,7 @@ function treeOnSelect(_evt_unused, evt_data)
         let urls=[];
         let expected_tab_count = win_node.children.length;
         for(let child_id of win_node.children) {
-            let child_val = M.tabs.by_node_id(child_id);
+            let child_val = D.tabs.by_node_id(child_id);
             urls.push(child_val.raw_url);
         }
 
@@ -940,7 +943,7 @@ function treeOnSelect(_evt_unused, evt_data)
             function(win) {
                 // Update the tree and node mappings
                 log.info('Adding nodeid map for winid ' + win.id);
-                M.windows.change_key(win_val, 'win_id', win.id);
+                D.windows.change_key(win_val, 'win_id', win.id);
 
                 win_val.isOpen = true;
                 win_val.keep = true;      // just in case
@@ -971,7 +974,7 @@ function treeOnSelect(_evt_unused, evt_data)
                 let count_to_use = Math.min(expected_tab_count, win.tabs.length);
                 for(let idx=0; idx < count_to_use; ++idx) {
                     let tab_node_id = win_node.children[idx];
-                    let tab_val = M.tabs.by_node_id(tab_node_id);
+                    let tab_val = D.tabs.by_node_id(tab_node_id);
                     if(!tab_val) continue;
 
                     let tab = win.tabs[idx];
@@ -982,7 +985,7 @@ function treeOnSelect(_evt_unused, evt_data)
                     tab_val.raw_url = tab.url || 'about:blank';
                     tab_val.raw_title = tab.title || '## Unknown title ##';
                     tab_val.isOpen = true;
-                    M.tabs.change_key(tab_val, 'tab_id', tab_val.tab.id);
+                    D.tabs.change_key(tab_val, 'tab_id', tab_val.tab.id);
                 }
 
                 // Another hack for the strange behaviour above: get rid of
@@ -1072,7 +1075,7 @@ function winOnRemoved(win_id)
         delete winSizes[win_id];
     }
 
-    let node_val = M.windows.by_win_id(win_id);
+    let node_val = D.windows.by_win_id(win_id);
     if(!node_val) return;   // e.g., already closed
     let node_id = node_val.node_id;
     if(!node_id) return;
@@ -1140,7 +1143,7 @@ function winOnFocusChanged(win_id)
         if(new_win_id === K.NONE) return;
 
         // Get the window
-        let window_node_id = M.windows.by_win_id(new_win_id, 'node_id');
+        let window_node_id = D.windows.by_win_id(new_win_id, 'node_id');
         //log.info('Window node ID: ' + window_node_id);
         if(!window_node_id) return;
             // E.g., if new_win_id corresponds to this view.
@@ -1167,13 +1170,13 @@ function tabOnCreated(tab)
 {
     log.info({'Tab created': tab.id, tab});
 
-    let win_node_id = M.windows.by_win_id(tab.windowId, 'node_id')
+    let win_node_id = D.windows.by_win_id(tab.windowId, 'node_id')
     if(!win_node_id) return;
 
     let tab_node_id;
 
     // See if this is a duplicate of an existing tab
-    let tab_val = M.tabs.by_tab_id(tab.id);
+    let tab_val = D.tabs.by_tab_id(tab.id);
 
     if(tab_val === undefined) {     // If not, create the tab
         let tab_node_id = createNodeForTab(tab, win_node_id);   // Adds at end
@@ -1194,7 +1197,7 @@ function tabOnUpdated(tabid, changeinfo, tab)
 {
     log.info({'Tab updated': tabid, changeinfo, tab});
 
-    let tab_node_val = M.tabs.by_tab_id(tabid);
+    let tab_node_val = D.tabs.by_tab_id(tabid);
     if(!tab_node_val) return;
     let tab_node_id = tab_node_val.node_id;
 
@@ -1210,7 +1213,7 @@ function tabOnUpdated(tabid, changeinfo, tab)
     } else {
         tab_node_val.raw_title = 'Tab';
     }
-    G.refresh_label(tab_node_id);
+    I.refresh_label(tab_node_id);
 
     {   // set the icon
         let icon_text;
@@ -1236,11 +1239,11 @@ function tabOnMoved(tabid, moveinfo)
     let to_idx = moveinfo.toIndex;
 
     // Get the parent (window)
-    let window_node_id = M.windows.by_win_id(moveinfo.windowId, 'node_id');
+    let window_node_id = D.windows.by_win_id(moveinfo.windowId, 'node_id');
     if(!window_node_id) return;
 
     // Get the tab's node
-    let tab_node_id = M.tabs.by_tab_id(tabid, 'node_id');
+    let tab_node_id = D.tabs.by_tab_id(tabid, 'node_id');
     if(!tab_node_id) return;
 
     // Move the tree node
@@ -1276,7 +1279,7 @@ function tabOnActivated(activeinfo)
     // Highlight the active tab
     SELTAB: {
         // Get the tab's node
-        let tab_node_id = M.tabs.by_tab_id(activeinfo.tabId, 'node_id');
+        let tab_node_id = D.tabs.by_tab_id(activeinfo.tabId, 'node_id');
         if(!tab_node_id) break SELTAB;
 
         //log.info('Clearing flags tabonactivate');
@@ -1297,7 +1300,7 @@ function tabOnRemoved(tabid, removeinfo)
     // The cleanup will be handled by winOnRemoved().
     if(removeinfo.isWindowClosing) return;
 
-    let window_node_id = M.windows.by_win_id(removeinfo.windowId, 'node_id');
+    let window_node_id = D.windows.by_win_id(removeinfo.windowId, 'node_id');
     if(!window_node_id) return;
 
     {   // Keep the locals here out of the scope of the closure below.
@@ -1306,14 +1309,14 @@ function tabOnRemoved(tabid, removeinfo)
         if(!window_node) return;
 
         // Get the tab's node
-        let tab_node_id = M.tabs.by_tab_id(tabid, 'node_id');
+        let tab_node_id = D.tabs.by_tab_id(tabid, 'node_id');
         if(!tab_node_id) return;
         let tab_node = T.treeobj.get_node(tab_node_id);
         if(!tab_node) return;
 
         // Remove the node
-        let tab_val = M.tabs.by_tab_id(tabid);
-        M.tabs.remove_value(tab_val);
+        let tab_val = D.tabs.by_tab_id(tabid);
+        D.tabs.remove_value(tab_val);
             // So any events that are triggered won't try to look for a
             // nonexistent tab.
         T.treeobj.delete_node(tab_node);
@@ -1353,12 +1356,12 @@ function tabOnDetached(tabid, detachinfo)
 
     T.treeobj.clear_flags();  //just to be on the safe side
 
-    let tab_val = M.tabs.by_tab_id(tabid);
+    let tab_val = D.tabs.by_tab_id(tabid);
 
     if(!tab_val)    // An express failure message - this would be bad
         throw new Error("Unknown tab to detach???? "+tabid+' '+detachinfo.toString());
 
-    let old_win_val = M.windows.by_win_id(detachinfo.oldWindowId);
+    let old_win_val = D.windows.by_win_id(detachinfo.oldWindowId);
     if(!old_win_val)    // ditto
         throw new Error("Unknown window detaching from???? "+attachinfo.newWindowId+' '+attachinfo.toString());
 
@@ -1374,12 +1377,12 @@ function tabOnAttached(tabid, attachinfo)
 {
     log.info({'Tab attached': tabid, attachinfo});
 
-    let tab_val = M.tabs.by_tab_id(tabid);
+    let tab_val = D.tabs.by_tab_id(tabid);
 
     if(!tab_val)        // An express failure message - this would be bad
         throw new Error("Unknown tab to attach???? "+tabid+' '+attachinfo.toString());
 
-    let new_win_val = M.windows.by_win_id(attachinfo.newWindowId);
+    let new_win_val = D.windows.by_win_id(attachinfo.newWindowId);
     if(!new_win_val)    // ditto
         throw new Error("Unknown window attaching to???? "+attachinfo.newWindowId+' '+attachinfo.toString());
 
@@ -1716,12 +1719,12 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
     // What kind of node is it?
     let nodeType, win_val, tab_val;
     {
-        win_val = M.windows.by_node_id(node.id);
+        win_val = D.windows.by_node_id(node.id);
         if(win_val) nodeType = K.IT_WINDOW;
     }
 
     if(!nodeType) {
-        tab_val = M.tabs.by_node_id(node.id);
+        tab_val = D.tabs.by_node_id(node.id);
         if(tab_val) nodeType = K.IT_TAB;
     }
 
@@ -1774,12 +1777,14 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
             };
         }
 
-        winItems.closeItem = {
-                label: 'Close and remember',
-                icon: 'fff-picture-delete',
-                action:
-                    function(){actionCloseWindow(node.id, node, null, null);}
-            };
+        if(win_val.isOpen) {
+            winItems.closeItem = {
+                    label: 'Close and remember',
+                    icon: 'fff-picture-delete',
+                    action:
+                        function(){actionCloseWindow(node.id,node,null,null);}
+                };
+        }
 
         winItems.deleteItem = {
                 label: 'Delete',
@@ -1821,7 +1826,7 @@ function dndIsDraggable(nodes, evt)
     // tab, it's not draggable.  Check all nodes for future-proofing, since we
     // may someday support multiselect.
     for(let node of nodes) {
-        let tyval = G.get_node_tyval(node.id);
+        let tyval = I.get_node_tyval(node.id);
         if(!tyval) return false;    // don't drag nodes we don't know about
 
         // Can't drag open tabs
@@ -1832,7 +1837,7 @@ function dndIsDraggable(nodes, evt)
             // for futureproofing --- at present, tabs cannot be closed
             // while their windows are open.
             if(node.parent !== $.jstree.root) {
-                let parent_tyval = G.get_node_tyval(node.parent);
+                let parent_tyval = I.get_node_tyval(node.parent);
                 if(!parent_tyval || parent_tyval.val.isOpen) return false;
             }
         }
@@ -1874,12 +1879,12 @@ function treeCheckCallback(
         console.groupEnd();
     } //logging
 
-    let tyval = G.get_node_tyval(node.id);
+    let tyval = I.get_node_tyval(node.id);
     if(!tyval) return false;    // sanity check
 
     let parent_tyval;
     if(node_parent.id !== $.jstree.root) {
-        parent_tyval = G.get_node_tyval(node_parent.id);
+        parent_tyval = I.get_node_tyval(node_parent.id);
     }
 
     // The "can I drop here?" check.
@@ -2082,7 +2087,7 @@ function winAlreadyExists(new_win)
 
         // Is it already open?  If so, don't hijack it.
         // This also catches non-window nodes such as the holding pen.
-        let existing_win_val = M.windows.by_node_id(existing_win_node_id);
+        let existing_win_val = D.windows.by_node_id(existing_win_node_id);
         if(!existing_win_val || typeof existing_win_val.isOpen === 'undefined' ||
                 existing_win_val.isOpen ) continue WIN;
 
@@ -2093,7 +2098,7 @@ function winAlreadyExists(new_win)
 
         // Same number of tabs.  Are they the same URLs?
         for(let i=0; i<new_win.tabs.length; ++i) {
-            let existing_tab_val = M.tabs.by_node_id(existing_win_node.children[i]);
+            let existing_tab_val = D.tabs.by_node_id(existing_win_node.children[i]);
             if(!existing_tab_val) continue WIN;
             if(existing_tab_val.raw_url !== new_win.tabs[i].url) continue WIN;
         }
@@ -2123,7 +2128,7 @@ function addOpenWindowsToTree(winarr)
             createNodeForWindow(win, K.WIN_NOKEEP);
         } else {
             log.info('Found existing window in the tree: ' + existing_win.val.raw_title);
-            M.windows.change_key(existing_win.val, 'win_id', win.id);
+            D.windows.change_key(existing_win.val, 'win_id', win.id);
             existing_win.val.isOpen = true;
             // don't change val.keep, which may have either value.
             existing_win.val.win = win;
@@ -2136,7 +2141,7 @@ function addOpenWindowsToTree(winarr)
             // If we reach here, win.tabs.length === existing_win.node.children.length.
             for(let idx=0; idx < win.tabs.length; ++idx) {
                 let tab_node_id = existing_win.node.children[idx];
-                let tab_val = M.tabs.by_node_id(tab_node_id);
+                let tab_val = D.tabs.by_node_id(tab_node_id);
                 if(!tab_val) continue;
 
                 let ctab = win.tabs[idx];
@@ -2147,11 +2152,11 @@ function addOpenWindowsToTree(winarr)
                 tab_val.raw_url = ctab.url || 'about:blank';
                 tab_val.raw_title = ctab.title || '## Unknown title ##';
                 tab_val.isOpen = true;
-                M.tabs.change_key(tab_val, 'tab_id', tab_val.tab.id);
+                D.tabs.change_key(tab_val, 'tab_id', tab_val.tab.id);
 
                 T.treeobj.set_icon(tab_node_id,
                     (ctab.favIconUrl ? encodeURI(ctab.favIconUrl) : 'fff-page') );
-                G.refresh_label(tab_node_id);
+                I.refresh_label(tab_node_id);
             } //foreach tab
         } //endif window already exists
     } //foreach window

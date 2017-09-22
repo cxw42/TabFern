@@ -21,7 +21,7 @@
         for(let modulename of imports) {
             requirements.push(root[modulename]);
         }
-        root.view_model = factory(...requirements);
+        root.tabfern_item_details = factory(...requirements);
     }
 }(this, function ($, _unused_jstree_placeholder_, log, multidex, K ) {
     "use strict";

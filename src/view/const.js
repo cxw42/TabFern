@@ -20,7 +20,7 @@
         for(let modulename of imports) {
             requirements.push(root[modulename]);
         }
-        root.view_const = factory(...requirements);
+        root.tabfern_const = factory(...requirements);
     }
 }(this, function ($, _unused_jstree_placeholder_, log_orig ) {
     "use strict";

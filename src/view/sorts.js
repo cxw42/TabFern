@@ -21,7 +21,7 @@
         for(let modulename of imports) {
             requirements.push(root[modulename]);
         }
-        root.view_sorts = factory(...requirements);
+        root.tabfern_sorts = factory(...requirements);
     }
 }(this, function ($, _unused_jstree_placeholder_, log_orig, K, T, D ) {
     "use strict";

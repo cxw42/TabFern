@@ -21,7 +21,7 @@
         for(let modulename of imports) {
             requirements.push(root[modulename]);
         }
-        root.view_tree = factory(...requirements);
+        root.tabfern_item_tree = factory(...requirements);
     }
 }(this, function ($, _jstree, _actions, _flagnode, log_orig, K ) {
     "use strict";
@@ -65,23 +65,6 @@
         jq_tree.on('after_open.jstree', module.vscroll_function);
         jq_tree.on('after_close.jstree', module.vscroll_function);
     }; //install_vscroll_function()
-
-    /// Remove " (Unsaved)" flags from a string
-    /// @param str {mixed} A string, or falsy.
-    /// @return
-    ///     If #str is falsy, a copy of #str.
-    //      Otherwise, #str as a string, without the markers if any were present
-    module.remove_unsaved_markers = function(str) {
-        if(!str) return str;
-        str = str.toString();
-        let re = /(\s+\(Unsaved\)){1,}\s*$/i;
-        let matches = str.match(re);
-        if(matches && matches.index > 0) {
-            return str.slice(0,matches.index);
-        } else {
-            return str;
-        }
-    };
 
     /// Create the tree.
     /// @param selector {JQuery selector} where to make the tree

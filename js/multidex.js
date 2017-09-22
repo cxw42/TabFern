@@ -110,6 +110,15 @@
     } //make_value
 
     /// Make a new multidex and return it.
+    /// @param type_string {optional string} If provide, a value to put in
+    ///                     the `ty` field of values.
+    /// @param key_names {string, or array of string} Names of key field(s)
+    ///                     in a value
+    /// @param other_names {optional string or array of string}
+    ///                     Names of non-key fields in a value.
+    /// TODO permit the caller to specify functions to be added to the
+    /// value prototype.
+    /// @return The new multidex, or null on failure.
     function ctor()     //([type string, ]key_names [, other_names])
     {
         let ty_string;
@@ -146,6 +155,9 @@
         }
 
         // Check the arguments
+        if(typeof key_names === 'string') key_names = [key_names];
+        if(typeof other_names === 'string') other_names = [other_names];
+
         if(!Array.isArray(key_names)) return null;   //TODO better error reporting
         if(!Array.isArray(other_names)) return null;   //TODO better error reporting
         let all_names = key_names.concat(other_names);

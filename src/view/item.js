@@ -10,8 +10,8 @@
 // whether they take node_id, val, or something else.
 
 (function (root, factory) {
-    let imports=['jquery','jstree','loglevel', 'view/const', 'view/item_details',
-                    'view/item_tree', 'justhtmlescape'];
+    let imports=['jquery','jstree','loglevel', 'view/const',
+                    'view/item_details', 'view/item_tree', 'justhtmlescape'];
 
     if (typeof define === 'function' && define.amd) {
         // AMD
@@ -29,9 +29,9 @@
         for(let modulename of imports) {
             requirements.push(root[modulename]);
         }
-        root.view_glue = factory(...requirements);
+        root.tabfern_item = factory(...requirements);
     }
-}(this, function ($, _unused_jstree_placeholder_, log, K, M, T, Esc ) {
+}(this, function ($, _unused_jstree_placeholder_, log, K, D, T, Esc ) {
     "use strict";
 
     function loginfo(...args) { log.info('TabFern view/item.js: ', ...args); };
@@ -61,7 +61,7 @@
             node_id = node.id;
         }
 
-        return M.get_node_tyval(node_id);
+        return D.get_node_tyval(node_id);
     }; //get_node_tyval()
 
     /// Get the textual version of raw_title for a window's value
@@ -75,6 +75,33 @@
             return 'Unsaved';
         }
     }; //get_win_raw_text()
+
+    module.mark_as_unsaved = function(val) {
+        val.keep = K.WIN_NOKEEP;
+        if(val.raw_title !== null) {
+            val.raw_title = module.remove_unsaved_markers(val.raw_title) +
+                            ' (Unsaved)';
+        }
+        // If raw_title is null, get_win_raw_text() will return 'Unsaved',
+        // so we don't need to do anything here.
+    }; //mark_as_unsaved()
+
+    /// Remove " (Unsaved)" flags from a string
+    /// @param str {mixed} A string, or falsy.
+    /// @return
+    ///     If #str is falsy, a copy of #str.
+    //      Otherwise, #str as a string, without the markers if any were present
+    module.remove_unsaved_markers = function(str) {
+        if(!str) return str;
+        str = str.toString();
+        let re = /(\s+\(Unsaved\)){1,}\s*$/i;
+        let matches = str.match(re);
+        if(matches && matches.index > 0) {
+            return str.slice(0,matches.index);
+        } else {
+            return str;
+        }
+    };
 
     /// Get the HTML for the node's label.  The output can be passed
     /// directly to jstree.rename_node().
@@ -103,7 +130,7 @@
     /// @return truthy on success, falsy on failure.
     module.refresh_label = function(node_id) {
         if(!node_id) return false;
-        let {ty, val} = M.get_node_tyval(node_id);
+        let {ty, val} = D.get_node_tyval(node_id);
         if(!val) return false;
         let retval = T.treeobj.rename_node(node_id, module.get_html_label(val));
         // TODO also update the icon?
@@ -116,10 +143,13 @@
     };
 
     /// Mark the window identified by #win_node_id as to be kept.
+    /// @param win_node_id {string} The window node ID
+    /// @param cleanup_title {optional boolean, default true}
+    ///             If true, remove unsaved markers from the raw_title.
     /// @return truthy on success; falsy on failure
-    module.remember = function(win_node_id) {
+    module.remember = function(win_node_id, cleanup_title = true) {
         if(!win_node_id) return false;
-        let {ty, val} = M.get_node_tyval(win_node_id);
+        let {ty, val} = D.get_node_tyval(win_node_id);
         if(!val) return false;
         if(ty !== K.IT_WINDOW) return false;
 
@@ -127,9 +157,14 @@
 
         if(val.isOpen) {
             T.treeobj.set_type(win_node_id, K.NT_WIN_OPEN);
-                // open implies saved, since open != ephemeral.
+                // NT_WIN_OPEN implies saved, since open != ephemeral.
         } else {
             T.treeobj.set_type(win_node_id, K.NT_WIN_CLOSED);
+        }
+
+        if(cleanup_title) {
+            val.raw_title = module.remove_unsaved_markers(
+                    module.get_win_raw_text(val));
         }
 
         module.refresh_label(win_node_id);
@@ -164,9 +199,9 @@
     module.bindTabToTree_NOTYETDONE = function(ctab, node_ref)
     {
         // Sanity check
-        let tab_val = M.tabs.by_tab_id(ctab.id);
+        let tab_val = D.tabs.by_tab_id(ctab.id);
         if(!tab_val) {
-            tab_val = M.tabs.add({tab_id: ctab.id});
+            tab_val = D.tabs.add({tab_id: ctab.id});
             log.error( {'Refusing to map node for existing tab': ctab.id,
                         'already at node':tab_val.node_id});
             return false;
@@ -181,7 +216,7 @@
             // TODO if the favicon doesn't load, replace the icon with the generic
             // page icon so we don't keep hitting the favIconUrl.
 
-        M.tabs.add({tab_id: ctab.id, node_id: node.id,
+        D.tabs.add({tab_id: ctab.id, node_id: node.id,
             win_id: ctab.windowId, index: ctab.index, tab: ctab,
             raw_url: ctab.url, raw_title: ctab.title, isOpen: true,
             raw_bullet: null,
@@ -197,7 +232,7 @@
     module.bindWindowToTree_NOTYETDONE = function(cwin, fern_node_ref)
     {
         // Sanity check
-        let win_val = M.windows.by_win_id(cwin.id);
+        let win_val = D.windows.by_win_id(cwin.id);
         if(win_val) {
             log.error( {'Refusing to map node for existing win': cwin.id,
                         'already at node':win_val.node_id});
@@ -207,7 +242,7 @@
         let node = T.treeobj.get_node(node_ref);
         if(!node) return false;
 
-        win_val = M.windows.add({
+        win_val = D.windows.add({
             win_id: cwin.id, node_id: node.id, win: cwin,
             raw_title: null,    // default name
             raw_bullet: null,
@@ -246,7 +281,7 @@
         );
 
         loginfo({'Adding nodeid map for cwinid': cwin ? cwin.id : 'none'});
-        let win_val = M.windows.add({
+        let win_val = D.windows.add({
             win_id: (cwin ? cwin.id : K.NONE),
             node_id: win_node_id,
             win: (cwin ? cwin : undefined),
@@ -287,7 +322,7 @@
             T.treeobj.set_type(tab_node_id, K.NT_TAB);
         }
 
-        let tab_val = M.tabs.add({
+        let tab_val = D.tabs.add({
             tab_id: (ctab ? ctab.id : K.NONE),
             node_id: tab_node_id,
             win_id: (ctab ? ctab.windowId : K.NONE),
