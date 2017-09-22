@@ -1,49 +1,42 @@
-window._tabFernShortcuts = window._tabFernShortcuts || {};
-window._tabFernShortcuts.drivers = window._tabFernShortcuts.drivers || {};
+// dmauro_keypress.js: shortcut driver for keypress.js
 
-(function() {
-
-    function generateLoggerProxyWithPrefixedMessage(msg) {
-        return Function.prototype.bind.call(console.log, console, msg);
+(function (root, factory) {
+    if (typeof define === 'function' && define.amd) {
+        // AMD
+        define(['loglevel', 'keypress', 'signals'], factory);
+    } else if (typeof exports === 'object') {
+        // Node, CommonJS-like
+        module.exports = factory(require('loglevel'), require('keypress'),
+                                    require('signals'));
+    } else {
+        // Browser globals (root is window)
+        root.dmauro_keypress_driver = factory(root.log, root.keypress, root.signals);
     }
-    var log = generateLoggerProxyWithPrefixedMessage('TabFern _tabFern Drivers dmauro-keypress.js:');
+}(this, function (log_orig, keypress, signals) {
 
-    function isDriverLoaded() {
-        return !!( window.keypress );
-    }
+    function loginfo(...args) { log_orig.info('TabFern drivers dmauro_keypress.js: ', ...args); };
+
+    /// The module we will return
+    let retval = {};
 
     var listener = null;
 
     function loadKeyPress(cb) {
-        if ( !isDriverLoaded() ) {
-            asyncAppendScriptToHead(
-                document,
-                '/js/dmauro-Keypress-2.1.3-9-80c0f97/keypress-2.1.4.min.js',
-                (evt) => {
-                    handleScriptCb(evt, cb);
-                }
-            );
-        } else {
-            listener = new window.keypress.Listener();
-            cb(null);
-        }
+        listener = new keypress.Listener();
+        cb(null);
     }
 
     /**
      * @param {Event} evt
+     * @param {function} cb
      */
     function handleScriptCb(evt, cb) {
         if ( evt.type === "load" && evt.eventPhase === 2 ) {
-            log(`handleScriptCb loaded with timestamp: ${Math.round(evt.timeStamp)}`);
-            listener = new window.keypress.Listener();
-            cb(null, window._tabFernShortcuts.drivers.dmaruo_keypress);
+            loginfo(`handleScriptCb loaded with timestamp: ${Math.round(evt.timeStamp)}`);
+            listener = new keypress.Listener();
+            cb(null, retval);
         } else {
-            cb(
-                new Error(
-                    `${window._tabFernShortcuts.drivers.dmaruo_keypress.name} failed to load.`,
-                    evt
-                )
-            );
+            cb( new Error( `${retval.name} failed to load.`, evt) );
         }
     }
 
@@ -91,7 +84,7 @@ window._tabFernShortcuts.drivers = window._tabFernShortcuts.drivers || {};
                 let tempItem = {...currentKeyBindKeysToSignalsMapping[item]};
                 tempItem.keys = keyConfig;
                 if ( mapOfKeysUsed[keyConfig] ) {
-                    log(`${keyConfig} is used twice! ${mapOfKeysUsed[keyConfig]} is overridden by ${item}.`);
+                    loginfo(`${keyConfig} is used twice! ${mapOfKeysUsed[keyConfig]} is overridden by ${item}.`);
                     warnUserOfProblem = true;
                     mapOfKeysUsed[keyConfig] += ` & ${item}`;
                 } else {
@@ -107,13 +100,15 @@ window._tabFernShortcuts.drivers = window._tabFernShortcuts.drivers || {};
         listener.register_many( currentKeypressListeners );
     }
 
-    window._tabFernShortcuts.drivers.dmaruo_keypress = {
+    retval = {
         name: 'KeyPress (dmaruo)',
-        isLoaded: isDriverLoaded,
         load: (cb) => { loadKeyPress(cb); },
-        unload: (cb) => { log('De-initialization not implemented yet. TODO: Remove Script from page. Clear memory references.'); },
+        unload: (cb) => { loginfo('De-initialization not implemented yet. TODO: Remove Script from page. Clear memory references.'); },
         clearKeyBindings: clearKeyBindings,
         applyKeyBindingHooks: applyKeyBindingHooks
     }
 
-})();
+    return retval;
+
+}));
+// vi: set ts=4 sts=4 sw=4 et ai fo-=o fo-=r: //

@@ -4145,7 +4145,7 @@
 		 * @param  {function} callback a function to call once the move is completed, receives 3 arguments - the node, the new parent and the position
 		 * @param  {Boolean} is_loaded internal parameter indicating if the parent node has been loaded
 		 * @param  {Boolean} skip_redraw internal parameter indicating if the tree should be redrawn
-		 * @param  {Boolean} instance internal parameter indicating if the node comes from another instance
+		 * @param  {Boolean} origin internal parameter indicating if the node comes from another instance
 		 * @trigger model.jstree copy_node.jstree
 		 */
 		copy_node : function (obj, par, pos, callback, is_loaded, skip_redraw, origin) {
@@ -5884,7 +5884,12 @@
 		 * * `_disabled` - a boolean indicating if this action should be disabled
 		 * * `label` - a string - the name of the action (could be a function returning a string)
 		 * * `title` - a string - an optional tooltip for the item
-		 * * `action` - a function to be executed if this item is chosen, the function will receive
+		 * * `action` - a function to be executed if this item is chosen, the function will receive an object having:
+		 *	item	The menu item that was selected
+		 *	element	The jQuery context-menu item selected
+		 *	reference	The element that was right-clicked
+		 *			to cause the context menu to open
+		 *	position	{x, y} position of the menu (?)
 		 * * `icon` - a string, can be a path to an icon or a className, if using an image that is in the current directory use a `./` prefix, otherwise it will be detected as a class
 		 * * `shortcut` - keyCode which will trigger the action if the menu is open (for example `113` for rename, which equals F2)
 		 * * `shortcut_label` - shortcut label (like for example `F2` for rename)
@@ -6292,6 +6297,8 @@
 					}
 				}
 
+				// TODO? sub-submenus don't seem to be constrained properly
+				// to stay on narrow viewports.
 				e.show();
 			},
 			show : function (reference, position, data) {

@@ -1,5 +1,9 @@
 // common.js: Only constants and stateless helper functions should be
 // in this file.
+// ** Not currently a require.js module so that it can be used in contexts
+// ** where require.js is not available (e.g., background.js).
+// ** TODO make this a UMD module?
+
 console.log('TabFern common.js loading');
 
 //////////////////////////////////////////////////////////////////////////
@@ -7,7 +11,7 @@ console.log('TabFern common.js loading');
 
 /// The TabFern extension friendly version number.  Displayed in the
 /// title bar of the popup window, so lowercase (no shouting!).
-const TABFERN_VERSION='0.1.7 alpha \u26a0'
+const TABFERN_VERSION='0.1.8 alpha \u26a0'
     // Don't forget to update BOTH the version and version_name in
     // manifest.json when you change this!
 
@@ -26,9 +30,20 @@ const TABFERN_VERSION='0.1.7 alpha \u26a0'
 const MSG_GET_VIEW_WIN_ID = 'getViewWindowID';
 
 //////////////////////////////////////////////////////////////////////////
-// Names of settings //
+// Names of settings, and their defaults //
 
-const CFG_RESTORE_ON_LAST_DELETED = "open-tree-on-restore-last-deleted";
+const CFG_ENB_CONTEXT_MENU = 'ContextMenu.Enabled';
+const CFG_RESTORE_ON_LAST_DELETED = 'open-tree-on-restore-last-deleted';
+const CFG_JUMP_WITH_SORT_OPEN_TOP = 'jump-to-top-when-sort-open-to-top';
+const CFG_COLLAPSE_ON_STARTUP = 'collapse-trees-on-startup';
+
+const CFG_DEFAULTS = {
+    __proto__: null,
+    [CFG_ENB_CONTEXT_MENU]: true,
+    [CFG_RESTORE_ON_LAST_DELETED]: false,
+    [CFG_JUMP_WITH_SORT_OPEN_TOP]: true,
+    [CFG_COLLAPSE_ON_STARTUP]: true,
+};
 
 //////////////////////////////////////////////////////////////////////////
 // Helper functions //
