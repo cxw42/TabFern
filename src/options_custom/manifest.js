@@ -141,6 +141,8 @@ Notes are saved with the tree, so your notes will stick around
 as long as you want.</li>
 <li>Sorting open windows to the top, to make it easier to find them!
 ${ham} ${gt} Sort ${gt} ${icon('fff-text-padding-top')}</li>
+<li>You can now drag and drop tabs in the tree within and between closed
+windows.  (Drag-and-drop within open windows is coming soon, but not ready yet.)</li>
 </ul>`
 
             },

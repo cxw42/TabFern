@@ -30,7 +30,8 @@
 
     /// The module we are creating
     let module = {
-        treeobj: null   ///< The jstree instance
+        treeobj: null,      ///< The jstree instance
+        invoked: false,     ///< A flag set by module.invoke()
     };
 
     // --- Vertical-scrolling support ---
@@ -205,6 +206,15 @@
         // Or maybe make vscroll a jstree plugin?
 
     }; //module.create()
+
+    /// Invoke a function on T.treeobj, setting a flag before and clearing it
+    /// after.  This is so a synchronous callback (e.g., check()) can tell
+    /// that it was called as a result of an invoke().
+    module.invoke = function(which, ...args) {
+        module.invoked = true;
+        which(...args);
+        module.invoked = false;
+    }; //module.invoke()
 
     return module;
 }));

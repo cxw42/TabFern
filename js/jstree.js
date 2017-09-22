@@ -4145,7 +4145,7 @@
 		 * @param  {function} callback a function to call once the move is completed, receives 3 arguments - the node, the new parent and the position
 		 * @param  {Boolean} is_loaded internal parameter indicating if the parent node has been loaded
 		 * @param  {Boolean} skip_redraw internal parameter indicating if the tree should be redrawn
-		 * @param  {Boolean} instance internal parameter indicating if the node comes from another instance
+		 * @param  {Boolean} origin internal parameter indicating if the node comes from another instance
 		 * @trigger model.jstree copy_node.jstree
 		 */
 		copy_node : function (obj, par, pos, callback, is_loaded, skip_redraw, origin) {

@@ -236,6 +236,8 @@ function makeSaveData(data)
 ///     Called with the save data.
 function saveTree(save_ephemeral_windows = true, cbk = undefined)
 {
+    if(log.getLevel <= log.levels.TRACE) console.log('saveTree');
+
     // Get the raw data for the whole tree.  Can't use $(...) because closed
     // tree nodes aren't in the DOM.
     let root_node = T.treeobj.get_node($.jstree.root);    //from get_json() src
@@ -1853,6 +1855,10 @@ function dndIsDraggable(nodes, evt)
 function treeCheckCallback(
             operation, node, node_parent, node_position, more)
 {
+    // Fast bail when possible
+    if(operation === 'copy_node') return false; // we can't handle copies at present
+    if(operation !== 'move_node') return true;
+
     // Don't log checks during initial tree population
     if(did_init_complete && (log.getLevel() <= log.levels.TRACE) ) {
         console.group('check callback for ' + operation);
@@ -1876,32 +1882,31 @@ function treeCheckCallback(
         parent_tyval = G.get_node_tyval(node_parent.id);
     }
 
-    // When dragging, you can't drag windows into another node, or
-    // anywhere but the root.  You can drag closed tabs only into and
-    // out of closed windows.
+    // The "can I drop here?" check.
     if(more && more.dnd && operation==='move_node') {
 
-        if(tyval.ty === K.IT_WINDOW) {
-            // Can't drop inside - only before or after
+        if(tyval.ty === K.IT_WINDOW) {              // Dragging windows
+            // Can't drop inside another window - only before or after
             if(more.pos==='i') return false;
 
             // Can't drop other than in the root
             if(node_parent.id !== $.jstree.root) return false;
 
-        } else if(tyval.ty === K.IT_TAB) {
+        } else if(tyval.ty === K.IT_TAB) {          // Dragging tabs
             // Tabs: Can only drop closed tabs in closed windows
             if(tyval.val.isOpen) return false;
             if(!parent_tyval || parent_tyval.val.isOpen) return false;
             if(parent_tyval.ty !== K.IT_WINDOW) return false;
         }
+        if(log.getLevel()<=log.levels.TRACE) console.log('OK to drop here');
     }
 
-    // When moving, e.g., at drag end, you can't drop a window other than
-    // in the root.
+    // The "I'm about to move it here --- OK?" check.  This happens for
+    // drag and also for express calls to move_node.
     if(operation==='move_node') {
 
         if(log.getLevel() <= log.levels.TRACE) {
-            console.group('check callback for ' + operation);
+            console.group('check callback for node move');
             console.log(tyval);
             console.log(node);
             console.log(node_parent);
@@ -1914,15 +1919,21 @@ function treeCheckCallback(
             if(node_parent.id !== $.jstree.root) return false;
 
         } else if(tyval.ty === K.IT_TAB) {
-            // Can't move tabs between windows, except in and out of the
-            // holding pen.
             let curr_parent_id = node.parent;
             let new_parent_id = node_parent.id;
 
-            if( curr_parent_id !== T.holding_node_id &&
-                new_parent_id !== T.holding_node_id &&
-                curr_parent_id !== new_parent_id) return false;
+            if(tyval.val.isOpen) {
+                // Can't move open tabs between windows, except in and out of
+                // the holding pen.
+                if( curr_parent_id !== T.holding_node_id &&
+                    new_parent_id !== T.holding_node_id &&
+                    curr_parent_id !== new_parent_id) return false;
+            } else {
+                // Can move closed tabs to any closed window
+                if(!parent_tyval || parent_tyval.val.isOpen) return false;
+            }
         }
+        if(log.getLevel()<=log.levels.TRACE) console.log('OK to move');
     } //endif move_node
 
     // See https://github.com/vakata/jstree/issues/815 - the final node move
@@ -2034,6 +2045,9 @@ function initTree3()
     // Set event listeners
     T.treeobj.element.on('changed.jstree', treeOnSelect);
 
+    T.treeobj.element.on('move_node.jstree', K.nextTickRunner(saveTree));
+        // Save after drag-and-drop.  TODO? find a better way to do this?
+
     chrome.windows.onCreated.addListener(winOnCreated);
     chrome.windows.onRemoved.addListener(winOnRemoved);
     chrome.windows.onFocusChanged.addListener(winOnFocusChanged);
@@ -2125,18 +2139,21 @@ function addOpenWindowsToTree(winarr)
                 let tab_val = M.tabs.by_node_id(tab_node_id);
                 if(!tab_val) continue;
 
-                let tab = win.tabs[idx];
+                let ctab = win.tabs[idx];
 
                 tab_val.win_id = win.id;
                 tab_val.index = idx;
-                tab_val.tab = tab;
-                tab_val.raw_url = tab.url || 'about:blank';
-                tab_val.raw_title = tab.title || '## Unknown title ##';
+                tab_val.tab = ctab;
+                tab_val.raw_url = ctab.url || 'about:blank';
+                tab_val.raw_title = ctab.title || '## Unknown title ##';
                 tab_val.isOpen = true;
                 M.tabs.change_key(tab_val, 'tab_id', tab_val.tab.id);
-            }
 
-        }
+                T.treeobj.set_icon(tab_node_id,
+                    (ctab.favIconUrl ? encodeURI(ctab.favIconUrl) : 'fff-page') );
+                G.refresh_label(tab_node_id);
+            } //foreach tab
+        } //endif window already exists
     } //foreach window
 
     // Highlight the focused window.
