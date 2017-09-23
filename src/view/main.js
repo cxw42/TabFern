@@ -1835,8 +1835,8 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
 // Drag-and-drop support //
 
 /// Determine whether a node or set of nodes can be dragged.
-/// At present, we only support reordering windows.
 /// @param {array} nodes The full jstree node record(s) being dragged
+/// @return {boolean} Whether or not the node is draggable
 function dndIsDraggable(nodes, evt)
 {
     if(log.getLevel() <= log.levels.TRACE) {
@@ -1849,23 +1849,26 @@ function dndIsDraggable(nodes, evt)
     // If any node being dragged is anything other than a window or a closed
     // tab, it's not draggable.  Check all nodes for future-proofing, since we
     // may someday support multiselect.
-    for(let node of nodes) {
-        let tyval = I.get_node_tyval(node.id);
-        if(!tyval) return false;    // don't drag nodes we don't know about
 
-        // Can't drag open tabs
-        if(tyval.ty === K.IT_TAB) {
-            if(tyval.val.isOpen) return false;
+// --- For now, any node is draggable. ---
+//     for(let node of nodes) {
 
-            // Can't drag tabs that belong to open windows.  This is
-            // for futureproofing --- at present, tabs cannot be closed
-            // while their windows are open.
-            if(node.parent !== $.jstree.root) {
-                let parent_tyval = I.get_node_tyval(node.parent);
-                if(!parent_tyval || parent_tyval.val.isOpen) return false;
-            }
-        }
-    } //foreach node
+        // let tyval = I.get_node_tyval(node.id);
+        // if(!tyval) return false;    // don't drag nodes we don't know about
+        //
+        // // Can't drag open tabs
+        // if(tyval.ty === K.IT_TAB) {
+        //     if(tyval.val.isOpen) return false;
+        //
+        //     // Can't drag tabs that belong to open windows.  This is
+        //     // for futureproofing --- at present, tabs cannot be closed
+        //     // while their windows are open.
+        //     if(node.parent !== $.jstree.root) {
+        //         let parent_tyval = I.get_node_tyval(node.parent);
+        //         if(!parent_tyval || parent_tyval.val.isOpen) return false;
+        //     }
+        // }
+//     } //foreach node
 
     return true;    // Otherwise, it is draggable
 } //dndIsDraggable
@@ -1902,6 +1905,18 @@ let treeCheckCallback = (function(){
         },0);
     } //remove_empty_window
 
+    /// Move a tab within its Chrome window.
+    /// Chrome fires a tabOnMoved after we do this, so we don't have to update
+    /// the tree here.
+    function move_tab_in_window(evt, data)
+    {
+        setTimeout(function(){      // As above, delay to be on the safe side.
+            let val = D.tabs.by_node_id(data.node.id);
+            if( !val || val.tab_id === K.NONE ) return;
+            chrome.tabs.move(val.tab_id, {index: data.position});
+        },0);
+    } //move_tab_in_window
+
     // The main callback
     function inner(operation, node, new_parent, node_position, more)
     {
@@ -1927,9 +1942,9 @@ let treeCheckCallback = (function(){
         let tyval = I.get_node_tyval(node.id);
         if(!tyval) return false;    // sanity check
 
-        let parent_tyval;
+        let new_parent_tyval;
         if(new_parent.id !== $.jstree.root) {
-            parent_tyval = I.get_node_tyval(new_parent.id);
+            new_parent_tyval = I.get_node_tyval(new_parent.id);
         }
 
         // The "can I drop here?" check.
@@ -1945,13 +1960,29 @@ let treeCheckCallback = (function(){
                 if(new_parent.id !== $.jstree.root) return false;
 
             } else if(tyval.ty === K.IT_TAB) {          // Dragging tabs
-                // Tabs: Can only drop closed tabs in closed windows
-                if(tyval.val.isOpen) return false;
-                if(!parent_tyval || parent_tyval.val.isOpen) return false;
-                if(parent_tyval.ty !== K.IT_WINDOW) return false;
-            }
+                // Tabs: Can drop closed tabs in closed windows, or open
+                // tabs in their own window.  TODO revisit this when we later
+                // permit opening tab-by-tab (#35)
+
+                if(tyval.val.isOpen) {      // open tab
+                    if( !new_parent_tyval || !new_parent_tyval.val.isOpen ||
+                        new_parent.id !== node.parent
+                    ) {
+                        return false;
+                    }
+
+                } else {                    // closed tab
+                    if( !new_parent_tyval || new_parent_tyval.val.isOpen ||
+                        new_parent_tyval.ty !== K.IT_WINDOW
+                    ) {
+                        return false;
+                    }
+                }
+            } //endif tab
+
             if(log.getLevel()<=log.levels.TRACE) console.log('OK to drop here');
-        }
+
+        } //endif move_node checks
 
         // The "I'm about to move it here --- OK?" check.  This happens for
         // drag and also for express calls to move_node.
@@ -1982,7 +2013,7 @@ let treeCheckCallback = (function(){
                         curr_parent_id !== new_parent_id) return false;
                 } else {
                     // Can move closed tabs to any closed window
-                    if(!parent_tyval || parent_tyval.val.isOpen) return false;
+                    if(!new_parent_tyval || new_parent_tyval.val.isOpen) return false;
                 }
             }
             if(log.getLevel()<=log.levels.TRACE) console.log('OK to move');
@@ -1990,12 +2021,17 @@ let treeCheckCallback = (function(){
 
         // If we made it here, the operation is OK.
 
-        // If we are moving the last tab out of a window other than the
-        // holding pen, set up the window to be deleted once the move completes.
+        // If we're not in the middle of a dnd, this is the conclusion of a
+        // move.  Set up to take action.
         if(!more || !more.dnd) {
+
             let old_parent = T.treeobj.get_node(node.parent);
 
+            // If we are moving the last tab out of a window other than the
+            // holding pen, set up the window to be deleted once the
+            // move completes.
             if( (operation==='move_node') &&
+                !tyval.val.isOpen &&
                 old_parent &&
                 old_parent.children &&
                 (node.id !== T.holding_node_id) &&
@@ -2005,6 +2041,19 @@ let treeCheckCallback = (function(){
                 (old_parent.children.length === 1)
             ) {
                 T.treeobj.element.one('move_node.jstree', remove_empty_window);
+            } else
+
+            // If we are moving an open tab within a window, set up to
+            // move the tab in Chrome.
+            if( (operation==='move_node') &&
+                tyval.val.isOpen &&
+                old_parent &&
+                (node.id !== T.holding_node_id) &&
+                (old_parent.id !== T.holding_node_id) &&
+                (new_parent.id !== T.holding_node_id) &&
+                (new_parent.id === old_parent.id)
+            ) {
+                T.treeobj.element.one('move_node.jstree', move_tab_in_window);
             }
         }
 
