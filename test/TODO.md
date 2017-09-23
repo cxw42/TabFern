@@ -1,5 +1,4 @@
- - Add a test link to the view menu if running unpacked - 
-   <https://stackoverflow.com/q/12830649/2877364>
-
- - Add testcases here
+ - Add testcases here:
+   - Invalid-format save data
+   - Empty save data (valid format, but no windows)
 
