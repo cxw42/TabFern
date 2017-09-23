@@ -128,23 +128,25 @@
             // Changelog
             {
                 "tab": i18n.get("What's new?"),
-                "group": "Version 0.1.8",
+                "group": "Version 0.1.8 and 0.1.9",
                 "name": "changelog-0_1_8",
                 "type": "description",
                 "text":
 `<ul>
 <li>You can right-click a tab to give it a top border.  This lets you
 visually separate tabs in the tree at any point.</li>
-<li>You can also right-click a tab to add a note to yourself!
+<li>You can also right-click a tab or press ${icon('fff-pencil')}
+to add a note to yourself!
 The note will be displayed on the tab's item in the tree.
 Notes are saved with the tree, so your notes will stick around
 as long as you want.</li>
 <li>Sorting open windows to the top, to make it easier to find them!
 ${ham} ${gt} Sort ${gt} ${icon('fff-text-padding-top')}</li>
 <li>You can now drag and drop tabs in the tree within and between closed
-windows.  (Drag-and-drop within open windows is coming soon, but not ready yet.)</li>
-</ul>`
-
+windows.</li>
+<li>You can also drag and drop open tabs within an open window to
+rearrange them.  (Drag-and-drop between open windows is coming soon, but not ready yet.)</li>
+</ul>`,
             },
             {
                 "tab": i18n.get("What's new?"),
