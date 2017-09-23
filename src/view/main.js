@@ -682,7 +682,8 @@ let was_loading_error = false;
 /// Never remove a loader from this function.
 /// @post The new windows are added after any existing windows in the tree
 /// @param {mixed} data The save data, parsed (i.e., not a JSON string)
-/// @return {number} the number of new windows, or,falsy on failure.
+/// @return {number} The number of new windows, or ===false on failure.
+///                  ** Note: 0 is a valid number of windows to load!
 let loadSavedWindowsFromData = (function(){
 
     /// Populate the tree from version-0 save data in #data.
@@ -758,7 +759,7 @@ let loadSavedWindowsFromData = (function(){
                 break READIT;
             }
 
-            if(!loader_retval) {
+            if(loader_retval === false) {
                 log.error("There was a problem loading save data of version " + vernum);
                 break READIT;
             }
@@ -789,7 +790,7 @@ function loadSavedWindowsIntoTree(next_action) {
 
         } else if(K.STORAGE_KEY in items) {       // Chrome did load the data
             let parsed = items[K.STORAGE_KEY];    // auto JSON.parse
-            if(!loadSavedWindowsFromData(parsed)) {
+            if(loadSavedWindowsFromData(parsed) === false) {
                 was_loading_error = true;
                 // HACK - we only use this during init, so
                 // set the init-specific variable.
@@ -1534,7 +1535,7 @@ function hamRestoreFromBackup()
     importer.getFileAsString(function(text, filename){
         try {
             let parsed = JSON.parse(text);
-            if(!loadSavedWindowsFromData(parsed)) {
+            if(loadSavedWindowsFromData(parsed) === false) {
                 window.alert("I couldn't load the file " + filename + ': ' + e);
             }
         } catch(e) {
@@ -1559,7 +1560,8 @@ function hamRestoreLastDeleted()
     let dat = [{text: 'Restored window', tabs: tabs}];
 
     // Load it into the tree
-    if(loadSavedWindowsFromData(dat)) {
+    let wins_loaded = loadSavedWindowsFromData(dat);
+    if(typeof wins_loaded === 'number' && wins_loaded > 0) {
         // We loaded the window successfully.  Open it, if the user wishes.
         if(getBoolSetting(CFG_RESTORE_ON_LAST_DELETED, false)) {
             let root = T.treeobj.get_node($.jstree.root);
