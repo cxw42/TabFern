@@ -62,6 +62,13 @@
                 "type": "checkbox",
                 "label": i18n.get('Sort open windows to the top, scroll to the top of the list'),
             },
+            {
+                "tab": i18n.get("Behaviour"),
+                "group": i18n.get("All the time"),
+                "name": CFG_HIDE_HORIZONTAL_SCROLLBARS,
+                "type": "checkbox",
+                "label": i18n.get('Hide horizontal scrollbars'),
+            },
 
             // Features
             {

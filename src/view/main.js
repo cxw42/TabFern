@@ -2329,6 +2329,10 @@ function initTree0()
 
     document.title = 'TabFern ' + TABFERN_VERSION;
 
+    if(getBoolSetting(CFG_HIDE_HORIZONTAL_SCROLLBARS, false)) {
+        document.querySelector('html').classList += ' tf--feature--hide-horizontal-scrollbars';
+    }
+
     Hamburger = Modules.hamburger('#hamburger-menu', getHamburgerMenuItems
             , K.CONTEXT_MENU_MOUSEOUT_TIMEOUT_MS
             );
