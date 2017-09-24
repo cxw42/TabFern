@@ -128,6 +128,17 @@
             // Changelog
             {
                 "tab": i18n.get("What's new?"),
+                "group": "Version 0.1.10",
+                "name": "changelog-0_1_10",
+                "type": "description",
+                "text":
+`<ul>
+<li>You can drag and drop tabs between open windows from the TabFern tree.
+(Drag-and-drop between open windows and closed windows is still in the works.)</li>
+</ul>`,
+            },
+            {
+                "tab": i18n.get("What's new?"),
                 "group": "Version 0.1.8 and 0.1.9",
                 "name": "changelog-0_1_8",
                 "type": "description",

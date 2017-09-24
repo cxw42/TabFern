@@ -3,7 +3,7 @@
 
 (function (root, factory) {
     let imports=['jquery','jstree','jstree-actions', 'jstree-flagnode',
-                    'loglevel', 'view/const' ];
+                    'jstree-because', 'loglevel', 'view/const' ];
 
     if (typeof define === 'function' && define.amd) {
         // AMD
@@ -23,7 +23,7 @@
         }
         root.tabfern_item_tree = factory(...requirements);
     }
-}(this, function ($, _jstree, _actions, _flagnode, log_orig, K ) {
+}(this, function ($, _jstree, _actions, _flagnode, _because, log_orig, K ) {
     "use strict";
 
     function loginfo(...args) { log_orig.info('TabFern view/item_tree.js: ', ...args); };
@@ -109,7 +109,7 @@
 
         // The main config
         let jstreeConfig = {
-            plugins: ['wholerow', 'actions',
+            plugins: ['because', 'wholerow', 'actions',
                         // actions must be after wholerow since we attach the
                         // action buttons to the wholerow div
                         'flagnode', 'dnd', 'types'], // TODO add state plugin

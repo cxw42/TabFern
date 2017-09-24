@@ -16,8 +16,9 @@
 // In any save file, missing fields are assumed to be falsy.  Do not assume
 // any specific false value.
 // Bump the version number of the save file only when:
-//  - You move or delete an existing field; or
-//  - You add a new field for which a default falsy value is unworkable.
+//  - you move or delete an existing field;
+//  - you add a new required field; or
+//  - you add a new field for which a default falsy value is unworkable.
 
 // Design decision: At present, windows with no tabs are not supported.
 // The only exception is the holding pen, which we use while attaching
@@ -1203,11 +1204,11 @@ function tabOnCreated(tab)
 
     if(tab_val === undefined) {     // If not, create the tab
         let tab_node_id = createNodeForTab(tab, win_node_id);   // Adds at end
-        T.treeobj.move_node(tab_node_id, win_node_id, tab.index);
+        T.treeobj.because('chrome','move_node',tab_node_id, win_node_id, tab.index);
             // Put it in the right place
     } else {
         log.info('   - That tab already exists.');
-        T.treeobj.move_node(tab_val.node_id, win_node_id, tab.index);
+        T.treeobj.because('chrome', 'move_node', tab_val.node_id, win_node_id, tab.index);
             // Just put it where it now belongs.
     }
 
@@ -1284,7 +1285,7 @@ function tabOnMoved(tabid, moveinfo)
     let jstree_new_index =
             to_idx+(to_idx>from_idx ? 1 : 0);
 
-    T.treeobj.move_node(tab_node_id, window_node_id, jstree_new_index);
+    T.treeobj.because('chrome','move_node', tab_node_id, window_node_id, jstree_new_index);
 
     // Update the indices of all the tabs in this window.  This will update
     // the old tab and the new tab.
@@ -1342,7 +1343,7 @@ function tabOnRemoved(tabid, removeinfo)
         D.tabs.remove_value(tab_val);
             // So any events that are triggered won't try to look for a
             // nonexistent tab.
-        T.treeobj.delete_node(tab_node);
+        T.treeobj.because('chrome','delete_node',tab_node);
     }
 
     // Refresh the tab.index values for the remaining tabs
@@ -1352,25 +1353,7 @@ function tabOnRemoved(tabid, removeinfo)
     saveTree();
 } //tabOnRemoved
 
-// Sequence of events for a test tab detach:
-//{Window created: 146, Restore?: "no", win: {…}}
-//item.js:34 TabFern view/item.js:  {Adding nodeid map for cwinid: 146}
-//main.js:1222 {Tab detached: 140, detachinfo: {…}}Tab detached: 140detachinfo: {oldPosition: 0, oldWindowId: 139}__proto__: Object
-//main.js:1183 {Tab removed: 140, removeinfo: {…}}Tab removed: 140removeinfo: {isWindowClosing: false, windowId: 139}__proto__: Object <-- this also comes from us
-//main.js:1161 {Tab activated: 142, activeinfo: {…}}Tab activated: 142activeinfo: {tabId: 142, windowId: 139}__proto__: Object
-//main.js:1236 {Tab attached: 140, attachinfo: {…}}Tab attached: 140attachinfo: {newPosition: 0, newWindowId: 146}__proto__: Object
-//main.js:1161 {Tab activated: 140, activeinfo: {…}}Tab activated: 140activeinfo: {tabId: 140, windowId: 146}__proto__: Object
-//main.js:1012 Focus change from 139 to -1; lastfocused 146
-//main.js:1012 Focus change from 146 to 139; lastfocused 146
-//main.js:1057 {Tab created: 140, tab: {…}}     <-- this one comes from us - currently attach delegates to create.
-
-// So the actual sequence is:
-// - window created
-// - detach
-// - activate the new current tab in the existing window
-// - attach
-// TODO RESUME HERE - implement this
-
+/// When tabs detach, move them to the holding pen.
 function tabOnDetached(tabid, detachinfo)
 {
     // Don't save here?  Do we get a WindowCreated if the tab is not
@@ -1388,7 +1371,7 @@ function tabOnDetached(tabid, detachinfo)
     if(!old_win_val)    // ditto
         throw new Error("Unknown window detaching from???? "+attachinfo.newWindowId+' '+attachinfo.toString());
 
-    T.treeobj.move_node(tab_val.node_id, T.holding_node_id);
+    T.treeobj.because('chrome','move_node', tab_val.node_id, T.holding_node_id);
     tab_val.win_id = K.NONE;
     tab_val.index = K.NONE;
 
@@ -1396,6 +1379,7 @@ function tabOnDetached(tabid, detachinfo)
 
 } //tabOnDetached
 
+/// When tabs attach, move them out of the holding pen.
 function tabOnAttached(tabid, attachinfo)
 {
     log.info({'Tab attached': tabid, attachinfo});
@@ -1409,7 +1393,7 @@ function tabOnAttached(tabid, attachinfo)
     if(!new_win_val)    // ditto
         throw new Error("Unknown window attaching to???? "+attachinfo.newWindowId+' '+attachinfo.toString());
 
-    T.treeobj.move_node(tab_val.node_id, new_win_val.node_id,
+    T.treeobj.because('chrome','move_node', tab_val.node_id, new_win_val.node_id,
             attachinfo.newPosition);
 
     tab_val.win_id = attachinfo.newWindowId;
@@ -1842,35 +1826,11 @@ function dndIsDraggable(nodes, evt)
     if(log.getLevel() <= log.levels.TRACE) {
         console.group('is draggable?');
         console.log(nodes);
-        console.groupEnd();
         //console.log($.jstree.reference(evt.target));
+        console.groupEnd();
     }
 
-    // If any node being dragged is anything other than a window or a closed
-    // tab, it's not draggable.  Check all nodes for future-proofing, since we
-    // may someday support multiselect.
-
-// --- For now, any node is draggable. ---
-//     for(let node of nodes) {
-
-        // let tyval = I.get_node_tyval(node.id);
-        // if(!tyval) return false;    // don't drag nodes we don't know about
-        //
-        // // Can't drag open tabs
-        // if(tyval.ty === K.IT_TAB) {
-        //     if(tyval.val.isOpen) return false;
-        //
-        //     // Can't drag tabs that belong to open windows.  This is
-        //     // for futureproofing --- at present, tabs cannot be closed
-        //     // while their windows are open.
-        //     if(node.parent !== $.jstree.root) {
-        //         let parent_tyval = I.get_node_tyval(node.parent);
-        //         if(!parent_tyval || parent_tyval.val.isOpen) return false;
-        //     }
-        // }
-//     } //foreach node
-
-    return true;    // Otherwise, it is draggable
+    return true;        // For now, any node is draggable.
 } //dndIsDraggable
 
 /// Determine whether a node is a valid drop target.
@@ -1897,6 +1857,10 @@ let treeCheckCallback = (function(){
             console.groupEnd();
         }
 
+        // If we got here because of an event triggered by Chrome itself,
+        // there's nothing to do.
+        if(data.because === 'chrome') return;
+
         // Don't know if we need to delay until the next tick, but I'm going
         // to just to be on the safe side.  This will give T.treeobj.move_node
         // a chance to finish.
@@ -1910,10 +1874,29 @@ let treeCheckCallback = (function(){
     /// the tree here.
     function move_tab_in_window(evt, data)
     {
+        // If we got here because of an event triggered by Chrome itself,
+        // there's nothing to do.
+        if(data.because === 'chrome') return;
+
         setTimeout(function(){      // As above, delay to be on the safe side.
+            // Which tab we're moving
             let val = D.tabs.by_node_id(data.node.id);
             if( !val || val.tab_id === K.NONE ) return;
-            chrome.tabs.move(val.tab_id, {index: data.position});
+
+            // Which window we're moving it to
+            let parent_val = D.windows.by_node_id(data.parent);
+            if( !parent_val || parent_val.win_id === K.NONE) return;
+
+            // Do the move
+            chrome.tabs.move(val.tab_id,
+                {windowId: parent_val.win_id, index: data.position}
+                , K.ignore_chrome_error
+            );
+                // TODO figure this out --- the move happens when the user
+                // is dragging tabs, and then we get a chrome error because
+                // tabs.move is invalid while the user is dragging tabs.
+                // Somehow distinguish below between moves that come from
+                // Chrome and moves that should go to Chrome?
         },0);
     } //move_tab_in_window
 
@@ -1961,12 +1944,12 @@ let treeCheckCallback = (function(){
 
             } else if(tyval.ty === K.IT_TAB) {          // Dragging tabs
                 // Tabs: Can drop closed tabs in closed windows, or open
-                // tabs in their own window.  TODO revisit this when we later
+                // tabs in open windows.  TODO revisit this when we later
                 // permit opening tab-by-tab (#35)
 
                 if(tyval.val.isOpen) {      // open tab
                     if( !new_parent_tyval || !new_parent_tyval.val.isOpen ||
-                        new_parent.id !== node.parent
+                        new_parent_tyval.ty !== K.IT_WINDOW
                     ) {
                         return false;
                     }
@@ -2006,11 +1989,13 @@ let treeCheckCallback = (function(){
                 let new_parent_id = new_parent.id;
 
                 if(tyval.val.isOpen) {
-                    // Can't move open tabs between windows, except in and out of
-                    // the holding pen.
+
+                    // Can move open tabs between open windows or the holding pen
                     if( curr_parent_id !== T.holding_node_id &&
                         new_parent_id !== T.holding_node_id &&
-                        curr_parent_id !== new_parent_id) return false;
+                        (!new_parent_tyval || !new_parent_tyval.val.isOpen) )
+                        return false;
+
                 } else {
                     // Can move closed tabs to any closed window
                     if(!new_parent_tyval || new_parent_tyval.val.isOpen) return false;
@@ -2022,16 +2007,15 @@ let treeCheckCallback = (function(){
         // If we made it here, the operation is OK.
 
         // If we're not in the middle of a dnd, this is the conclusion of a
-        // move.  Set up to take action.
-        if(!more || !more.dnd) {
+        // move.  Set up to take action once the move completes.
+        if( (operation==='move_node') && (!more || !more.dnd) ) {
 
             let old_parent = T.treeobj.get_node(node.parent);
 
             // If we are moving the last tab out of a window other than the
             // holding pen, set up the window to be deleted once the
             // move completes.
-            if( (operation==='move_node') &&
-                !tyval.val.isOpen &&
+            if( !tyval.val.isOpen &&
                 old_parent &&
                 old_parent.children &&
                 (node.id !== T.holding_node_id) &&
@@ -2043,19 +2027,17 @@ let treeCheckCallback = (function(){
                 T.treeobj.element.one('move_node.jstree', remove_empty_window);
             } else
 
-            // If we are moving an open tab within a window, set up to
-            // move the tab in Chrome.
-            if( (operation==='move_node') &&
-                tyval.val.isOpen &&
+            // If we are moving an open tab, set up to move the tab in Chrome.
+            if( tyval.val.isOpen &&
                 old_parent &&
                 (node.id !== T.holding_node_id) &&
                 (old_parent.id !== T.holding_node_id) &&
-                (new_parent.id !== T.holding_node_id) &&
-                (new_parent.id === old_parent.id)
+                (new_parent.id !== T.holding_node_id)
             ) {
                 T.treeobj.element.one('move_node.jstree', move_tab_in_window);
             }
-        }
+
+        } //endif this is a non-dnd move
 
         return true;
     } //inner
@@ -2404,6 +2386,7 @@ function initIncompleteWarning()
 let dependencies = [
     // Modules that are not specific to TabFern
     'jquery', 'jstree', 'jstree-actions', 'jstree-flagnode',
+    'jstree-because',
     'loglevel', 'hamburger', 'bypasser', 'multidex', 'justhtmlescape',
     'signals', 'local/fileops/export', 'local/fileops/import',
 
