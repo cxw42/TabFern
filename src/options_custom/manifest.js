@@ -7,7 +7,7 @@
     function icon(cls) { return `<i class="${cls}"></i>`; }
     let ham = icon('fa fa-bars');
     let gt = icon('fa fa-lg fa-caret-right');
-
+    let refresh_message = " (refresh the TabFern window after you change this to make the change take effect)"
     // Assign the settings
     root.manifest = {
         "name": "Settings - ver. "+TABFERN_VERSION+' - TabFern',
@@ -62,13 +62,16 @@
                 "type": "checkbox",
                 "label": i18n.get('Sort open windows to the top, scroll to the top of the list'),
             },
+
+            // Appearance
             {
-                "tab": i18n.get("Behaviour"),
-                "group": i18n.get("All the time"),
+                "tab": i18n.get("Appearance"),
+                "group": i18n.get("Functions"),
                 "name": CFG_HIDE_HORIZONTAL_SCROLLBARS,
                 "type": "checkbox",
-                "label": i18n.get('Hide horizontal scrollbars'),
+                "label": i18n.get('Hide horizontal scrollbar' + refresh_message),
             },
+            // Maybe add some theming options here?
 
             // Features
             {
@@ -76,14 +79,14 @@
                 "group": "Context Menu",
                 "name": CFG_ENB_CONTEXT_MENU,
                 "type": "checkbox",
-                "label": "Enable right-click menus (refresh the TabFern window after you change this to make the change take effect)"
+                "label": "Enable right-click menus" + refresh_message,
             },
             {
                 "tab": "Features",
                 "group": "Key Mapping",
                 "name": "KeyBinds.Enabled",
                 "type": "checkbox",
-                "label": "Enable key mapping (refresh the TabFern window after you change this to make the change take effect)"
+                "label": "Enable key mapping" + refresh_message,
             },
 
             {
