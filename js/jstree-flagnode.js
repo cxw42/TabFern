@@ -4,6 +4,8 @@
  * Adds to jsTree the ability to highlight nodes, independently of what's
  * selected.
  *
+ * If loaded after the `types` plugin, can also flag by type.
+ *
  * Modified from jstree.search.js.
  */
 /*globals jQuery, define, exports, require, document */
@@ -36,11 +38,8 @@
 	};
 
 	$.jstree.plugins.flagnode = function (options, parent) {
-		this.bind = function () {
-			parent.bind.call(this);
-			this._data.flagnode.flagged_nodes={};	//map node IDs to true.
-				// It's a hash so we can add and delete in O(1).
-		}; //bind()
+		this._data.flagnode.flagged_nodes={};	//map node IDs to true.
+			// It's a hash so we can add and delete in O(1).
 
 		/**
 		 * Helper to set the flag state on a node
@@ -134,6 +133,44 @@
 			}
 			return obj;
 		}; //redraw_node
+
+		if(!$.jstree.plugins.types || !(this instanceof $.jstree.plugins.types)) return;
+
+		// === Type support ===
+
+		/**
+		 * clear flags on all nodes of a specific type
+		 * @name clear_flags_by_type()
+		 * @param {mixed} type The type of node (other types won't be affected).
+		 *						Pass an array for multiple types.
+		 * @param {Boolean} suppress_event If true, don't trigger an event
+		 * @plugin flagnode
+		 * @trigger clear_flagnode.jstree
+		 */
+		this.clear_flags_by_type = function(type, suppress_event) {
+			if(!Array.isArray(type)) type = [type];
+
+			// Collect the nodes
+			let nodes_to_clear = [];
+			for(let node_id in this._data.flagnode.flagged_nodes) {
+				if(type.includes(this.get_type(node_id))) {
+					nodes_to_clear.push(node_id);
+				}
+			}
+
+			// Clear them
+			var cls = this.settings.flagnode.css_class;
+			for(let node_id of nodes_to_clear) {
+				delete this._data.flagnode.flagged_nodes[node_id];
+				this.get_node(node_id, true).removeClass(cls);
+			}
+
+			if(!suppress_event) {
+				this.trigger('clear_flagnode', {});
+			}
+		}; //clear_flags_by_type
+
 	}; //flagnode plugin
 
 }));
+// vi: set ts=4 sw=4: //
