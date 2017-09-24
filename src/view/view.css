@@ -69,6 +69,11 @@ li.ephemeral-recovered {
     font-family: serif; /* since the default is sans */
 }
 
+.tf--feature--hide-horizontal-scrollbars {
+    overflow-x: hidden;
+}
+
+
 /* Notification icon ------------------------------------------------------ */
 
 /* Need the parents of notification icons to have position other than static.

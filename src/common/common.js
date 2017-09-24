@@ -36,6 +36,7 @@ const CFG_ENB_CONTEXT_MENU = 'ContextMenu.Enabled';
 const CFG_RESTORE_ON_LAST_DELETED = 'open-tree-on-restore-last-deleted';
 const CFG_JUMP_WITH_SORT_OPEN_TOP = 'jump-to-top-when-sort-open-to-top';
 const CFG_COLLAPSE_ON_STARTUP = 'collapse-trees-on-startup';
+const CFG_HIDE_HORIZONTAL_SCROLLBARS = 'hide-horizontal-scrollbars';
 
 const CFG_DEFAULTS = {
     __proto__: null,
@@ -43,6 +44,7 @@ const CFG_DEFAULTS = {
     [CFG_RESTORE_ON_LAST_DELETED]: false,
     [CFG_JUMP_WITH_SORT_OPEN_TOP]: true,
     [CFG_COLLAPSE_ON_STARTUP]: true,
+    [CFG_HIDE_HORIZONTAL_SCROLLBARS]: false,
 };
 
 //////////////////////////////////////////////////////////////////////////
