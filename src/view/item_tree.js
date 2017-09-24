@@ -112,7 +112,9 @@
             plugins: ['because', 'wholerow', 'actions',
                         // actions must be after wholerow since we attach the
                         // action buttons to the wholerow div
-                        'flagnode', 'dnd', 'types'], // TODO add state plugin
+                        'dnd', 'types', 'flagnode',
+                        // flagnode must be after types
+                     ], // TODO add state plugin
             core: {
                 animation: false,
                 multiple: false,          // for now

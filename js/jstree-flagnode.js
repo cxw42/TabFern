@@ -134,6 +134,7 @@
 			return obj;
 		}; //redraw_node
 
+		// If the "types" plugin isn't loaded, don't create the functions that require it
 		if(!$.jstree.plugins.types || !(this instanceof $.jstree.plugins.types)) return;
 
 		// === Type support ===

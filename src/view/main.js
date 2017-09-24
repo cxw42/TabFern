@@ -394,7 +394,7 @@ function actionCloseWindow(node_id, node, unused_action_id, unused_action_el)
     D.windows.change_key(win_val, 'win_id', K.NONE);
         // Can't access by win_id, but can still access by node_id.
 
-    // TODO winOnFocusChanged(NONE) ?
+    // TODO winOnFocusChanged(NONE, true) ?
 
     // Close the window
     if(win_val.isOpen && win) {
@@ -853,7 +853,7 @@ function treeOnSelect(_evt_unused, evt_data)
     T.treeobj.deselect_all(true);
         // Clear the selection.  True => no event due to this change.
     //log.info('Clearing flags treeonselect');
-    T.treeobj.clear_flags(true);
+    //T.treeobj.clear_flags(true);
 
     // --------
     // Now that the selection is clear, see if this actually should have been
@@ -913,6 +913,10 @@ function treeOnSelect(_evt_unused, evt_data)
 
     } else if(is_win && node_val.isOpen) {    // An open window
         win_id = node_val.win_id;
+        T.treeobj.clear_flags_by_type(
+                [K.NT_WIN_EPHEMERAL, K.NT_WIN_OPEN],
+                true    // true => don't need an event
+        );
 
     } else if(!node_val.isOpen && (is_tab || is_win) ) {
         // A closed window or tab.  Make sure we have the window.
@@ -1040,6 +1044,7 @@ function treeOnSelect(_evt_unused, evt_data)
         chrome.windows.get(win_id, function(win) {
             if(typeof(chrome.runtime.lastError) !== 'undefined') return;
             chrome.windows.update(win_id, {focused: true}, K.ignore_chrome_error);
+                // winOnFocusedChange will set the flag on the newly-focused window
         });
     }
 } //treeOnSelect
@@ -1099,7 +1104,7 @@ function winOnRemoved(win_id)
 
     log.debug({'Node for window being removed':node});
 
-    winOnFocusChanged(K.NONE);        // Clear the highlights.
+    winOnFocusChanged(K.NONE, true);        // Clear the highlights.
 
     // Keep the window record in place if it is saved and still has children.
     // If it's not saved, toss it.
@@ -1130,16 +1135,34 @@ function winOnRemoved(win_id)
 /// seem to fire when switching to a non-Chrome window.
 /// See https://stackoverflow.com/q/24307465/2877364 - onFocusChanged
 /// is known to be a bit flaky.
-function winOnFocusChanged(win_id)
+///
+/// @param win_id {number} the ID of the newly-focused window
+/// @param internal {boolean} if truthy, this was called as a helper, e.g., by
+///                 tabOnActivated or tabOnDeactivated.  Therefore, it has work
+///                 to do even if the window hasn't changed.
+function winOnFocusChanged(win_id, internal)
 {
-    log.info({'Window focus-change triggered': win_id});
+    let changing_windows = false;
 
-    if(win_id == my_winid) {
-        //log.info('Clearing flags winonfocuschanged to popup');
-        T.treeobj.clear_flags();
+    log.info({'Window focus-change triggered': win_id,
+                'From':currently_focused_winid, internal});
+
+    // If we're changing windows, clear the flags on the current windows
+    if(!internal || win_id !== currently_focused_winid) {
+        changing_windows = true;
+        T.treeobj.clear_flags_by_type(
+                [K.NT_WIN_EPHEMERAL, K.NT_WIN_OPEN],
+                true    // true => don't need an event
+        );
     }
 
-    chrome.windows.getLastFocused({}, function(win){
+    if(win_id === chrome.windows.WINDOW_ID_NONE) win_id = K.NONE;
+    if(win_id === my_winid || win_id === K.NONE) {
+        currently_focused_winid = win_id;
+        return;
+    }
+
+    chrome.windows.get(win_id, {populate:true}, function(win){
         let new_win_id;
         if(!win.focused) {
             new_win_id = K.NONE;
@@ -1147,20 +1170,30 @@ function winOnFocusChanged(win_id)
             new_win_id = win.id;
         }
 
-        log.info('Focus change from ' + currently_focused_winid + ' to ' + win_id + '; lastfocused ' + win.id);
+        log.info(`Focus change from ${currently_focused_winid} to ${new_win_id}`);
 
         // Clear the focus highlights if we are changing windows.
         // Avoid flicker if the selection is staying in the same window.
-        if(new_win_id === currently_focused_winid) return;
+        // However, if this was an internal call, we're not done yet.
+        if(!internal && new_win_id === currently_focused_winid) return;
 
         // Update the size of new windows - TODO see if this works in practice
-        if(win.type === 'normal') {
+        if( new_win_id !== K.NONE && win.type === 'normal') {
             winSizes[win.id] = getWindowSizeFromWindowRecord(win);
             newWinSize = winSizes[win.id];
         }
 
         //log.info('Clearing focus classes');
-        $('.' + K.WIN_CLASS + ' > a').removeClass(K.FOCUSED_WIN_CLASS);
+//        $('.' + K.WIN_CLASS + ' > a').removeClass(K.FOCUSED_WIN_CLASS);
+
+        // Clear the flag on the previously-focused window
+        if( changing_windows &&
+            currently_focused_winid !== K.NONE &&
+            currently_focused_winid !== my_winid
+        ) {
+            let window_node_id = D.windows.by_win_id(currently_focused_winid, 'node_id');
+            if(window_node_id) T.treeobj.flag_node(window_node_id, false);
+        }
 
         currently_focused_winid = new_win_id;
 
@@ -1169,7 +1202,8 @@ function winOnFocusChanged(win_id)
         // Get the window
         let window_node_id = D.windows.by_win_id(new_win_id, 'node_id');
         //log.info('Window node ID: ' + window_node_id);
-        if(!window_node_id) return;
+        let win_node = T.treeobj.get_node(window_node_id);
+        if(!window_node_id || !win_node) return;
             // E.g., if new_win_id corresponds to this view.
 
         // Make the window's entry bold, but no other entries.
@@ -1178,12 +1212,27 @@ function winOnFocusChanged(win_id)
         // doesn't seem to stick.
 
         // TODO change this to use flag_node instead.
-        setTimeout(function(){
-            //log.info('Setting focus class');
-            $('#' + window_node_id + ' > a').addClass(K.FOCUSED_WIN_CLASS);
-            //log.info($('#' + window_node_id + ' > a'));
-        },0);
-    });
+        T.treeobj.flag_node(window_node_id);
+//        setTimeout(function(){
+//            //log.info('Setting focus class');
+//            $('#' + window_node_id + ' > a').addClass(K.FOCUSED_WIN_CLASS);
+//            //log.info($('#' + window_node_id + ' > a'));
+//        },0);
+
+        // Clear the highlights of the tabs
+        T.treeobj.flag_node(win_node.children, false);
+
+        // Flag the current tab
+        for(let tab of win.tabs) {
+            if(tab.active) {
+                let tab_node_id = D.tabs.by_tab_id(tab.id, 'node_id');
+                if(tab_node_id) T.treeobj.flag_node(tab_node_id);
+                break;
+            }
+        } //foreach tab
+    }
+    //, K.ignore_chrome_error
+    );
 
 } //winOnFocusChanged
 
@@ -1298,19 +1347,20 @@ function tabOnActivated(activeinfo)
 {
     log.info({'Tab activated': activeinfo.tabId, activeinfo});
 
-    winOnFocusChanged(activeinfo.windowId);
+    winOnFocusChanged(activeinfo.windowId, true);
 
-    // Highlight the active tab
-    SELTAB: {
-        // Get the tab's node
-        let tab_node_id = D.tabs.by_tab_id(activeinfo.tabId, 'node_id');
-        if(!tab_node_id) break SELTAB;
-
-        //log.info('Clearing flags tabonactivate');
-        T.treeobj.clear_flags();
-        //log.info('flagging ' +tab_node_id);
-        T.treeobj.flag_node(tab_node_id);
-    }
+    return; // winOnFocusChanged handles the tab flagging as well
+//    // Highlight the active tab
+//    SELTAB: {
+//        // Get the tab's node
+//        let tab_node_id = D.tabs.by_tab_id(activeinfo.tabId, 'node_id');
+//        if(!tab_node_id) break SELTAB;
+//
+//        //log.info('Clearing flags tabonactivate');
+//        T.treeobj.clear_flags();
+//        //log.info('flagging ' +tab_node_id);
+//        T.treeobj.flag_node(tab_node_id);
+//    }
 
     // No need to save --- we don't save which tab is active.
 } //tabOnActivated
@@ -2259,7 +2309,7 @@ function addOpenWindowsToTree(winarr)
     // However, generally the popup will be focused when this runs,
     // and we're not showing the popup in the tree.
     if(focused_win_id) {
-        winOnFocusChanged(focused_win_id);
+        winOnFocusChanged(focused_win_id, true);
     }
 
     initTree3();
