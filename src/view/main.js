@@ -1857,10 +1857,6 @@ let treeCheckCallback = (function(){
             console.groupEnd();
         }
 
-        // If we got here because of an event triggered by Chrome itself,
-        // there's nothing to do.
-        if(data.because === 'chrome') return;
-
         // Don't know if we need to delay until the next tick, but I'm going
         // to just to be on the safe side.  This will give T.treeobj.move_node
         // a chance to finish.
@@ -1874,10 +1870,6 @@ let treeCheckCallback = (function(){
     /// the tree here.
     function move_tab_in_window(evt, data)
     {
-        // If we got here because of an event triggered by Chrome itself,
-        // there's nothing to do.
-        if(data.because === 'chrome') return;
-
         setTimeout(function(){      // As above, delay to be on the safe side.
             // Which tab we're moving
             let val = D.tabs.by_node_id(data.node.id);
@@ -1892,15 +1884,10 @@ let treeCheckCallback = (function(){
                 {windowId: parent_val.win_id, index: data.position}
                 , K.ignore_chrome_error
             );
-                // TODO figure this out --- the move happens when the user
-                // is dragging tabs, and then we get a chrome error because
-                // tabs.move is invalid while the user is dragging tabs.
-                // Somehow distinguish below between moves that come from
-                // Chrome and moves that should go to Chrome?
         },0);
     } //move_tab_in_window
 
-    // The main callback
+    // --- The main check callback ---
     function inner(operation, node, new_parent, node_position, more)
     {
         // Fast bail when possible
@@ -2008,7 +1995,11 @@ let treeCheckCallback = (function(){
 
         // If we're not in the middle of a dnd, this is the conclusion of a
         // move.  Set up to take action once the move completes.
-        if( (operation==='move_node') && (!more || !more.dnd) ) {
+        // The reason() check is because, if we got here because of an event
+        // triggered by Chrome itself, there's nothing more to do.
+        if( (operation==='move_node') && (!more || !more.dnd) &&
+            (T.treeobj.reason() !== 'chrome')
+        ) {
 
             let old_parent = T.treeobj.get_node(node.parent);
 

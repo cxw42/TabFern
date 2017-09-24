@@ -145,6 +145,8 @@
 `<ul>
 <li>You can drag and drop tabs between open windows from the TabFern tree.
 (Drag-and-drop between open windows and closed windows is still in the works.)</li>
+<li>On the "Appearance" tab, you can turn off the horizontal scrollbar to save a bit of
+vertical space.</li>
 </ul>`,
             },
             {
