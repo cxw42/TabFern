@@ -28,7 +28,7 @@
     function loginfo(...args) { log_orig.info('TabFern view/const.js: ', ...args); };
 
     /// The module we are creating
-    let retval = {
+    let module = {
         STORAGE_KEY: 'tabfern-data',
             ///< Store the saved windows/tabs
         LOCN_KEY: 'tabfern-window-location',
@@ -87,13 +87,17 @@
                                     // (this is a hack until I can add dividers)
     };
 
+    // Sets of node types
+    module.NTs_TAB = [module.NT_TAB, module.NT_TAB_BORDERED];
+    module.NTs_WIN_ALIVE = [module.NT_WIN_EPHEMERAL, module.NT_WIN_OPEN];
+
     /// Ignore a Chrome callback error, and suppress Chrome's
     /// `runtime.lastError` diagnostic.
-    retval.ignore_chrome_error = function() { void chrome.runtime.lastError; }
+    module.ignore_chrome_error = function() { void chrome.runtime.lastError; }
 
     /// Make a callback function that will forward to #fn on a later tick.
     /// @param fn {function} the function to call
-    retval.nextTickRunner = function(fn) {
+    module.nextTickRunner = function(fn) {
         function inner(...args) {   // the actual callback
             setTimeout( function() { fn(...args); } ,0);
                 // on a later tick, call #fn, passing it ther arguments the
@@ -106,7 +110,7 @@
     /// tab that appears because we are letting the window open at the
     /// default size.  Yes, this is quite ugly.  TODO fix the ugliness.
     /// Maybe use asynquence?
-    retval.openWindowForURL = function(url)
+    module.openWindowForURL = function(url)
     {
         chrome.windows.create(
             function(win) {
@@ -131,7 +135,7 @@
         ); //windows.create
     } //openWindowForURL
 
-    return Object.freeze(retval);   // all fields constant
+    return Object.freeze(module);   // all fields constant
 }));
 
 // vi: set ts=4 sts=4 sw=4 et ai fo-=o fo-=r: //

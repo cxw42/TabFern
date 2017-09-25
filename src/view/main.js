@@ -154,29 +154,6 @@ function local_init()
 //////////////////////////////////////////////////////////////////////////
 // DOM Manipulation //
 
-/// Given string #class_list, add #new_class without duplicating.
-function add_classname(class_list, new_class)
-{
-    let attrs = class_list.split(/\s+/);
-    if(attrs.indexOf(new_class) === -1) {
-        attrs.push(new_class);
-    }
-    return attrs.join(' ');
-} //add_classname()
-
-/// Given string #class_list, remove #existing_class if it is present.
-/// Will remove duplicates.
-function remove_classname(class_list, existing_class)
-{
-    let attrs = class_list.split(/\s+/);
-    let idx = attrs.indexOf(existing_class);
-    while(idx !== -1) {
-        attrs.splice(idx, 1);
-        idx = attrs.indexOf(existing_class);
-    }
-    return attrs.join(' ');
-} //remove_classname()
-
 /// Set the tab.index values of the tab nodes in a window.  Assumes that
 /// the nodes are in the proper order in the tree.
 /// \pre    #win_node_id is the id of a node that both exists and represents
@@ -228,6 +205,15 @@ function getWindowSizeFromWindowRecord(win)
         , 'height': win.height || 600
     };
 } //getWindowSize
+
+/// Clear flags on all windows; leave tabs alone.
+function unflagAllWindows() {
+    //log.trace('unflagAllWindows');
+    T.treeobj.clear_flags_by_type(K.NTs_WIN_ALIVE,
+            undefined,  // any parent
+            true        // true => don't need an event
+    );
+};
 
 //////////////////////////////////////////////////////////////////////////
 // Saving //
@@ -826,6 +812,30 @@ function DBG_printSaveData()
 //////////////////////////////////////////////////////////////////////////
 // jstree callbacks //
 
+/// Helper for treeOnSelect() and winOnFocusChanged().
+/// chrome.windows.get() callback to flag the current tab in a window
+function flagOnlyCurrentTab(win)
+{
+    let win_node_id = D.windows.by_win_id(win.id, 'node_id');
+    let win_node = T.treeobj.get_node(win_node_id);
+    if(!win_node) return;
+
+    // Clear the highlights of the tabs
+    T.treeobj.flag_node(win_node.children, false);
+
+    // Flag the current tab
+    for(let tab of win.tabs) {
+        if(tab.active) {
+            let tab_node_id = D.tabs.by_tab_id(tab.id, 'node_id');
+            if(tab_node_id) T.treeobj.flag_node(tab_node_id);
+            break;
+        }
+    } //foreach tab
+}
+
+/// ID for a timeout shared by newWinFocusCheckTest() and treeOnSelect()
+let awaitSelectTimeoutId = undefined;
+
 /// Process clicks on items in the tree.  Also works for keyboard navigation
 /// with arrow keys and Enter.
 /// TODO break "open window" out into a separate function.
@@ -833,6 +843,12 @@ function treeOnSelect(_evt_unused, evt_data)
 {
     //log.info(evt_data.node);
     if(typeof evt_data.node === 'undefined') return;
+
+    // Cancel a timer waiting for selection, if any.
+    if(typeof awaitSelectTimeoutId !== 'undefined') {
+        window.clearTimeout(awaitSelectTimeoutId);
+        awaitSelectTimeoutId = undefined;
+    }
 
     let node = evt_data.node;
     let node_val, is_tab=false, is_win=false;
@@ -913,10 +929,6 @@ function treeOnSelect(_evt_unused, evt_data)
 
     } else if(is_win && node_val.isOpen) {    // An open window
         win_id = node_val.win_id;
-        T.treeobj.clear_flags_by_type(
-                [K.NT_WIN_EPHEMERAL, K.NT_WIN_OPEN],
-                true    // true => don't need an event
-        );
 
     } else if(!node_val.isOpen && (is_tab || is_win) ) {
         // A closed window or tab.  Make sure we have the window.
@@ -1027,8 +1039,10 @@ function treeOnSelect(_evt_unused, evt_data)
                             chrome.tabs.remove(to_prune, K.ignore_chrome_error);
                         } //endif we have extra tabs
 
-                        // TODO if a tab was clicked on, focus that particular tab
+                        // TODO RESUME HERE ---
+                        // if a tab was clicked on, focus that particular tab
 
+                        flagOnlyCurrentTab(win);
                     } //get callback
                 ); //windows.get
 
@@ -1040,6 +1054,14 @@ function treeOnSelect(_evt_unused, evt_data)
     }
 
     if(typeof win_id !== 'undefined') {
+        unflagAllWindows();
+
+        // Clear the other windows' tabs' flags.
+        let node_id = D.windows.by_win_id(win_id, 'node_id');
+        if(node_id) T.treeobj.clear_flags_by_type(K.NTs_TAB, node_id, true);
+            // Don't clear flags from children of node_id
+            // true => no event
+
         // Activate the window, if it still exists.
         chrome.windows.get(win_id, function(win) {
             if(typeof(chrome.runtime.lastError) !== 'undefined') return;
@@ -1131,36 +1153,6 @@ function winOnRemoved(win_id)
     T.vscroll_function();
 } //winOnRemoved
 
-/// The type of window focus is changing from
-const [FC_FROM_TF, FC_FROM_NONE, FC_FROM_OPEN] = ['from_tf','from_none','from_open'];
-/// The type of window focus is changing to
-const [FC_TO_TF, FC_TO_NONE, FC_TO_OPEN] = ['to_tf','to_none','to_open'];
-
-/// Sugar
-const WINID_NONE = chrome.windows.WINDOW_ID_NONE;
-
-/// The previously-focused window
-let previously_focused_winid = WINID_NONE;
-
-function newWinFocusCheckTest(win_id)
-{
-    // What kind of change is it?
-    let change_from, change_to;
-    if(win_id === my_winid) change_to = FC_TO_TF;
-    else if(win_id === WINID_NONE) change_to = FC_TO_NONE;
-    else change_to = FC_TO_OPEN;
-
-    if(previously_focused_winid === my_winid) change_from = FC_FROM_TF;
-    else if(previously_focused_winid === WINID_NONE) change_from = FC_FROM_NONE;
-    else change_from = FC_FROM_OPEN;
-
-    log.info({change_from, previously_focused_winid, change_to, win_id});
-    previously_focused_winid = win_id;
-
-    // TODO RESUME HERE figure out the right thing to do in these cases
-
-} //newWinFocusCheckTest
-
 /// Update the highlight for the current window.  Note: this does not always
 /// seem to fire when switching to a non-Chrome window.
 /// See https://stackoverflow.com/q/24307465/2877364 - onFocusChanged
@@ -1170,103 +1162,151 @@ function newWinFocusCheckTest(win_id)
 /// @param internal {boolean} if truthy, this was called as a helper, e.g., by
 ///                 tabOnActivated or tabOnDeactivated.  Therefore, it has work
 ///                 to do even if the window hasn't changed.
-function winOnFocusChanged(win_id, internal)
+let winOnFocusChanged;
+
+/// Initialize winOnFocusChanged.  This is a separate function since it
+/// cannot be called until jQuery has been loaded.
+function initFocusHandler()
 {
-    let changing_windows = false;
+    /// The type of window focus is changing from
+    const [FC_FROM_TF, FC_FROM_NONE, FC_FROM_OPEN] = ['from_tf','from_none','from_open'];
+    /// The type of window focus is changing to
+    const [FC_TO_TF, FC_TO_NONE, FC_TO_OPEN] = ['to_tf','to_none','to_open'];
 
-    log.info({'Window focus-change triggered': win_id,
-                'From':currently_focused_winid, internal});
+    /// Sugar
+    const WINID_NONE = chrome.windows.WINDOW_ID_NONE;
 
-    if(log.getLevel() <= log.levels.DEBUG) newWinFocusCheckTest(win_id);
+    /// The previously-focused window
+    let previously_focused_winid = WINID_NONE;
 
-    // If we're changing windows, clear the flags on the current windows
-    if(!internal || win_id !== currently_focused_winid) {
-        changing_windows = true;
-        T.treeobj.clear_flags_by_type(
-                [K.NT_WIN_EPHEMERAL, K.NT_WIN_OPEN],
-                true    // true => don't need an event
-        );
-    }
+    /// clientX, Y while focus was elsewhere
+    var x_blurred = undefined, y_blurred = undefined;
 
-    if(win_id === chrome.windows.WINDOW_ID_NONE) win_id = K.NONE;
-    if(win_id === my_winid || win_id === K.NONE) {
-        currently_focused_winid = win_id;
-        return;
-    }
+    /// Set up event listeners for DOM onfocus/onblur
+    $(function(){
 
-    chrome.windows.get(win_id, {populate:true}, function(win){
-        let new_win_id;
-        if(!win.focused) {
-            new_win_id = K.NONE;
-        } else {
-            new_win_id = win.id;
+        /// Track the coordinates while the mouse is moving over the
+        /// non-focused TabFern window.
+        /// Mousedown doesn't help since it fires after the focus event.
+        function onmousemove(evt) {
+            x_blurred = evt.clientX;
+            y_blurred = evt.clientY;
+            //log.info({x_blurred,y_blurred});
         }
 
-        log.info(`Focus change from ${currently_focused_winid} to ${new_win_id}`);
+        /// Focus event handler.  Empirically, this happens after the
+        /// chrome.windows.onFocusChanged event.
+        $(window).focus(function(evt){
+            log.debug({onfocus:evt, x_blurred,y_blurred,
+                elts: document.elementsFromPoint(x_blurred,y_blurred)
+            });
+            $(window).off('mousemove.tabfern');
+            x_blurred = undefined;  // can't leave them sitting around,
+            y_blurred = undefined;  // lest we risk severe confusion.
+        });
 
-        // Clear the focus highlights if we are changing windows.
-        // Avoid flicker if the selection is staying in the same window.
-        // However, if this was an internal call, we're not done yet.
-        if(!internal && new_win_id === currently_focused_winid) return;
+        $(window).blur(function(evt){
+            //log.debug({onblur:evt});
+            $(window).on('mousemove.tabfern', onmousemove);
+                // Track pointer position while the window is blurred so we
+                // can take a reasonable guess, in the onFocusChanged handler,
+                // what element was clicked.
+        });
+    }); //end listener setup
 
-        // Update the size of new windows - TODO see if this works in practice
-        if( new_win_id !== K.NONE && win.type === 'normal') {
-            winSizes[win.id] = getWindowSizeFromWindowRecord(win);
-            newWinSize = winSizes[win.id];
-        }
+    /// Helper for cleaning up flags on the window we're leaving.
+    /// Clear the flags on #old_win_id and its tabs.
+    function leavingWindow(old_win_id)
+    {
+        let old_node_id = D.windows.by_win_id(old_win_id, 'node_id');
+        if(!old_node_id) return;
 
-        //log.info('Clearing focus classes');
-//        $('.' + K.WIN_CLASS + ' > a').removeClass(K.FOCUSED_WIN_CLASS);
+        T.treeobj.flag_node(old_node_id, false);
 
-        // Clear the flag on the previously-focused window
-        if( changing_windows &&
-            currently_focused_winid !== K.NONE &&
-            currently_focused_winid !== my_winid
-        ) {
-            let window_node_id = D.windows.by_win_id(currently_focused_winid, 'node_id');
-            if(window_node_id) T.treeobj.flag_node(window_node_id, false);
-        }
+        let old_node = T.treeobj.get_node(old_node_id);
+        if(!old_node) return;
+        T.treeobj.flag_node(old_node.children, false);
+    } //leavingWindow
 
-        currently_focused_winid = new_win_id;
+    /// The actual onFocusChanged event handler
+    function inner(win_id, _unused_internal)
+    {
+        let old_win_id = previously_focused_winid;
 
-        if(new_win_id === K.NONE) return;
+        // What kind of change is it?
+        let change_from, change_to;
+        if(win_id === my_winid) change_to = FC_TO_TF;
+        else if(win_id === WINID_NONE) change_to = FC_TO_NONE;
+        else change_to = FC_TO_OPEN;
 
-        // Get the window
-        let window_node_id = D.windows.by_win_id(new_win_id, 'node_id');
-        //log.info('Window node ID: ' + window_node_id);
-        let win_node = T.treeobj.get_node(window_node_id);
-        if(!window_node_id || !win_node) return;
-            // E.g., if new_win_id corresponds to this view.
+        if(old_win_id === my_winid) change_from = FC_FROM_TF;
+        else if(old_win_id === WINID_NONE) change_from = FC_FROM_NONE;
+        else change_from = FC_FROM_OPEN;
 
-        // Make the window's entry bold, but no other entries.
-        // This seems to need to run after a yield when dragging
-        // tabs between windows, or else the K.FOCUSED_WIN_CLASS
-        // doesn't seem to stick.
+        log.info({change_from, old_win_id, change_to, win_id});
 
-        // TODO change this to use flag_node instead.
-        T.treeobj.flag_node(window_node_id);
-//        setTimeout(function(){
-//            //log.info('Setting focus class');
-//            $('#' + window_node_id + ' > a').addClass(K.FOCUSED_WIN_CLASS);
-//            //log.info($('#' + window_node_id + ' > a'));
-//        },0);
+        let same_window = (old_win_id === win_id);
+        previously_focused_winid = win_id;
 
-        // Clear the highlights of the tabs
-        T.treeobj.flag_node(win_node.children, false);
+        // --- Handle the changes ---
 
-        // Flag the current tab
-        for(let tab of win.tabs) {
-            if(tab.active) {
-                let tab_node_id = D.tabs.by_tab_id(tab.id, 'node_id');
-                if(tab_node_id) T.treeobj.flag_node(tab_node_id);
-                break;
+        if(change_to === FC_TO_OPEN) {
+            let win_val = D.windows.by_win_id(win_id);
+            if(!win_val) return;
+            let win_node = T.treeobj.get_node(win_val.node_id);
+            if(!win_node) return;
+
+            NEWWIN: if(!same_window) {
+                leavingWindow(old_win_id);
+
+                // Flag the newly-focused window
+                T.treeobj.flag_node(win_node.id);
             }
-        } //foreach tab
-    }
-    //, K.ignore_chrome_error
-    );
 
-} //winOnFocusChanged
+            // Flag the current tab within the new window
+            chrome.windows.get(win_id, {populate:true}, flagOnlyCurrentTab);
+        } //endif to_open
+
+        else if(change_to === FC_TO_NONE) {
+            unflagAllWindows();
+            // leave tab flags alone so you can see by looking at the TabFern
+            // window which tab you have on top.
+        }
+
+        else if(change_to === FC_TO_TF) {
+            if(typeof x_blurred !== 'undefined') {
+                // We can guess where the click was
+                let elts = document.elementsFromPoint(x_blurred,y_blurred);
+                if( elts && elts.length &&
+                    elts.includes(document.getElementById('maintree'))
+                ) {     // A click on the tree.  Guess that there may be
+                        // an action coming.
+                    log.debug({"Awaiting select":1,elts});
+                    awaitSelectTimeoutId = window.setTimeout(
+                                function(){leavingWindow(old_win_id);},
+                                100
+                    );
+                    // If treeOnSelect() happens before the timeout,
+                    // the timeout will be cancelled.  Otherwise, the
+                    // flags will be cleared.  This should reduce
+                    // flicker in the TabFern window, because treeOnSelect
+                    // can do the flag changes instead of this.
+                } else {    // A click somewhere other than the tree
+                    unflagAllWindows();
+                }
+
+            } else {
+                // We do not know where the click was (e.g., Alt-Tab out/in)
+                unflagAllWindows();
+                // leave tab flags alone
+            }
+        } //endif to_tf
+
+    }; //inner
+
+    winOnFocusChanged = inner;
+
+} //initFocusHandler
 
 /// Process creation of a tab.  NOTE: in Chrome 60.0.3112.101, we sometimes
 /// get two consecutive tabs.onCreated events for the same tab.  Therefore,
@@ -1287,6 +1327,9 @@ function tabOnCreated(tab)
         let tab_node_id = createNodeForTab(tab, win_node_id);   // Adds at end
         T.treeobj.because('chrome','move_node',tab_node_id, win_node_id, tab.index);
             // Put it in the right place
+
+        // TODO check if we now match a saved window.  If so, merge the
+        // two.  Relates to #41.
     } else {
         log.info('   - That tab already exists.');
         T.treeobj.because('chrome', 'move_node', tab_val.node_id, win_node_id, tab.index);
@@ -1704,8 +1747,8 @@ function getHamburgerMenuItems(node, _unused_proxyfunc, e)
     }
 
     items.infoItem = {
-            label: "About, help, and credits",
-            title: "Online - the TabFern web site",
+            label: "Online info",
+            title: "The TabFern web site, with a basic usage guide and the credits",
             action: hamAboutWindow,
             icon: 'fa fa-info',
         };
@@ -2493,49 +2536,6 @@ let module_shortnames = {
 
 function main(...args)
 {
-
-    /// Event listeners for DOM onfocus/onblur - TEST
-    $(function(){
-        var x, y;   //clientX, Y while the window was blurred
-        function onmousemove(evt) {
-            x = evt.clientX;
-            y = evt.clientY;
-            //log.info({x,y});
-        }
-
-        //$(window).focusin(function(evt){
-        //    log.info({onfocusin:evt});
-        //});
-        $(window).focus(function(evt){
-            log.debug({onfocus:evt, x,y,
-                elts: document.elementsFromPoint(x,y)
-            });
-            $(window).off('mousemove.tabfern');
-            //$(window).off('mousedown.tabfern');
-        });
-        //$(window).focusout(function(evt){
-        //    log.info({onfocusout:evt});
-        //});
-        $(window).blur(function(evt){
-            //log.debug({onblur:evt});
-            $(window).on('mousemove.tabfern', onmousemove);
-                // Track pointer position while the window is blurred so we
-                // can take a reasonable guess, in the onfocus handler,
-                // what element was clicked.
-
-            // Mousedown doesn't help since it fires after the focus event.
-            //$(window).on('mousedown.tabfern',function(evt) {
-            //    log.debug({mousedown:evt});
-            //});
-        });
-        //$(window).on('visibilitychange',function(evt){
-        //    log.info({vischange:evt, ishidden: document.hidden});
-        //});
-        //$(window).click(function(evt){
-        //    log.info({click:evt});
-        //});
-    });
-
     // Hack: Copy the loaded modules into our Modules global
     for(let depidx = 0; depidx < args.length; ++depidx) {
         Modules[dependencies[depidx]] = args[depidx];
@@ -2547,6 +2547,7 @@ function main(...args)
     }
 
     local_init();
+    initFocusHandler();
 
     // Timer to display the warning message if initialization doesn't complete
     // quickly enough.
