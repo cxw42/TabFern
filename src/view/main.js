@@ -1131,6 +1131,36 @@ function winOnRemoved(win_id)
     T.vscroll_function();
 } //winOnRemoved
 
+/// The type of window focus is changing from
+const [FC_FROM_TF, FC_FROM_NONE, FC_FROM_OPEN] = ['from_tf','from_none','from_open'];
+/// The type of window focus is changing to
+const [FC_TO_TF, FC_TO_NONE, FC_TO_OPEN] = ['to_tf','to_none','to_open'];
+
+/// Sugar
+const WINID_NONE = chrome.windows.WINDOW_ID_NONE;
+
+/// The previously-focused window
+let previously_focused_winid = WINID_NONE;
+
+function newWinFocusCheckTest(win_id)
+{
+    // What kind of change is it?
+    let change_from, change_to;
+    if(win_id === my_winid) change_to = FC_TO_TF;
+    else if(win_id === WINID_NONE) change_to = FC_TO_NONE;
+    else change_to = FC_TO_OPEN;
+
+    if(previously_focused_winid === my_winid) change_from = FC_FROM_TF;
+    else if(previously_focused_winid === WINID_NONE) change_from = FC_FROM_NONE;
+    else change_from = FC_FROM_OPEN;
+
+    log.info({change_from, previously_focused_winid, change_to, win_id});
+    previously_focused_winid = win_id;
+
+    // TODO RESUME HERE figure out the right thing to do in these cases
+
+} //newWinFocusCheckTest
+
 /// Update the highlight for the current window.  Note: this does not always
 /// seem to fire when switching to a non-Chrome window.
 /// See https://stackoverflow.com/q/24307465/2877364 - onFocusChanged
@@ -1146,6 +1176,8 @@ function winOnFocusChanged(win_id, internal)
 
     log.info({'Window focus-change triggered': win_id,
                 'From':currently_focused_winid, internal});
+
+    if(log.getLevel() <= log.levels.DEBUG) newWinFocusCheckTest(win_id);
 
     // If we're changing windows, clear the flags on the current windows
     if(!internal || win_id !== currently_focused_winid) {
@@ -2453,6 +2485,49 @@ let module_shortnames = {
 
 function main(...args)
 {
+
+    /// Event listeners for DOM onfocus/onblur - TEST
+    $(function(){
+        var x, y;   //clientX, Y while the window was blurred
+        function onmousemove(evt) {
+            x = evt.clientX;
+            y = evt.clientY;
+            //log.info({x,y});
+        }
+
+        //$(window).focusin(function(evt){
+        //    log.info({onfocusin:evt});
+        //});
+        $(window).focus(function(evt){
+            log.debug({onfocus:evt, x,y,
+                elts: document.elementsFromPoint(x,y)
+            });
+            $(window).off('mousemove.tabfern');
+            //$(window).off('mousedown.tabfern');
+        });
+        //$(window).focusout(function(evt){
+        //    log.info({onfocusout:evt});
+        //});
+        $(window).blur(function(evt){
+            //log.debug({onblur:evt});
+            $(window).on('mousemove.tabfern', onmousemove);
+                // Track pointer position while the window is blurred so we
+                // can take a reasonable guess, in the onfocus handler,
+                // what element was clicked.
+
+            // Mousedown doesn't help since it fires after the focus event.
+            //$(window).on('mousedown.tabfern',function(evt) {
+            //    log.debug({mousedown:evt});
+            //});
+        });
+        //$(window).on('visibilitychange',function(evt){
+        //    log.info({vischange:evt, ishidden: document.hidden});
+        //});
+        //$(window).click(function(evt){
+        //    log.info({click:evt});
+        //});
+    });
+
     // Hack: Copy the loaded modules into our Modules global
     for(let depidx = 0; depidx < args.length; ++depidx) {
         Modules[dependencies[depidx]] = args[depidx];

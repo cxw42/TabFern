@@ -67,6 +67,7 @@
         WIN_KEEP:  true,    // must be truthy
         WIN_NOKEEP:  false, // must be falsy
         NONE:  chrome.windows.WINDOW_ID_NONE,
+            ///< Do not assume that NONE and WINDOW_ID_NONE will always be the same!
 
         // Item-type enumeration.  Here because there may be more item
         // types in the future (e.g., dividers or plugins).  Each IT_*
