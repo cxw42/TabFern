@@ -2188,7 +2188,15 @@ function initTreeFinal()
         $(K.INIT_MSG_SEL).css('display','none');
             // just in case initialization took a long time, and the message
             // already appeared.
-    }
+
+        // If the user wishes, sort the open windows to the top.  Do this only
+        // if everything initialized successfully, since hamSortOpenToTop
+        // is not guaranteed to work correctly otherwise.
+        if(getBoolSetting(CFG_OPEN_TOP_ON_STARTUP)) {
+            setTimeout(hamSortOpenToTop, 0);
+        }
+
+    } //endif loaded OK
 } //initTreeFinal()
 
 function initTree4(items)

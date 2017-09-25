@@ -36,6 +36,7 @@ const CFG_ENB_CONTEXT_MENU = 'ContextMenu.Enabled';
 const CFG_RESTORE_ON_LAST_DELETED = 'open-tree-on-restore-last-deleted';
 const CFG_JUMP_WITH_SORT_OPEN_TOP = 'jump-to-top-when-sort-open-to-top';
 const CFG_COLLAPSE_ON_STARTUP = 'collapse-trees-on-startup';
+const CFG_OPEN_TOP_ON_STARTUP = 'open-to-top-on-startup';
 const CFG_HIDE_HORIZONTAL_SCROLLBARS = 'hide-horizontal-scrollbars';
 
 const CFG_DEFAULTS = {
@@ -44,6 +45,7 @@ const CFG_DEFAULTS = {
     [CFG_RESTORE_ON_LAST_DELETED]: false,
     [CFG_JUMP_WITH_SORT_OPEN_TOP]: true,
     [CFG_COLLAPSE_ON_STARTUP]: true,
+    [CFG_OPEN_TOP_ON_STARTUP]: false,
     [CFG_HIDE_HORIZONTAL_SCROLLBARS]: false,
 };
 
@@ -52,17 +54,15 @@ const CFG_DEFAULTS = {
 
 const SETTING_PREFIX = 'store.settings.';
 
-/// Find out whether the given setting from options_custom exists.
-function haveSetting(setting_name)
-{
-    if(!setting_name) return false;
-    return (SETTING_PREFIX + setting_name) in localStorage;
-} //haveSetting()
-
 /// Get a boolean setting from options_custom, which uses HTML5 localStorage.
-function getBoolSetting(setting_name, default_value = false)
+function getBoolSetting(setting_name, default_value = undefined)
 {
+    if(typeof default_value === 'undefined' && setting_name in CFG_DEFAULTS) {
+        default_value = CFG_DEFAULTS[setting_name];
+    }
+
     let locStorageValue = localStorage.getItem(SETTING_PREFIX + setting_name);
+
     if ( locStorageValue === null ) {   // nonexistent key
         return default_value;
     } else {    // Get the value, which is stored as JSON
@@ -76,6 +76,13 @@ function getBoolSetting(setting_name, default_value = false)
         }
     }
 } //getBoolSetting
+
+/// Find out whether the given setting from options_custom exists.
+function haveSetting(setting_name)
+{
+    if(!setting_name) return false;
+    return (SETTING_PREFIX + setting_name) in localStorage;
+} //haveSetting()
 
 /// Set a setting (wow!).
 /// @param setting_name {String} The name, without the leading SETTING_PREFIX

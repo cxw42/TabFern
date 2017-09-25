@@ -33,10 +33,18 @@
             // Behaviour.  Yeah, there's a "u" in there!
             {
                 "tab": i18n.get("Behaviour"),
-                "group": i18n.get("When I..."),
+                "group": i18n.get("On startup or refresh..."),
                 "name": CFG_COLLAPSE_ON_STARTUP,
                 "type": "checkbox",
-                "label": i18n.get("Start up, collapse all the saved trees"),
+                "label": i18n.get("Collapse all the saved trees"),
+                //"text": i18n.get("x-characters")
+            },
+            {
+                "tab": i18n.get("Behaviour"),
+                "group": i18n.get("On startup or refresh..."),
+                "name": CFG_OPEN_TOP_ON_STARTUP,
+                "type": "checkbox",
+                "label": i18n.get("Sort open windows to the top")
                 //"text": i18n.get("x-characters")
             },
 

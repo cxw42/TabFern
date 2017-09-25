@@ -111,13 +111,15 @@
         let a_num = parseFloat(a_text);
         let b_num = parseFloat(b_text);
 
-        if(isNaN(a_num) && !isNaN(b_num)) return B_FIRST;   // a text, b # => a later
-        if(!isNaN(a_num) && isNaN(b_num)) return A_FIRST;   // b text, a # => b later
+        if(isNaN(a_num) && !isNaN(b_num)) return B_FIRST;
+            // a text, b numeric => a later
+        if(!isNaN(a_num) && isNaN(b_num)) return A_FIRST;
+            // b text, a numeric => b later
 
         if(isNaN(a_num) && isNaN(b_num))     // both are text
             return a_text.localeCompare(b_text,undefined,{sensitivity:'base'});
 
-        // Finally!  Numeric comparison!
+        // Finally!  Numeric comparison!  (including Infinity and -Infinity!)
         if(a_num === b_num) return EQUAL;
         return (a_num < b_num ? A_FIRST : B_FIRST);
     } //compare_node_num
