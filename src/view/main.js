@@ -30,6 +30,9 @@
 // A closed, unsaved window isn't represented in TabFern, except in the
 // "Restore last deleted window" function.
 // An open, unsaved window is referred to for brevity as an "ephemeral" window.
+// An open, saved window is, similarly, an "Elvish" window.
+// A closed, saved window is a "Dormant" window.
+//   TODO RESUME HERE - update notation throughout per this paragraph.
 //
 // A "Fern" is the subtree for a particular window, including a node
 // representing the window and zero or more children of that node
@@ -414,6 +417,9 @@ function actionCloseWindow(node_id, node, unused_action_id, unused_action_el)
         D.tabs.change_key(tab_val, 'tab_id', K.NONE);
         // raw_url and raw_title are left alone
     }
+
+    T.treeobj.clear_flags();
+        // On close, we can't know where the focus will go next.
 } //actionCloseWindow
 
 function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el)
@@ -873,7 +879,8 @@ function treeOnSelect(_evt_unused, evt_data)
 
     // --------
     // Now that the selection is clear, see if this actually should have been
-    // an action-button click.
+    // an action-button click.  The evt_data.event is not necessarily a
+    // click.  For example, it can be a 'select_node' event from jstree.
 
     if(evt_data.event && evt_data.event.clientX) {
         let e = evt_data.event;
@@ -889,7 +896,7 @@ function treeOnSelect(_evt_unused, evt_data)
             let action = (elem.dataset && elem.dataset.action) ?
                             elem.dataset.action : '** unknown action **';
 
-            log.info({'Actually, button press':elem, action});
+            log.info({'Actually, button press':elem, action, evt_data});
 
             switch(action) {
                 case 'renameWindow':
@@ -911,6 +918,9 @@ function treeOnSelect(_evt_unused, evt_data)
         } //endif the click was actually an action button
     } //endif event has clientX
 
+    /// Do we need to open a new window?
+    let open_new_window = (!node_val.isOpen && (is_tab || is_win) );
+
     // --------
     // Process the actual node click
 
@@ -922,7 +932,7 @@ function treeOnSelect(_evt_unused, evt_data)
         chrome.tabs.highlight({
             windowId: node_val.win_id,
             tabs: [node_val.index]     // Jump to the clicked-on tab
-        });
+        }, K.ignore_chrome_error);
         //log.info('flagging treeonselect' + node.id);
         T.treeobj.flag_node(node);
         win_id = node_val.win_id;
@@ -930,7 +940,7 @@ function treeOnSelect(_evt_unused, evt_data)
     } else if(is_win && node_val.isOpen) {    // An open window
         win_id = node_val.win_id;
 
-    } else if(!node_val.isOpen && (is_tab || is_win) ) {
+    } else if( open_new_window ) {
         // A closed window or tab.  Make sure we have the window.
         let win_node;
         let win_val;
@@ -1039,10 +1049,18 @@ function treeOnSelect(_evt_unused, evt_data)
                             chrome.tabs.remove(to_prune, K.ignore_chrome_error);
                         } //endif we have extra tabs
 
-                        // TODO RESUME HERE ---
-                        // if a tab was clicked on, focus that particular tab
+                        // if a tab was clicked on, activate that particular tab
+                        if(is_tab) {
+                            chrome.tabs.highlight({
+                                windowId: node_val.win_id,
+                                tabs: [node_val.index]
+                            }, K.ignore_chrome_error);
+                        }
 
+                        // Set the highlights in the tree appropriately
+                        T.treeobj.flag_node(win_node.id);
                         flagOnlyCurrentTab(win);
+
                     } //get callback
                 ); //windows.get
 
@@ -1053,7 +1071,9 @@ function treeOnSelect(_evt_unused, evt_data)
         log.error('treeOnSelect: Unknown node ' + node);
     }
 
-    if(typeof win_id !== 'undefined') {
+    // Set highlights for the window, unless we had to open a new window.
+    // If we opened a new window, the code above handled this.
+    if(!open_new_window && typeof win_id !== 'undefined') {
         unflagAllWindows();
 
         // Clear the other windows' tabs' flags.
@@ -1065,8 +1085,9 @@ function treeOnSelect(_evt_unused, evt_data)
         // Activate the window, if it still exists.
         chrome.windows.get(win_id, function(win) {
             if(typeof(chrome.runtime.lastError) !== 'undefined') return;
-            chrome.windows.update(win_id, {focused: true}, K.ignore_chrome_error);
-                // winOnFocusedChange will set the flag on the newly-focused window
+            log.debug({'About to activate':win_id});
+            chrome.windows.update(win_id,{focused:true}, K.ignore_chrome_error);
+            // winOnFocusedChange will set the flag on the newly-focused window
         });
     }
 } //treeOnSelect
@@ -1126,8 +1147,6 @@ function winOnRemoved(win_id)
     if(!node) return;
 
     log.debug({'Node for window being removed':node});
-
-    winOnFocusChanged(K.NONE, true);        // Clear the highlights.
 
     // Keep the window record in place if it is saved and still has children.
     // If it's not saved, toss it.
@@ -1377,6 +1396,18 @@ function tabOnUpdated(tabid, changeinfo, tab)
     }
 
     saveTree();
+
+    // For some reason, Ctl+N plus filling in a tab doesn't give me a
+    // focus change to the new window.  Therefore, if the tab that has
+    // changed is in the active window, update the flags for
+    // that window.
+    chrome.windows.getLastFocused(function(win){
+        if(typeof(chrome.runtime.lastError) === 'undefined') {
+            if(tab.windowId === win.id) {
+                winOnFocusChanged(win.id, true);
+            }
+        }
+    });
 } //tabOnUpdated
 
 /// Handle movements of tabs or tab groups within a window.
@@ -2571,10 +2602,6 @@ function main(...args)
 } // main()
 
 require(dependencies, main);
-
-window.addEventListener('load',     //DEBUG
-        function() { console.log({'Load fired': document.readyState}); },
-        { 'once': true });
 
 // ###########################################################################
 // ### End of real code
