@@ -160,26 +160,36 @@
 		 * @name clear_flags_by_type()
 		 * @param {mixed} type The type of node (other types won't be affected).
 		 *						Pass an array for multiple types.
+		 * @param except_parent_node_id If present, only clear nodes that are
+		 * 						are not children of #except_parent_node_id.
+		 * 						TODO refactor this into a general clear
+		 * 						function that will take an object of criteria.
 		 * @param {Boolean} suppress_event If true, don't trigger an event
 		 * @plugin flagnode
 		 * @trigger clear_flagnode.jstree
 		 */
-		this.clear_flags_by_type = function(type, suppress_event) {
+		this.clear_flags_by_type = function(type, except_parent_node_id,
+											suppress_event) {
 			if(!Array.isArray(type)) type = [type];
 
 			// Collect the nodes
 			let nodes_to_clear = [];
 			for(let node_id in this._data.flagnode.flagged_nodes) {
-				if(type.includes(this.get_type(node_id))) {
-					nodes_to_clear.push(this.get_node(node_id,true));
-				}
+				let jstree_node = this.get_node(node_id);
+
+				if(!type.includes(jstree_node.type)) continue;
+				if(except_parent_node_id &&
+						jstree_node.parent === except_parent_node_id) continue;
+
+				nodes_to_clear.push(this.get_node(node_id,true));
 			}
 			this._setflagstate(nodes_to_clear, false);
 
 			if(!suppress_event) {
 				this.trigger('clear_flagnode',
 					{ 	flagged: Object.keys(this._data.flagnode.flagged_nodes),
-						cleared_type: type
+						cleared_except_parent_node_id: except_parent_node_id,
+						cleared_type: type,
 					}
 				);
 			}
