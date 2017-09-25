@@ -268,11 +268,14 @@
 
         let error_return = {node_id:null, val:null};
 
+        let pos = (!!cwin && getBoolSetting(CFG_NEW_WINS_AT_TOP)) ? 'first' : 'last';
         let win_node_id = T.treeobj.create_node(
                 $.jstree.root,                          // parent
                 {     text: 'Window'                    // node data
                     , state: { 'opened': !!cwin }
-                });
+                },
+                pos
+        );
         if(win_node_id === false) return error_return;
         T.treeobj.set_type(win_node_id,
             ( cwin ?

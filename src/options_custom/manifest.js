@@ -70,6 +70,22 @@
                 "type": "checkbox",
                 "label": i18n.get('Sort open windows to the top, scroll to the top of the list'),
             },
+            {
+                "tab": i18n.get("Behaviour"),
+                "group": i18n.get("When I..."),
+                "name": CFG_NEW_WINS_AT_TOP,
+                "type": "checkbox",
+                "label": i18n.get('Open a new window, move it to the top of the list'),
+            },
+            {   // some extra descriptive text for CFG_NEW_WINS_AT_TOP
+                "tab": i18n.get("Behaviour"),
+                "group": i18n.get("When I..."),
+                "type": "description",
+                "text": `This has the practical side-effect that all open
+                        windows will be sorted to the top when you open the
+                        TabFern window, even if you didn't check the "Sort
+                        open windows" box above.`
+            },
 
             // Appearance
             {
@@ -155,6 +171,8 @@
 (Drag-and-drop between open windows and closed windows is still in the works.)</li>
 <li>On the "Appearance" tab, you can turn off the horizontal scrollbar to save a bit of
 vertical space.</li>
+<li>New options on the Behaviour tab to keep your open windows at the top
+of the list.  This may reduce the need for scrolling.</li>
 </ul>`,
             },
             {

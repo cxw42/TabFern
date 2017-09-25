@@ -1081,6 +1081,7 @@ function winOnCreated(win)
                 win
             });
     //log.info('clearing flags winoncreated');
+
     T.treeobj.clear_flags();
     if(window_is_being_restored) {
         window_is_being_restored = false;

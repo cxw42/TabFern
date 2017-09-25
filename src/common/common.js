@@ -38,6 +38,7 @@ const CFG_JUMP_WITH_SORT_OPEN_TOP = 'jump-to-top-when-sort-open-to-top';
 const CFG_COLLAPSE_ON_STARTUP = 'collapse-trees-on-startup';
 const CFG_OPEN_TOP_ON_STARTUP = 'open-to-top-on-startup';
 const CFG_HIDE_HORIZONTAL_SCROLLBARS = 'hide-horizontal-scrollbars';
+const CFG_NEW_WINS_AT_TOP = 'open-new-windows-at-top';
 
 const CFG_DEFAULTS = {
     __proto__: null,
@@ -47,6 +48,7 @@ const CFG_DEFAULTS = {
     [CFG_COLLAPSE_ON_STARTUP]: true,
     [CFG_OPEN_TOP_ON_STARTUP]: false,
     [CFG_HIDE_HORIZONTAL_SCROLLBARS]: false,
+    [CFG_NEW_WINS_AT_TOP]: false,
 };
 
 //////////////////////////////////////////////////////////////////////////
