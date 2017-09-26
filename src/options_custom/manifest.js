@@ -176,6 +176,9 @@ one of them!</li>
 vertical space.</li>
 <li>New options on the Behaviour tab to keep your open windows at the top
 of the list.  This may reduce the need for scrolling.</li>
+<li>PDFs without a favicon now show as
+${icon('fff-page-white-with-red-banner')}.  My use case involves a lot of
+locally-stored PDFs, and this helps me find them more quickly.</li>
 </ul>`,
             },
             {

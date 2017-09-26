@@ -337,11 +337,18 @@
         });
 
         T.treeobj.rename_node(tab_node_id, module.get_html_label(tab_val));
-        T.treeobj.set_icon(tab_node_id,
-            (ctab && ctab.favIconUrl ? encodeURI(ctab.favIconUrl) : 'fff-page')
-        );
-        // TODO if the favicon doesn't load, replace the icon with the generic
-        // page icon so we don't keep hitting the favIconUrl.
+
+        { // Set icon
+            let icon = 'fff-page';
+            if(ctab && ctab.favIconUrl) {
+                icon = encodeURI(ctab.favIconUrl);
+            } else if((/\.pdf$/i).test(tab_val.raw_url)) {  //special-case PDFs
+                icon = 'fff-page-white-with-red-banner';
+            }
+            T.treeobj.set_icon(tab_node_id, icon);
+            // TODO if the favicon doesn't load, replace the icon with the
+            // generic page icon so we don't keep hitting the favIconUrl.
+        }
 
         return {node_id: tab_node_id, val: tab_val};
     } //makeItemForTab

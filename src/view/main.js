@@ -1388,6 +1388,10 @@ function tabOnUpdated(tabid, changeinfo, tab)
             icon_text = encodeURI(changeinfo.favIconUrl);
         } else if(tab.favIconUrl) {
             icon_text = encodeURI(tab.favIconUrl);
+        } else if((/\.pdf$/i).test(tab_node_val.raw_url)) {
+            // Special case for PDFs because I use them a lot.
+            // Not using the Silk page_white_acrobat icon.
+            icon_text = 'fff-page-white-with-red-banner';
         } else {
             icon_text = 'fff-page';
         }
@@ -2412,8 +2416,14 @@ function addOpenWindowsToTree(winarr)
                 tab_val.isOpen = true;
                 D.tabs.change_key(tab_val, 'tab_id', tab_val.tab.id);
 
-                T.treeobj.set_icon(tab_node_id,
-                    (ctab.favIconUrl ? encodeURI(ctab.favIconUrl) : 'fff-page') );
+                if(ctab.favIconUrl) {
+                    T.treeobj.set_icon(tab_node_id, encodeURI(ctab.favIconUrl));
+                } else if((/\.pdf$/i).test(tab_val.raw_url)) {
+                    T.treeobj.set_icon(tab_node_id,
+                                        'fff-page-white-with-red-banner');
+                } else {
+                    T.treeobj.set_icon(tab_node_id, 'fff-page');
+                }
                 I.refresh_label(tab_node_id);
             } //foreach tab
         } //endif window already exists
