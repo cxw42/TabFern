@@ -156,10 +156,9 @@
         val.keep = K.WIN_KEEP;
 
         if(val.isOpen) {
-            T.treeobj.set_type(win_node_id, K.NT_WIN_OPEN);
-                // NT_WIN_OPEN implies saved, since open != ephemeral.
+            T.treeobj.set_type(win_node_id, K.NT_WIN_ELVISH);
         } else {
-            T.treeobj.set_type(win_node_id, K.NT_WIN_CLOSED);
+            T.treeobj.set_type(win_node_id, K.NT_WIN_DORMANT);
         }
 
         if(cleanup_title) {
@@ -279,8 +278,8 @@
         if(win_node_id === false) return error_return;
         T.treeobj.set_type(win_node_id,
             ( cwin ?
-                (keep ? K.NT_WIN_OPEN : K.NT_WIN_EPHEMERAL ) :
-                K.NT_WIN_CLOSED)
+                ( keep ? K.NT_WIN_ELVISH : K.NT_WIN_EPHEMERAL ) :
+                K.NT_WIN_DORMANT)
         );
 
         loginfo({'Adding nodeid map for cwinid': cwin ? cwin.id : 'none'});

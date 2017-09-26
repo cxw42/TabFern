@@ -166,7 +166,10 @@
                 "name": "changelog-0_1_10",
                 "type": "description",
                 "text":
-`<ul>
+`
+<ul>
+<li class="gold-star">TabFern now has more than 25 users!  Thank you for being
+one of them!</li>
 <li>You can drag and drop tabs between open windows from the TabFern tree.
 (Drag-and-drop between open windows and closed windows is still in the works.)</li>
 <li>On the "Appearance" tab, you can turn off the horizontal scrollbar to save a bit of
@@ -177,8 +180,8 @@ of the list.  This may reduce the need for scrolling.</li>
             },
             {
                 "tab": i18n.get("What's new?"),
-                "group": "Version 0.1.8 and 0.1.9",
-                "name": "changelog-0_1_8",
+                "group": "Versions 0.1.8 and 0.1.9",
+                "name": "changelog-0_1_8-0_1_9",
                 "type": "description",
                 "text":
 `<ul>

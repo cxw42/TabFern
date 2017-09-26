@@ -77,9 +77,9 @@
 
         // Node types - these control the display of the
         // corresponding list items.
-        NT_WIN_CLOSED:      'win_closed',               // closed, saved
+        NT_WIN_DORMANT:     'win_closed',               // closed, saved
         NT_WIN_EPHEMERAL:   'win_ephemeral',            // open, unsaved
-        NT_WIN_OPEN:        'win_open_saved',           // open, saved
+        NT_WIN_ELVISH:      'win_open_saved',           // open, saved
         NT_WIN_RECOVERED:   'win_ephemeral_recovered',  // closed, saved, recovered
 
         NT_TAB:             'tab',              // a normal tab
@@ -89,7 +89,7 @@
 
     // Sets of node types
     module.NTs_TAB = [module.NT_TAB, module.NT_TAB_BORDERED];
-    module.NTs_WIN_ALIVE = [module.NT_WIN_EPHEMERAL, module.NT_WIN_OPEN];
+    module.NTs_WIN_OPEN = [module.NT_WIN_EPHEMERAL, module.NT_WIN_ELVISH];
 
     /// Ignore a Chrome callback error, and suppress Chrome's
     /// `runtime.lastError` diagnostic.

@@ -27,12 +27,11 @@
 // Notation:
 //
 // Windows can be open or closed, and can be saved or unsaved.
-// A closed, unsaved window isn't represented in TabFern, except in the
+// A closed, unsaved window isn't represented in TabFern, except via the
 // "Restore last deleted window" function.
 // An open, unsaved window is referred to for brevity as an "ephemeral" window.
 // An open, saved window is, similarly, an "Elvish" window.
 // A closed, saved window is a "Dormant" window.
-//   TODO RESUME HERE - update notation throughout per this paragraph.
 //
 // A "Fern" is the subtree for a particular window, including a node
 // representing the window and zero or more children of that node
@@ -212,7 +211,7 @@ function getWindowSizeFromWindowRecord(win)
 /// Clear flags on all windows; leave tabs alone.
 function unflagAllWindows() {
     //log.trace('unflagAllWindows');
-    T.treeobj.clear_flags_by_type(K.NTs_WIN_ALIVE,
+    T.treeobj.clear_flags_by_type(K.NTs_WIN_OPEN,
             undefined,  // any parent
             true        // true => don't need an event
     );
@@ -987,7 +986,7 @@ function treeOnSelect(_evt_unused, evt_data)
                 win_val.isOpen = true;
                 win_val.keep = K.WIN_KEEP;      // just in case
                 win_val.win = win;
-                T.treeobj.set_type(win_node.id, K.NT_WIN_OPEN);
+                T.treeobj.set_type(win_node.id, K.NT_WIN_ELVISH);
 
                 T.treeobj.open_node(win_node);
 
@@ -2392,7 +2391,7 @@ function addOpenWindowsToTree(winarr)
             // don't change val.keep, which may have either value.
             existing_win.val.win = win;
             T.treeobj.set_type(existing_win.node,
-                    existing_win.val.keep === K.WIN_KEEP ? K.NT_WIN_OPEN :
+                    existing_win.val.keep === K.WIN_KEEP ? K.NT_WIN_ELVISH :
                                                         K.NT_WIN_EPHEMERAL );
 
             T.treeobj.open_node(existing_win.node);
