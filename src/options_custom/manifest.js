@@ -166,19 +166,25 @@
                 "name": "changelog-0_1_10",
                 "type": "description",
                 "text":
-`<ul>
+`
+<ul>
+<li class="gold-star">TabFern now has more than 25 users!  Thank you for being
+one of them!</li>
 <li>You can drag and drop tabs between open windows from the TabFern tree.
 (Drag-and-drop between open windows and closed windows is still in the works.)</li>
 <li>On the "Appearance" tab, you can turn off the horizontal scrollbar to save a bit of
 vertical space.</li>
 <li>New options on the Behaviour tab to keep your open windows at the top
 of the list.  This may reduce the need for scrolling.</li>
+<li>PDFs without a favicon now show as
+${icon('fff-page-white-with-red-banner')}.  My use case involves a lot of
+locally-stored PDFs, and this helps me find them more quickly.</li>
 </ul>`,
             },
             {
                 "tab": i18n.get("What's new?"),
-                "group": "Version 0.1.8 and 0.1.9",
-                "name": "changelog-0_1_8",
+                "group": "Versions 0.1.8 and 0.1.9",
+                "name": "changelog-0_1_8-0_1_9",
                 "type": "description",
                 "text":
 `<ul>

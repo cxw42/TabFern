@@ -9,4 +9,16 @@ div#content div.tab-content:last-child table:nth-child(n+3) {
     background: #ededed;    /* matches #sidebar in main.css */
 }
 
+/* Gold-star bullets */
+li.gold-star {
+    list-style-type: none;
+    margin-left: -16px;
+}
+
+li.gold-star:before {
+    vertical-align: sub;
+    content: url('/assets/icons/Gold Star-349834968906 - jhnri4 - pd-oca - 14in16px.svg');
+}
+
+
 /* vi: set ts=4 sts=4 sw=4 et ai: */

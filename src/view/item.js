@@ -157,7 +157,6 @@
 
         if(val.isOpen) {
             T.treeobj.set_type(win_node_id, K.NT_WIN_ELVISH);
-                // NT_WIN_ELVISH implies saved, since open != ephemeral.
         } else {
             T.treeobj.set_type(win_node_id, K.NT_WIN_DORMANT);
         }
@@ -279,7 +278,7 @@
         if(win_node_id === false) return error_return;
         T.treeobj.set_type(win_node_id,
             ( cwin ?
-                (keep ? K.NT_WIN_ELVISH : K.NT_WIN_EPHEMERAL ) :
+                ( keep ? K.NT_WIN_ELVISH : K.NT_WIN_EPHEMERAL ) :
                 K.NT_WIN_DORMANT)
         );
 
@@ -338,11 +337,18 @@
         });
 
         T.treeobj.rename_node(tab_node_id, module.get_html_label(tab_val));
-        T.treeobj.set_icon(tab_node_id,
-            (ctab && ctab.favIconUrl ? encodeURI(ctab.favIconUrl) : 'fff-page')
-        );
-        // TODO if the favicon doesn't load, replace the icon with the generic
-        // page icon so we don't keep hitting the favIconUrl.
+
+        { // Set icon
+            let icon = 'fff-page';
+            if(ctab && ctab.favIconUrl) {
+                icon = encodeURI(ctab.favIconUrl);
+            } else if((/\.pdf$/i).test(tab_val.raw_url)) {  //special-case PDFs
+                icon = 'fff-page-white-with-red-banner';
+            }
+            T.treeobj.set_icon(tab_node_id, icon);
+            // TODO if the favicon doesn't load, replace the icon with the
+            // generic page icon so we don't keep hitting the favIconUrl.
+        }
 
         return {node_id: tab_node_id, val: tab_val};
     } //makeItemForTab
