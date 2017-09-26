@@ -28,6 +28,7 @@ core
 # Output directories
 /build*
 /doc/
+/dist/
 
 # Test outputs
 *.e
@@ -36,3 +37,6 @@ core
 
 # readline history
 *.history
+
+# dependencies
+/node_modules/

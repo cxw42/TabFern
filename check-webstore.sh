@@ -17,7 +17,8 @@ echo === Files in master but not in webstore/ ===
 find . \( -wholename ./assets/icons -prune -o -name \*.swp -prune -o \
             -wholename ./webstore -prune -o -name .git\* -prune -o \
             -wholename ./scraps -prune -o -wholename ./webstore.js -prune -o \
-            -wholename ./webstore.zip -prune -o -wholename ./test -prune \) \
+            -wholename ./webstore.zip -prune -o -wholename ./test -prune -o \
+            -wholename ./node_modules -prune \) \
     -o \( -type f \( -exec test -f webstore/{} \; -o -print \) \) | \
 grep -v '^./check-webstore.sh'
 
