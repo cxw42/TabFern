@@ -7,7 +7,7 @@
     function icon(cls) { return `<i class="${cls}"></i>`; }
     let ham = icon('fa fa-bars');
     let gt = icon('fa fa-lg fa-caret-right');
-
+    let refresh_message = " (refresh the TabFern window after you change this to make the change take effect)"
     // Assign the settings
     root.manifest = {
         "name": "Settings - ver. "+TABFERN_VERSION+' - TabFern',
@@ -33,10 +33,18 @@
             // Behaviour.  Yeah, there's a "u" in there!
             {
                 "tab": i18n.get("Behaviour"),
-                "group": i18n.get("When I..."),
+                "group": i18n.get("On startup or refresh..."),
                 "name": CFG_COLLAPSE_ON_STARTUP,
                 "type": "checkbox",
-                "label": i18n.get("Start up, collapse all the saved trees"),
+                "label": i18n.get("Collapse all the saved trees"),
+                //"text": i18n.get("x-characters")
+            },
+            {
+                "tab": i18n.get("Behaviour"),
+                "group": i18n.get("On startup or refresh..."),
+                "name": CFG_OPEN_TOP_ON_STARTUP,
+                "type": "checkbox",
+                "label": i18n.get("Sort open windows to the top")
                 //"text": i18n.get("x-characters")
             },
 
@@ -62,6 +70,32 @@
                 "type": "checkbox",
                 "label": i18n.get('Sort open windows to the top, scroll to the top of the list'),
             },
+            {
+                "tab": i18n.get("Behaviour"),
+                "group": i18n.get("When I..."),
+                "name": CFG_NEW_WINS_AT_TOP,
+                "type": "checkbox",
+                "label": i18n.get('Open a new window, move it to the top of the list'),
+            },
+            {   // some extra descriptive text for CFG_NEW_WINS_AT_TOP
+                "tab": i18n.get("Behaviour"),
+                "group": i18n.get("When I..."),
+                "type": "description",
+                "text": `This has the practical side-effect that all open
+                        windows will be sorted to the top when you open the
+                        TabFern window, even if you didn't check the "Sort
+                        open windows" box above.`
+            },
+
+            // Appearance
+            {
+                "tab": i18n.get("Appearance"),
+                "group": i18n.get("Functions"),
+                "name": CFG_HIDE_HORIZONTAL_SCROLLBARS,
+                "type": "checkbox",
+                "label": i18n.get('Hide horizontal scrollbar' + refresh_message),
+            },
+            // Maybe add some theming options here?
 
             // Features
             {
@@ -69,14 +103,14 @@
                 "group": "Context Menu",
                 "name": CFG_ENB_CONTEXT_MENU,
                 "type": "checkbox",
-                "label": "Enable right-click menus (refresh the TabFern window after you change this to make the change take effect)"
+                "label": "Enable right-click menus" + refresh_message,
             },
             {
                 "tab": "Features",
                 "group": "Key Mapping",
                 "name": "KeyBinds.Enabled",
                 "type": "checkbox",
-                "label": "Enable key mapping (refresh the TabFern window after you change this to make the change take effect)"
+                "label": "Enable key mapping" + refresh_message,
             },
 
             {
@@ -128,8 +162,29 @@
             // Changelog
             {
                 "tab": i18n.get("What's new?"),
-                "group": "Version 0.1.8 and 0.1.9",
-                "name": "changelog-0_1_8",
+                "group": "Version 0.1.10",
+                "name": "changelog-0_1_10",
+                "type": "description",
+                "text":
+`
+<ul>
+<li class="gold-star">TabFern now has more than 25 users!  Thank you for being
+one of them!</li>
+<li>You can drag and drop tabs between open windows from the TabFern tree.
+(Drag-and-drop between open windows and closed windows is still in the works.)</li>
+<li>On the "Appearance" tab, you can turn off the horizontal scrollbar to save a bit of
+vertical space.</li>
+<li>New options on the Behaviour tab to keep your open windows at the top
+of the list.  This may reduce the need for scrolling.</li>
+<li>PDFs without a favicon now show as
+${icon('fff-page-white-with-red-banner')}.  My use case involves a lot of
+locally-stored PDFs, and this helps me find them more quickly.</li>
+</ul>`,
+            },
+            {
+                "tab": i18n.get("What's new?"),
+                "group": "Versions 0.1.8 and 0.1.9",
+                "name": "changelog-0_1_8-0_1_9",
                 "type": "description",
                 "text":
 `<ul>

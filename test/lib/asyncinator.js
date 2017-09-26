@@ -19,16 +19,22 @@
 ///
 /// @param deps {mixed}  An array of strings naming the modules you require.
 ///                      A string can be provided if you only need one module.
-/// @param dest {Object} An object where the loaded modules will be stored.
-///                      This must be initialized, e.g., to `{}`, *before*
-///                      you call R().
+/// @param dest {Object} Optional.  An object where the loaded modules will be
+///                      stored.  this must be initialized, e.g., to `{}`,
+///                      *before* you call R().
 /// @param extra_work {function} Optional.  If provided, extra_work() will be
 ///                              called before the beforeAll() is closed out.
 ///
+
+/// A global to store the loaded modules, since require.js only loads any
+/// given module once.
+var RModules = {};
+
 function R(deps, dest, extra_work)
 {
-    if(!dest) {
-        throw new Error('Call R with a reference to an object to populate');
+    if(typeof dest === 'function') {    // no `dest` provided
+        extra_work = dest;
+        dest = null;
     }
 
     if(!deps) deps = [];
@@ -39,7 +45,8 @@ function R(deps, dest, extra_work)
         function inner(...loaded) {
             // Copy the loaded modules into #dest
             for(let depidx = 0; depidx < loaded.length; ++depidx) {
-                dest[deps[depidx]] = loaded[depidx];
+                RModules[deps[depidx]] = loaded[depidx];
+                if(dest) dest[deps[depidx]] = loaded[depidx];
             }
 
             if(typeof extra_work === 'function') extra_work();

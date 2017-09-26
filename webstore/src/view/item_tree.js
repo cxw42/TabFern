@@ -3,7 +3,7 @@
 
 (function (root, factory) {
     let imports=['jquery','jstree','jstree-actions', 'jstree-flagnode',
-                    'loglevel', 'view/const' ];
+                    'jstree-because', 'loglevel', 'view/const' ];
 
     if (typeof define === 'function' && define.amd) {
         // AMD
@@ -23,7 +23,7 @@
         }
         root.tabfern_item_tree = factory(...requirements);
     }
-}(this, function ($, _jstree, _actions, _flagnode, log_orig, K ) {
+}(this, function ($, _jstree, _actions, _flagnode, _because, log_orig, K ) {
     "use strict";
 
     function loginfo(...args) { log_orig.info('TabFern view/item_tree.js: ', ...args); };
@@ -77,7 +77,7 @@
         // Node types - use constants as the keys
         let jstreeTypes = {};
 
-        jstreeTypes[K.NT_WIN_CLOSED] = {
+        jstreeTypes[K.NT_WIN_DORMANT] = {
             li_attr: { class: K.WIN_CLASS },
             icon: true,     //default - folder
         };
@@ -87,7 +87,7 @@
             icon: 'visible-window-icon',
         };
 
-        jstreeTypes[K.NT_WIN_OPEN] = {
+        jstreeTypes[K.NT_WIN_ELVISH] = {
             li_attr: { class: K.WIN_CLASS + ' ' + K.VISIBLE_WIN_CLASS },
             icon: 'visible-saved-window-icon',
         };
@@ -109,10 +109,12 @@
 
         // The main config
         let jstreeConfig = {
-            plugins: ['wholerow', 'actions',
+            plugins: ['because', 'wholerow', 'actions',
                         // actions must be after wholerow since we attach the
                         // action buttons to the wholerow div
-                        'flagnode', 'dnd', 'types'], // TODO add state plugin
+                        'dnd', 'types', 'flagnode',
+                        // flagnode must be after types
+                     ], // TODO add state plugin
             core: {
                 animation: false,
                 multiple: false,          // for now

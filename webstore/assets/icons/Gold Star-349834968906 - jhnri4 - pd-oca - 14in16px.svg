@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   id="svg2"
+   sodipodi:docname="Gold Star-349834968906 - jhnri4 - pd-oca - 14in16px.svg"
+   viewBox="0 0 14.999997 15"
+   version="1.1"
+   inkscape:version="0.92.1 r15371"
+   width="15.999997"
+   height="16"
+   inkscape:export-filename="C:\Users\chrisw\tmpl\clipart\Gold Star-349834968906 - jhnri4 - pd-oca - 14in16px.png"
+   inkscape:export-xdpi="576"
+   inkscape:export-ydpi="576">
+  <defs
+     id="defs4">
+    <linearGradient
+       id="linearGradient3764"
+       y2="72.362"
+       spreadMethod="reflect"
+       gradientUnits="userSpaceOnUse"
+       x2="55"
+       gradientTransform="matrix(0.11683871,0,0,0.11683869,1.4457194,1036.7365)"
+       y1="102.36"
+       x1="5"
+       inkscape:collect="always">
+      <stop
+         id="stop3760"
+         style="stop-color:#aa8800"
+         offset="0" />
+      <stop
+         id="stop3766"
+         style="stop-color:#aa8800"
+         offset=".45869" />
+      <stop
+         id="stop3762"
+         style="stop-color:#aa8800;stop-opacity:1"
+         offset="1" />
+    </linearGradient>
+    <linearGradient
+       id="linearGradient3776"
+       y2="67.362"
+       spreadMethod="reflect"
+       gradientUnits="userSpaceOnUse"
+       x2="35"
+       gradientTransform="matrix(0.11683871,0,0,0.11683869,1.4457194,1036.7365)"
+       y1="47.362"
+       x1="10"
+       inkscape:collect="always">
+      <stop
+         id="stop3780"
+         style="stop-color:#d4aa00"
+         offset="0" />
+      <stop
+         id="stop3782"
+         style="stop-color:#ffd42a"
+         offset=".45869" />
+      <stop
+         id="stop3784"
+         style="stop-color:#ffe680"
+         offset="1" />
+    </linearGradient>
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     bordercolor="#666666"
+     inkscape:pageshadow="2"
+     inkscape:window-y="-8"
+     pagecolor="#ffffff"
+     inkscape:window-height="1147"
+     inkscape:window-maximized="1"
+     inkscape:zoom="31.999999"
+     inkscape:window-x="-8"
+     showgrid="false"
+     borderopacity="1.0"
+     inkscape:current-layer="layer1"
+     inkscape:cx="1.2622793"
+     inkscape:cy="15.438984"
+     inkscape:window-width="1920"
+     inkscape:pageopacity="0.0"
+     inkscape:document-units="px"
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0">
+    <inkscape:grid
+       id="grid2985"
+       enabled="true"
+       visible="true"
+       snapvisiblegridlinesonly="true"
+       type="xygrid"
+       empspacing="5"
+       originx="-1.2769452"
+       originy="-0.97410147"
+       spacingx="1"
+       spacingy="1" />
+  </sodipodi:namedview>
+  <g
+     id="layer1"
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     transform="translate(-1.2769452,-1036.4259)">
+    <path
+       style="fill:url(#linearGradient3776);fill-rule:evenodd;stroke:url(#linearGradient3764);stroke-width:0.93750006;stroke-miterlimit:4;stroke-dasharray:none"
+       d="m 11.376921,1049.2275 -3.4607994,-1.7528 -3.4059326,1.8571 0.5976477,-3.833 -2.818733,-2.6654 3.8301638,-0.6161 1.6638879,-3.5044 1.7694782,3.4522 3.8470914,0.4996 -2.736549,2.7497 z"
+       id="path2987"
+       inkscape:connector-curvature="0" />
+  </g>
+  <metadata
+     id="metadata15">
+    <rdf:RDF>
+      <cc:Work>
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <cc:license
+           rdf:resource="http://creativecommons.org/publicdomain/zero/1.0/" />
+        <dc:publisher>
+          <cc:Agent
+             rdf:about="http://openclipart.org/">
+            <dc:title>Openclipart</dc:title>
+          </cc:Agent>
+        </dc:publisher>
+        <dc:title />
+        <dc:date>2010-11-01T00:04:47</dc:date>
+        <dc:description>Favorite icon</dc:description>
+        <dc:source>https://openclipart.org/detail/93367/favorite-icon-by-jhnri4</dc:source>
+        <dc:creator>
+          <cc:Agent>
+            <dc:title>jhnri4</dc:title>
+          </cc:Agent>
+        </dc:creator>
+        <dc:subject>
+          <rdf:Bag>
+            <rdf:li>action</rdf:li>
+            <rdf:li>favorite</rdf:li>
+            <rdf:li>gold</rdf:li>
+            <rdf:li>icon</rdf:li>
+            <rdf:li>star</rdf:li>
+            <rdf:li>yellow</rdf:li>
+          </rdf:Bag>
+        </dc:subject>
+      </cc:Work>
+      <cc:License
+         rdf:about="http://creativecommons.org/publicdomain/zero/1.0/">
+        <cc:permits
+           rdf:resource="http://creativecommons.org/ns#Reproduction" />
+        <cc:permits
+           rdf:resource="http://creativecommons.org/ns#Distribution" />
+        <cc:permits
+           rdf:resource="http://creativecommons.org/ns#DerivativeWorks" />
+      </cc:License>
+    </rdf:RDF>
+  </metadata>
+</svg>
