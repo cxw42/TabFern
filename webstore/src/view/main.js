@@ -16,8 +16,9 @@
 // In any save file, missing fields are assumed to be falsy.  Do not assume
 // any specific false value.
 // Bump the version number of the save file only when:
-//  - You move or delete an existing field; or
-//  - You add a new field for which a default falsy value is unworkable.
+//  - you move or delete an existing field;
+//  - you add a new required field; or
+//  - you add a new field for which a default falsy value is unworkable.
 
 // Design decision: At present, windows with no tabs are not supported.
 // The only exception is the holding pen, which we use while attaching
@@ -26,9 +27,11 @@
 // Notation:
 //
 // Windows can be open or closed, and can be saved or unsaved.
-// A closed, unsaved window isn't represented in TabFern, except in the
+// A closed, unsaved window isn't represented in TabFern, except via the
 // "Restore last deleted window" function.
 // An open, unsaved window is referred to for brevity as an "ephemeral" window.
+// An open, saved window is, similarly, an "Elvish" window.
+// A closed, saved window is a "Dormant" window.
 //
 // A "Fern" is the subtree for a particular window, including a node
 // representing the window and zero or more children of that node
@@ -153,29 +156,6 @@ function local_init()
 //////////////////////////////////////////////////////////////////////////
 // DOM Manipulation //
 
-/// Given string #class_list, add #new_class without duplicating.
-function add_classname(class_list, new_class)
-{
-    let attrs = class_list.split(/\s+/);
-    if(attrs.indexOf(new_class) === -1) {
-        attrs.push(new_class);
-    }
-    return attrs.join(' ');
-} //add_classname()
-
-/// Given string #class_list, remove #existing_class if it is present.
-/// Will remove duplicates.
-function remove_classname(class_list, existing_class)
-{
-    let attrs = class_list.split(/\s+/);
-    let idx = attrs.indexOf(existing_class);
-    while(idx !== -1) {
-        attrs.splice(idx, 1);
-        idx = attrs.indexOf(existing_class);
-    }
-    return attrs.join(' ');
-} //remove_classname()
-
 /// Set the tab.index values of the tab nodes in a window.  Assumes that
 /// the nodes are in the proper order in the tree.
 /// \pre    #win_node_id is the id of a node that both exists and represents
@@ -227,6 +207,15 @@ function getWindowSizeFromWindowRecord(win)
         , 'height': win.height || 600
     };
 } //getWindowSize
+
+/// Clear flags on all windows; leave tabs alone.
+function unflagAllWindows() {
+    //log.trace('unflagAllWindows');
+    T.treeobj.clear_flags_by_type(K.NTs_WIN_OPEN,
+            undefined,  // any parent
+            true        // true => don't need an event
+    );
+};
 
 //////////////////////////////////////////////////////////////////////////
 // Saving //
@@ -393,7 +382,7 @@ function actionCloseWindow(node_id, node, unused_action_id, unused_action_el)
     D.windows.change_key(win_val, 'win_id', K.NONE);
         // Can't access by win_id, but can still access by node_id.
 
-    // TODO winOnFocusChanged(NONE) ?
+    // TODO winOnFocusChanged(NONE, true) ?
 
     // Close the window
     if(win_val.isOpen && win) {
@@ -427,6 +416,9 @@ function actionCloseWindow(node_id, node, unused_action_id, unused_action_el)
         D.tabs.change_key(tab_val, 'tab_id', K.NONE);
         // raw_url and raw_title are left alone
     }
+
+    T.treeobj.clear_flags();
+        // On close, we can't know where the focus will go next.
 } //actionCloseWindow
 
 function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el)
@@ -825,6 +817,30 @@ function DBG_printSaveData()
 //////////////////////////////////////////////////////////////////////////
 // jstree callbacks //
 
+/// Helper for treeOnSelect() and winOnFocusChanged().
+/// chrome.windows.get() callback to flag the current tab in a window
+function flagOnlyCurrentTab(win)
+{
+    let win_node_id = D.windows.by_win_id(win.id, 'node_id');
+    let win_node = T.treeobj.get_node(win_node_id);
+    if(!win_node) return;
+
+    // Clear the highlights of the tabs
+    T.treeobj.flag_node(win_node.children, false);
+
+    // Flag the current tab
+    for(let tab of win.tabs) {
+        if(tab.active) {
+            let tab_node_id = D.tabs.by_tab_id(tab.id, 'node_id');
+            if(tab_node_id) T.treeobj.flag_node(tab_node_id);
+            break;
+        }
+    } //foreach tab
+}
+
+/// ID for a timeout shared by newWinFocusCheckTest() and treeOnSelect()
+let awaitSelectTimeoutId = undefined;
+
 /// Process clicks on items in the tree.  Also works for keyboard navigation
 /// with arrow keys and Enter.
 /// TODO break "open window" out into a separate function.
@@ -832,6 +848,12 @@ function treeOnSelect(_evt_unused, evt_data)
 {
     //log.info(evt_data.node);
     if(typeof evt_data.node === 'undefined') return;
+
+    // Cancel a timer waiting for selection, if any.
+    if(typeof awaitSelectTimeoutId !== 'undefined') {
+        window.clearTimeout(awaitSelectTimeoutId);
+        awaitSelectTimeoutId = undefined;
+    }
 
     let node = evt_data.node;
     let node_val, is_tab=false, is_win=false;
@@ -852,11 +874,12 @@ function treeOnSelect(_evt_unused, evt_data)
     T.treeobj.deselect_all(true);
         // Clear the selection.  True => no event due to this change.
     //log.info('Clearing flags treeonselect');
-    T.treeobj.clear_flags(true);
+    //T.treeobj.clear_flags(true);
 
     // --------
     // Now that the selection is clear, see if this actually should have been
-    // an action-button click.
+    // an action-button click.  The evt_data.event is not necessarily a
+    // click.  For example, it can be a 'select_node' event from jstree.
 
     if(evt_data.event && evt_data.event.clientX) {
         let e = evt_data.event;
@@ -872,7 +895,7 @@ function treeOnSelect(_evt_unused, evt_data)
             let action = (elem.dataset && elem.dataset.action) ?
                             elem.dataset.action : '** unknown action **';
 
-            log.info({'Actually, button press':elem, action});
+            log.info({'Actually, button press':elem, action, evt_data});
 
             switch(action) {
                 case 'renameWindow':
@@ -894,6 +917,9 @@ function treeOnSelect(_evt_unused, evt_data)
         } //endif the click was actually an action button
     } //endif event has clientX
 
+    /// Do we need to open a new window?
+    let open_new_window = (!node_val.isOpen && (is_tab || is_win) );
+
     // --------
     // Process the actual node click
 
@@ -905,7 +931,7 @@ function treeOnSelect(_evt_unused, evt_data)
         chrome.tabs.highlight({
             windowId: node_val.win_id,
             tabs: [node_val.index]     // Jump to the clicked-on tab
-        });
+        }, K.ignore_chrome_error);
         //log.info('flagging treeonselect' + node.id);
         T.treeobj.flag_node(node);
         win_id = node_val.win_id;
@@ -913,7 +939,7 @@ function treeOnSelect(_evt_unused, evt_data)
     } else if(is_win && node_val.isOpen) {    // An open window
         win_id = node_val.win_id;
 
-    } else if(!node_val.isOpen && (is_tab || is_win) ) {
+    } else if( open_new_window ) {
         // A closed window or tab.  Make sure we have the window.
         let win_node;
         let win_val;
@@ -960,7 +986,7 @@ function treeOnSelect(_evt_unused, evt_data)
                 win_val.isOpen = true;
                 win_val.keep = K.WIN_KEEP;      // just in case
                 win_val.win = win;
-                T.treeobj.set_type(win_node.id, K.NT_WIN_OPEN);
+                T.treeobj.set_type(win_node.id, K.NT_WIN_ELVISH);
 
                 T.treeobj.open_node(win_node);
 
@@ -1022,7 +1048,17 @@ function treeOnSelect(_evt_unused, evt_data)
                             chrome.tabs.remove(to_prune, K.ignore_chrome_error);
                         } //endif we have extra tabs
 
-                        // TODO if a tab was clicked on, focus that particular tab
+                        // if a tab was clicked on, activate that particular tab
+                        if(is_tab) {
+                            chrome.tabs.highlight({
+                                windowId: node_val.win_id,
+                                tabs: [node_val.index]
+                            }, K.ignore_chrome_error);
+                        }
+
+                        // Set the highlights in the tree appropriately
+                        T.treeobj.flag_node(win_node.id);
+                        flagOnlyCurrentTab(win);
 
                     } //get callback
                 ); //windows.get
@@ -1034,11 +1070,23 @@ function treeOnSelect(_evt_unused, evt_data)
         log.error('treeOnSelect: Unknown node ' + node);
     }
 
-    if(typeof win_id !== 'undefined') {
+    // Set highlights for the window, unless we had to open a new window.
+    // If we opened a new window, the code above handled this.
+    if(!open_new_window && typeof win_id !== 'undefined') {
+        unflagAllWindows();
+
+        // Clear the other windows' tabs' flags.
+        let node_id = D.windows.by_win_id(win_id, 'node_id');
+        if(node_id) T.treeobj.clear_flags_by_type(K.NTs_TAB, node_id, true);
+            // Don't clear flags from children of node_id
+            // true => no event
+
         // Activate the window, if it still exists.
         chrome.windows.get(win_id, function(win) {
             if(typeof(chrome.runtime.lastError) !== 'undefined') return;
-            chrome.windows.update(win_id, {focused: true}, K.ignore_chrome_error);
+            log.debug({'About to activate':win_id});
+            chrome.windows.update(win_id,{focused:true}, K.ignore_chrome_error);
+            // winOnFocusedChange will set the flag on the newly-focused window
         });
     }
 } //treeOnSelect
@@ -1053,6 +1101,7 @@ function winOnCreated(win)
                 win
             });
     //log.info('clearing flags winoncreated');
+
     T.treeobj.clear_flags();
     if(window_is_being_restored) {
         window_is_being_restored = false;
@@ -1098,8 +1147,6 @@ function winOnRemoved(win_id)
 
     log.debug({'Node for window being removed':node});
 
-    winOnFocusChanged(K.NONE);        // Clear the highlights.
-
     // Keep the window record in place if it is saved and still has children.
     // If it's not saved, toss it.
     // If it is saved, but no longer has any children, toss it.  This can
@@ -1129,62 +1176,156 @@ function winOnRemoved(win_id)
 /// seem to fire when switching to a non-Chrome window.
 /// See https://stackoverflow.com/q/24307465/2877364 - onFocusChanged
 /// is known to be a bit flaky.
-function winOnFocusChanged(win_id)
+///
+/// @param win_id {number} the ID of the newly-focused window
+/// @param internal {boolean} if truthy, this was called as a helper, e.g., by
+///                 tabOnActivated or tabOnDeactivated.  Therefore, it has work
+///                 to do even if the window hasn't changed.
+let winOnFocusChanged;
+
+/// Initialize winOnFocusChanged.  This is a separate function since it
+/// cannot be called until jQuery has been loaded.
+function initFocusHandler()
 {
-    log.info({'Window focus-change triggered': win_id});
+    /// The type of window focus is changing from
+    const [FC_FROM_TF, FC_FROM_NONE, FC_FROM_OPEN] = ['from_tf','from_none','from_open'];
+    /// The type of window focus is changing to
+    const [FC_TO_TF, FC_TO_NONE, FC_TO_OPEN] = ['to_tf','to_none','to_open'];
 
-    if(win_id == my_winid) {
-        //log.info('Clearing flags winonfocuschanged to popup');
-        T.treeobj.clear_flags();
-    }
+    /// Sugar
+    const WINID_NONE = chrome.windows.WINDOW_ID_NONE;
 
-    chrome.windows.getLastFocused({}, function(win){
-        let new_win_id;
-        if(!win.focused) {
-            new_win_id = K.NONE;
-        } else {
-            new_win_id = win.id;
+    /// The previously-focused window
+    let previously_focused_winid = WINID_NONE;
+
+    /// clientX, Y while focus was elsewhere
+    var x_blurred = undefined, y_blurred = undefined;
+
+    /// Set up event listeners for DOM onfocus/onblur
+    $(function(){
+
+        /// Track the coordinates while the mouse is moving over the
+        /// non-focused TabFern window.
+        /// Mousedown doesn't help since it fires after the focus event.
+        function onmousemove(evt) {
+            x_blurred = evt.clientX;
+            y_blurred = evt.clientY;
+            //log.info({x_blurred,y_blurred});
         }
 
-        log.info('Focus change from ' + currently_focused_winid + ' to ' + win_id + '; lastfocused ' + win.id);
+        /// Focus event handler.  Empirically, this happens after the
+        /// chrome.windows.onFocusChanged event.
+        $(window).focus(function(evt){
+            log.debug({onfocus:evt, x_blurred,y_blurred,
+                elts: document.elementsFromPoint(x_blurred,y_blurred)
+            });
+            $(window).off('mousemove.tabfern');
+            x_blurred = undefined;  // can't leave them sitting around,
+            y_blurred = undefined;  // lest we risk severe confusion.
+        });
 
-        // Clear the focus highlights if we are changing windows.
-        // Avoid flicker if the selection is staying in the same window.
-        if(new_win_id === currently_focused_winid) return;
+        $(window).blur(function(evt){
+            //log.debug({onblur:evt});
+            $(window).on('mousemove.tabfern', onmousemove);
+                // Track pointer position while the window is blurred so we
+                // can take a reasonable guess, in the onFocusChanged handler,
+                // what element was clicked.
+        });
+    }); //end listener setup
 
-        // Update the size of new windows - TODO see if this works in practice
-        if(win.type === 'normal') {
-            winSizes[win.id] = getWindowSizeFromWindowRecord(win);
-            newWinSize = winSizes[win.id];
+    /// Helper for cleaning up flags on the window we're leaving.
+    /// Clear the flags on #old_win_id and its tabs.
+    function leavingWindow(old_win_id)
+    {
+        let old_node_id = D.windows.by_win_id(old_win_id, 'node_id');
+        if(!old_node_id) return;
+
+        T.treeobj.flag_node(old_node_id, false);
+
+        let old_node = T.treeobj.get_node(old_node_id);
+        if(!old_node) return;
+        T.treeobj.flag_node(old_node.children, false);
+    } //leavingWindow
+
+    /// The actual onFocusChanged event handler
+    function inner(win_id, _unused_internal)
+    {
+        let old_win_id = previously_focused_winid;
+
+        // What kind of change is it?
+        let change_from, change_to;
+        if(win_id === my_winid) change_to = FC_TO_TF;
+        else if(win_id === WINID_NONE) change_to = FC_TO_NONE;
+        else change_to = FC_TO_OPEN;
+
+        if(old_win_id === my_winid) change_from = FC_FROM_TF;
+        else if(old_win_id === WINID_NONE) change_from = FC_FROM_NONE;
+        else change_from = FC_FROM_OPEN;
+
+        log.info({change_from, old_win_id, change_to, win_id});
+
+        let same_window = (old_win_id === win_id);
+        previously_focused_winid = win_id;
+
+        // --- Handle the changes ---
+
+        if(change_to === FC_TO_OPEN) {
+            let win_val = D.windows.by_win_id(win_id);
+            if(!win_val) return;
+            let win_node = T.treeobj.get_node(win_val.node_id);
+            if(!win_node) return;
+
+            NEWWIN: if(!same_window) {
+                leavingWindow(old_win_id);
+
+                // Flag the newly-focused window
+                T.treeobj.flag_node(win_node.id);
+            }
+
+            // Flag the current tab within the new window
+            chrome.windows.get(win_id, {populate:true}, flagOnlyCurrentTab);
+        } //endif to_open
+
+        else if(change_to === FC_TO_NONE) {
+            unflagAllWindows();
+            // leave tab flags alone so you can see by looking at the TabFern
+            // window which tab you have on top.
         }
 
-        //log.info('Clearing focus classes');
-        $('.' + K.WIN_CLASS + ' > a').removeClass(K.FOCUSED_WIN_CLASS);
+        else if(change_to === FC_TO_TF) {
+            if(typeof x_blurred !== 'undefined') {
+                // We can guess where the click was
+                let elts = document.elementsFromPoint(x_blurred,y_blurred);
+                if( elts && elts.length &&
+                    elts.includes(document.getElementById('maintree'))
+                ) {     // A click on the tree.  Guess that there may be
+                        // an action coming.
+                    log.debug({"Awaiting select":1,elts});
+                    awaitSelectTimeoutId = window.setTimeout(
+                                function(){leavingWindow(old_win_id);},
+                                100
+                    );
+                    // If treeOnSelect() happens before the timeout,
+                    // the timeout will be cancelled.  Otherwise, the
+                    // flags will be cleared.  This should reduce
+                    // flicker in the TabFern window, because treeOnSelect
+                    // can do the flag changes instead of this.
+                } else {    // A click somewhere other than the tree
+                    unflagAllWindows();
+                }
 
-        currently_focused_winid = new_win_id;
+            } else {
+                // We do not know where the click was (e.g., Alt-Tab out/in)
+                unflagAllWindows();
+                // leave tab flags alone
+            }
+        } //endif to_tf
 
-        if(new_win_id === K.NONE) return;
+    }; //inner
 
-        // Get the window
-        let window_node_id = D.windows.by_win_id(new_win_id, 'node_id');
-        //log.info('Window node ID: ' + window_node_id);
-        if(!window_node_id) return;
-            // E.g., if new_win_id corresponds to this view.
+    winOnFocusChanged = inner;
 
-        // Make the window's entry bold, but no other entries.
-        // This seems to need to run after a yield when dragging
-        // tabs between windows, or else the K.FOCUSED_WIN_CLASS
-        // doesn't seem to stick.
-
-        // TODO change this to use flag_node instead.
-        setTimeout(function(){
-            //log.info('Setting focus class');
-            $('#' + window_node_id + ' > a').addClass(K.FOCUSED_WIN_CLASS);
-            //log.info($('#' + window_node_id + ' > a'));
-        },0);
-    });
-
-} //winOnFocusChanged
+} //initFocusHandler
 
 /// Process creation of a tab.  NOTE: in Chrome 60.0.3112.101, we sometimes
 /// get two consecutive tabs.onCreated events for the same tab.  Therefore,
@@ -1203,11 +1344,14 @@ function tabOnCreated(tab)
 
     if(tab_val === undefined) {     // If not, create the tab
         let tab_node_id = createNodeForTab(tab, win_node_id);   // Adds at end
-        T.treeobj.move_node(tab_node_id, win_node_id, tab.index);
+        T.treeobj.because('chrome','move_node',tab_node_id, win_node_id, tab.index);
             // Put it in the right place
+
+        // TODO check if we now match a saved window.  If so, merge the
+        // two.  Relates to #41.
     } else {
         log.info('   - That tab already exists.');
-        T.treeobj.move_node(tab_val.node_id, win_node_id, tab.index);
+        T.treeobj.because('chrome', 'move_node', tab_val.node_id, win_node_id, tab.index);
             // Just put it where it now belongs.
     }
 
@@ -1244,6 +1388,10 @@ function tabOnUpdated(tabid, changeinfo, tab)
             icon_text = encodeURI(changeinfo.favIconUrl);
         } else if(tab.favIconUrl) {
             icon_text = encodeURI(tab.favIconUrl);
+        } else if((/\.pdf$/i).test(tab_node_val.raw_url)) {
+            // Special case for PDFs because I use them a lot.
+            // Not using the Silk page_white_acrobat icon.
+            icon_text = 'fff-page-white-with-red-banner';
         } else {
             icon_text = 'fff-page';
         }
@@ -1251,6 +1399,18 @@ function tabOnUpdated(tabid, changeinfo, tab)
     }
 
     saveTree();
+
+    // For some reason, Ctl+N plus filling in a tab doesn't give me a
+    // focus change to the new window.  Therefore, if the tab that has
+    // changed is in the active window, update the flags for
+    // that window.
+    chrome.windows.getLastFocused(function(win){
+        if(typeof(chrome.runtime.lastError) === 'undefined') {
+            if(tab.windowId === win.id) {
+                winOnFocusChanged(win.id, true);
+            }
+        }
+    });
 } //tabOnUpdated
 
 /// Handle movements of tabs or tab groups within a window.
@@ -1284,7 +1444,7 @@ function tabOnMoved(tabid, moveinfo)
     let jstree_new_index =
             to_idx+(to_idx>from_idx ? 1 : 0);
 
-    T.treeobj.move_node(tab_node_id, window_node_id, jstree_new_index);
+    T.treeobj.because('chrome','move_node', tab_node_id, window_node_id, jstree_new_index);
 
     // Update the indices of all the tabs in this window.  This will update
     // the old tab and the new tab.
@@ -1297,19 +1457,20 @@ function tabOnActivated(activeinfo)
 {
     log.info({'Tab activated': activeinfo.tabId, activeinfo});
 
-    winOnFocusChanged(activeinfo.windowId);
+    winOnFocusChanged(activeinfo.windowId, true);
 
-    // Highlight the active tab
-    SELTAB: {
-        // Get the tab's node
-        let tab_node_id = D.tabs.by_tab_id(activeinfo.tabId, 'node_id');
-        if(!tab_node_id) break SELTAB;
-
-        //log.info('Clearing flags tabonactivate');
-        T.treeobj.clear_flags();
-        //log.info('flagging ' +tab_node_id);
-        T.treeobj.flag_node(tab_node_id);
-    }
+    return; // winOnFocusChanged handles the tab flagging as well
+//    // Highlight the active tab
+//    SELTAB: {
+//        // Get the tab's node
+//        let tab_node_id = D.tabs.by_tab_id(activeinfo.tabId, 'node_id');
+//        if(!tab_node_id) break SELTAB;
+//
+//        //log.info('Clearing flags tabonactivate');
+//        T.treeobj.clear_flags();
+//        //log.info('flagging ' +tab_node_id);
+//        T.treeobj.flag_node(tab_node_id);
+//    }
 
     // No need to save --- we don't save which tab is active.
 } //tabOnActivated
@@ -1342,7 +1503,7 @@ function tabOnRemoved(tabid, removeinfo)
         D.tabs.remove_value(tab_val);
             // So any events that are triggered won't try to look for a
             // nonexistent tab.
-        T.treeobj.delete_node(tab_node);
+        T.treeobj.because('chrome','delete_node',tab_node);
     }
 
     // Refresh the tab.index values for the remaining tabs
@@ -1352,25 +1513,7 @@ function tabOnRemoved(tabid, removeinfo)
     saveTree();
 } //tabOnRemoved
 
-// Sequence of events for a test tab detach:
-//{Window created: 146, Restore?: "no", win: {…}}
-//item.js:34 TabFern view/item.js:  {Adding nodeid map for cwinid: 146}
-//main.js:1222 {Tab detached: 140, detachinfo: {…}}Tab detached: 140detachinfo: {oldPosition: 0, oldWindowId: 139}__proto__: Object
-//main.js:1183 {Tab removed: 140, removeinfo: {…}}Tab removed: 140removeinfo: {isWindowClosing: false, windowId: 139}__proto__: Object <-- this also comes from us
-//main.js:1161 {Tab activated: 142, activeinfo: {…}}Tab activated: 142activeinfo: {tabId: 142, windowId: 139}__proto__: Object
-//main.js:1236 {Tab attached: 140, attachinfo: {…}}Tab attached: 140attachinfo: {newPosition: 0, newWindowId: 146}__proto__: Object
-//main.js:1161 {Tab activated: 140, activeinfo: {…}}Tab activated: 140activeinfo: {tabId: 140, windowId: 146}__proto__: Object
-//main.js:1012 Focus change from 139 to -1; lastfocused 146
-//main.js:1012 Focus change from 146 to 139; lastfocused 146
-//main.js:1057 {Tab created: 140, tab: {…}}     <-- this one comes from us - currently attach delegates to create.
-
-// So the actual sequence is:
-// - window created
-// - detach
-// - activate the new current tab in the existing window
-// - attach
-// TODO RESUME HERE - implement this
-
+/// When tabs detach, move them to the holding pen.
 function tabOnDetached(tabid, detachinfo)
 {
     // Don't save here?  Do we get a WindowCreated if the tab is not
@@ -1388,7 +1531,7 @@ function tabOnDetached(tabid, detachinfo)
     if(!old_win_val)    // ditto
         throw new Error("Unknown window detaching from???? "+attachinfo.newWindowId+' '+attachinfo.toString());
 
-    T.treeobj.move_node(tab_val.node_id, T.holding_node_id);
+    T.treeobj.because('chrome','move_node', tab_val.node_id, T.holding_node_id);
     tab_val.win_id = K.NONE;
     tab_val.index = K.NONE;
 
@@ -1396,6 +1539,7 @@ function tabOnDetached(tabid, detachinfo)
 
 } //tabOnDetached
 
+/// When tabs attach, move them out of the holding pen.
 function tabOnAttached(tabid, attachinfo)
 {
     log.info({'Tab attached': tabid, attachinfo});
@@ -1409,7 +1553,7 @@ function tabOnAttached(tabid, attachinfo)
     if(!new_win_val)    // ditto
         throw new Error("Unknown window attaching to???? "+attachinfo.newWindowId+' '+attachinfo.toString());
 
-    T.treeobj.move_node(tab_val.node_id, new_win_val.node_id,
+    T.treeobj.because('chrome','move_node', tab_val.node_id, new_win_val.node_id,
             attachinfo.newPosition);
 
     tab_val.win_id = attachinfo.newWindowId;
@@ -1638,8 +1782,8 @@ function getHamburgerMenuItems(node, _unused_proxyfunc, e)
     }
 
     items.infoItem = {
-            label: "About, help, and credits",
-            title: "Online - the TabFern web site",
+            label: "Online info",
+            title: "The TabFern web site, with a basic usage guide and the credits",
             action: hamAboutWindow,
             icon: 'fa fa-info',
         };
@@ -1842,35 +1986,11 @@ function dndIsDraggable(nodes, evt)
     if(log.getLevel() <= log.levels.TRACE) {
         console.group('is draggable?');
         console.log(nodes);
-        console.groupEnd();
         //console.log($.jstree.reference(evt.target));
+        console.groupEnd();
     }
 
-    // If any node being dragged is anything other than a window or a closed
-    // tab, it's not draggable.  Check all nodes for future-proofing, since we
-    // may someday support multiselect.
-
-// --- For now, any node is draggable. ---
-//     for(let node of nodes) {
-
-        // let tyval = I.get_node_tyval(node.id);
-        // if(!tyval) return false;    // don't drag nodes we don't know about
-        //
-        // // Can't drag open tabs
-        // if(tyval.ty === K.IT_TAB) {
-        //     if(tyval.val.isOpen) return false;
-        //
-        //     // Can't drag tabs that belong to open windows.  This is
-        //     // for futureproofing --- at present, tabs cannot be closed
-        //     // while their windows are open.
-        //     if(node.parent !== $.jstree.root) {
-        //         let parent_tyval = I.get_node_tyval(node.parent);
-        //         if(!parent_tyval || parent_tyval.val.isOpen) return false;
-        //     }
-        // }
-//     } //foreach node
-
-    return true;    // Otherwise, it is draggable
+    return true;        // For now, any node is draggable.
 } //dndIsDraggable
 
 /// Determine whether a node is a valid drop target.
@@ -1911,13 +2031,23 @@ let treeCheckCallback = (function(){
     function move_tab_in_window(evt, data)
     {
         setTimeout(function(){      // As above, delay to be on the safe side.
+            // Which tab we're moving
             let val = D.tabs.by_node_id(data.node.id);
             if( !val || val.tab_id === K.NONE ) return;
-            chrome.tabs.move(val.tab_id, {index: data.position});
+
+            // Which window we're moving it to
+            let parent_val = D.windows.by_node_id(data.parent);
+            if( !parent_val || parent_val.win_id === K.NONE) return;
+
+            // Do the move
+            chrome.tabs.move(val.tab_id,
+                {windowId: parent_val.win_id, index: data.position}
+                , K.ignore_chrome_error
+            );
         },0);
     } //move_tab_in_window
 
-    // The main callback
+    // --- The main check callback ---
     function inner(operation, node, new_parent, node_position, more)
     {
         // Fast bail when possible
@@ -1961,12 +2091,12 @@ let treeCheckCallback = (function(){
 
             } else if(tyval.ty === K.IT_TAB) {          // Dragging tabs
                 // Tabs: Can drop closed tabs in closed windows, or open
-                // tabs in their own window.  TODO revisit this when we later
+                // tabs in open windows.  TODO revisit this when we later
                 // permit opening tab-by-tab (#35)
 
                 if(tyval.val.isOpen) {      // open tab
                     if( !new_parent_tyval || !new_parent_tyval.val.isOpen ||
-                        new_parent.id !== node.parent
+                        new_parent_tyval.ty !== K.IT_WINDOW
                     ) {
                         return false;
                     }
@@ -2006,11 +2136,13 @@ let treeCheckCallback = (function(){
                 let new_parent_id = new_parent.id;
 
                 if(tyval.val.isOpen) {
-                    // Can't move open tabs between windows, except in and out of
-                    // the holding pen.
+
+                    // Can move open tabs between open windows or the holding pen
                     if( curr_parent_id !== T.holding_node_id &&
                         new_parent_id !== T.holding_node_id &&
-                        curr_parent_id !== new_parent_id) return false;
+                        (!new_parent_tyval || !new_parent_tyval.val.isOpen) )
+                        return false;
+
                 } else {
                     // Can move closed tabs to any closed window
                     if(!new_parent_tyval || new_parent_tyval.val.isOpen) return false;
@@ -2022,16 +2154,19 @@ let treeCheckCallback = (function(){
         // If we made it here, the operation is OK.
 
         // If we're not in the middle of a dnd, this is the conclusion of a
-        // move.  Set up to take action.
-        if(!more || !more.dnd) {
+        // move.  Set up to take action once the move completes.
+        // The reason() check is because, if we got here because of an event
+        // triggered by Chrome itself, there's nothing more to do.
+        if( (operation==='move_node') && (!more || !more.dnd) &&
+            (T.treeobj.reason() !== 'chrome')
+        ) {
 
             let old_parent = T.treeobj.get_node(node.parent);
 
             // If we are moving the last tab out of a window other than the
             // holding pen, set up the window to be deleted once the
             // move completes.
-            if( (operation==='move_node') &&
-                !tyval.val.isOpen &&
+            if( !tyval.val.isOpen &&
                 old_parent &&
                 old_parent.children &&
                 (node.id !== T.holding_node_id) &&
@@ -2043,19 +2178,17 @@ let treeCheckCallback = (function(){
                 T.treeobj.element.one('move_node.jstree', remove_empty_window);
             } else
 
-            // If we are moving an open tab within a window, set up to
-            // move the tab in Chrome.
-            if( (operation==='move_node') &&
-                tyval.val.isOpen &&
+            // If we are moving an open tab, set up to move the tab in Chrome.
+            if( tyval.val.isOpen &&
                 old_parent &&
                 (node.id !== T.holding_node_id) &&
                 (old_parent.id !== T.holding_node_id) &&
-                (new_parent.id !== T.holding_node_id) &&
-                (new_parent.id === old_parent.id)
+                (new_parent.id !== T.holding_node_id)
             ) {
                 T.treeobj.element.one('move_node.jstree', move_tab_in_window);
             }
-        }
+
+        } //endif this is a non-dnd move
 
         return true;
     } //inner
@@ -2133,7 +2266,15 @@ function initTreeFinal()
         $(K.INIT_MSG_SEL).css('display','none');
             // just in case initialization took a long time, and the message
             // already appeared.
-    }
+
+        // If the user wishes, sort the open windows to the top.  Do this only
+        // if everything initialized successfully, since hamSortOpenToTop
+        // is not guaranteed to work correctly otherwise.
+        if(getBoolSetting(CFG_OPEN_TOP_ON_STARTUP)) {
+            setTimeout(hamSortOpenToTop, 0);
+        }
+
+    } //endif loaded OK
 } //initTreeFinal()
 
 function initTree4(items)
@@ -2254,7 +2395,7 @@ function addOpenWindowsToTree(winarr)
             // don't change val.keep, which may have either value.
             existing_win.val.win = win;
             T.treeobj.set_type(existing_win.node,
-                    existing_win.val.keep === K.WIN_KEEP ? K.NT_WIN_OPEN :
+                    existing_win.val.keep === K.WIN_KEEP ? K.NT_WIN_ELVISH :
                                                         K.NT_WIN_EPHEMERAL );
 
             T.treeobj.open_node(existing_win.node);
@@ -2275,8 +2416,14 @@ function addOpenWindowsToTree(winarr)
                 tab_val.isOpen = true;
                 D.tabs.change_key(tab_val, 'tab_id', tab_val.tab.id);
 
-                T.treeobj.set_icon(tab_node_id,
-                    (ctab.favIconUrl ? encodeURI(ctab.favIconUrl) : 'fff-page') );
+                if(ctab.favIconUrl) {
+                    T.treeobj.set_icon(tab_node_id, encodeURI(ctab.favIconUrl));
+                } else if((/\.pdf$/i).test(tab_val.raw_url)) {
+                    T.treeobj.set_icon(tab_node_id,
+                                        'fff-page-white-with-red-banner');
+                } else {
+                    T.treeobj.set_icon(tab_node_id, 'fff-page');
+                }
                 I.refresh_label(tab_node_id);
             } //foreach tab
         } //endif window already exists
@@ -2286,7 +2433,7 @@ function addOpenWindowsToTree(winarr)
     // However, generally the popup will be focused when this runs,
     // and we're not showing the popup in the tree.
     if(focused_win_id) {
-        winOnFocusChanged(focused_win_id);
+        winOnFocusChanged(focused_win_id, true);
     }
 
     initTree3();
@@ -2347,6 +2494,10 @@ function initTree0()
 
     document.title = 'TabFern ' + TABFERN_VERSION;
 
+    if(getBoolSetting(CFG_HIDE_HORIZONTAL_SCROLLBARS, false)) {
+        document.querySelector('html').classList += ' tf--feature--hide-horizontal-scrollbars';
+    }
+
     Hamburger = Modules.hamburger('#hamburger-menu', getHamburgerMenuItems
             , K.CONTEXT_MENU_MOUSEOUT_TIMEOUT_MS
             );
@@ -2404,6 +2555,7 @@ function initIncompleteWarning()
 let dependencies = [
     // Modules that are not specific to TabFern
     'jquery', 'jstree', 'jstree-actions', 'jstree-flagnode',
+    'jstree-because',
     'loglevel', 'hamburger', 'bypasser', 'multidex', 'justhtmlescape',
     'signals', 'local/fileops/export', 'local/fileops/import',
 
@@ -2436,6 +2588,7 @@ function main(...args)
     }
 
     local_init();
+    initFocusHandler();
 
     // Timer to display the warning message if initialization doesn't complete
     // quickly enough.
@@ -2458,10 +2611,6 @@ function main(...args)
 } // main()
 
 require(dependencies, main);
-
-window.addEventListener('load',     //DEBUG
-        function() { console.log({'Load fired': document.readyState}); },
-        { 'once': true });
 
 // ###########################################################################
 // ### End of real code

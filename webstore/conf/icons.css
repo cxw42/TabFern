@@ -11,6 +11,11 @@
 .fff-page {
     content: url(/assets/icons/page_white.png);
 }
+
+.fff-page-white-with-red-banner {
+    content: url(/assets/icons/page_white_red_banner.png);
+}
+
 .fff-pencil {
     content: url(/assets/icons/pencil.png);
 }

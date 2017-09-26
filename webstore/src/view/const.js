@@ -28,7 +28,7 @@
     function loginfo(...args) { log_orig.info('TabFern view/const.js: ', ...args); };
 
     /// The module we are creating
-    let retval = {
+    let module = {
         STORAGE_KEY: 'tabfern-data',
             ///< Store the saved windows/tabs
         LOCN_KEY: 'tabfern-window-location',
@@ -67,6 +67,7 @@
         WIN_KEEP:  true,    // must be truthy
         WIN_NOKEEP:  false, // must be falsy
         NONE:  chrome.windows.WINDOW_ID_NONE,
+            ///< Do not assume that NONE and WINDOW_ID_NONE will always be the same!
 
         // Item-type enumeration.  Here because there may be more item
         // types in the future (e.g., dividers or plugins).  Each IT_*
@@ -76,9 +77,9 @@
 
         // Node types - these control the display of the
         // corresponding list items.
-        NT_WIN_CLOSED:      'win_closed',               // closed, saved
+        NT_WIN_DORMANT:     'win_closed',               // closed, saved
         NT_WIN_EPHEMERAL:   'win_ephemeral',            // open, unsaved
-        NT_WIN_OPEN:        'win_open_saved',           // open, saved
+        NT_WIN_ELVISH:      'win_open_saved',           // open, saved
         NT_WIN_RECOVERED:   'win_ephemeral_recovered',  // closed, saved, recovered
 
         NT_TAB:             'tab',              // a normal tab
@@ -86,13 +87,17 @@
                                     // (this is a hack until I can add dividers)
     };
 
+    // Sets of node types
+    module.NTs_TAB = [module.NT_TAB, module.NT_TAB_BORDERED];
+    module.NTs_WIN_OPEN = [module.NT_WIN_EPHEMERAL, module.NT_WIN_ELVISH];
+
     /// Ignore a Chrome callback error, and suppress Chrome's
     /// `runtime.lastError` diagnostic.
-    retval.ignore_chrome_error = function() { void chrome.runtime.lastError; }
+    module.ignore_chrome_error = function() { void chrome.runtime.lastError; }
 
     /// Make a callback function that will forward to #fn on a later tick.
     /// @param fn {function} the function to call
-    retval.nextTickRunner = function(fn) {
+    module.nextTickRunner = function(fn) {
         function inner(...args) {   // the actual callback
             setTimeout( function() { fn(...args); } ,0);
                 // on a later tick, call #fn, passing it ther arguments the
@@ -105,7 +110,7 @@
     /// tab that appears because we are letting the window open at the
     /// default size.  Yes, this is quite ugly.  TODO fix the ugliness.
     /// Maybe use asynquence?
-    retval.openWindowForURL = function(url)
+    module.openWindowForURL = function(url)
     {
         chrome.windows.create(
             function(win) {
@@ -130,7 +135,7 @@
         ); //windows.create
     } //openWindowForURL
 
-    return Object.freeze(retval);   // all fields constant
+    return Object.freeze(module);   // all fields constant
 }));
 
 // vi: set ts=4 sts=4 sw=4 et ai fo-=o fo-=r: //
