@@ -263,4 +263,10 @@ ul.jstree-contextmenu i {
     z-index: 1;
 }
 
+/* A bit more space between rows, for easier reading */
+div#maintree.jstree-default-dark-small .jstree-anchor {
+    line-height: 19px;
+    height: 19px;
+}
+
 /* vi: set ts=4 sts=4 sw=4 et ai: */

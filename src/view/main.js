@@ -27,12 +27,11 @@
 // Notation:
 //
 // Windows can be open or closed, and can be saved or unsaved.
-// A closed, unsaved window isn't represented in TabFern, except in the
+// A closed, unsaved window isn't represented in TabFern, except via the
 // "Restore last deleted window" function.
 // An open, unsaved window is referred to for brevity as an "ephemeral" window.
 // An open, saved window is, similarly, an "Elvish" window.
-// A closed, saved window is a "Dormant" window.
-//   TODO RESUME HERE - update notation throughout per this paragraph.
+// A closed, saved window is a "dormant" window.
 //
 // A "Fern" is the subtree for a particular window, including a node
 // representing the window and zero or more children of that node
@@ -43,7 +42,6 @@
 // details value (view/item_details.js) for that node.  An item may be
 // associated with a Chrome widget (Window or Tab) or not.  Each Chrome widget
 // is associated with exactly one item.
-// Current item types are window and tab.
 // Items are uniquely identified by their node_ids in the tree.
 
 console.log('Loading TabFern ' + TABFERN_VERSION);
@@ -212,7 +210,7 @@ function getWindowSizeFromWindowRecord(win)
 /// Clear flags on all windows; leave tabs alone.
 function unflagAllWindows() {
     //log.trace('unflagAllWindows');
-    T.treeobj.clear_flags_by_type(K.NTs_WIN_ALIVE,
+    T.treeobj.clear_flags_by_type(K.NTs_WIN_OPEN,
             undefined,  // any parent
             true        // true => don't need an event
     );
@@ -231,8 +229,8 @@ function makeSaveData(data)
 /// @param save_ephemeral_windows {Boolean}
 ///     whether to save information for open, unsaved windows (default true)
 /// @param cbk {function}
-///     If provided, will be called when saving is complete.
-///     Called with the save data.
+///     If provided, will be called after saving completes.
+///     Called as cbk(err, save_data).  On success, err is null.
 function saveTree(save_ephemeral_windows = true, cbk = undefined)
 {
     if(log.getLevel <= log.levels.TRACE) console.log('saveTree');
@@ -240,7 +238,10 @@ function saveTree(save_ephemeral_windows = true, cbk = undefined)
     // Get the raw data for the whole tree.  Can't use $(...) because closed
     // tree nodes aren't in the DOM.
     let root_node = T.treeobj.get_node($.jstree.root);    //from get_json() src
-    if(!root_node || !root_node.children) return;
+    if(!root_node || !root_node.children) {
+        if(typeof cbk === 'function') cbk(new Error("Can't get root node"));
+        return;
+    }
 
     let result = [];    // the data to be saved
 
@@ -299,7 +300,7 @@ function saveTree(save_ephemeral_windows = true, cbk = undefined)
         function() {
             if(typeof(chrome.runtime.lastError) === 'undefined') {
                 if(typeof cbk === 'function') {
-                    cbk(to_save[K.STORAGE_KEY]);
+                    cbk(null, to_save[K.STORAGE_KEY]);
                 }
                 return;     // Saved OK
             }
@@ -307,6 +308,7 @@ function saveTree(save_ephemeral_windows = true, cbk = undefined)
                             chrome.runtime.lastError.toString();
             log.error(msg);
             window.alert(msg);     // The user needs to know
+            if(typeof cbk === 'function') cbk(new Error(msg));
         }
     ); //storage.local.set
 } //saveTree()
@@ -670,6 +672,43 @@ function createNodeForClosedWindow(win_data_v1)
 /// Did we have a problem loading save data?
 let was_loading_error = false;
 
+/// See whether an open Chrome window corresponds to a dormant window in the
+/// tree.  This may happen, e.g., due to TabFern refresh or Chrome reload.
+/// @param cwin {Chrome Window} the open Chrome window we're checking for
+///                             a match.
+/// @return {mixed} the existing window's node and value, or false if no match.
+function winAlreadyExists(cwin)
+{
+    WIN:
+    for(let existing_win_node_id of T.treeobj.get_node($.jstree.root).children) {
+
+        // Is it already open?  If so, don't hijack it.
+        // This also catches non-window nodes such as the holding pen.
+        let existing_win_val = D.windows.by_node_id(existing_win_node_id);
+        if(!existing_win_val || typeof existing_win_val.isOpen === 'undefined' ||
+                existing_win_val.isOpen ) continue WIN;
+
+        // Does it have the same number of tabs?  If not, skip it.
+        let existing_win_node = T.treeobj.get_node(existing_win_node_id);
+        if(existing_win_node.children.length != cwin.tabs.length)
+            continue WIN;
+
+        // Same number of tabs.  Are they the same URLs?
+        for(let i=0; i<cwin.tabs.length; ++i) {
+            let existing_tab_val = D.tabs.by_node_id(existing_win_node.children[i]);
+            if(!existing_tab_val) continue WIN;
+            if(existing_tab_val.raw_url !== cwin.tabs[i].url) continue WIN;
+        }
+
+        // Since all the tabs have the same URLs, assume we are reopening
+        // an existing window.
+        return {node: existing_win_node, val: existing_win_val};
+
+    } //foreach existing window
+
+    return false;
+} //winAlreadyExists()
+
 /// Add the save data into the tree.
 /// Design decision: TabFern SHALL always be able to load older save files.
 /// Never remove a loader from this function.
@@ -987,7 +1026,7 @@ function treeOnSelect(_evt_unused, evt_data)
                 win_val.isOpen = true;
                 win_val.keep = K.WIN_KEEP;      // just in case
                 win_val.win = win;
-                T.treeobj.set_type(win_node.id, K.NT_WIN_OPEN);
+                T.treeobj.set_type(win_node.id, K.NT_WIN_ELVISH);
 
                 T.treeobj.open_node(win_node);
 
@@ -1342,23 +1381,37 @@ function tabOnCreated(tab)
 
     // See if this is a duplicate of an existing tab
     let tab_val = D.tabs.by_tab_id(tab.id);
+    let check_existing = false;
 
     if(tab_val === undefined) {     // If not, create the tab
         let tab_node_id = createNodeForTab(tab, win_node_id);   // Adds at end
         T.treeobj.because('chrome','move_node',tab_node_id, win_node_id, tab.index);
             // Put it in the right place
-
-        // TODO check if we now match a saved window.  If so, merge the
-        // two.  Relates to #41.
+        tab_val = D.tabs.by_tab_id(tab.id);
+        check_existing = true;
     } else {
         log.info('   - That tab already exists.');
         T.treeobj.because('chrome', 'move_node', tab_val.node_id, win_node_id, tab.index);
             // Just put it where it now belongs.
     }
 
-    updateTabIndexValues(win_node_id);
+    updateTabIndexValues(win_node_id);      // This leaves us in a consistent state.
+
+    // Check if we now match a saved window.  If so, merge the two.
+
     T.vscroll_function();
-    saveTree();
+
+    check_existing = false;     // DEBUG - remove this when the code below is filled in
+    if(!check_existing) {
+        saveTree();
+    } else {
+        saveTree(true, function(_unused_err, _unused_dat) {
+            let existing_win = winAlreadyExists(win);
+            if(existing_win) {
+                actionDeleteWindow(win_node_id, T.treeobj.get_node(win_node_id),null,null);
+            } //endif existing
+        });
+    }
 } //tabOnCreated
 
 function tabOnUpdated(tabid, changeinfo, tab)
@@ -1663,7 +1716,7 @@ function hamBackup()
 
     // Save the tree, including currently-open windows/tabs, then
     // export the save data to #filename.
-    saveTree(true, function(saved_info){
+    saveTree(true, function(_unused_err, saved_info){
         Modules.exporter(document, JSON.stringify(saved_info), filename);
     });
 } //hamBackup()
@@ -2336,41 +2389,6 @@ function initTree3()
     chrome.storage.local.get(K.LOCN_KEY, initTree4);
 } //initTree3
 
-/// See whether a window corresponds to an already-saved, closed window.
-/// This may happen, e.g., due to TabFern refresh or Chrome reload.
-/// @return the existing window's node and value, or false if no match.
-function winAlreadyExists(new_win)
-{
-    WIN:
-    for(let existing_win_node_id of T.treeobj.get_node($.jstree.root).children) {
-
-        // Is it already open?  If so, don't hijack it.
-        // This also catches non-window nodes such as the holding pen.
-        let existing_win_val = D.windows.by_node_id(existing_win_node_id);
-        if(!existing_win_val || typeof existing_win_val.isOpen === 'undefined' ||
-                existing_win_val.isOpen ) continue WIN;
-
-        // Does it have the same number of tabs?  If not, skip it.
-        let existing_win_node = T.treeobj.get_node(existing_win_node_id);
-        if(existing_win_node.children.length != new_win.tabs.length)
-            continue WIN;
-
-        // Same number of tabs.  Are they the same URLs?
-        for(let i=0; i<new_win.tabs.length; ++i) {
-            let existing_tab_val = D.tabs.by_node_id(existing_win_node.children[i]);
-            if(!existing_tab_val) continue WIN;
-            if(existing_tab_val.raw_url !== new_win.tabs[i].url) continue WIN;
-        }
-
-        // Since all the tabs have the same URLs, assume we are reopening
-        // an existing window.
-        return {node: existing_win_node, val: existing_win_val};
-
-    } //foreach existing window
-
-    return false;
-} //winAlreadyExists()
-
 function addOpenWindowsToTree(winarr)
 {
     let dat = {};
@@ -2392,7 +2410,7 @@ function addOpenWindowsToTree(winarr)
             // don't change val.keep, which may have either value.
             existing_win.val.win = win;
             T.treeobj.set_type(existing_win.node,
-                    existing_win.val.keep === K.WIN_KEEP ? K.NT_WIN_OPEN :
+                    existing_win.val.keep === K.WIN_KEEP ? K.NT_WIN_ELVISH :
                                                         K.NT_WIN_EPHEMERAL );
 
             T.treeobj.open_node(existing_win.node);
