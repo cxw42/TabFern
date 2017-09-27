@@ -2,7 +2,8 @@
 // Copyright (c) 2017 Chris White, Jasmine Hegman.
 
 (function (root, factory) {
-    let imports=['jquery','jstree','loglevel' ];
+    let imports=['jquery','jstree','loglevel','asq.src' ];
+        // asq.src.js is copied from the npm asynquence package
 
     if (typeof define === 'function' && define.amd) {
         // AMD
@@ -22,7 +23,7 @@
         }
         root.tabfern_const = factory(...requirements);
     }
-}(this, function ($, _unused_jstree_placeholder_, log_orig ) {
+}(this, function ($, _unused_jstree_placeholder_, log_orig, ASQ ) {
     "use strict";
 
     function loginfo(...args) { log_orig.info('TabFern view/const.js: ', ...args); };
@@ -106,33 +107,53 @@
         return inner;
     } //nextTickRunner()
 
+    // Helpers for asynquence
+
+    /// A special-purpose empty object, per getify
+    const ø = Object.create(null);
+
+    /// Chrome Callback: make a Chrome extension API callback that
+    /// wraps the done() callback of an asynquence step.
+    function CC(done) {
+        return function cbk() {
+            if(typeof(chrome.runtime.lastError) !== 'undefined') {
+                done.fail(chrome.runtime.lastError);
+            } else {
+                //done.apply(ø,...args);
+                    // for some reason done() doesn't get the args
+                    // provided to cbk(...args)
+                done.apply(ø,[].slice.call(arguments));
+            }
+        }
+    } //CC
+
+    module.CC = CC;     // might be useful elsewhere
+
     /// Open a new window with a given URL.  Also remove the default
     /// tab that appears because we are letting the window open at the
-    /// default size.  Yes, this is quite ugly.  TODO fix the ugliness.
-    /// Maybe use asynquence?
-    module.openWindowForURL = function(url)
-    {
-        chrome.windows.create(
-            function(win) {
-                if(typeof(chrome.runtime.lastError) === 'undefined') {
-                    chrome.tabs.create({windowId: win.id, url: url},
-                        function(keep_tab) {
-                            if(typeof(chrome.runtime.lastError) === 'undefined') {
-                                chrome.tabs.query({windowId: win.id, index: 0},
-                                    function(tabs) {
-                                        if(typeof(chrome.runtime.lastError) === 'undefined') {
-                                            chrome.tabs.remove(tabs[0].id,
-                                                K.ignore_chrome_error
-                                            ); //tabs.remove
-                                        }
-                                    } //function(tabs)
-                                ); //tabs.query
-                            }
-                        } //function(keep_tab)
-                    ); //tabs.create
-                }
-            } //function(win)
-        ); //windows.create
+    /// default size.  Yes, this is a bit like a FOUC, but oh well.
+    module.openWindowForURL = function(url) {
+        let win_id;     // TODO is there a better way to pass data down
+                        // the sequence?
+
+        ASQ()
+        .then(function open_win(done){ chrome.windows.create(CC(done)); })
+        .then(function open_tab(done, new_win){
+            win_id = new_win.id;
+            chrome.tabs.create({windowId: win_id, url: url}, CC(done));
+        })
+        .then(function get_old_tab(done){
+            chrome.tabs.query({windowId: win_id, index: 0}, CC(done));
+        })
+        .then(function remove_old_tab(done, tabs){
+            chrome.tabs.remove(tabs[0].id, CC(done));
+        })
+        .or(function(err){log_orig.error({'Load error':err, url});})
+        ;
+
+        // To start the sequence paused, use `let seq = ASQ().duplicate()` above
+        // instead of just ASQ().  Then, to fire it off, `seq.unpause();`.
+
     } //openWindowForURL
 
     return Object.freeze(module);   // all fields constant
