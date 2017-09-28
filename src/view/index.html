@@ -25,6 +25,19 @@
 <body class="jstree-default-dark">
 <!-- jstree-default-dark to set background, text colors -->
 
+    <!-- Some content for no-styles, no-JS, or screen-reader users -->
+    <div id="static-about" class="hidden-but-accessible">
+        <a href="https://cxw42.github.io/TabFern/">About, help, and credits</a>
+    </div>
+
+    <!-- Room for plugins ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+    <div id="plugin-container" class="split"></div>
+    <!-- Maybe use something like https://stackoverflow.com/q/13741871/2877364
+    or https://benfrain.com/
+                    independent-scrolling-panels-body-scroll-using-just-css/
+    to give the plugin room at the top while permitting TabFern operation
+    to continue as usual below. -->
+
     <div id="tabfern-container">
 
         <!-- Content ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
@@ -33,21 +46,11 @@
         <div id="init-incomplete">Initialization not complete.  Changes will not
         be saved.</div><!-- hidden if init does complete. -->
 
-        <!-- Some content for no-styles, no-JS, or screen-reader users -->
-        <div id="static-about" class="hidden-but-accessible">
-            <a href="https://cxw42.github.io/TabFern/">About, help, and credits</a>
-        </div>
-
         <div id="hamburger-menu" class="hamburger-menu"></div><!-- a jstree to use as a hamburger menu -->
 
     </div><!-- tabfern-container -->
 
-    <!-- Room for plugins ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
-    <div id="plugin-container"></div>
-    <!-- Maybe use something like https://stackoverflow.com/q/13741871/2877364 or
-    https://benfrain.com/independent-scrolling-panels-body-scroll-using-just-css/
-    to give the plugin room at the bottom while permitting TabFern operation
-    to continue as usual above. -->
+    <div id="tabfern-container-proxy" class="split"></div><!-- A proxy for dragging -->
 
     <!-- Main script ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
     <script src="main.js" type="text/javascript"></script>
