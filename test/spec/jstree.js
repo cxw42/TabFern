@@ -1,11 +1,10 @@
 // spec/jstree.js: Test basic jstree operations
 
 describe('jstree', function() {
-    let M={};       // loaded modules
     let new_div;    // where the tree goes
     let treeobj;
 
-    beforeAll(R('jstree',M));
+    beforeAll(R('jstree'));
 
     it('can be created', function() {
         new_div = $('<div />').appendTo('body');
