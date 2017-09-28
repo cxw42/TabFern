@@ -12,6 +12,7 @@ define(function(){
     function injectScript(src){
         var s, t;
         s = document.createElement('script'); s.type = 'text/javascript'; s.async = true; s.src = src;
+        console.log({'Injecting script':s});
         t = document.getElementsByTagName('script')[0]; t.parentNode.insertBefore(s,t);
     }
 
@@ -26,7 +27,7 @@ define(function(){
 
     function uid() {
         _uid += 1;
-        return '__async_req_'+ _uid +'__';
+        return 'no_initial_underscore__async_req_'+ _uid +'__';
     }
 
     return{
@@ -34,7 +35,7 @@ define(function(){
             if(config.isBuild){
                 onLoad(null); //avoid errors on the optimizer
             }else{
-                var id = uid();
+                var id = config.async.forceId || uid();
                 //create a global variable that stores onLoad so callback
                 //function can define new module after async load
                 window[id] = onLoad;

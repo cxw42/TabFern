@@ -1,5 +1,5 @@
-// main.js: main script for the popup window of TabFern
-// cxw42, 2017
+// tree-main.js: main script for src/view/tree.html.
+// Part of TabFern.  Copyright (c) cxw42, r4j4h, 2017.
 
 // TODO break this into some separate modules
 
@@ -58,73 +58,86 @@ console.log('Loading TabFern ' + TABFERN_VERSION);
 //      have a user-callable function to populate the globals, e.g., for
 //      debugging in the deployed package.
 
+// NOTE: globals are currently `var` rather than `let` for ease of debugging
+// from index.html.  `let` variables are not exposed to the parent via the
+// `window` object, but `var` variables are.
+
+/// Local copy of the parent's chrome API, if we're running in an iframe
+var api;
+
 /// Modules loaded via requirejs
-let Modules = {};
+var Modules = {};
 
 /// Constants loaded from view/const.js, for ease of access
-let K;
+var K;
 
 /// Shorthand access to the details, view/item_details.js
-let D;
+var D;
 
 /// Shorthand access to the tree, view/item_tree.js ("Tree")
-let T;
+var T;
 
 /// Shorthand access to the item routines, view/item.js ("Item")
-let I;
+var I;
 
 /// HACK - a global for loglevel because typing `Modules.log` everywhere is a pain.
-let log;
+var log;
 
 //////////////////////////////////////////////////////////////////////////
 // Globals //
 
 // - Operation state -
-let my_winid;                   ///< window ID of this popup window
+var my_winid;                   ///< window ID of this popup window
 
 /// Window ID of the currently-focused window, as best we understand it.
-let currently_focused_winid = null;
+var currently_focused_winid = null;
 
 /// HACK to avoid creating extra tree items.
-let window_is_being_restored = false;
+var window_is_being_restored = false;
 
 /// The size of the last-closed window, to be used as the
 /// size of newly-opened windows (whence the name).
 /// Should always have a valid value.
-let newWinSize = {left: 0, top: 0, width: 300, height: 600};
+var newWinSize = {left: 0, top: 0, width: 300, height: 600};
 
 /// The sizes of the currently-open windows, for use in setting #newWinSize.
 /// The size of this popup, and other non-normal windows, is not tracked here.
-let winSizes={};
+var winSizes={};
 
 // TODO use content scripts to catch window resizing, a la
 // https://stackoverflow.com/q/13141072/2877364
 
 /// Whether to show a notification of new features
-let ShowWhatIsNew = false;
+var ShowWhatIsNew = false;
 
 /// Array of URLs of the last-deleted window
-let lastDeletedWindow;
+var lastDeletedWindow;
 
 /// Did initialization complete successfully?
-let did_init_complete = false;
+var did_init_complete = false;
 
 /// Are we running in development mode (unpacked)?
-let is_devel_mode = false;
+var is_devel_mode = false;
 
 // - Module instances -
 
 /// The hamburger menu
-let Hamburger;
+var Hamburger;
 
 /// An escaper
-let Esc;
+var Esc;
 
 /// The module that handles <Shift> bypassing of the jstree context menu
-let Bypasser;
+var Bypasser;
 
 //////////////////////////////////////////////////////////////////////////
 // Initialization //
+
+// Superhack: the fully-qualified URL to the common/chrome-api module,
+// since Chrome appears to strip the hash when converting relative to
+// absolute.
+
+let api_module_name = 'async!common/chrome-api.js';
 
 /// Init those of our globals that don't require any data to be loaded.
 /// Call after Modules has been populated.
@@ -133,17 +146,21 @@ function local_init()
     log = Modules.loglevel;
     log.setDefaultLevel(log.levels.DEBUG);  // TODO set to WARN for production
 
+    api = Modules[api_module_name];
+    console.log({api});
     Esc = Modules.justhtmlescape;
     K = Modules['view/const'];
     D = Modules['view/item_details'];
     T = Modules['view/item_tree'];
     I = Modules['view/item'];
 
+    api.management.getSelf(function(info){console.log(info);});
+
     // Check development status.  Thanks to
     // https://stackoverflow.com/a/12833511/2877364 by
     // https://stackoverflow.com/users/1143495/konrad-dzwinel and
     // https://stackoverflow.com/users/934239/xan
-    chrome.management.getSelf(function(info){
+    api.management.getSelf(function(info){
         if(info.installType === 'development') is_devel_mode = true;
     });
 
@@ -296,16 +313,16 @@ function saveTree(save_ephemeral_windows = true, cbk = undefined)
     let to_save = {};
     to_save[K.STORAGE_KEY] = makeSaveData(result);
         // storage automatically does JSON.stringify
-    chrome.storage.local.set(to_save,
+    api.storage.local.set(to_save,
         function() {
-            if(typeof(chrome.runtime.lastError) === 'undefined') {
+            if(typeof(api.runtime.lastError) === 'undefined') {
                 if(typeof cbk === 'function') {
                     cbk(null, to_save[K.STORAGE_KEY]);
                 }
                 return;     // Saved OK
             }
             let msg = "TabFern: couldn't save: " +
-                            chrome.runtime.lastError.toString();
+                            api.runtime.lastError.toString();
             log.error(msg);
             window.alert(msg);     // The user needs to know
             if(typeof cbk === 'function') cbk(new Error(msg));
@@ -392,7 +409,7 @@ function actionCloseWindow(node_id, node, unused_action_id, unused_action_el)
         win_val.keep = K.WIN_KEEP;
             // has to be before winOnRemoved fires.  TODO cleanup -
             // maybe add an `is_closing` flag to `win_val`?
-        chrome.windows.remove(win.id, K.ignore_chrome_error);
+        api.windows.remove(win.id, K.ignore_chrome_error);
         // Don't try to close an already-closed window.
         // Ignore exceptions - when we are called from winOnRemoved,
         // the window is already gone, so the remove() throws.
@@ -670,7 +687,7 @@ function createNodeForClosedWindow(win_data_v1)
 // Loading //
 
 /// Did we have a problem loading save data?
-let was_loading_error = false;
+var was_loading_error = false;
 
 /// See whether an open Chrome window corresponds to a dormant window in the
 /// tree.  This may happen, e.g., due to TabFern refresh or Chrome reload.
@@ -716,7 +733,7 @@ function winAlreadyExists(cwin)
 /// @param {mixed} data The save data, parsed (i.e., not a JSON string)
 /// @return {number} The number of new windows, or ===false on failure.
 ///                  ** Note: 0 is a valid number of windows to load!
-let loadSavedWindowsFromData = (function(){
+var loadSavedWindowsFromData = (function(){
 
     /// Populate the tree from version-0 save data in #data.
     /// V0 format: [win, win, ...]
@@ -806,12 +823,12 @@ let loadSavedWindowsFromData = (function(){
 /// @param {function} next_action If provided, will be called when loading
 ///                     is complete.
 function loadSavedWindowsIntoTree(next_action) {
-    chrome.storage.local.get(K.STORAGE_KEY, function(items) {
+    api.storage.local.get(K.STORAGE_KEY, function(items) {
 
         READIT:
-        if(typeof(chrome.runtime.lastError) !== 'undefined') {
+        if(typeof(api.runtime.lastError) !== 'undefined') {
             //Chrome couldn't load the data
-            log.error("Chrome couldn't load save data: " + chrome.runtime.lastError +
+            log.error("Chrome couldn't load save data: " + api.runtime.lastError +
                     "\nHowever, if you didn't have any save data, this isn't " +
                     "a problem!");
 
@@ -843,9 +860,9 @@ function loadSavedWindowsIntoTree(next_action) {
 // Debug helper, so uses console.log() directly.
 function DBG_printSaveData()
 {
-    chrome.storage.local.get(K.STORAGE_KEY, function(items) {
-        if(typeof(chrome.runtime.lastError) !== 'undefined') {
-            console.log(chrome.runtime.lastError);
+    api.storage.local.get(K.STORAGE_KEY, function(items) {
+        if(typeof(api.runtime.lastError) !== 'undefined') {
+            console.log(api.runtime.lastError);
         } else {
             let parsed = items[K.STORAGE_KEY];
             console.log('Save data:');
@@ -858,7 +875,7 @@ function DBG_printSaveData()
 // jstree callbacks //
 
 /// Helper for treeOnSelect() and winOnFocusChanged().
-/// chrome.windows.get() callback to flag the current tab in a window
+/// api.windows.get() callback to flag the current tab in a window
 function flagOnlyCurrentTab(win)
 {
     let win_node_id = D.windows.by_win_id(win.id, 'node_id');
@@ -879,7 +896,7 @@ function flagOnlyCurrentTab(win)
 }
 
 /// ID for a timeout shared by newWinFocusCheckTest() and treeOnSelect()
-let awaitSelectTimeoutId = undefined;
+var awaitSelectTimeoutId = undefined;
 
 /// Process clicks on items in the tree.  Also works for keyboard navigation
 /// with arrow keys and Enter.
@@ -968,7 +985,7 @@ function treeOnSelect(_evt_unused, evt_data)
     }
 
     if(is_tab && node_val.isOpen) {   // An open tab
-        chrome.tabs.highlight({
+        api.tabs.highlight({
             windowId: node_val.win_id,
             tabs: [node_val.index]     // Jump to the clicked-on tab
         }, K.ignore_chrome_error);
@@ -1009,7 +1026,7 @@ function treeOnSelect(_evt_unused, evt_data)
 
         // Open the window
         window_is_being_restored = true;
-        chrome.windows.create(
+        api.windows.create(
             {
                 url: urls
               , focused: true
@@ -1070,7 +1087,7 @@ function treeOnSelect(_evt_unused, evt_data)
                 // any tabs we didn't expect.  This assumes the tabs we
                 // wanted come first in the window, which seems to be a safe
                 // assumption.
-                chrome.windows.get(win.id, {populate: true},
+                api.windows.get(win.id, {populate: true},
                     function(win) {
                         if(win.tabs.length > expected_tab_count) {
                             log.warn('Win ' + win.id + ': expected ' +
@@ -1085,12 +1102,12 @@ function treeOnSelect(_evt_unused, evt_data)
                             } //foreach extra tab
 
                             log.warn('Pruning ' + to_prune);
-                            chrome.tabs.remove(to_prune, K.ignore_chrome_error);
+                            api.tabs.remove(to_prune, K.ignore_chrome_error);
                         } //endif we have extra tabs
 
                         // if a tab was clicked on, activate that particular tab
                         if(is_tab) {
-                            chrome.tabs.highlight({
+                            api.tabs.highlight({
                                 windowId: node_val.win_id,
                                 tabs: [node_val.index]
                             }, K.ignore_chrome_error);
@@ -1122,10 +1139,10 @@ function treeOnSelect(_evt_unused, evt_data)
             // true => no event
 
         // Activate the window, if it still exists.
-        chrome.windows.get(win_id, function(win) {
-            if(typeof(chrome.runtime.lastError) !== 'undefined') return;
+        api.windows.get(win_id, function(win) {
+            if(typeof(api.runtime.lastError) !== 'undefined') return;
             log.debug({'About to activate':win_id});
-            chrome.windows.update(win_id,{focused:true}, K.ignore_chrome_error);
+            api.windows.update(win_id,{focused:true}, K.ignore_chrome_error);
             // winOnFocusedChange will set the flag on the newly-focused window
         });
     }
@@ -1221,7 +1238,7 @@ function winOnRemoved(win_id)
 /// @param internal {boolean} if truthy, this was called as a helper, e.g., by
 ///                 tabOnActivated or tabOnDeactivated.  Therefore, it has work
 ///                 to do even if the window hasn't changed.
-let winOnFocusChanged;
+var winOnFocusChanged;
 
 /// Initialize winOnFocusChanged.  This is a separate function since it
 /// cannot be called until jQuery has been loaded.
@@ -1233,7 +1250,7 @@ function initFocusHandler()
     const [FC_TO_TF, FC_TO_NONE, FC_TO_OPEN] = ['to_tf','to_none','to_open'];
 
     /// Sugar
-    const WINID_NONE = chrome.windows.WINDOW_ID_NONE;
+    const WINID_NONE = api.windows.WINDOW_ID_NONE;
 
     /// The previously-focused window
     let previously_focused_winid = WINID_NONE;
@@ -1254,7 +1271,7 @@ function initFocusHandler()
         }
 
         /// Focus event handler.  Empirically, this happens after the
-        /// chrome.windows.onFocusChanged event.
+        /// api.windows.onFocusChanged event.
         $(window).focus(function(evt){
             log.debug({onfocus:evt, x_blurred,y_blurred,
                 elts: document.elementsFromPoint(x_blurred,y_blurred)
@@ -1323,7 +1340,7 @@ function initFocusHandler()
             }
 
             // Flag the current tab within the new window
-            chrome.windows.get(win_id, {populate:true}, flagOnlyCurrentTab);
+            api.windows.get(win_id, {populate:true}, flagOnlyCurrentTab);
         } //endif to_open
 
         else if(change_to === FC_TO_NONE) {
@@ -1458,8 +1475,8 @@ function tabOnUpdated(tabid, changeinfo, tab)
     // focus change to the new window.  Therefore, if the tab that has
     // changed is in the active window, update the flags for
     // that window.
-    chrome.windows.getLastFocused(function(win){
-        if(typeof(chrome.runtime.lastError) === 'undefined') {
+    api.windows.getLastFocused(function(win){
+        if(typeof(api.runtime.lastError) === 'undefined') {
             if(tab.windowId === win.id) {
                 winOnFocusChanged(win.id, true);
             }
@@ -1627,10 +1644,10 @@ function tabOnReplaced(addedTabId, removedTabId)
 // DOM event handlers //
 
 /// ID of a timer to save the new window size after a resize event
-let resize_save_timer_id;
+var resize_save_timer_id;
 
 /// A cache of the last size we saved to disk
-let last_saved_size;
+var last_saved_size;
 
 /// Save #size_data as the size of our popup window
 function saveViewSize(size_data)
@@ -1639,9 +1656,9 @@ function saveViewSize(size_data)
 
     let to_save = {};
     to_save[K.LOCN_KEY] = size_data;
-    chrome.storage.local.set(to_save,
+    api.storage.local.set(to_save,
             function() {
-                let err = chrome.runtime.lastError;
+                let err = api.runtime.lastError;
                 if(typeof(err) === 'undefined') {
                     last_saved_size = $.extend({}, size_data);
                     log.info('Saved size');
@@ -1695,7 +1712,7 @@ function hamAboutWindow()
 function hamSettings()
 {
     // Actually open the window
-    K.openWindowForURL(chrome.extension.getURL(
+    K.openWindowForURL(api.extension.getURL(
         '/src/options_custom/index.html' +
         (ShowWhatIsNew ? '#open=last' : ''))
     );
@@ -1706,7 +1723,7 @@ function hamSettings()
 
         let to_save = {};
         to_save[K.LASTVER_KEY] = TABFERN_VERSION;
-        chrome.storage.local.set(to_save, K.ignore_chrome_error);
+        api.storage.local.set(to_save, K.ignore_chrome_error);
     }
 } //hamSettings()
 
@@ -1793,7 +1810,7 @@ function hamSorter(compare_fn)
 
 function hamRunJasmineTests()
 {
-    K.openWindowForURL(chrome.extension.getURL('/test/index.html'));
+    K.openWindowForURL(api.extension.getURL('/test/index.html'));
 } // hamRunJasmineTests
 
 function hamSortOpenToTop()
@@ -2058,7 +2075,7 @@ function dndIsDraggable(nodes, evt)
 /// @param more {mixed} optional object of additional data.
 /// @return {boolean} whether or not the operation is permitted
 ///
-let treeCheckCallback = (function(){
+var treeCheckCallback = (function(){
 
     /// The move_node callback we will use to remove empty windows
     /// when dragging the last tab out of a window
@@ -2094,7 +2111,7 @@ let treeCheckCallback = (function(){
             if( !parent_val || parent_val.win_id === K.NONE) return;
 
             // Do the move
-            chrome.tabs.move(val.tab_id,
+            api.tabs.move(val.tab_id,
                 {windowId: parent_val.win_id, index: data.position}
                 , K.ignore_chrome_error
             );
@@ -2268,12 +2285,12 @@ let treeCheckCallback = (function(){
 /// Function hamSettings() updates the K.LASTVER_KEY information.
 function checkWhatIsNew(selector)
 {
-    chrome.storage.local.get(K.LASTVER_KEY, function(items) {
+    api.storage.local.get(K.LASTVER_KEY, function(items) {
         let should_notify = true;           // unless proven otherwise
         let first_installation = true;      // ditto
 
         // Check whether the user has seen the notification
-        if(typeof(chrome.runtime.lastError) === 'undefined') {
+        if(typeof(api.runtime.lastError) === 'undefined') {
             let lastver = items[K.LASTVER_KEY];
             if( (lastver !== null) && (typeof lastver === 'string') ) {
                 first_installation = false;
@@ -2292,7 +2309,7 @@ function checkWhatIsNew(selector)
         }
 
         if(first_installation) {
-            chrome.storage.local.set(
+            api.storage.local.set(
                 { [K.LASTVER_KEY]: 'installed, but no version viewed yet' },
                 function() {
                     ignore_chrome_error();
@@ -2336,7 +2353,7 @@ function initTree4(items)
     // If there was an error (e.g., nonexistent key), just
     // accept the default size.
 
-    if(typeof(chrome.runtime.lastError) === 'undefined') {
+    if(typeof(api.runtime.lastError) === 'undefined') {
         let parsed = items[K.LOCN_KEY];
         if( (parsed !== null) && (typeof parsed === 'object') ) {
             // + and || are to provide some sensible defaults - thanks to
@@ -2351,7 +2368,7 @@ function initTree4(items)
                     , 'height': Math.max(+parsed.height || 600, 200)
                 };
             last_saved_size = $.extend({}, size_data);
-            chrome.windows.update(my_winid, size_data);
+            api.windows.update(my_winid, size_data);
         }
     } //endif no error
 
@@ -2369,28 +2386,28 @@ function initTree3()
     T.treeobj.element.on('move_node.jstree', K.nextTickRunner(saveTree));
         // Save after drag-and-drop.  TODO? find a better way to do this?
 
-    chrome.windows.onCreated.addListener(winOnCreated);
-    chrome.windows.onRemoved.addListener(winOnRemoved);
-    chrome.windows.onFocusChanged.addListener(winOnFocusChanged);
+    api.windows.onCreated.addListener(winOnCreated);
+    api.windows.onRemoved.addListener(winOnRemoved);
+    api.windows.onFocusChanged.addListener(winOnFocusChanged);
 
     // Chrome tabs API, listed in the order given in the API docs at
-    // https://developer.chrome.com/extensions/tabs
-    chrome.tabs.onCreated.addListener(tabOnCreated);
-    chrome.tabs.onUpdated.addListener(tabOnUpdated);
-    chrome.tabs.onMoved.addListener(tabOnMoved);
+    // https://developer.api.com/extensions/tabs
+    api.tabs.onCreated.addListener(tabOnCreated);
+    api.tabs.onUpdated.addListener(tabOnUpdated);
+    api.tabs.onMoved.addListener(tabOnMoved);
     //onSelectionChanged: deprecated
     //onActiveChanged: deprecated
-    chrome.tabs.onActivated.addListener(tabOnActivated);
+    api.tabs.onActivated.addListener(tabOnActivated);
     //onHighlightChanged: deprecated
     //onHighlighted: not yet implemented
-    chrome.tabs.onDetached.addListener(tabOnDetached);
-    chrome.tabs.onAttached.addListener(tabOnAttached);
-    chrome.tabs.onRemoved.addListener(tabOnRemoved);
-    chrome.tabs.onReplaced.addListener(tabOnReplaced);
+    api.tabs.onDetached.addListener(tabOnDetached);
+    api.tabs.onAttached.addListener(tabOnAttached);
+    api.tabs.onRemoved.addListener(tabOnRemoved);
+    api.tabs.onReplaced.addListener(tabOnReplaced);
     //onZoomChange: not yet implemented, and we probably won't ever need it.
 
     // Move this view to where it was, if anywhere
-    chrome.storage.local.get(K.LOCN_KEY, initTree4);
+    api.storage.local.get(K.LOCN_KEY, initTree4);
 } //initTree3
 
 function addOpenWindowsToTree(winarr)
@@ -2460,13 +2477,13 @@ function addOpenWindowsToTree(winarr)
 
 function initTree2()
 {
-    chrome.windows.getAll({'populate': true}, addOpenWindowsToTree);
+    api.windows.getAll({'populate': true}, addOpenWindowsToTree);
 } //initTree2()
 
 function initTree1(win_id)
 { //called as a callback from sendMessage
-    if(typeof(chrome.runtime.lastError) !== 'undefined') {
-        log.error("Couldn't get win ID: " + chrome.runtime.lastError);
+    if(typeof(api.runtime.lastError) !== 'undefined') {
+        log.error("Couldn't get win ID: " + api.runtime.lastError);
         // TODO add a "couldn't load" message to the popup.
         return;     // This actually is fatal.
     }
@@ -2528,7 +2545,7 @@ function initTree0()
 
     // TODO? get screen size of the current monitor and make sure the TabFern
     // window is fully visible -
-    // chrome.windows.create({state:'fullscreen'},function(win){console.log(win); chrome.windows.remove(win.id);})
+    // api.windows.create({state:'fullscreen'},function(win){console.log(win); api.windows.remove(win.id);})
     // appears to provide valid `win.width` and `win.height` values.
     // TODO? also make sure the TabFern window is at least 300px wide, or at
     // at least 30% of screen width if <640px.  Also make sure that the
@@ -2538,7 +2555,7 @@ function initTree0()
     // Get our Chrome-extensions-API window ID from the background page.
     // I don't know a way to get this directly from the JS window object.
     // TODO maybe getCurrent?  Not sure if that's reliable.
-    chrome.runtime.sendMessage(MSG_GET_VIEW_WIN_ID, initTree1);
+    api.runtime.sendMessage(MSG_GET_VIEW_WIN_ID, initTree1);
 } //initTree0
 
 /// Save the tree on window.unload
@@ -2550,7 +2567,7 @@ function shutdownTree()
     // // A bit of logging -
     // // from https://stackoverflow.com/a/3840852/2877364
     // // by https://stackoverflow.com/users/449477/pauan
-    // let background = chrome.extension.getBackgroundPage();
+    // let background = api.extension.getBackgroundPage();
     // background.console.log('popup closing');
 
     if(did_init_complete) {
@@ -2577,6 +2594,7 @@ let dependencies = [
     'jstree-because',
     'loglevel', 'hamburger', 'bypasser', 'multidex', 'justhtmlescape',
     'signals', 'local/fileops/export', 'local/fileops/import',
+    api_module_name,
 
     // Modules for keyboard-shortcut handling.  Not really TabFern-specific,
     // but not yet disentangled fully.
@@ -2608,6 +2626,8 @@ function main(...args)
 
     local_init();
     initFocusHandler();
+
+    console.log({"parent check tree-main":window.parent===window});
 
     // Timer to display the warning message if initialization doesn't complete
     // quickly enough.

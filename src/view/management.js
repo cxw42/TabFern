@@ -9,6 +9,7 @@
 // https://stackoverflow.com/users/934239/xan
 
 (function(root){
+    "use strict";
 
     /// The completion callback - call when the module is fully loaded
     let callback;
@@ -31,7 +32,7 @@
 
     // VVV code from here to "^^^" is also available as CC-BY 4.0 International
 
-    script_url = document.currentScript.src;
+    let script_url = document.currentScript.src;
 
     let url = new URL(script_url);
     let searchParams = new URLSearchParams(url.hash.slice(1));
@@ -51,7 +52,9 @@
     // ^^^
 
     // Fire off the loading
-    chrome.management.getSelf(with_info);
+    require(['async!common/chrome-api.js'],function(api) {
+        api.management.getSelf(with_info);
+    });
 
 })(this);
 // vi: set ts=4 sts=4 sw=4 et ai fo-=o: //

@@ -13,10 +13,12 @@ var require = {
         // Aliases for parts of the application (relative to baseUrl)
         'local': '../src',
         'view': '../src/view',
+        'common': '../src/common',
     },
     async: {
-        useHash: true   // #callback=x rather than ?callback=x since Chrome
+        useHash: true,  // #callback=x rather than ?callback=x since Chrome
                         // won't load files with ?
+        //forceId: 'async_loader_callback_forced_id',
     },
 };
 

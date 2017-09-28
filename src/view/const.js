@@ -2,7 +2,7 @@
 // Copyright (c) 2017 Chris White, Jasmine Hegman.
 
 (function (root, factory) {
-    let imports=['jquery','jstree','loglevel','asq.src' ];
+    let imports=['jquery','jstree','loglevel','asq.src', 'async!common/chrome-api.js' ];
         // asq.src.js is copied from the npm asynquence package
 
     if (typeof define === 'function' && define.amd) {
@@ -23,7 +23,7 @@
         }
         root.tabfern_const = factory(...requirements);
     }
-}(this, function ($, _unused_jstree_placeholder_, log_orig, ASQ ) {
+}(this, function ($, _unused_jstree_placeholder_, log_orig, ASQ, api ) {
     "use strict";
 
     function loginfo(...args) { log_orig.info('TabFern view/const.js: ', ...args); };
@@ -67,7 +67,7 @@
         // --- Syntactic sugar ---
         WIN_KEEP:  true,    // must be truthy
         WIN_NOKEEP:  false, // must be falsy
-        NONE:  chrome.windows.WINDOW_ID_NONE,
+        NONE:  api.windows.WINDOW_ID_NONE,
             ///< Do not assume that NONE and WINDOW_ID_NONE will always be the same!
 
         // Item-type enumeration.  Here because there may be more item
@@ -94,7 +94,7 @@
 
     /// Ignore a Chrome callback error, and suppress Chrome's
     /// `runtime.lastError` diagnostic.
-    module.ignore_chrome_error = function() { void chrome.runtime.lastError; }
+    module.ignore_chrome_error = function() { void api.runtime.lastError; }
 
     /// Make a callback function that will forward to #fn on a later tick.
     /// @param fn {function} the function to call
@@ -116,8 +116,8 @@
     /// wraps the done() callback of an asynquence step.
     function CC(done) {
         return function cbk() {
-            if(typeof(chrome.runtime.lastError) !== 'undefined') {
-                done.fail(chrome.runtime.lastError);
+            if(typeof(api.runtime.lastError) !== 'undefined') {
+                done.fail(api.runtime.lastError);
             } else {
                 //done.apply(ø,...args);
                     // for some reason done() doesn't get the args
@@ -136,17 +136,18 @@
         let win_id;     // TODO is there a better way to pass data down
                         // the sequence?
 
+        debugger;
         ASQ()
-        .then(function open_win(done){ chrome.windows.create(CC(done)); })
+        .then(function open_win(done){ api.windows.create(CC(done)); })
         .then(function open_tab(done, new_win){
             win_id = new_win.id;
-            chrome.tabs.create({windowId: win_id, url: url}, CC(done));
+            api.tabs.create({windowId: win_id, url: url}, CC(done));
         })
         .then(function get_old_tab(done){
-            chrome.tabs.query({windowId: win_id, index: 0}, CC(done));
+            api.tabs.query({windowId: win_id, index: 0}, CC(done));
         })
         .then(function remove_old_tab(done, tabs){
-            chrome.tabs.remove(tabs[0].id, CC(done));
+            api.tabs.remove(tabs[0].id, CC(done));
         })
         .or(function(err){log_orig.error({'Load error':err, url});})
         ;
