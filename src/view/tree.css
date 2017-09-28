@@ -1,17 +1,4 @@
-/* view.css */
-
-/* //////////////////////////////////////////////////////////////////// */
-/* Accessibility */
-
-/* Thanks to http://webaim.org/techniques/css/invisiblecontent/ */
-.hidden-but-accessible {
-    position:absolute;
-    left:-10000px;
-    top:auto;
-    width:1px;
-    height:1px;
-    overflow:hidden;
-}
+/* tree.css: CSS for tree.html */
 
 /* //////////////////////////////////////////////////////////////////// */
 /* Local styles */
@@ -295,45 +282,6 @@ ul.jstree-contextmenu i {
 
 .split {
     box-sizing: border-box;
-}
-
-/* Related styles --- modified from https://stackoverflow.com/a/13742196/2877364
- * by https://stackoverflow.com/users/578154/serges
- * Thanks also to https://stackoverflow.com/a/18716885/2877364 by
- * https://stackoverflow.com/users/1770795/rjo
- */
-
-html
-{
-    overflow: hidden;
-    height: 100%;
-}
-
-body
-{
-    margin:0px;
-    padding: 0px 0px;
-    height: 100%;
-    box-sizing: border-box;
-} /*on splitter drag, change body padding?*/
-
-#tabfern-container {
-    margin: 0;
-    padding: 8px;
-    border: 0;
-    box-sizing: border-box;
-    overflow: auto;
-    height: 100%;
-    transform: translateZ(0);
-}
-
-.tf--feature--hide-horizontal-scrollbars #tabfern-container {
-    overflow-x: hidden;
-}
-
-#hamburger-menu {
-    position: absolute;
-    right: 0;
 }
 
 /* vi: set ts=4 sts=4 sw=4 et ai: */
