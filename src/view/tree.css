@@ -1,17 +1,4 @@
-/* view.css */
-
-/* //////////////////////////////////////////////////////////////////// */
-/* Accessibility */
-
-/* Thanks to http://webaim.org/techniques/css/invisiblecontent/ */
-.hidden-but-accessible {
-    position:absolute;
-    left:-10000px;
-    top:auto;
-    width:1px;
-    height:1px;
-    overflow:hidden;
-}
+/* tree.css: CSS for tree.html */
 
 /* //////////////////////////////////////////////////////////////////// */
 /* Local styles */
@@ -331,8 +318,5 @@ body {
     right:0;
     top: calc(50% - 5px);   /* by default */
 }
-
-
-
 
 /* vi: set ts=4 sts=4 sw=4 et ai: */
