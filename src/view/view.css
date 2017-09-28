@@ -303,62 +303,37 @@ ul.jstree-contextmenu i {
  * https://stackoverflow.com/users/1770795/rjo
  */
 
-html {
-    background: #400 !important;
-    overflow-y: auto;
-    overflow-x: hidden;
-    height: 100vh;
-    width: 100vw;
-}
-
-body {
-    background: #040 !important;
-    margin: 0;
-    padding: 0;
-    border: 0;
-    box-sizing: border-box;
-    width: 100%;
-    /*max-width: 100%;
+html
+{
+    overflow: hidden;
     height: 100%;
-    height: 100%;*/
-    overflow-y: visible;
-    overflow-x: hidden;
-    /*
-    width: 100vw;
-    max-height: 100%;
-    height: 100vh;
-    */
-
-    /* This gives a somewhat different effect ---
-    position: fixed;
-    top:0;
-    bottom: 0;
-    */
 }
+
+body
+{
+    margin:0px;
+    padding: 0px 0px;
+    height: 100%;
+    box-sizing: border-box;
+} /*on splitter drag, change body padding?*/
 
 #tabfern-container {
-    background: #004 !important;
     margin: 0;
-    padding: 0;
+    padding: 8px;
     border: 0;
     box-sizing: border-box;
-    /*overflow-x: auto;*/
-    /*overflow-y: auto;*/
-
-    max-width:100%;
-    /*
-    max-height: 100%;
-    height: 100vh;
-    width: 100vw;
-    */
-
-    overflow-x: auto;
-    overflow-y: visible;
+    overflow: auto;
+    height: 100%;
+    transform: translateZ(0);
 }
 
 .tf--feature--hide-horizontal-scrollbars #tabfern-container {
     overflow-x: hidden;
 }
 
+#hamburger-menu {
+    position: absolute;
+    right: 0;
+}
 
 /* vi: set ts=4 sts=4 sw=4 et ai: */
