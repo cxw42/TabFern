@@ -2515,6 +2515,7 @@ function initTree0()
 
     if(getBoolSetting(CFG_HIDE_HORIZONTAL_SCROLLBARS, false)) {
         document.querySelector('html').classList += ' tf--feature--hide-horizontal-scrollbars';
+        $('#tabfern-container').addClass('tf--feature--hide-horizontal-scrollbars');
     }
 
     Hamburger = Modules.hamburger('#hamburger-menu', getHamburgerMenuItems
@@ -2577,6 +2578,7 @@ let dependencies = [
     'jstree-because',
     'loglevel', 'hamburger', 'bypasser', 'multidex', 'justhtmlescape',
     'signals', 'local/fileops/export', 'local/fileops/import',
+    'split',
 
     // Modules for keyboard-shortcut handling.  Not really TabFern-specific,
     // but not yet disentangled fully.
