@@ -2514,8 +2514,8 @@ function initTree0()
     document.title = 'TabFern ' + TABFERN_VERSION;
 
     if(getBoolSetting(CFG_HIDE_HORIZONTAL_SCROLLBARS, false)) {
-        document.querySelector('html').classList += ' tf--feature--hide-horizontal-scrollbars';
-        $('#tabfern-container').addClass('tf--feature--hide-horizontal-scrollbars');
+        //document.querySelector('html').classList += ' tf--feature--hide-horizontal-scrollbars';
+        $('#tree-scroller').addClass('tf--feature--hide-horizontal-scrollbars');
     }
 
     Hamburger = Modules.hamburger('#hamburger-menu', getHamburgerMenuItems
