@@ -105,18 +105,6 @@ function messageListener(request, sender, sendResponse)
 
 chrome.runtime.onMessage.addListener(messageListener);
 
-//var settings = new Store('settings', {
-//     'sample_setting': 'This is how you use Store.js to remember values'
-//});
-
-
-////example of using a message handler from the inject scripts
-//chrome.extension.onMessage.addListener(
-//  function(request, sender, sendResponse) {
-//      chrome.pageAction.show(sender.tab.id);
-//    sendResponse();
-//  });
-
 //////////////////////////////////////////////////////////////////////////
 // MAIN //
 
@@ -129,11 +117,9 @@ window.addEventListener('load',
     { 'once': true }
 );
 
-// Set the defaults for the options.  options_custom does not appear
-// to have this facility.
-//for(opt in CFG_DEFAULTS) {
-//    setSettingIfNonexistent(opt, CFG_DEFAULTS[opt]);
-//}
+chrome.runtime.onConnect.addListener(port => {
+  port.postMessage('SUCCESS');
+});
 
 console.log('TabFern: done running background.js');
 
