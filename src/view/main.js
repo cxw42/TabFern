@@ -13,40 +13,40 @@ let W = window.frames[0];
 //////////////////////////////////////////////////////////////////////////
 // CHROME API //
 
-var chrome_api = {
-    windows: {},
-    tabs: {},
-    runtime: {},
-    management: {},
-    storage: {},
-};
+//var chrome_api = {
+//    windows: {},
+//    tabs: {},
+//    runtime: {},
+//    management: {},
+//    storage: {},
+//};
 
 chrome.management.getSelf(function(info){console.log(info, this)});
-let self = this;
-console.log({self});
+//let self = this;
+//console.log({self});
 
-// Initialize the API with shims for everything
-(function(api){
-    for(let subsystem_name in api) {
-        let src = chrome[subsystem_name];
-        let dest = api[subsystem_name];
+//// Initialize the API with shims for everything
+//(function(api){
+//    for(let subsystem_name in api) {
+//        let src = chrome[subsystem_name];
+//        let dest = api[subsystem_name];
+//
+//        for(let member_name in src) {
+//            let orig = src[member_name];
+//            if(typeof orig !== 'function') {
+//                dest[member_name] = orig;
+//            } else {
+//                dest[member_name] = function(...args) {
+//                    console.trace(`Called ${subsystem_name}.${member_name}`);
+//                                chrome[subsystem_name][member_name].apply(this,args);
+//                };
+//            }
+//
+//        } //foreach member_name
+//    } //foreach subsystem_name
+//})(chrome_api);
 
-        for(let member_name in src) {
-            let orig = src[member_name];
-            if(typeof orig !== 'function') {
-                dest[member_name] = orig;
-            } else {
-                dest[member_name] = function(...args) {
-                    console.trace(`Called ${subsystem_name}.${member_name}`);
-                                chrome[subsystem_name][member_name].apply(this,args);
-                };
-            }
-
-        } //foreach member_name
-    } //foreach subsystem_name
-})(chrome_api);
-
-console.log({'main.js after API init': chrome.runtime});
+//console.log({'main.js after API init': chrome.runtime});
 
 //////////////////////////////////////////////////////////////////////////
 // WORKERS //
@@ -91,7 +91,7 @@ function main(...args)
         Modules[dependencies[depidx]] = args[depidx];
     }
 
-    log = Modules.loglevel;
+    //log = Modules.loglevel;
     log.setDefaultLevel(log.levels.DEBUG);  // TODO set to WARN for production
 
     console.log({"parent check main":window.parent===window});
@@ -115,6 +115,7 @@ function main(...args)
 
 console.log({'main.js before require': chrome.runtime});
 //require(dependencies, main);
+main();
 console.log({'main.js after require': chrome.runtime});
 
 // ###########################################################################
