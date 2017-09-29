@@ -20,13 +20,7 @@
     ],
     "persistent": true
   },
-  "options_page": "src/options_custom/index.html",
   "browser_action": {
-    "default_icon": {
-      "16": "assets/fern16.png",
-      "48": "assets/fern48.png",
-      "128": "assets/fern128.png"
-    },
     "default_title": "TabFern"
   },
   "permissions": [
