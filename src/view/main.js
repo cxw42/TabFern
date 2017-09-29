@@ -1,11 +1,9 @@
 // main.js: main script for src/view/index.html.
 // Part of TabFern.  Copyright (c) cxw42, r4j4h, 2017.
 
+console.log({'main.js initial': chrome.runtime});
 /// Modules loaded via requirejs
 let Modules = {};
-
-/// HACK - a global for loglevel because typing `Modules.log` everywhere is a pain.
-let log;
 
 /// The tree window itself.
 let W = window.frames[0];
@@ -48,22 +46,29 @@ console.log({self});
     } //foreach subsystem_name
 })(chrome_api);
 
+console.log({'main.js after API init': chrome.runtime});
+
 //////////////////////////////////////////////////////////////////////////
 // WORKERS //
 
 function hello()
 {
+    console.log({'main.js in hello': chrome.runtime});
     chrome.management.getSelf(function(info){
         console.log({'Hello from main.js':info});});
 }
 
+hello();
+
 function domOnMessage(evt)
 {
+    console.log({'main.js in domOnMessage': chrome.runtime});
     console.log({got:evt.data, from:evt.origin});
 }
 
 function initMain()
 {
+    console.log({'main.js in initMain': chrome.runtime});
     window.addEventListener('message',domOnMessage);
 }
 
@@ -80,6 +85,7 @@ let dependencies = [
 
 function main(...args)
 {
+    console.log({'main.js top of main': chrome.runtime});
     // Hack: Copy the loaded modules into our Modules global
     for(let depidx = 0; depidx < args.length; ++depidx) {
         Modules[dependencies[depidx]] = args[depidx];
@@ -104,9 +110,12 @@ function main(...args)
     } else {
         window.setTimeout(initMain, 0);    //always async
     }
+    console.log({'main.js bottom of main': chrome.runtime});
 } // main()
 
-require(dependencies, main);
+console.log({'main.js before require': chrome.runtime});
+//require(dependencies, main);
+console.log({'main.js after require': chrome.runtime});
 
 // ###########################################################################
 // ### End of real code

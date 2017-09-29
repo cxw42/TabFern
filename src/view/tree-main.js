@@ -1,6 +1,19 @@
 // tree-main.js: main script for src/view/tree.html.
 // Part of TabFern.  Copyright (c) cxw42, r4j4h, 2017.
 
+window.onerror = function(messageOrEvent, source, lineno, colno, error) {
+    console.group(''+messageOrEvent);
+    try {
+        console.log(`From ${source}:${lineno},${colno}`);
+        log.error(error);
+    } finally {
+        console.groupEnd();
+    }
+    return true;    //keep going
+    // Thanks for the tip to https://stackoverflow.com/a/25875511/2877364 by
+    // https://stackoverflow.com/users/662132/mrj0909
+}
+
 // TODO break this into some separate modules
 
 // Design decision: data is stored and manipulated in its native, unescaped
@@ -44,7 +57,9 @@
 // is associated with exactly one item.
 // Items are uniquely identified by their node_ids in the tree.
 
-console.log('Loading TabFern ' + TABFERN_VERSION);
+console.log('Loading TabFern '); // + TABFERN_VERSION);
+
+console.log({'tree initial': chrome.runtime});
 
 //////////////////////////////////////////////////////////////////////////
 // Modules //
@@ -79,9 +94,6 @@ var T;
 
 /// Shorthand access to the item routines, view/item.js ("Item")
 var I;
-
-/// HACK - a global for loglevel because typing `Modules.log` everywhere is a pain.
-var log;
 
 //////////////////////////////////////////////////////////////////////////
 // Globals //
@@ -130,6 +142,8 @@ var Esc;
 /// The module that handles <Shift> bypassing of the jstree context menu
 var Bypasser;
 
+var api = chrome;   // #######################
+
 //////////////////////////////////////////////////////////////////////////
 // Initialization //
 
@@ -143,10 +157,8 @@ let api_module_name = 'async!common/chrome-api.js';
 /// Call after Modules has been populated.
 function local_init()
 {
-    log = Modules.loglevel;
     log.setDefaultLevel(log.levels.DEBUG);  // TODO set to WARN for production
 
-    api = Modules[api_module_name];
     console.log({api});
     Esc = Modules.justhtmlescape;
     K = Modules['view/const'];
@@ -154,15 +166,14 @@ function local_init()
     T = Modules['view/item_tree'];
     I = Modules['view/item'];
 
-    api.management.getSelf(function(info){console.log(info);});
+    if(api.management && api.management.getSelf) {
+        api.management.getSelf(function(info){console.log(info);});
+    } else if(chrome.management && chrome.management.getSelf) {
+        chrome.management.getSelf(function(info){console.log(info);});
+    } else {
+        log.error({'No chrome.management.getSelf': chrome.management});
+    }
 
-    // Check development status.  Thanks to
-    // https://stackoverflow.com/a/12833511/2877364 by
-    // https://stackoverflow.com/users/1143495/konrad-dzwinel and
-    // https://stackoverflow.com/users/934239/xan
-    api.management.getSelf(function(info){
-        if(info.installType === 'development') is_devel_mode = true;
-    });
 
 } //init()
 
@@ -1250,7 +1261,7 @@ function initFocusHandler()
     const [FC_TO_TF, FC_TO_NONE, FC_TO_OPEN] = ['to_tf','to_none','to_open'];
 
     /// Sugar
-    const WINID_NONE = api.windows.WINDOW_ID_NONE;
+    const WINID_NONE = api.windows && api.windows.WINDOW_ID_NONE;
 
     /// The previously-focused window
     let previously_focused_winid = WINID_NONE;
@@ -2527,6 +2538,7 @@ function initTree1(win_id)
 function initTree0()
 {
     log.info('TabFern view.js initializing view - ' + TABFERN_VERSION);
+    console.log({'tree start of initTree0': chrome.runtime});
 
     document.title = 'TabFern ' + TABFERN_VERSION;
 
@@ -2555,6 +2567,7 @@ function initTree0()
     // Get our Chrome-extensions-API window ID from the background page.
     // I don't know a way to get this directly from the JS window object.
     // TODO maybe getCurrent?  Not sure if that's reliable.
+    console.log({'tree tail end of initTree0': chrome.runtime});
     api.runtime.sendMessage(MSG_GET_VIEW_WIN_ID, initTree1);
 } //initTree0
 
@@ -2587,6 +2600,7 @@ function initIncompleteWarning()
 //////////////////////////////////////////////////////////////////////////
 // MAIN //
 
+console.log({'tree before main': chrome.runtime});
 /// require.js modules used by this file
 let dependencies = [
     // Modules that are not specific to TabFern
@@ -2614,6 +2628,7 @@ let module_shortnames = {
 
 function main(...args)
 {
+    console.log({'tree top of main': chrome.runtime});
     // Hack: Copy the loaded modules into our Modules global
     for(let depidx = 0; depidx < args.length; ++depidx) {
         Modules[dependencies[depidx]] = args[depidx];
@@ -2647,9 +2662,13 @@ function main(...args)
     } else {
         window.setTimeout(initTree0, 0);    //always async
     }
+    console.log({'tree bottom of main': chrome.runtime});
 } // main()
 
-require(dependencies, main);
+console.log({'tree before require': chrome.runtime});
+//require(dependencies, main);
+main();
+console.log({'tree after require': chrome.runtime});
 
 // ###########################################################################
 // ### End of real code

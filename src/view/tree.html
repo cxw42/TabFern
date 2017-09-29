@@ -15,10 +15,13 @@
     <link rel="stylesheet" type="text/css" media="all" href="tree.css" /><!-- this one should always be the last stylesheet listed -->
 
     <!-- Scripts, except for those loaded by require.js ~~~~~~~~~~~~~~~~~~~ -->
-    <script src="../common/common.js" type="text/javascript"></script>  <!-- not requirejs -->
+    <!--
+    <script src="../common/common.js" type="text/javascript"></script>  
 
-    <script src="/conf/require-config.js"></script> <!-- load before require.js -->
+    <script src="/conf/require-config.js"></script> 
     <script src="/js/require.js"></script>
+    -->
+    <script src="/js/loglevel.js"></script>
 
 </head>
 
@@ -29,7 +32,6 @@
 
         <!-- Content ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
         <div id="maintree"></div><!-- the window tree -->
-        <div id="view-messages"></div><!-- for error messages -->
         <div id="init-incomplete">Initialization not complete.  Changes will not
         be saved.</div><!-- hidden if init does complete. -->
 
