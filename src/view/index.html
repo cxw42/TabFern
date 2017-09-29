@@ -1,54 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
-<!-- view/index.html: TabFern popup main source.
-     CC-BY-SA 4.0 International -->
+<!-- view/index.html: TabFern popup main source. -->
 <head>
     <title>TabFern</title>
     <meta http-equiv="Content-Type" content="text/html" />
 
-    <!-- Stylesheets ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
-
-    <!--
-    <link href="/js/jstree-3.3.4/themes/default-dark/style.css" rel="stylesheet" type="text/css" />
-    -->
-    <!--
-    <link href="/js/fontawesome/css/font-awesome.css" rel="stylesheet" type="text/css" />
-    <link rel="stylesheet" type="text/css" media="all" href="/src/common/icons.css" />--><!-- this one should always be the last stylesheet listed -->
-    <!--
-    <link rel="stylesheet" type="text/css" media="all" href="main.css" />
-    -->
-
-    <!-- Scripts, except for those loaded by require.js ~~~~~~~~~~~~~~~~~~~ -->
-    <!--
-    <script src="../common/common.js" type="text/javascript"></script>
-
-    <script src="/conf/require-config.js"></script>
-    <script src="/js/require.js"></script>-->
     <script src="/js/loglevel.js"></script>
-
 </head>
-
 <body class="jstree-default-dark">
-<!-- jstree-default-dark to set background, text colors -->
-
     <div id="tree-container">
-        <!-- Thanks to a suggestion in
-             https://stackoverflow.com/a/15558772/2877364
-            by https://stackoverflow.com/users/1156119/daniel-imms -->
         <iframe id="tree-iframe" src="tree.html"></iframe>
     </div><!-- tree-container -->
 
-    <!-- Room for plugins ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
     <div id="plugin-container">Dummy content!</div>
-    <!-- Maybe use something like https://stackoverflow.com/q/13741871/2877364 or
-    https://benfrain.com/independent-scrolling-panels-body-scroll-using-just-css/
-    to give the plugin room at the bottom while permitting TabFern operation
-    to continue as usual above. -->
 
-    <!-- Main script ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
     <script src="main.js" type="text/javascript"></script>
-
 </body>
 </html>
 <!-- vi: set ts=4 sts=4 sw=4 et ai: -->
