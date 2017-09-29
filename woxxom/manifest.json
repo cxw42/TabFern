@@ -1,13 +1,28 @@
 {
   "name": "test",
+  "short_name": "woxxom",
   "version": "0.0.1",
+  "version_name": "0.0.1 name",
+  "offline_enabled": true,
   "manifest_version": 2,
+  "minimum_chrome_version": "54",
   "description": ".............",
+  "default_locale": "en",
   "background": {
     "scripts": ["background.js"],
-    "persistent": false
+    "persistent": true
   },
   "browser_action": {
     "default_title": "click me"
-  }
+  },
+  "permissions": [
+    "chrome://favicon/",
+    "tabs",
+    "storage",
+    "unlimitedStorage"
+  ],
+  "web_accessible_resources": [
+    "test.html",
+    "iframe.html"
+  ]
 }

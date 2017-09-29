@@ -96,9 +96,9 @@ chrome.windows.onRemoved.addListener(function(windowId) {
 
 function messageListener(request, sender, sendResponse)
 {
-    //console.log('Got message ' + request.toString());
+    console.log('Got message ' + request);
     if(request === MSG_GET_VIEW_WIN_ID) {
-        //console.log('Responding with window ID ' + viewWindowID.toString());
+        console.log('Responding with window ID ' + viewWindowID.toString());
         sendResponse(viewWindowID);
     }
 } //messageListener
@@ -131,9 +131,9 @@ window.addEventListener('load',
 
 // Set the defaults for the options.  options_custom does not appear
 // to have this facility.
-for(opt in CFG_DEFAULTS) {
-    setSettingIfNonexistent(opt, CFG_DEFAULTS[opt]);
-}
+//for(opt in CFG_DEFAULTS) {
+//    setSettingIfNonexistent(opt, CFG_DEFAULTS[opt]);
+//}
 
 console.log('TabFern: done running background.js');
 

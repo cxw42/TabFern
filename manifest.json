@@ -16,7 +16,6 @@
   "default_locale": "en",
   "background": {
     "scripts": [
-      "src/common/common.js",
       "src/bg/background.js"
     ],
     "persistent": true
