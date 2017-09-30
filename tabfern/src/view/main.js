@@ -23,7 +23,7 @@ function testCrossLoad()
     pc.textContent = '';     // remove the "Dummy content!" text
     let iframe = document.createElement('iframe');
     iframe.onload=function(){console.log('iframe onload');};
-    iframe.src = "chrome-extension://oiifekahljigbmnkdacklolgniafenlj/quux.html";
+    iframe.src = "chrome-extension://kcbahbchkakjkbgnabchdbeccldkaaah/tfplugin/index.html";
     console.log('About to append child');
     pc.appendChild(iframe);
     console.log('Child appended');
