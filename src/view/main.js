@@ -23,14 +23,10 @@ function testCrossLoad()
     pc.textContent = '';     // remove the "Dummy content!" text
     let iframe = document.createElement('iframe');
     iframe.onload=function(){console.log('iframe onload');};
-    //iframe.setAttribute('nonce', 'EDNnf03nceIOfn39fn3e9h3sdfa');
     iframe.src = "chrome-extension://oiifekahljigbmnkdacklolgniafenlj/quux.html";
     console.log('About to append child');
     pc.appendChild(iframe);
     console.log('Child appended');
-//    let scr = document.createElement('script');
-//    scr.src = "chrome-extension://pkdpfnedmcohlafkjpoeohlpiileejcm/quux.js";
-//    pc.appendChild(scr);
 }
 
 //////////////////////////////////////////////////////////////////////////
