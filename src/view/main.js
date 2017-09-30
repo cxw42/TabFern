@@ -60,9 +60,11 @@ function doSplit()
 
 function initMain()
 {
+    console.log('TabFern main.js onload');
     W = window.frames[0];
-    // Thanks to https://stackoverflow.com/a/13913943/2877364 by
-    // https://stackoverflow.com/users/1105384/shank
+        // Thanks to https://stackoverflow.com/a/13913943/2877364 by
+        // https://stackoverflow.com/users/1105384/shank
+    document.title = 'TabFern ' + TABFERN_VERSION;
 } //initMain
 
 //////////////////////////////////////////////////////////////////////////

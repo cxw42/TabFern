@@ -2486,7 +2486,7 @@ function initTree1(win_id)
     my_winid = win_id;
 
     // Init the main jstree
-    log.info('TabFern view.js initializing tree in window ' + win_id.toString());
+    log.info('TabFern tree.js initializing tree in window ' + win_id.toString());
 
     let contextmenu_items =
         getBoolSetting(CFG_ENB_CONTEXT_MENU, true) ? getMainContextMenuItems
@@ -2522,9 +2522,7 @@ function initTree1(win_id)
 
 function initTree0()
 {
-    log.info('TabFern view.js initializing view - ' + TABFERN_VERSION);
-
-    document.title = 'TabFern ' + TABFERN_VERSION;
+    log.info('TabFern tree.js initializing view - ' + TABFERN_VERSION);
 
     if(getBoolSetting(CFG_HIDE_HORIZONTAL_SCROLLBARS, false)) {
         document.querySelector('html').classList += ' tf--feature--hide-horizontal-scrollbars';
