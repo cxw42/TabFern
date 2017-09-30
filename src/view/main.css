@@ -3,7 +3,12 @@
 /* //////////////////////////////////////////////////////////////////// */
 /* Layout */
 
-html, body, #overall-container, #tree-container {
+/* html, body, and #overall-container stay 100% all the time.
+ * #tree-iframe is also always 100% of its parent, #tree-container.
+ * #tree-container starts out 100% height but gets resized to make room
+ * for #plugin-container.  #tree-container, #plugin-container, and a
+ * split.js gutter between them fill #overall-container. */
+html, body, #overall-container, #tree-container, #tree-iframe {
     height: 100%;
     width: 100%;
     overflow: hidden;
@@ -13,14 +18,8 @@ html, body, #overall-container, #tree-container {
     padding: 0;
 }
 
-#tree-iframe {
-    height: 100%;
-    width: 100%;
-    overflow: hidden;
-    box-sizing: border-box;
-    border:0;
-}
-
+/* #plugin-container starts out at zero height but gets resized when
+ * there's a plugin to load. */
 #plugin-container {
     height: 0;
     width: 100%;
@@ -28,6 +27,18 @@ html, body, #overall-container, #tree-container {
     box-sizing: border-box;
     border: 0;
 }
+
+/* The iframe hosting the plugin. */
+#plugin-container iframe {
+    height: 100%;
+    width: 100%;
+    overflow: auto;
+    box-sizing: border-box;
+    margin: 0;
+    border: 0;
+    padding: 0;
+}
+
 /* ////////////////////////////////////////////////////////////////////// */
 /* split.js - from its README */
 

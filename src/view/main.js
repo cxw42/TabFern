@@ -11,8 +11,56 @@ let log;
 /// document is fully loaded (after onload)
 let W;
 
+/// A variable that tree.html can access via window.parent (`var`, not `let`)
+var hello='world';
+
 //////////////////////////////////////////////////////////////////////////
-// MAIN //
+// PLUGINS //
+
+function testCrossLoad()
+{
+    let pc = document.getElementById('plugin-container');
+    pc.textContent = '';     // remove the "Dummy content!" text
+    let iframe = document.createElement('iframe');
+    iframe.onload=function(){console.log('iframe onload');};
+    //iframe.setAttribute('nonce', 'EDNnf03nceIOfn39fn3e9h3sdfa');
+    iframe.src = "chrome-extension://oiifekahljigbmnkdacklolgniafenlj/quux.html";
+    console.log('About to append child');
+    pc.appendChild(iframe);
+    console.log('Child appended');
+//    let scr = document.createElement('script');
+//    scr.src = "chrome-extension://pkdpfnedmcohlafkjpoeohlpiileejcm/quux.js";
+//    pc.appendChild(scr);
+}
+
+//////////////////////////////////////////////////////////////////////////
+// SPLIT //
+
+let split;
+
+function doSplit()
+{
+    if(!!split) {
+        split.collapse(1);      // close #plugin-container
+        split.destroy();
+        split = undefined;
+        //$('#tabfern-container').css('padding-top','0');
+    } else {
+        let tree=$('#tree-container');
+        let plugin=$('#plugin-container');
+
+        split = Modules['split'](
+                [tree[0], plugin[0]],
+                {   direction: 'vertical',
+                }
+        );
+
+        window.setTimeout(testCrossLoad, 100);
+    }
+} //doSplit
+
+//////////////////////////////////////////////////////////////////////////
+// INIT //
 
 function initMain()
 {

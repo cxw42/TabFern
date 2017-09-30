@@ -38,5 +38,6 @@
   ],
   "web_accessible_resources": [
     "assets/*"
-  ]
+  ],
+  "content_security_policy": "script-src 'self' 'sha256-AmiIBiDMlUtAs2tJB7jErMe/d3rBPYNUQQIZZdI0/mw=' 'sha256-tR4f5esF7ogSmVINwuWYjYLydFvDU/NenPTDeJQHINs=' 'sha256-mI+Yh8y1rtyB8EzFyPGx/CbtL6pMZl3hP5DLiubMFcQ=' 'sha256-6j87i3n9lWPVmuX+Udb9PQmkHb7ucVoDtHD6HKJXPLI=' 'sha256-t6C3BkAxW5wuha7GldeGWafgEpleF3eDfNI3xT52/eU=' 'sha256-lLp9MNJ7WFMHVVt6ScXfD0N5pw5BUu7nIV3ssT8N2VA=' 'sha256-nNAB7wzHoZ2H2aPXc92gTFy5PUJbI0DgcTKKke1IAME=' 'sha256-f1HK/Dqj6PZZhqO05NmaOi3WSD+H8wH+8Hf8e1w8vQc=' 'sha256-a3jrMYVXEEA6OiADmrxAYVqEyCuvciqKxYphw6Z0AiY=' blob: filesystem: chrome-extension-resource: ; object-src 'self' chrome-extension://pkdpfnedmcohlafkjpoeohlpiileejcm ; child-src 'self' chrome-extension://pkdpfnedmcohlafkjpoeohlpiileejcm ; frame-src 'self' chrome-extension://pkdpfnedmcohlafkjpoeohlpiileejcm "
 }

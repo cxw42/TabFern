@@ -47,18 +47,43 @@
     module.vscroll_function = function()
     { //TODO make this a closure over a specific win, jq
         //log.info('Updating V positions');
+        let scrolltop = $(window).scrollTop();
         $('.' + K.ACTION_GROUP_WIN_CLASS).each(function(idx, dom_elem) {
             let jq = $(dom_elem);
-            jq.css('top',jq.parent().offset().top - $(window).scrollTop());
+            jq.css('top',jq.parent().offset().top - scrolltop);
         });
     } //vscroll_function
+
+    /// Update only once per frame when scrolling - Suggested by MDN -
+    /// https://developer.mozilla.org/en-US/docs/Web/Events/scroll#Example
+    ///
+    /// Maybe a bit better, but not great --- maybe try
+    /// https://stackoverflow.com/a/3701328/2877364 by
+    /// https://stackoverflow.com/users/124238/stephan-muller
+    let onscroll_handler = (function(){
+        let pending = false;
+
+        function onframe() {
+            module.vscroll_function();
+            pending = false;
+        }
+
+        return function onscroll(){
+            if(!pending) window.requestAnimationFrame(onframe);
+            pending = true;
+        }
+    })();
 
     /// Set up the vscroll function to be called when appropriate.
     /// @param win {DOM Window} window
     /// @param jq_tree {JQuery element} the jQuery element for the tree root
     module.install_vscroll_function = function(win, jq_tree)
     {
-        $(win).scroll(module.vscroll_function);
+        // Need to update when scrolling because the action-group divs
+        // are fixed rather than absolute :( .
+        // TODO make them absolute, and no scroll handler, when the
+        // H scrollbar is hidden.
+        $(win).scroll(onscroll_handler);
 
         // We also have to reset the positions on tree redraw.  Ugly.
         jq_tree.on('redraw.jstree', module.vscroll_function);

@@ -1825,7 +1825,6 @@ function hamSortOpenToTop()
  * @returns {actionItemId: {label: string, action: function}, ...}, or
  *          false for no menu.
  */
-var split;
 
 function getHamburgerMenuItems(node, _unused_proxyfunc, e)
 {
@@ -1835,34 +1834,9 @@ function getHamburgerMenuItems(node, _unused_proxyfunc, e)
     if(is_devel_mode) {
         items.splitItem = {
             label: 'Split test',
-            action: !!split
-                ? function(){
-                    split.collapse(0);
-                    split.destroy();
-                    split = undefined;
-                    $('#tabfern-container').css('padding-top','0');
-                }
-                : function(){
-                let plugin=$('#plugin-container');
-                let proxy=$('#tabfern-container-proxy');
-                split = Modules['split-cw'](
-                        [plugin[0], proxy[0]],
-                        {   direction: 'vertical',
-                            gutterUpdate:function(el,dim){el.style.top=dim;},
-                            onDragStart: function(sp){
-                                //TODO RESUME HERE
-                                $('#tabfern-container').css('padding-top',
-                                        plugin.css('height'));
-                            },
-                            onDragEnd:function(){
-                                $('#tabfern-container').css('padding-top',
-                                        plugin.css('height'));
-                                //proxy.css('height','0');    //collapse proxy
-                                //split.destroy();
-                                proxy.css('visibility','hidden');
-                            },
-                        }
-                );
+            action: function(){
+                if(window.parent && window.parent.doSplit)
+                    window.parent.doSplit();
             },
         };
 
@@ -1872,7 +1846,7 @@ function getHamburgerMenuItems(node, _unused_proxyfunc, e)
             icon: 'fa fa-fort-awesome',
             separator_after: true,
         };
-    }
+    } //endif is_devel_mode
 
     items.infoItem = {
             label: "Online info",
@@ -2666,8 +2640,6 @@ function main(...args)
 
 require(dependencies, main);
 
-// ###########################################################################
-// ### End of real code
 // ###########################################################################
 
 //TODO test what happens when Chrome exits.  Does the background page need to
