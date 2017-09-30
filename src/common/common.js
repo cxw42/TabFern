@@ -54,7 +54,7 @@ const CFG_DEFAULTS = {
 };
 
 //////////////////////////////////////////////////////////////////////////
-// Helper functions //
+// Setting-related functions //
 
 const SETTING_PREFIX = 'store.settings.';
 
@@ -106,6 +106,9 @@ function setSettingIfNonexistent(setting_name, setting_value)
     if(!haveSetting(setting_name)) setSetting(setting_name, setting_value);
 }
 
+//////////////////////////////////////////////////////////////////////////
+// DOM-related functions //
+
 /// Append a <script> to the <head> of #document.
 /// @param {Document} document
 /// @param {String} url URL of script to load
@@ -128,6 +131,21 @@ function asyncAppendScriptToHead(document, url, callback, type = 'text/javascrip
     // Fire the loading
     head.appendChild(script);
 } //asyncAppendScriptToHead()
+
+/// Invoke a callback only when the document is loaded
+function callbackOnLoad(callback)
+{
+    if(document.readyState !== 'complete') {
+        // Thanks to https://stackoverflow.com/a/28093606/2877364 by
+        // https://stackoverflow.com/users/4483389/matthias-samsel
+        window.addEventListener('load', callback, { 'once': true });
+    } else {
+        window.setTimeout(callback, 0);    //always async
+    }
+} //callbackOnLoad
+
+//////////////////////////////////////////////////////////////////////////
+// Miscellaneous functions //
 
 /// Deep-compare two objects for memberwise equality.  However, if either
 /// object contains a pointer to the other, this will return false rather

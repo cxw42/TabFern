@@ -1,4 +1,4 @@
-// main.js: main script for the popup window of TabFern
+// tree.js: main script for tree.html in the popup window of TabFern
 // cxw42, 2017
 
 // TODO break this into some separate modules
@@ -58,70 +58,74 @@ console.log('Loading TabFern ' + TABFERN_VERSION);
 //      have a user-callable function to populate the globals, e.g., for
 //      debugging in the deployed package.
 
+// Note: globals are `var`, rather than `let`, so they can be accessed on
+// `window` from the developer console.  `let` variables are not attached
+// to the global object.
+
 /// Modules loaded via requirejs
-let Modules = {};
+var Modules = {};
 
 /// Constants loaded from view/const.js, for ease of access
-let K;
+var K;
 
 /// Shorthand access to the details, view/item_details.js
-let D;
+var D;
 
 /// Shorthand access to the tree, view/item_tree.js ("Tree")
-let T;
+var T;
 
 /// Shorthand access to the item routines, view/item.js ("Item")
-let I;
+var I;
 
 /// HACK - a global for loglevel because typing `Modules.log` everywhere is a pain.
-let log;
+var log;
 
 //////////////////////////////////////////////////////////////////////////
 // Globals //
 
 // - Operation state -
-let my_winid;                   ///< window ID of this popup window
+var my_winid;                   ///< window ID of this popup window
 
 /// Window ID of the currently-focused window, as best we understand it.
-let currently_focused_winid = null;
+var currently_focused_winid = null;
 
 /// HACK to avoid creating extra tree items.
-let window_is_being_restored = false;
+var window_is_being_restored = false;
 
 /// The size of the last-closed window, to be used as the
 /// size of newly-opened windows (whence the name).
 /// Should always have a valid value.
-let newWinSize = {left: 0, top: 0, width: 300, height: 600};
+var newWinSize = {left: 0, top: 0, width: 300, height: 600};
 
 /// The sizes of the currently-open windows, for use in setting #newWinSize.
 /// The size of this popup, and other non-normal windows, is not tracked here.
-let winSizes={};
+var winSizes={};
 
 // TODO use content scripts to catch window resizing, a la
 // https://stackoverflow.com/q/13141072/2877364
 
 /// Whether to show a notification of new features
-let ShowWhatIsNew = false;
+var ShowWhatIsNew = false;
 
 /// Array of URLs of the last-deleted window
-let lastDeletedWindow;
+var lastDeletedWindow;
 
 /// Did initialization complete successfully?
-let did_init_complete = false;
+var did_init_complete = false;
 
 /// Are we running in development mode (unpacked)?
-let is_devel_mode = false;
+var is_devel_mode = false;
 
 // - Module instances -
 
 /// The hamburger menu
-let Hamburger;
+var Hamburger;
 
 /// An escaper
-let Esc;
+var Esc;
 
 /// The module that handles <Shift> bypassing of the jstree context menu
-let Bypasser;
+var Bypasser;
 
 //////////////////////////////////////////////////////////////////////////
 // Initialization //
@@ -670,7 +674,7 @@ function createNodeForClosedWindow(win_data_v1)
 // Loading //
 
 /// Did we have a problem loading save data?
-let was_loading_error = false;
+var was_loading_error = false;
 
 /// See whether an open Chrome window corresponds to a dormant window in the
 /// tree.  This may happen, e.g., due to TabFern refresh or Chrome reload.
@@ -716,7 +720,7 @@ function winAlreadyExists(cwin)
 /// @param {mixed} data The save data, parsed (i.e., not a JSON string)
 /// @return {number} The number of new windows, or ===false on failure.
 ///                  ** Note: 0 is a valid number of windows to load!
-let loadSavedWindowsFromData = (function(){
+var loadSavedWindowsFromData = (function(){
 
     /// Populate the tree from version-0 save data in #data.
     /// V0 format: [win, win, ...]
@@ -879,7 +883,7 @@ function flagOnlyCurrentTab(win)
 }
 
 /// ID for a timeout shared by newWinFocusCheckTest() and treeOnSelect()
-let awaitSelectTimeoutId = undefined;
+var awaitSelectTimeoutId = undefined;
 
 /// Process clicks on items in the tree.  Also works for keyboard navigation
 /// with arrow keys and Enter.
@@ -1221,7 +1225,7 @@ function winOnRemoved(win_id)
 /// @param internal {boolean} if truthy, this was called as a helper, e.g., by
 ///                 tabOnActivated or tabOnDeactivated.  Therefore, it has work
 ///                 to do even if the window hasn't changed.
-let winOnFocusChanged;
+var winOnFocusChanged;
 
 /// Initialize winOnFocusChanged.  This is a separate function since it
 /// cannot be called until jQuery has been loaded.
@@ -1627,10 +1631,10 @@ function tabOnReplaced(addedTabId, removedTabId)
 // DOM event handlers //
 
 /// ID of a timer to save the new window size after a resize event
-let resize_save_timer_id;
+var resize_save_timer_id;
 
 /// A cache of the last size we saved to disk
-let last_saved_size;
+var last_saved_size;
 
 /// Save #size_data as the size of our popup window
 function saveViewSize(size_data)
@@ -1821,7 +1825,7 @@ function hamSortOpenToTop()
  * @returns {actionItemId: {label: string, action: function}, ...}, or
  *          false for no menu.
  */
-let split;
+var split;
 
 function getHamburgerMenuItems(node, _unused_proxyfunc, e)
 {
@@ -2093,7 +2097,7 @@ function dndIsDraggable(nodes, evt)
 /// @param more {mixed} optional object of additional data.
 /// @return {boolean} whether or not the operation is permitted
 ///
-let treeCheckCallback = (function(){
+var treeCheckCallback = (function(){
 
     /// The move_node callback we will use to remove empty windows
     /// when dragging the last tab out of a window
@@ -2558,6 +2562,8 @@ function initTree0()
 
     checkWhatIsNew('#hamburger-menu');
 
+    initFocusHandler();
+
     // Stash our current size, which is the default window size.
     newWinSize = getWindowSize(window);
 
@@ -2643,7 +2649,6 @@ function main(...args)
     }
 
     local_init();
-    initFocusHandler();
 
     // Timer to display the warning message if initialization doesn't complete
     // quickly enough.
@@ -2655,14 +2660,8 @@ function main(...args)
         // This doesn't detect window movement without a resize, which is why
         // we have timedResizeDetector above.
 
-    // Fire off the main init
-    if(document.readyState !== 'complete') {
-        // Thanks to https://stackoverflow.com/a/28093606/2877364 by
-        // https://stackoverflow.com/users/4483389/matthias-samsel
-        window.addEventListener('load', initTree0, { 'once': true });
-    } else {
-        window.setTimeout(initTree0, 0);    //always async
-    }
+    callbackOnLoad(initTree0);      // Fire off the main init
+
 } // main()
 
 require(dependencies, main);

@@ -37,7 +37,6 @@
     "unlimitedStorage"
   ],
   "web_accessible_resources": [
-    "src/view/view.html",
     "assets/*"
   ]
 }
