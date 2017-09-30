@@ -1,6 +1,66 @@
 /* main.css: CSS for TabFern's src/view/index.html */
 
 /* //////////////////////////////////////////////////////////////////// */
+/* Layout */
+
+html, body, #tree-container {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    box-sizing: border-box;
+    margin: 0;
+    border: 0;
+    padding: 0;
+}
+
+#tree-iframe {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    box-sizing: border-box;
+    border:0;
+}
+
+#plugin-container {
+    height: 0;
+    width: 100%;
+    overflow: auto;
+    box-sizing: border-box;
+    border: 0;
+}
+/* ////////////////////////////////////////////////////////////////////// */
+/* split.js - from its README */
+
+.gutter {
+    background-color: #eee;
+
+    background-repeat: no-repeat;
+    background-position: 50%;
+}
+
+.gutter.gutter-horizontal {
+    background-image: url('grips/vertical.png');
+    cursor: ew-resize;
+}
+
+.gutter.gutter-vertical {
+    background-image: url('grips/horizontal.png');
+    cursor: ns-resize;
+}
+
+.gutter.gutter-vertical {
+    background-image:  url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAFAQMAAABo7865AAAABlBMVEVHcEzMzMzyAv2sAAAAAXRSTlMAQObYZgAAABBJREFUeF5jOAMEEAIEEFwAn3kMwcB6I2AAAAAASUVORK5CYII=')
+}
+
+.gutter.gutter-horizontal {
+    background-image:  url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIiDjrELjpo5aiZeMwF+yNnOs5KSvgAAAABJRU5ErkJggg==')
+}
+
+.split {
+    box-sizing: border-box;
+}
+
+/* //////////////////////////////////////////////////////////////////// */
 /* Accessibility */
 
 /* Thanks to http://webaim.org/techniques/css/invisiblecontent/ */
@@ -13,7 +73,5 @@
     overflow:hidden;
 }
 
-/* //////////////////////////////////////////////////////////////////// */
-/* Layout */
 
 /* vi: set ts=4 sts=4 sw=4 et ai: */

@@ -31,7 +31,7 @@
 
     // VVV code from here to "^^^" is also available as CC-BY 4.0 International
 
-    script_url = document.currentScript.src;
+    let script_url = document.currentScript.src;
 
     let url = new URL(script_url);
     let searchParams = new URLSearchParams(url.hash.slice(1));
