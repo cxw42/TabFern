@@ -1,0 +1,7 @@
+{
+    "plugins": [
+        {   "name": "Sample TabFern Plugin",
+            "indexUrl": "chrome-extension://kcbahbchkakjkbgnabchdbeccldkaaah/tfplugin/index.html"
+        }
+    ],
+    "modeline": " vi: set ts=4 sts=4 sw=4 et ai: "}

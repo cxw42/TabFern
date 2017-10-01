@@ -27,7 +27,6 @@ core
 
 # Output directories
 /build*
-/doc/
 /dist/
 
 # Test outputs

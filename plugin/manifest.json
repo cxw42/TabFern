@@ -4,6 +4,7 @@
   "manifest_version": 2,
   "description": "Sample plugin for TabFern",
   "web_accessible_resources": [
+    "tfplugin.json",
     "tfplugin/index.html"
   ]
 }
