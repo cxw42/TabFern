@@ -101,16 +101,11 @@ function initMain()
 
 /// require.js modules used by this file
 let dependencies = [
-    'jquery', 'split', 'loglevel', 'asq.src'
+    'jquery', 'split', 'loglevel', 'asq.src', 'common/plugin'
 ];
 
 function main(...args)
 {
-    // Hack: Copy the loaded modules into our Modules global
-    for(let depidx = 0; depidx < args.length; ++depidx) {
-        Modules[dependencies[depidx]] = args[depidx];
-    }
-
     ASQ = Modules['asq.src'];
     log = Modules.loglevel;
     log.setDefaultLevel(log.levels.DEBUG);  // TODO set to WARN for production
@@ -118,6 +113,6 @@ function main(...args)
     callbackOnLoad(initMain);
 } // main()
 
-require(dependencies, main);
+require_invoke(dependencies, main, Modules, {plugin: 'common/plugin'});
 
 // vi: set ts=4 sts=4 sw=4 et ai fo-=o fo-=r: //

@@ -27,6 +27,19 @@ const TABFERN_VERSION='0.1.11-pre.1 alpha \u26a0'
 // If you get up to -pre.1336, just bump the `z` value and reset `w` :) .
 
 //////////////////////////////////////////////////////////////////////////
+// Keys in chrome.storage //
+
+const SK_SAVE_DATA = 'tabfern-data';
+    ///< Store the saved windows/tabs
+const SK_POPUP_LOCN = 'tabfern-window-location';
+    ///< Store where the tabfern popup is
+const SK_LASTVER = 'tabfern-last-version';
+    ///< Store the last version used on this system, for showing a
+    ///< "What's New" notification
+const SK_PLUGINS = 'tabfern-plugins';
+    ///< The registry of known plugins
+
+//////////////////////////////////////////////////////////////////////////
 // Messages between parts of TabFern //
 
 const MSG_GET_VIEW_WIN_ID = 'getViewWindowID';
@@ -168,8 +181,8 @@ function require_invoke(deps, callback, Modules, shortnames)
 
             // Easier names for some modules
             if(shortnames) {
-                for(let shortname in module_shortnames) {
-                    Modules[shortname] = Modules[module_shortnames[shortname]];
+                for(let shortname in shortnames) {
+                    Modules[shortname] = Modules[shortnames[shortname]];
                 }
             }
         } //endif modules
@@ -237,5 +250,25 @@ function ignore_chrome_error() { void chrome.runtime.lastError; }
 function isObject(x) {
     return ( (typeof x === 'object') && (x !== null) );
 }
+
+/// Chrome Callback: make a Chrome extension API callback that
+/// wraps the done() callback of an asynquence step.
+var CC = (function(){
+    /// A special-purpose empty object, per getify
+    const ø = Object.create(null);
+
+    return function cc(done) {
+        return function cbk() {
+            if(typeof(chrome.runtime.lastError) !== 'undefined') {
+                done.fail(chrome.runtime.lastError);
+            } else {
+                //done.apply(ø,...args);
+                    // for some reason done() doesn't get the args
+                    // provided to cbk(...args)
+                done.apply(ø,[].slice.call(arguments));
+            }
+        } //cbk()
+    }; //cc()
+})();
 
 // vi: set ts=4 sts=4 sw=4 et ai fo-=o: //

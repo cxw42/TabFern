@@ -30,14 +30,6 @@
 
     /// The module we are creating
     let module = {
-        STORAGE_KEY: 'tabfern-data',
-            ///< Store the saved windows/tabs
-        LOCN_KEY: 'tabfern-window-location',
-            ///< Store where the tabfern popup is
-        LASTVER_KEY: 'tabfern-last-version',
-            ///< Store the last version used on this system, for showing a
-            ///< "What's New" notification
-
         SAVE_DATA_AS_VERSION: 1,       // version we are currently saving
 
         WIN_CLASS: 'tabfern-window',    // class on all <li>s representing windows
@@ -104,26 +96,6 @@
     } //nextTickRunner()
 
     // Helpers for asynquence
-
-    /// A special-purpose empty object, per getify
-    const ø = Object.create(null);
-
-    /// Chrome Callback: make a Chrome extension API callback that
-    /// wraps the done() callback of an asynquence step.
-    function CC(done) {
-        return function cbk() {
-            if(typeof(chrome.runtime.lastError) !== 'undefined') {
-                done.fail(chrome.runtime.lastError);
-            } else {
-                //done.apply(ø,...args);
-                    // for some reason done() doesn't get the args
-                    // provided to cbk(...args)
-                done.apply(ø,[].slice.call(arguments));
-            }
-        }
-    } //CC
-
-    module.CC = CC;     // might be useful elsewhere
 
     /// Open a new window with a given URL.  Also remove the default
     /// tab that appears because we are letting the window open at the

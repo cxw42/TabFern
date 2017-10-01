@@ -34,11 +34,11 @@ messaging, but that is not yet implemented.
    <http://tinyurl.com/tabfern>, or to the
    [Github Pages site](https://cxw42.github.io/TabFern/).
 
-### Plugin registry
+### Plugin list
 
  - The guest shall include a file called `/tfplugin.json` (the "plugin
-   registry").  A JSON file permits an extension to host more than one plugin.
- - The guest shall list the plugin registry in its `manifest.json` as follows:
+   list").  A JSON file permits an extension to host more than one plugin.
+ - The guest shall list the plugin list in its `manifest.json` as follows:
 
         "web_accessible_resources": [
             "tfplugin.json"
@@ -57,8 +57,29 @@ messaging, but that is not yet implemented.
         ],
         "modeline": " vi: set ts=4 sts=4 sw=4 et ai: "}
 
-In version 1 of the plugin registry, the `name` and `indexUrl` of each plugin
+In version 1 of the plugin list, the `name` and `indexUrl` of each plugin
 are required.  All other fields are optional and ignored.
+
+The `indexUrl` must be a full URL with the `chrome-extension` scheme,
+not a path within the guest.  E.g., `/tfplugin/index.html` and
+`https://example.com` are invalid `indexUrl`s.
+
+The version number
+of the plugin list changes on the same criteria as the version number of the
+save data.  As with the save data, TabFern will always support reading plugin
+lists of any version.
+
+### Plugin identification
+
+Each plugin is identified by:
+
+ - Encoding its `indexUrl` in UTF-8;
+ - Determining the SHA-512 hash of the UTF-8-encoded `indexUrl`; and
+ - Expressing the hash in [base64](https://github.com/beatgammit/base64-js).
+
+The base64 value is the plugin ID.  Since the `indexUrl` includes the
+extension ID as part of the `chrome-extension` URL, plugin IDs are unique
+per-guest and per-plugin.
 
 ### Plugin index page
 

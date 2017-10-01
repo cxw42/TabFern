@@ -159,6 +159,17 @@
                 "text": "X or + or don't show when these are dynamic"
             },
 
+            // Plugins
+            {
+                "tab": i18n.get("Plugins"),
+                "group": i18n.get("About"),
+                "name": "plugins_about",
+                "type": "description",
+                "text":
+`TabFern can host plugins that add functions.  Installed plugins are listed
+below.`
+            },
+
             // Changelog
             {
                 "tab": i18n.get("What's new?"),

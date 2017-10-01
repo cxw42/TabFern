@@ -15,7 +15,8 @@
         }
         module.exports = factory(...requirements);
     } else {
-        // Browser globals (root is `window`)
+        // Browser globals (root is `window`).  Assume all dependencies
+        // have already been loaded, and exist in `root`.
         let requirements = [];
         for(let modulename of imports) {
             requirements.push(root[modulename]);

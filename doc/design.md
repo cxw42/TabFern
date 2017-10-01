@@ -48,4 +48,10 @@ At present, windows with no tabs are not supported.
 The only exception is the holding pen, which is a special tree node that
 holds detached tabs until they are attached to a Chrome window.
 
+## Plugin data
+
+Known plugins are stored indexed by plugin ID (`indexUrl` hash).  Under each
+extension ID are at least `name`, `guest_id` (the extension ID), `enabled`,
+and `indexUrl`.
+
 <!-- vi: set ts=4 sts=4 sw=4 et ai ft=markdown: -->

@@ -12,6 +12,7 @@ var require = {
 
         // Aliases for parts of the application (relative to baseUrl)
         'local': '../src',
+        'common': '../src/common',
         'view': '../src/view',
     },
     async: {

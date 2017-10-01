@@ -1,6 +1,55 @@
 /// An object to hold the settings for later programmatic access
 let settingsobj;
 
+// open tab specified in a query parm, if known.
+// See https://stackoverflow.com/a/12151322/2877364
+// Use location.hash instead of location.search since Chrome doesn't
+// seem to navigate to chrome-extension://...&... .
+function jumpByHash(hash, settings)
+{
+    let searchParams = new URLSearchParams(hash.slice(1));
+    if(searchParams.has('open')) {
+        let whichtab = -1;  // If other than -1, select that tab
+
+        let openval = String(searchParams.get('open'));     // Do we need the explicit String()?
+        let tabNames = Object.keys(settings.tabs);
+            // These come out in definition order, as far as I know
+
+        // Check for a tab number.  Positive are from the start (0);
+        // negative are from the end (-1 => last).
+        let tabnum = Number(openval);
+        if( isFinite(tabnum) && (tabnum|0)>=0 && (tabnum|0)<tabNames.length
+        ) {
+            whichtab = (tabnum|0);
+        } else if( isFinite(tabnum) && (tabnum|0)<0 ) {
+            let ofs = -(tabnum|0);
+            if(ofs>=1 && ofs<=tabNames.length)
+                whichtab = tabNames.length - ofs;
+        }
+
+        // Check for "last" as a special value
+        if(whichtab === -1 && openval.toLowerCase()==='last') {
+            whichtab = tabNames.length-1;
+        }
+
+        // Jump to that tab.
+        if(whichtab !== -1) {
+            settings.tabs[tabNames[whichtab]].bundle.activate();
+        }
+
+    } //endif &open=... parameter specified
+} //jumpByHash
+
+/// Add the
+function populatePlugins(settings)
+{
+    // TODO get from SK_PLUGINS
+    //settings.create({
+    //    "tab": i18n.get("Plugins"),
+    //    "group": i18n.get("About"),
+    //});
+} //populatePlugins
+
 window.addEvent("domready", function () {
     // Option 1: Use the manifest:
     new FancySettings.initWithManifest(function (settings) {
@@ -9,35 +58,9 @@ window.addEvent("domready", function () {
         //    alert("You clicked me!");
         //});
 
-        // open tab specified in a query parm, if known.
-        // See https://stackoverflow.com/a/12151322/2877364
-        // Use location.hash instead of location.search since Chrome doesn't
-        // seem to navigate to chrome-extension://...&... .
-        let searchParams = new URLSearchParams(window.location.hash.slice(1));
-        if(searchParams.has('open')) {
-            let whichtab = -1;  // If other than -1, select that tab
+        jumpByHash(window.location.hash, settings);
 
-            let openval = String(searchParams.get('open'));     // Do we need the explicit String()?
-            let tabNames = Object.keys(settingsobj.tabs);
-                // These come out in definition order, as far as I know
-
-            // Check for a tab number
-            let tabnum = Number(openval);
-            if(!isNaN(tabnum) && (tabnum|0)>=0 && (tabnum|0)<tabNames.length) {
-                whichtab = (tabnum|0);
-            }
-
-            // Check for "last" as a special value
-            if(whichtab === -1 && openval.toLowerCase()==='last') {
-                whichtab = tabNames.length-1;
-            }
-
-            // Jump to that tab.
-            if(whichtab !== -1) {
-                settingsobj.tabs[tabNames[whichtab]].bundle.activate();
-            }
-
-        } //endif &open=... parameter specified
+        populatePlugins(settings);
     });
 
     // Option 2: Do everything manually:

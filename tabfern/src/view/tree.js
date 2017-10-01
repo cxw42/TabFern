@@ -258,13 +258,13 @@ function saveTree(save_ephemeral_windows = true, cbk = undefined)
 
     // Save it
     let to_save = {};
-    to_save[K.STORAGE_KEY] = makeSaveData(result);
+    to_save[SK_SAVE_DATA] = makeSaveData(result);
         // storage automatically does JSON.stringify
     chrome.storage.local.set(to_save,
         function() {
             if(typeof(chrome.runtime.lastError) === 'undefined') {
                 if(typeof cbk === 'function') {
-                    cbk(null, to_save[K.STORAGE_KEY]);
+                    cbk(null, to_save[SK_SAVE_DATA]);
                 }
                 return;     // Saved OK
             }
@@ -770,7 +770,7 @@ var loadSavedWindowsFromData = (function(){
 /// @param {function} next_action If provided, will be called when loading
 ///                     is complete.
 function loadSavedWindowsIntoTree(next_action) {
-    chrome.storage.local.get(K.STORAGE_KEY, function(items) {
+    chrome.storage.local.get(SK_SAVE_DATA, function(items) {
 
         READIT:
         if(typeof(chrome.runtime.lastError) !== 'undefined') {
@@ -784,8 +784,8 @@ function loadSavedWindowsIntoTree(next_action) {
             // we don't set was_loading_error here.  TODO figure out if
             // this makes sense.  Maybe check the specific error returned.
 
-        } else if(K.STORAGE_KEY in items) {       // Chrome did load the data
-            let parsed = items[K.STORAGE_KEY];    // auto JSON.parse
+        } else if(SK_SAVE_DATA in items) {       // Chrome did load the data
+            let parsed = items[SK_SAVE_DATA];    // auto JSON.parse
             if(loadSavedWindowsFromData(parsed) === false) {
                 was_loading_error = true;
                 // HACK - we only use this during init, so
@@ -807,11 +807,11 @@ function loadSavedWindowsIntoTree(next_action) {
 // Debug helper, so uses console.log() directly.
 function DBG_printSaveData()
 {
-    chrome.storage.local.get(K.STORAGE_KEY, function(items) {
+    chrome.storage.local.get(SK_SAVE_DATA, function(items) {
         if(typeof(chrome.runtime.lastError) !== 'undefined') {
             console.log(chrome.runtime.lastError);
         } else {
-            let parsed = items[K.STORAGE_KEY];
+            let parsed = items[SK_SAVE_DATA];
             console.log('Save data:');
             console.log(parsed);
         }
@@ -1602,7 +1602,7 @@ function saveViewSize(size_data)
     //log.info('Saving new size ' + size_data.toString());
 
     let to_save = {};
-    to_save[K.LOCN_KEY] = size_data;
+    to_save[SK_POPUP_LOCN] = size_data;
     chrome.storage.local.set(to_save,
             function() {
                 let err = chrome.runtime.lastError;
@@ -1654,7 +1654,7 @@ function hamAboutWindow()
     K.openWindowForURL('https://cxw42.github.io/TabFern/');
 } //hamAboutWindow()
 
-/// Open the Settings window.  If ShowWhatIsNew, also updates the K.LASTVER_KEY
+/// Open the Settings window.  If ShowWhatIsNew, also updates the SK_LASTVER
 /// information used by checkWhatIsNew().
 function hamSettings()
 {
@@ -1669,7 +1669,7 @@ function hamSettings()
         ShowWhatIsNew = false;
 
         let to_save = {};
-        to_save[K.LASTVER_KEY] = TABFERN_VERSION;
+        to_save[SK_LASTVER] = TABFERN_VERSION;
         chrome.storage.local.set(to_save, ignore_chrome_error);
     }
 } //hamSettings()
@@ -2238,16 +2238,16 @@ var treeCheckCallback = (function(){
 
 /// Check whether to show a "what's new" notification.
 /// Sets ShowWhatIsNew, used by getHamburgerMenuItems().
-/// Function hamSettings() updates the K.LASTVER_KEY information.
+/// Function hamSettings() updates the SK_LASTVER information.
 function checkWhatIsNew(selector)
 {
-    chrome.storage.local.get(K.LASTVER_KEY, function(items) {
+    chrome.storage.local.get(SK_LASTVER, function(items) {
         let should_notify = true;           // unless proven otherwise
         let first_installation = true;      // ditto
 
         // Check whether the user has seen the notification
         if(typeof(chrome.runtime.lastError) === 'undefined') {
-            let lastver = items[K.LASTVER_KEY];
+            let lastver = items[SK_LASTVER];
             if( (lastver !== null) && (typeof lastver === 'string') ) {
                 first_installation = false;
                 if(lastver === TABFERN_VERSION) {   // the user has already
@@ -2266,7 +2266,7 @@ function checkWhatIsNew(selector)
 
         if(first_installation) {
             chrome.storage.local.set(
-                { [K.LASTVER_KEY]: 'installed, but no version viewed yet' },
+                { [SK_LASTVER]: 'installed, but no version viewed yet' },
                 function() {
                     ignore_chrome_error();
                     openWindowForURL('https://cxw42.github.io/TabFern/#usage');
@@ -2310,7 +2310,7 @@ function initTree4(items)
     // accept the default size.
 
     if(typeof(chrome.runtime.lastError) === 'undefined') {
-        let parsed = items[K.LOCN_KEY];
+        let parsed = items[SK_POPUP_LOCN];
         if( (parsed !== null) && (typeof parsed === 'object') ) {
             // + and || are to provide some sensible defaults - thanks to
             // https://stackoverflow.com/a/7540412/2877364 by
@@ -2363,7 +2363,7 @@ function initTree3()
     //onZoomChange: not yet implemented, and we probably won't ever need it.
 
     // Move this view to where it was, if anywhere
-    chrome.storage.local.get(K.LOCN_KEY, initTree4);
+    chrome.storage.local.get(SK_POPUP_LOCN, initTree4);
 } //initTree3
 
 function addOpenWindowsToTree(winarr)
