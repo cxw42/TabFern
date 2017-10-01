@@ -15,10 +15,7 @@
   },
   "default_locale": "en",
   "background": {
-    "scripts": [
-      "src/common/common.js",
-      "src/bg/background.js"
-    ],
+    "page": "src/bg/background.html",
     "persistent": true
   },
   "options_page": "src/options_custom/index.html",
@@ -38,5 +35,5 @@
   ],
   "web_accessible_resources": [
     "assets/*"
-  ]
-}
+  ],
+  "modeline": " vi: set ts=2 sw=2 et ai: "}

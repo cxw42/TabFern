@@ -18,11 +18,13 @@ var hello='world';
 //////////////////////////////////////////////////////////////////////////
 // PLUGINS //
 
+let iframe;
+
 function testCrossLoad()
 {
     let pc = document.getElementById('plugin-container');
     pc.textContent = '';     // remove the "Dummy content!" text
-    let iframe = document.createElement('iframe');
+    iframe = document.createElement('iframe');
     iframe.onload=function(){console.log('iframe onload');};
     iframe.src = "chrome-extension://kcbahbchkakjkbgnabchdbeccldkaaah/tfplugin/index.html";
     console.log('About to append child');
@@ -64,7 +66,10 @@ function doSplit()
         split.collapse(1);      // close #plugin-container
         split.destroy();
         split = undefined;
-        //$('#tabfern-container').css('padding-top','0');
+        if(iframe) {
+            iframe.remove();
+            iframe = undefined;
+        }
     } else {
         let tree=$('#tree-container');
         let plugin=$('#plugin-container');

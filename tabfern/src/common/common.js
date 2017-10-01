@@ -145,6 +145,40 @@ function callbackOnLoad(callback)
 } //callbackOnLoad
 
 //////////////////////////////////////////////////////////////////////////
+// require.js helpers //
+
+/// Load modules, then invoke a function.
+/// @param deps {array} The dependencies, formatted for require.js
+/// @param callback {function} The function to call when the modules have
+///                             been loaded.  Will be given the modules
+///                             as arguments.
+/// @param Modules {object} Optional object.  If provided, the dependencies
+///                         will also be stored in Modules.
+/// @param shortnames {object} Optional map from short names to the names
+///                             given in #deps.  If provided, the #Modules
+///                             array will also include the short names.
+function require_invoke(deps, callback, Modules, shortnames)
+{
+    require(deps, function(...args) {
+        if(Modules) {
+            // Hack: Copy the loaded modules into our Modules global
+            for(let depidx = 0; depidx < args.length; ++depidx) {
+                Modules[dependencies[depidx]] = args[depidx];
+            }
+
+            // Easier names for some modules
+            if(shortnames) {
+                for(let shortname in module_shortnames) {
+                    Modules[shortname] = Modules[module_shortnames[shortname]];
+                }
+            }
+        } //endif modules
+
+        return main(...args);
+    });
+} //require_invoke
+
+//////////////////////////////////////////////////////////////////////////
 // Miscellaneous functions //
 
 /// Deep-compare two objects for memberwise equality.  However, if either
@@ -195,5 +229,13 @@ function ObjectCompare(obj1, obj2) {
     }
     return true;
 } //ObjectCompare
+
+/// Ignore a Chrome callback error, and suppress Chrome's
+/// `runtime.lastError` diagnostic.
+function ignore_chrome_error() { void chrome.runtime.lastError; }
+
+function isObject(x) {
+    return ( (typeof x === 'object') && (x !== null) );
+}
 
 // vi: set ts=4 sts=4 sw=4 et ai fo-=o: //

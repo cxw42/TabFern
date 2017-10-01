@@ -356,7 +356,7 @@ function actionCloseWindow(node_id, node, unused_action_id, unused_action_el)
         win_val.keep = K.WIN_KEEP;
             // has to be before winOnRemoved fires.  TODO cleanup -
             // maybe add an `is_closing` flag to `win_val`?
-        chrome.windows.remove(win.id, K.ignore_chrome_error);
+        chrome.windows.remove(win.id, ignore_chrome_error);
         // Don't try to close an already-closed window.
         // Ignore exceptions - when we are called from winOnRemoved,
         // the window is already gone, so the remove() throws.
@@ -935,7 +935,7 @@ function treeOnSelect(_evt_unused, evt_data)
         chrome.tabs.highlight({
             windowId: node_val.win_id,
             tabs: [node_val.index]     // Jump to the clicked-on tab
-        }, K.ignore_chrome_error);
+        }, ignore_chrome_error);
         //log.info('flagging treeonselect' + node.id);
         T.treeobj.flag_node(node);
         win_id = node_val.win_id;
@@ -1049,7 +1049,7 @@ function treeOnSelect(_evt_unused, evt_data)
                             } //foreach extra tab
 
                             log.warn('Pruning ' + to_prune);
-                            chrome.tabs.remove(to_prune, K.ignore_chrome_error);
+                            chrome.tabs.remove(to_prune, ignore_chrome_error);
                         } //endif we have extra tabs
 
                         // if a tab was clicked on, activate that particular tab
@@ -1057,7 +1057,7 @@ function treeOnSelect(_evt_unused, evt_data)
                             chrome.tabs.highlight({
                                 windowId: node_val.win_id,
                                 tabs: [node_val.index]
-                            }, K.ignore_chrome_error);
+                            }, ignore_chrome_error);
                         }
 
                         // Set the highlights in the tree appropriately
@@ -1089,7 +1089,7 @@ function treeOnSelect(_evt_unused, evt_data)
         chrome.windows.get(win_id, function(win) {
             if(typeof(chrome.runtime.lastError) !== 'undefined') return;
             log.debug({'About to activate':win_id});
-            chrome.windows.update(win_id,{focused:true}, K.ignore_chrome_error);
+            chrome.windows.update(win_id,{focused:true}, ignore_chrome_error);
             // winOnFocusedChange will set the flag on the newly-focused window
         });
     }
@@ -1670,7 +1670,7 @@ function hamSettings()
 
         let to_save = {};
         to_save[K.LASTVER_KEY] = TABFERN_VERSION;
-        chrome.storage.local.set(to_save, K.ignore_chrome_error);
+        chrome.storage.local.set(to_save, ignore_chrome_error);
     }
 } //hamSettings()
 
@@ -2069,7 +2069,7 @@ var treeCheckCallback = (function(){
             // Do the move
             chrome.tabs.move(val.tab_id,
                 {windowId: parent_val.win_id, index: data.position}
-                , K.ignore_chrome_error
+                , ignore_chrome_error
             );
         },0);
     } //move_tab_in_window
@@ -2568,18 +2568,8 @@ let module_shortnames = {
     default_shortcuts: 'shortcuts_keybindings_default',
 };
 
-function main(...args)
+function main()
 {
-    // Hack: Copy the loaded modules into our Modules global
-    for(let depidx = 0; depidx < args.length; ++depidx) {
-        Modules[dependencies[depidx]] = args[depidx];
-    }
-
-    // Easier names for some modules
-    for(let shortname in module_shortnames) {
-        Modules[shortname] = Modules[module_shortnames[shortname]];
-    }
-
     local_init();
 
     // Timer to display the warning message if initialization doesn't complete
@@ -2596,7 +2586,7 @@ function main(...args)
 
 } // main()
 
-require(dependencies, main);
+require_invoke(dependencies, main, Modules, module_shortnames);
 
 // ###########################################################################
 

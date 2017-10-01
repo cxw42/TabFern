@@ -1,6 +1,8 @@
 // CC-BY-SA 3.0
 console.log('TabFern: running background.js');
 
+let ASQ;
+
 var viewWindowID;     // the chrome.windows ID of our view
 
 //////////////////////////////////////////////////////////////////////////
@@ -51,8 +53,8 @@ function moveTabFernViewToWindow(reference_cwin)
 // https://stackoverflow.com/users/930675/sean-bannister
 
 // When the icon is clicked in Chrome
-chrome.browserAction.onClicked.addListener(function(tab) {
-
+function browserActionClicked(tab)
+{
     // If viewWindowID is undefined then there isn't a popup currently open.
     if (typeof viewWindowID === "undefined") {        // Open the popup
         loadView();
@@ -80,30 +82,59 @@ chrome.browserAction.onClicked.addListener(function(tab) {
         chrome.browserAction.onClicked.addListener(clickListener);
     }
 
-});
+} //browserActionClicked
 
 // When a window is closed
-chrome.windows.onRemoved.addListener(function(windowId) {
+function winOnRemoved(windowId)
+{
   // If the window getting closed is the popup we created
   if (windowId === viewWindowID) {
     // Set viewWindowID to undefined so we know the popup is not open
     viewWindowID = undefined;
   }
-});
+} //winOnRemoved
 
 //////////////////////////////////////////////////////////////////////////
 // Messages //
 
-function messageListener(request, sender, sendResponse)
+/// Listen for messages from within the extension
+function onInternalMessage(request, sender, sendResponse)
 {
     //console.log('Got message ' + request.toString());
-    if(request === MSG_GET_VIEW_WIN_ID) {
+
+    // --- Messages from within this extension ---
+
+    if(sender && sender.id === chrome.runtime.id &&
+            request === MSG_GET_VIEW_WIN_ID) {
         //console.log('Responding with window ID ' + viewWindowID.toString());
         sendResponse(viewWindowID);
     }
-} //messageListener
+} //onInternalMessage
 
-chrome.runtime.onMessage.addListener(messageListener);
+/// Listen for messages from other extensions.  E.g.,
+/// chrome.runtime.sendMessage('ffbbjfceigfningapgjlpinamambamjo',
+///     {extension_id:chrome.runtime.id},
+///     function(resp){
+///         console.log({[chrome.runtime.lastError||'success']:resp});})
+function onExternalMessage(message, sender, sendResponse)
+{
+    let response = false;
+
+    PROC: {
+        if(!sender || !sender.id) break PROC;   // No sender => fail.
+
+        // ID mismatch => fail
+        if(!isObject(message) || !message.extension_id) break PROC;
+
+        response = true;
+    } //PROC
+
+    // Send a response so the other side isn't hung up waiting for us.
+
+    sendResponse(response);
+    return false;   // false => don't need to keep sendResponse() alive
+
+} //onExternalMessage
 
 //var settings = new Store('settings', {
 //     'sample_setting': 'This is how you use Store.js to remember values'
@@ -120,21 +151,34 @@ chrome.runtime.onMessage.addListener(messageListener);
 //////////////////////////////////////////////////////////////////////////
 // MAIN //
 
-// Create the main window when Chrome starts
-window.addEventListener('load',
-    function() {
-        console.log('TabFern: background window loaded');
-        setTimeout(loadView, 500);
-    },
-    { 'once': true }
-);
+function main(asqsrc)
+{
+    ASQ = asqsrc;
 
-// Set the defaults for the options.  options_custom does not appear
-// to have this facility.
-for(opt in CFG_DEFAULTS) {
-    setSettingIfNonexistent(opt, CFG_DEFAULTS[opt]);
-}
+    // Set the defaults for the options.  options_custom does not appear
+    // to have this facility.
+    for(opt in CFG_DEFAULTS) {
+        setSettingIfNonexistent(opt, CFG_DEFAULTS[opt]);
+    }
+
+    // Add event listeners
+    chrome.runtime.onMessage.addListener(onInternalMessage);
+    chrome.runtime.onMessageExternal.addListener(onExternalMessage);
+    chrome.browserAction.onClicked.addListener(browserActionClicked);
+    chrome.windows.onRemoved.addListener(winOnRemoved);
+
+    // Create the main window when Chrome starts
+    callbackOnLoad(
+        function() {
+            console.log('TabFern: background window loaded');
+            setTimeout(loadView, 500);
+        }
+    );
+
+} //main()
+
+require(['asq.src'], main);
 
 console.log('TabFern: done running background.js');
 
-// vi: set ts=4 sts=4 sw=4 et ai fo-=o: //
+// vi: set ts=4 sts=4 sw=4 et ai fo-=o fo-=r: //

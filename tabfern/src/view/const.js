@@ -92,10 +92,6 @@
     module.NTs_TAB = [module.NT_TAB, module.NT_TAB_BORDERED];
     module.NTs_WIN_OPEN = [module.NT_WIN_EPHEMERAL, module.NT_WIN_ELVISH];
 
-    /// Ignore a Chrome callback error, and suppress Chrome's
-    /// `runtime.lastError` diagnostic.
-    module.ignore_chrome_error = function() { void chrome.runtime.lastError; }
-
     /// Make a callback function that will forward to #fn on a later tick.
     /// @param fn {function} the function to call
     module.nextTickRunner = function(fn) {
