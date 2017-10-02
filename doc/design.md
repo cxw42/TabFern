@@ -54,4 +54,21 @@ Known plugins are stored indexed by plugin ID (`indexUrl` hash).  Under each
 extension ID are at least `name`, `guest_id` (the extension ID), `enabled`,
 and `indexUrl`.
 
-<!-- vi: set ts=4 sts=4 sw=4 et ai ft=markdown: -->
+ - Chrome storage key: `tabfern-plugins`
+ - Data:
+
+        {
+            version: 1,
+            plugins: {<id>:<plugin>, ...}
+        }
+
+ - `<plugin>`:
+
+        {
+            enabled: <boolean>,
+            name: <string>,
+            short_name: <string>,       (header in the plugin UI)
+            indexUrl: <string>,
+        }
+
+[](about:blank# vi: set ts=4 sts=4 sw=4 et ai ft=markdown:)

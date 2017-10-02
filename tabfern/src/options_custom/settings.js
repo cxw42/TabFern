@@ -1,5 +1,9 @@
+// settings.js: Main file for the TabFern settings page
+
 /// An object to hold the settings for later programmatic access
 let settingsobj;
+
+let Modules={}, ASQ, log;
 
 // open tab specified in a query parm, if known.
 // See https://stackoverflow.com/a/12151322/2877364
@@ -43,14 +47,41 @@ function jumpByHash(hash, settings)
 /// Add the
 function populatePlugins(settings)
 {
-    // TODO get from SK_PLUGINS
-    //settings.create({
-    //    "tab": i18n.get("Plugins"),
-    //    "group": i18n.get("About"),
-    //});
+    ASQ().then(function(done){
+        chrome.storage.local.get(SK_PLUGINS, CC(done));
+    })
+    .then(function(done, loaded){
+        if(!loaded[SK_PLUGINS]) return done.abort();
+        let items = loaded[SK_PLUGINS];
+        if(!isObject(items) || items.version !== 1 || !isObject(items.plugins))
+            return done.abort();
+
+        for(let [id, plugin] of Object.entries(items.plugins)) {
+            if(!plugin.name || !plugin.indexUrl) {
+                log.warn(`Skipping plugin ${id} (${plugin})`);
+                continue;
+            }
+
+            if(!plugin.short_name) plugin.short_name = plugin.name;
+
+            let setting = settings.create({
+                "tab": i18n.get("Plugins"),
+                "group": i18n.get(plugin.short_name),
+                "type": "checkbox",
+                "label": "Enabled",
+            });
+            //TODO RESUME HERE
+            // something like this => settingsobj.tabs['Features'].groups["Key Mapping"].content.addEventListener('change',function(...args){console.log(...args);})
+
+        }
+        done();
+    });
+
 } //populatePlugins
 
-window.addEvent("domready", function () {
+
+function onLoad()
+{
     // Option 1: Use the manifest:
     new FancySettings.initWithManifest(function (settings) {
         settingsobj = settings;
@@ -114,5 +145,16 @@ window.addEvent("domready", function () {
         password
     ]);
     */
-});
-// vi: set ts=4 sts=4 sw=4 et ai: //
+} //onLoad
+
+function main()
+{
+    ASQ = Modules['asq.src'];
+    log = Modules.loglevel;
+    callbackOnLoad(onLoad);
+}
+
+require_invoke(['asq.src','common/plugin','loglevel'], main,
+                    Modules, {plugin:'common/plugin'});
+
+// vi: set ts=4 sts=4 sw=4 et ai fo-=ro: //

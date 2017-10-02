@@ -172,11 +172,11 @@ function callbackOnLoad(callback)
 ///                             array will also include the short names.
 function require_invoke(deps, callback, Modules, shortnames)
 {
-    require(deps, function(...args) {
+    require(deps, function(...loaded) {
         if(Modules) {
             // Hack: Copy the loaded modules into our Modules global
-            for(let depidx = 0; depidx < args.length; ++depidx) {
-                Modules[dependencies[depidx]] = args[depidx];
+            for(let depidx = 0; depidx < loaded.length; ++depidx) {
+                Modules[deps[depidx]] = loaded[depidx];
             }
 
             // Easier names for some modules
@@ -187,7 +187,7 @@ function require_invoke(deps, callback, Modules, shortnames)
             }
         } //endif modules
 
-        return main(...args);
+        return main(...loaded);
     });
 } //require_invoke
 
@@ -253,6 +253,9 @@ function isObject(x) {
 
 /// Chrome Callback: make a Chrome extension API callback that
 /// wraps the done() callback of an asynquence step.
+/// The callback turns chrome.runtime.lastError into a sequence error.
+/// @param done {function} the callback from asynquence
+/// @return A callback that can be passed to a Chrome extension API call.
 var CC = (function(){
     /// A special-purpose empty object, per getify
     const ø = Object.create(null);

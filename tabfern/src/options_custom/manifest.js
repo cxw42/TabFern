@@ -174,7 +174,6 @@ below.`
             {
                 "tab": i18n.get("What's new?"),
                 "group": "Version 0.1.10",
-                "name": "changelog-0_1_10",
                 "type": "description",
                 "text":
 `
@@ -195,7 +194,6 @@ locally-stored PDFs, and this helps me find them more quickly.</li>
             {
                 "tab": i18n.get("What's new?"),
                 "group": "Versions 0.1.8 and 0.1.9",
-                "name": "changelog-0_1_8-0_1_9",
                 "type": "description",
                 "text":
 `<ul>
@@ -217,7 +215,6 @@ rearrange them.  (Drag-and-drop between open windows is coming soon, but not rea
             {
                 "tab": i18n.get("What's new?"),
                 "group": "Version 0.1.7",
-                "name": "changelog-0_1_7",
                 "type": "description",
                 "text":
     '<ul>' +
@@ -230,7 +227,6 @@ rearrange them.  (Drag-and-drop between open windows is coming soon, but not rea
             {
                 "tab": i18n.get("What's new?"),
                 "group": "Version 0.1.6",
-                "name": "changelog-0_1_6",
                 "type": "description",
                 "text":
     '<ul>' +
@@ -241,7 +237,6 @@ rearrange them.  (Drag-and-drop between open windows is coming soon, but not rea
             {
                 "tab": i18n.get("What's new?"),
                 "group": "Version 0.1.5",
-                "name": "changelog-0_1_5",
                 "type": "description",
                 "text": "You can now right-click on a saved window and choose "+
                     '"Forget" to leave the window as open, but not save it '+
@@ -251,7 +246,6 @@ rearrange them.  (Drag-and-drop between open windows is coming soon, but not rea
             {
                 "tab": i18n.get("What's new?"),
                 "group": "Version 0.1.4",
-                "name": "changelog-0_1_4",
                 "type": "description",
                 "text": "Added context menus, saving of TabFern window position, "+
                         "and Expand All/Collapse All."
@@ -259,7 +253,6 @@ rearrange them.  (Drag-and-drop between open windows is coming soon, but not rea
             {
                 "tab": i18n.get("What's new?"),
                 "group": "Version 0.1.2",
-                "name": "changelog-0_1_2",
                 "type": "description",
                 "text": "First version released to the Chrome Web Store"
             }

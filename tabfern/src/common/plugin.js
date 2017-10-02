@@ -47,7 +47,7 @@
             // Thanks to https://github.com/diafygi/webcrypto-examples
             let enc = new TextEncoder('utf-8');
             let ui8a_data = enc.encode('' + str_indexUrl);
-            let p = window.crypto.subtle.digest({ name:"SHA-512" }, ui8a_data);
+            let p = window.crypto.subtle.digest({ name:"SHA-256" }, ui8a_data);
             p.then(done, done.fail);    // promise completion moves the sequence
         })
         .then(function(done, arrbuf_hash) {
@@ -55,6 +55,34 @@
             done(base64js.fromByteArray(ui8a_hash));
         });
     } //get_plugin_id
+
+    /// Check that an SK_PLUGINS record has the right general structure
+    module.isValidPluginData = function(items)
+    {
+        return (isObject(items) && items.version === 1 && isObject(items.plugins));
+    }
+
+    /// Make sure the SK_PLUGIN data exists
+    module.initPluginDataIfMissing = function()
+    {
+        ASQ().then(function(done){
+            chrome.storage.local.get(SK_PLUGINS, CC(done));
+        })
+        .then(function(done, items){
+            if(!items[SK_PLUGINS] || !module.isValidPluginData(items[SK_PLUGINS]))
+                throw '';   // trigger the or() - content doesn't matter
+            done();
+        })
+        .or(function(){
+            // We didn't have the right data, so start fresh.
+            chrome.storage.local.set(
+                {[SK_PLUGINS]:{version:1, plugins:{}}},
+                function(){
+                    if(typeof(chrome.runtime.lastError) !== 'undefined')
+                        throw new Error(chrome.runtime.lastError);
+                });
+        });
+    } //initPluginDataIfMissing
 
     return module;
 }));

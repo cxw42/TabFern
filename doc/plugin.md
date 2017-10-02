@@ -52,13 +52,14 @@ messaging, but that is not yet implemented.
         "version": 1,
         "plugins": [
             {   "name": "Sample TabFern Plugin",
+                "short_name": "Sample Plugin",
                 "indexUrl": "chrome-extension://kcbahbchkakjkbgnabchdbeccldkaaah/tfplugin/index.html"
             }
         ],
         "modeline": " vi: set ts=4 sts=4 sw=4 et ai: "}
 
-In version 1 of the plugin list, the `name` and `indexUrl` of each plugin
-are required.  All other fields are optional and ignored.
+In version 1 of the plugin list, the `name`, `short_name`, and `indexUrl`
+of each plugin are required.  All other fields are optional and ignored.
 
 The `indexUrl` must be a full URL with the `chrome-extension` scheme,
 not a path within the guest.  E.g., `/tfplugin/index.html` and
@@ -74,7 +75,7 @@ lists of any version.
 Each plugin is identified by:
 
  - Encoding its `indexUrl` in UTF-8;
- - Determining the SHA-512 hash of the UTF-8-encoded `indexUrl`; and
+ - Determining the SHA-256 hash of the UTF-8-encoded `indexUrl`; and
  - Expressing the hash in [base64](https://github.com/beatgammit/base64-js).
 
 The base64 value is the plugin ID.  Since the `indexUrl` includes the
@@ -93,4 +94,4 @@ by the index (e.g., scripts or CSS) in the `web_accessible_resources`.
 However, if you get strange errors, try adding `"tfplugin/*"` to the
 manifest to see if it helps.
 
-<!-- vi: set ts=4 sts=4 sw=4 et ai ft=markdown: -->
+[](about:blank# vi: set ts=4 sts=4 sw=4 et ai ft=markdown:)

@@ -1,7 +1,7 @@
 // CC-BY-SA 3.0
 console.log('TabFern: running background.js');
 
-let ASQ;
+let Modules={}, ASQ;
 
 var viewWindowID;     // the chrome.windows ID of our view
 
@@ -111,6 +111,9 @@ function onInternalMessage(request, sender, sendResponse)
     }
 } //onInternalMessage
 
+//////////////////////////////////////////////////////////////////////////
+// Plugins //
+
 /// Listen for messages from other extensions.  E.g.,
 /// chrome.runtime.sendMessage('ffbbjfceigfningapgjlpinamambamjo',
 ///     {extension_id:chrome.runtime.id},
@@ -161,6 +164,9 @@ function main(asqsrc)
         setSettingIfNonexistent(opt, CFG_DEFAULTS[opt]);
     }
 
+    // Init plugin data (async)
+    Modules.plugin.initPluginDataIfMissing();
+
     // Add event listeners
     chrome.runtime.onMessage.addListener(onInternalMessage);
     chrome.runtime.onMessageExternal.addListener(onExternalMessage);
@@ -177,7 +183,8 @@ function main(asqsrc)
 
 } //main()
 
-require(['asq.src'], main);
+require_invoke(['asq.src', 'common/plugin'], main,
+        Modules, {plugin:'common/plugin'});
 
 console.log('TabFern: done running background.js');
 
