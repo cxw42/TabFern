@@ -69,11 +69,22 @@ function populatePlugins(settings)
                 "group": i18n.get(plugin.short_name),
                 "type": "checkbox",
                 "label": "Enabled",
+                // no "name", so changes won't be persisted in localStorage
             });
-            //TODO RESUME HERE
-            // something like this => settingsobj.tabs['Features'].groups["Key Mapping"].content.addEventListener('change',function(...args){console.log(...args);})
 
-        }
+            setting.set(items.plugins[id].enabled, true);   //true => no event
+
+            setting.element.addEvent('change',function(evt){
+                items.plugins[id].enabled = this.checked;
+                console.log(`Plugin ${id} is ${this.checked?'enabled':'disabled'}`);
+                chrome.storage.local.set({[SK_PLUGINS]:items},ignore_chrome_error);
+                    // TODO? move writes to background so back-to-back writes
+                    // are serialized?  Persist plugin state in background?
+            });
+
+            // TODO later: add options for this plugin.
+
+        } //foreach plugin
         done();
     });
 
