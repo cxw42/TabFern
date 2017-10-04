@@ -3,7 +3,8 @@
 
 (function (root, factory) {
     let imports=['jquery','jstree','jstree-actions', 'jstree-flagnode',
-                    'jstree-because', 'loglevel', 'view/const' ];
+                    'jstree-because', 'loglevel', 'view/const',
+                    'jstree-flavors' ];
 
     if (typeof define === 'function' && define.amd) {
         // AMD
@@ -23,7 +24,7 @@
         }
         root.tabfern_item_tree = factory(...requirements);
     }
-}(this, function ($, _jstree, _actions, _flagnode, _because, log_orig, K ) {
+}(this, function ($, _jstree, _actions, _flagnode, _because, log_orig, K, flavors ) {
     "use strict";
 
     function loginfo(...args) { log_orig.info('TabFern view/item_tree.js: ', ...args); };
@@ -97,7 +98,7 @@
     /// @param is_draggable {function}
     /// @param contextmenu_items {function} If truthy, show a context menu
     module.create = function(selector, check_callback, is_draggable,
-                                contextmenu_items)
+                                contextmenu_items, flavor_callback)
     {
         // Node types - use constants as the keys
         let jstreeTypes = {};
@@ -127,8 +128,18 @@
             icon: 'fff-page',   // per-node icons will override this
         };
 
-        jstreeTypes[K.NT_TAB_BORDERED] = {
-            li_attr: { class: K.TAB_CLASS + ' ' + K.BORDERED_TAB_CLASS },
+//        jstreeTypes[K.NT_TAB_BORDERED] = {
+//            li_attr: { class: K.TAB_CLASS + ' ' + K.BORDERED_TAB_CLASS },
+//            icon: 'fff-page',   // per-node icons will override this
+//        };
+
+        jstreeTypes[K.NT_TAB_DORMANT] = {
+            li_attr: { class: K.TAB_CLASS },
+            icon: 'fff-page',   // per-node icons will override this
+        };
+
+        jstreeTypes[K.NT_TAB_OPEN] = {
+            li_attr: { class: K.TAB_CLASS },
             icon: 'fff-page',   // per-node icons will override this
         };
 
@@ -139,6 +150,7 @@
                         // action buttons to the wholerow div
                         'dnd', 'types', 'flagnode',
                         // flagnode must be after types
+                        'flavors',
                      ], // TODO add state plugin
             core: {
                 animation: false,
@@ -167,6 +179,9 @@
             actions: {
                 propagation: 'stop'
                     // clicks on action buttons don't also go to any other elements
+            },
+            flavors: {
+                callback: flavor_callback,
             },
         };
 

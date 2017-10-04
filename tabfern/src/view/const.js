@@ -86,6 +86,12 @@
         NT_TAB:             'tab',              // a normal tab
         NT_TAB_BORDERED:    'tab-bordered',     // a tab with a border on top
                                     // (this is a hack until I can add dividers)
+        NT_TAB_DORMANT:     'tab-dormant',
+        NT_TAB_OPEN:        'tab-open',
+
+        // Node flavors - these are supplemental things layered on top of the
+        // node types.
+        NF_BORDERED:        'flavor-bordered',
     };
 
     // Sets of node types

@@ -244,7 +244,8 @@ function saveTree(save_ephemeral_windows = true, cbk = undefined)
                 thistab.raw_url = tab_val.raw_url;
                 // TODO save favIconUrl?
 
-                if(T.treeobj.get_type(tab_node_id) === K.NT_TAB_BORDERED) {
+                //if(T.treeobj.get_type(tab_node_id) === K.NT_TAB_BORDERED) {
+                if(T.treeobj.has_flavor(tab_node_id, K.NF_BORDERED)) {
                     thistab.bordered = true;
                 }
 
@@ -423,10 +424,13 @@ function actionToggleTabTopBorder(node_id, node, unused_action_id, unused_action
     if(!tab_val) return;
 
     // Note: adjust this if you add another NT_TAB type.
-    if(T.treeobj.get_type(node_id) !== K.NT_TAB_BORDERED) {
-        T.treeobj.set_type(node_id, K.NT_TAB_BORDERED);
+    //if(T.treeobj.get_type(node_id) !== K.NT_TAB_BORDERED) {
+    if(!T.treeobj.has_flavor(node_id, K.NF_BORDERED)) {
+        //T.treeobj.set_type(node_id, K.NT_TAB_BORDERED);
+        T.treeobj.add_flavor(node_id, K.NF_BORDERED);
     } else {
-        T.treeobj.set_type(node_id, K.NT_TAB);
+        //T.treeobj.set_type(node_id, K.NT_TAB);
+        T.treeobj.remove_flavor(node_id, K.NF_BORDERED);
     }
 
     I.remember(node.parent);
@@ -505,12 +509,13 @@ function createNodeForTab(ctab, parent_node_id)
 /// @return node_id         The node id for the new tab
 function createNodeForClosedTab(tab_data_v1, parent_node_id)
 {
-    let node_type = (tab_data_v1.bordered ? K.NT_TAB_BORDERED : K.NT_TAB);
+    let node_flavors = (tab_data_v1.bordered ? K.NF_BORDERED : false);
     let {node_id, val} = I.makeItemForTab(
             parent_node_id, false,      // false => no Chrome window open
             tab_data_v1.raw_url,
             tab_data_v1.raw_title,
-            node_type);
+            K.NT_TAB,
+            node_flavors);
 
     if(tab_data_v1.raw_bullet) {
         val.raw_bullet = String(tab_data_v1.raw_bullet);
@@ -840,7 +845,7 @@ function flagOnlyCurrentTab(win)
             break;
         }
     } //foreach tab
-}
+} //flagOnlyCurrentTab()
 
 /// ID for a timeout shared by newWinFocusCheckTest() and treeOnSelect()
 var awaitSelectTimeoutId = undefined;
@@ -1094,6 +1099,21 @@ function treeOnSelect(_evt_unused, evt_data)
         });
     }
 } //treeOnSelect
+
+/// Callback for flavors.
+/// @param this {jstree Node} The node
+/// @param flavors {array} the flavors
+/// @param elem {DOM Element} the <li>
+function flavor_callback(flavors, elem)
+{
+    // Apply borders to bordered tabs
+    if(this.type === K.NT_TAB && flavors.indexOf(K.NF_BORDERED) !== -1)
+        return {'class': K.BORDERED_TAB_CLASS};
+
+    if(this.type == K.NT_WIN_ELVISH) return {'class': 'green'};
+    else if(this.type == K.NT_TAB) return {'class': 'blue'};
+    else return {'class': 'red'};
+} //flavor_callback
 
 //////////////////////////////////////////////////////////////////////////
 // Chrome window/tab callbacks //
@@ -2452,7 +2472,8 @@ function initTree1(win_id)
         getBoolSetting(CFG_ENB_CONTEXT_MENU, true) ? getMainContextMenuItems
                                                     : false;
 
-    T.create('#maintree', treeCheckCallback, dndIsDraggable, contextmenu_items);
+    T.create('#maintree', treeCheckCallback, dndIsDraggable,
+            contextmenu_items, flavor_callback);
 
     // Install keyboard shortcuts.  This includes the keyboard listener for
     // context menus.

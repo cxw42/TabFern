@@ -319,4 +319,21 @@ body {
     top: calc(50% - 5px);   /* by default */
 }
 
+/* //////////////////////////////////////////////////////////////////// */
+/* Debug.  These come last, so they override any equally-specific styles
+ * earlier in the file. */
+
+.red > a {
+    color: #f88 !important;
+}
+
+.green > a {
+    color: #8f8 !important;
+}
+
+.blue > a {
+    color: #88f !important;
+}
+
+
 /* vi: set ts=4 sts=4 sw=4 et ai: */

@@ -305,10 +305,13 @@
     /// @param raw_url {string} If #ctab is falsy, the URL of the tab
     /// @param raw_title {string} If #ctab is falsy, the title of the tab
     /// @param node_type {string} If provided, used for the node type.
+    ///                             Default is K.NT_TAB.
+    /// @param node_flavor {mixed} If provided, used for the node flavors.
+    ///                             Can be a single value, or an array.
     /// @return {object} {node_id, val}.  On error,
     ///                 at least one of node_id or val will be falsy.
     module.makeItemForTab = function(parent_node_id, ctab, raw_url, raw_title,
-                                        node_type) {
+                                        node_type, node_flavors) {
         let error_return = {node_id:null, val:null};
         if(!parent_node_id) return error_return;
 
@@ -323,6 +326,8 @@
         } else {
             T.treeobj.set_type(tab_node_id, K.NT_TAB);
         }
+
+        T.treeobj.add_flavor(tab_node_id, node_flavors);
 
         let tab_val = D.tabs.add({
             tab_id: (ctab ? ctab.id : K.NONE),
