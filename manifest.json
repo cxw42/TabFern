@@ -1,37 +1,13 @@
 {
-  "name": "TabFern tab manager and backup tool",
-  "short_name": "TabFern",
-  "version": "0.1.11.1",
-  "version_name": "0.1.11-pre.1 ALPHA - YMMV",
-  "offline_enabled": true,
+  "name": "test",
+  "version": "0.0.2",
   "manifest_version": 2,
-  "minimum_chrome_version": "54",
-  "description": "Vertical view of all your windows and tabs, including saved tabs and windows.",
-  "homepage_url": "https://cxw42.github.io/TabFern/",
-  "icons": {
-    "16": "assets/fern16.png",
-    "48": "assets/fern48.png",
-    "128": "assets/fern128.png"
-  },
-  "default_locale": "en",
+  "description": ".............",
   "background": {
-    "scripts": [
-      "src/bg/background.js"
-    ],
-    "persistent": true
+    "scripts": ["background.js"],
+    "persistent": false
   },
   "browser_action": {
-    "default_title": "TabFern"
-  },
-  "permissions": [
-    "chrome://favicon/",
-    "tabs",
-    "storage",
-    "unlimitedStorage"
-  ],
-  "web_accessible_resources": [
-    "src/view/index.html",
-    "src/view/tree.html",
-    "assets/*"
-  ]
+    "default_title": "click me"
+  }
 }
