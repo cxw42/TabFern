@@ -5,3 +5,6 @@ if ((chrome.runtime || {}).connect) {
 } else {
   document.body.textContent = 'FAILURE';
 }
+
+console.log('In iframe.js, chrome.runtime is' + JSON.stringify(chrome.runtime));
+
