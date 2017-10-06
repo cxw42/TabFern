@@ -26,7 +26,7 @@
 	if($.jstree.plugins.multitype) { return; }
 
 	/**
-	 * An object storing all types under "types" as an array of objects of 
+	 * An object storing all types under "types" as an array of objects of
 	 * key value pairs.  Sets of types are offsets in the array: 0, 1, ... .
 	 * Each node can have one type from each set at any given time.  E.g.:
 	 *
@@ -41,26 +41,26 @@
 	 *		},
 	 *	]}
 	 *
-	 * In each type set, the key is the multitype name and the value is 
+	 * In each type set, the key is the multitype name and the value is
 	 * an object that could contain following keys (all optional).
 	 *
-	 * * `max_children` the maximum number of immediate children this node 
+	 * * `max_children` the maximum number of immediate children this node
 	 * 		multitype can have. Do not specify or set to `-1` for unlimited.
-	 * * `max_depth` the maximum number of nesting this node multitype can 
-	 * 		have. A value of `1` would mean that the node can have children, 
+	 * * `max_depth` the maximum number of nesting this node multitype can
+	 * 		have. A value of `1` would mean that the node can have children,
 	 * 		but no grandchildren. Do not specify or set to `-1` for unlimited.
-	 * * `valid_children` an array of node multitype strings, that nodes 
-	 * 		of this multitype can have as children. Do not specify or set 
+	 * * `valid_children` an array of node multitype strings, that nodes
+	 * 		of this multitype can have as children. Do not specify or set
 	 * 		to `-1` for no limits.
-	 * * `icon` a string - can be a path to an icon or a className, if 
-	 * 		using an image that is in the current directory use a `./` 
-	 * 		prefix, otherwise it will be detected as a class. Omit to use the 
+	 * * `icon` a string - can be a path to an icon or a className, if
+	 * 		using an image that is in the current directory use a `./`
+	 * 		prefix, otherwise it will be detected as a class. Omit to use the
 	 * 		default icon from your theme.
-	 * * `li_attr` an object of values which will be used to add HTML 
-	 * 		attributes on the resulting LI DOM node (merged with the node's 
+	 * * `li_attr` an object of values which will be used to add HTML
+	 * 		attributes on the resulting LI DOM node (merged with the node's
 	 * 		own data)
-	 * * `a_attr` an object of values which will be used to add HTML attributes 
-	 * 		on the resulting A DOM node (merged with the node's own data)
+	 * * `a_attr` an object of values which will be used to add HTML attributes
+	 *		on the resulting A DOM node (merged with the node's own data)
 	 *
 	 * There are no predefined types
 	 *
@@ -68,88 +68,119 @@
 	 * @plugin multitype
 	 */
 	$.jstree.defaults.multitype = {
-		'default' : {}
+		'types' : []
 	};
-	$.jstree.defaults.multitype[$.jstree.root] = {};
 
 	$.jstree.plugins.multitype = function (options, parent) {
-		this.init = function (el, options) {
-			var i, j;
-			if(options && options.multitype && options.multitype['default']) {
-				for(i in options.types) {
-					if(i !== "default" && i !== $.jstree.root && options.multitype.hasOwnProperty(i)) {
-						for(j in options.multitype['default']) {
-							if(options.multitype['default'].hasOwnProperty(j) && options.multitype[i][j] === undefined) {
-								options.multitype[i][j] = options.multitype['default'][j];
-							}
-						}
-					}
-				}
-			}
-			parent.init.call(this, el, options);
-			this._model.data[$.jstree.root].multitype = $.jstree.root;
-		};
-		this.refresh = function (skip_loading, forget_state) {
-			parent.refresh.call(this, skip_loading, forget_state);
-			this._model.data[$.jstree.root].multitype = $.jstree.root;
-		};
+
+// I don't think we need this since we don't have defaults
+//		this.init = function (el, options) {
+//			var i, j;
+//			if(options && options.multitype && options.multitype['default']) {
+//				for(i in options.types) {
+//					if(i !== "default" && i !== $.jstree.root && options.multitype.hasOwnProperty(i)) {
+//						for(j in options.multitype['default']) {
+//							if(options.multitype['default'].hasOwnProperty(j) && options.multitype[i][j] === undefined) {
+//								options.multitype[i][j] = options.multitype['default'][j];
+//							}
+//						}
+//					}
+//				}
+//			}
+//			parent.init.call(this, el, options);
+//			this._model.data[$.jstree.root].multitype = $.jstree.root;
+//		};
+
+// I don't think we need this since we don't have the '#' type
+//		this.refresh = function (skip_loading, forget_state) {
+//			parent.refresh.call(this, skip_loading, forget_state);
+//			this._model.data[$.jstree.root].multitype = $.jstree.root;
+//		};
+
 		this.bind = function () {
 			this.element
 				.on('model.jstree', $.proxy(function (e, data) {
 						var m = this._model.data,
-							dpc = data.nodes,
+							dpc = data.nodes,	///< aray of node IDs
 							t = this.settings.multitype,
-							i, j, c = 'default', k;
+							i, j;	//, c = 'default', 
+						var k;
+						var cs;		///< array of classes to add, one for each type set
+						var typeset_idx;
+
 						for(i = 0, j = dpc.length; i < j; i++) {
-							c = 'default';
+							//c = 'default';
+							// TODO RESUME HERE
+
+							// `original` holds the node's state when it was first loaded, 
+							// as far as I can tell.
 							if(m[dpc[i]].original && m[dpc[i]].original.multitype && t[m[dpc[i]].original.multitype]) {
-								c = m[dpc[i]].original.multitype;
+								//c = m[dpc[i]].original.multitype;
+								cs = m[dpc[i]].original.multitype;
 							}
+
+							// Not sure what this is --- maybe backwards compatibility?
 							if(m[dpc[i]].data && m[dpc[i]].data.jstree && m[dpc[i]].data.jstree.multitype && t[m[dpc[i]].data.jstree.multitype]) {
-								c = m[dpc[i]].data.jstree.multitype;
+								//c = m[dpc[i]].data.jstree.multitype;
+								cs = m[dpc[i]].data.jstree.multitype;
 							}
-							m[dpc[i]].multitype = c;
-							if(m[dpc[i]].icon === true && t[c].icon !== undefined) {
-								m[dpc[i]].icon = t[c].icon;
-							}
-							if(t[c].li_attr !== undefined && typeof t[c].li_attr === 'object') {
-								for (k in t[c].li_attr) {
-									if (t[c].li_attr.hasOwnProperty(k)) {
-										if (k === 'id') {
-											continue;
-										}
-										else if (m[dpc[i]].li_attr[k] === undefined) {
-											m[dpc[i]].li_attr[k] = t[c].li_attr[k];
-										}
-										else if (k === 'class') {
-											m[dpc[i]].li_attr['class'] = t[c].li_attr['class'] + ' ' + m[dpc[i]].li_attr['class'];
+							
+							if(!cs) cs = [];		//default: no types
+							else if(!Array.isArray(cs)) cs = [cs];
+
+							m[dpc[i]].multitype = cs;	//c;
+
+							// Apply each type in order
+							for(var cidx=0; cidx < cs.length; ++cs) {
+								var c = cs[cidx];
+
+								if(m[dpc[i]].icon === true && t[c].icon !== undefined) {
+									m[dpc[i]].icon = t[c].icon;
+								}
+
+								if(t[c].li_attr !== undefined && typeof t[c].li_attr === 'object') {
+									for (k in t[c].li_attr) {
+										if (t[c].li_attr.hasOwnProperty(k)) {
+											if (k === 'id') {
+												continue;
+											}
+											else if (m[dpc[i]].li_attr[k] === undefined) {
+												m[dpc[i]].li_attr[k] = t[c].li_attr[k];
+											}
+											else if (k === 'class') {
+												m[dpc[i]].li_attr['class'] = t[c].li_attr['class'] + ' ' + m[dpc[i]].li_attr['class'];
+											}
 										}
 									}
 								}
-							}
-							if(t[c].a_attr !== undefined && typeof t[c].a_attr === 'object') {
-								for (k in t[c].a_attr) {
-									if (t[c].a_attr.hasOwnProperty(k)) {
-										if (k === 'id') {
-											continue;
-										}
-										else if (m[dpc[i]].a_attr[k] === undefined) {
-											m[dpc[i]].a_attr[k] = t[c].a_attr[k];
-										}
-										else if (k === 'href' && m[dpc[i]].a_attr[k] === '#') {
-											m[dpc[i]].a_attr['href'] = t[c].a_attr['href'];
-										}
-										else if (k === 'class') {
-											m[dpc[i]].a_attr['class'] = t[c].a_attr['class'] + ' ' + m[dpc[i]].a_attr['class'];
+
+								if(t[c].a_attr !== undefined && typeof t[c].a_attr === 'object') {
+									for (k in t[c].a_attr) {
+										if (t[c].a_attr.hasOwnProperty(k)) {
+											if (k === 'id') {
+												continue;
+											}
+											else if (m[dpc[i]].a_attr[k] === undefined) {
+												m[dpc[i]].a_attr[k] = t[c].a_attr[k];
+											}
+											else if (k === 'href' && m[dpc[i]].a_attr[k] === '#') {
+												m[dpc[i]].a_attr['href'] = t[c].a_attr['href'];
+											}
+											else if (k === 'class') {
+												m[dpc[i]].a_attr['class'] = t[c].a_attr['class'] + ' ' + m[dpc[i]].a_attr['class'];
+											}
 										}
 									}
 								}
-							}
-						}
-						m[$.jstree.root].multitype = $.jstree.root;
+
+							} //cidx
+
+						} //foreach node
+						//m[$.jstree.root].multitype = $.jstree.root;
 					}, this));
 			parent.bind.call(this);
 		};
+
 		this.get_json = function (obj, options, flat) {
 			var i, j,
 				m = this._model.data,
@@ -178,6 +209,7 @@
 			}
 			return tmp;
 		};
+
 		this._delete_ids = function (tmp) {
 			if($.isArray(tmp)) {
 				for(var i = 0, j = tmp.length; i < j; i++) {
@@ -197,48 +229,51 @@
 			}
 			return tmp;
 		};
-		this.check = function (chk, obj, par, pos, more) {
-			if(parent.check.call(this, chk, obj, par, pos, more) === false) { return false; }
-			obj = obj && obj.id ? obj : this.get_node(obj);
-			par = par && par.id ? par : this.get_node(par);
-			var m = obj && obj.id ? (more && more.origin ? more.origin : $.jstree.reference(obj.id)) : null, tmp, d, i, j;
-			m = m && m._model && m._model.data ? m._model.data : null;
-			switch(chk) {
-				case "create_node":
-				case "move_node":
-				case "copy_node":
-					if(chk !== 'move_node' || $.inArray(obj.id, par.children) === -1) {
-						tmp = this.get_rules(par);
-						if(tmp.max_children !== undefined && tmp.max_children !== -1 && tmp.max_children === par.children.length) {
-							this._data.core.last_error = { 'error' : 'check', 'plugin' : 'multitype', 'id' : 'types_01', 'reason' : 'max_children prevents function: ' + chk, 'data' : JSON.stringify({ 'chk' : chk, 'pos' : pos, 'obj' : obj && obj.id ? obj.id : false, 'par' : par && par.id ? par.id : false }) };
-							return false;
-						}
-						if(tmp.valid_children !== undefined && tmp.valid_children !== -1 && $.inArray((obj.multitype || 'default'), tmp.valid_children) === -1) {
-							this._data.core.last_error = { 'error' : 'check', 'plugin' : 'multitype', 'id' : 'types_02', 'reason' : 'valid_children prevents function: ' + chk, 'data' : JSON.stringify({ 'chk' : chk, 'pos' : pos, 'obj' : obj && obj.id ? obj.id : false, 'par' : par && par.id ? par.id : false }) };
-							return false;
-						}
-						if(m && obj.children_d && obj.parents) {
-							d = 0;
-							for(i = 0, j = obj.children_d.length; i < j; i++) {
-								d = Math.max(d, m[obj.children_d[i]].parents.length);
-							}
-							d = d - obj.parents.length + 1;
-						}
-						if(d <= 0 || d === undefined) { d = 1; }
-						do {
-							if(tmp.max_depth !== undefined && tmp.max_depth !== -1 && tmp.max_depth < d) {
-								this._data.core.last_error = { 'error' : 'check', 'plugin' : 'multitype', 'id' : 'types_03', 'reason' : 'max_depth prevents function: ' + chk, 'data' : JSON.stringify({ 'chk' : chk, 'pos' : pos, 'obj' : obj && obj.id ? obj.id : false, 'par' : par && par.id ? par.id : false }) };
-								return false;
-							}
-							par = this.get_node(par.parent);
-							tmp = this.get_rules(par);
-							d++;
-						} while(par);
-					}
-					break;
-			}
-			return true;
-		};
+
+// Leave this out for now
+//		this.check = function (chk, obj, par, pos, more) {
+//			if(parent.check.call(this, chk, obj, par, pos, more) === false) { return false; }
+//			obj = obj && obj.id ? obj : this.get_node(obj);
+//			par = par && par.id ? par : this.get_node(par);
+//			var m = obj && obj.id ? (more && more.origin ? more.origin : $.jstree.reference(obj.id)) : null, tmp, d, i, j;
+//			m = m && m._model && m._model.data ? m._model.data : null;
+//			switch(chk) {
+//				case "create_node":
+//				case "move_node":
+//				case "copy_node":
+//					if(chk !== 'move_node' || $.inArray(obj.id, par.children) === -1) {
+//						tmp = this.get_rules(par);
+//						if(tmp.max_children !== undefined && tmp.max_children !== -1 && tmp.max_children === par.children.length) {
+//							this._data.core.last_error = { 'error' : 'check', 'plugin' : 'multitype', 'id' : 'types_01', 'reason' : 'max_children prevents function: ' + chk, 'data' : JSON.stringify({ 'chk' : chk, 'pos' : pos, 'obj' : obj && obj.id ? obj.id : false, 'par' : par && par.id ? par.id : false }) };
+//							return false;
+//						}
+//						if(tmp.valid_children !== undefined && tmp.valid_children !== -1 && $.inArray((obj.multitype || 'default'), tmp.valid_children) === -1) {
+//							this._data.core.last_error = { 'error' : 'check', 'plugin' : 'multitype', 'id' : 'types_02', 'reason' : 'valid_children prevents function: ' + chk, 'data' : JSON.stringify({ 'chk' : chk, 'pos' : pos, 'obj' : obj && obj.id ? obj.id : false, 'par' : par && par.id ? par.id : false }) };
+//							return false;
+//						}
+//						if(m && obj.children_d && obj.parents) {
+//							d = 0;
+//							for(i = 0, j = obj.children_d.length; i < j; i++) {
+//								d = Math.max(d, m[obj.children_d[i]].parents.length);
+//							}
+//							d = d - obj.parents.length + 1;
+//						}
+//						if(d <= 0 || d === undefined) { d = 1; }
+//						do {
+//							if(tmp.max_depth !== undefined && tmp.max_depth !== -1 && tmp.max_depth < d) {
+//								this._data.core.last_error = { 'error' : 'check', 'plugin' : 'multitype', 'id' : 'types_03', 'reason' : 'max_depth prevents function: ' + chk, 'data' : JSON.stringify({ 'chk' : chk, 'pos' : pos, 'obj' : obj && obj.id ? obj.id : false, 'par' : par && par.id ? par.id : false }) };
+//								return false;
+//							}
+//							par = this.get_node(par.parent);
+//							tmp = this.get_rules(par);
+//							d++;
+//						} while(par);
+//					}
+//					break;
+//			}
+//			return true;
+//		};
+
 		/**
 		 * used to retrieve the multitype settings object for a node
 		 * @name get_rules(obj)
@@ -246,7 +281,7 @@
 		 * @return {Object}
 		 * @plugin multitype
 		 */
-		this.get_rules = function (obj) {
+		this.get_mt_rules = function (obj) {
 			obj = this.get_node(obj);
 			if(!obj) { return false; }
 			var tmp = this.get_multitype(obj, true);
@@ -255,6 +290,7 @@
 			if(tmp.valid_children === undefined) { tmp.valid_children = -1; }
 			return tmp;
 		};
+
 		/**
 		 * used to retrieve the multitype string or settings object for a node
 		 * @name get_multitype(obj [, rules])
@@ -267,6 +303,7 @@
 			obj = this.get_node(obj);
 			return (!obj) ? false : ( rules ? $.extend({ 'multitype' : obj.multitype }, this.settings.multitype[obj.multitype]) : obj.multitype);
 		};
+
 		/**
 		 * used to change a node's multitype
 		 * @name set_multitype(obj, multitype)
@@ -315,6 +352,7 @@
 					}
 				}
 			}
+
 			if(t[old_multitype] && t[old_multitype].a_attr !== undefined && typeof t[old_multitype].a_attr === 'object') {
 				for (k in t[old_multitype].a_attr) {
 					if (t[old_multitype].a_attr.hasOwnProperty(k)) {
@@ -364,6 +402,7 @@
 					}
 				}
 			}
+
 			if(t[multitype].a_attr !== undefined && typeof t[multitype].a_attr === 'object') {
 				for (k in t[multitype].a_attr) {
 					if (t[multitype].a_attr.hasOwnProperty(k)) {
@@ -394,7 +433,8 @@
 			}
 
 			return true;
-		};
+		}; //set_multitype()
+
 	};
 }));
 // vi: set ts=2 sw=2: //

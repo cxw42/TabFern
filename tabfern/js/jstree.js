@@ -1521,7 +1521,7 @@
 		 * appends JSON content to the tree. Used internally.
 		 * @private
 		 * @name _append_json_data(obj, data)
-		 * @param  {mixed} obj the node to append to
+		 * @param  {mixed} dom the node to append to
 		 * @param  {String} data the JSON object to parse and append
 		 * @param  {Boolean} force_processing internal param - do not set
 		 * @trigger model.jstree, changed.jstree
@@ -3091,7 +3091,7 @@
 			 * @event
 			 * @name activate_node.jstree
 			 * @param {Object} node
-			 * @param {Object} event the ooriginal event (if any) which triggered the call (may be an empty object)
+			 * @param {Object} event the original event (if any) which triggered the call (may be an empty object)
 			 */
 			this.trigger('activate_node', { 'node' : this.get_node(obj), 'event' : e });
 		},

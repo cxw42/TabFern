@@ -231,6 +231,11 @@
 		/// @param {DOM object} obj The node being redrawn
 		/// @return the object, if the parent was able to redraw it.
 		this.redraw_node = function(obj, deep, callback, force_render) {
+
+			// TODO call the callback and apply changes to the model
+			// first (e.g., for icon), then call parent.redraw, then
+			// clean up afterwards.
+
 			obj = parent.redraw_node.apply(this, arguments);
 			if(obj) {
 				// TODO refactor so we call the callback on model.jstree
@@ -247,9 +252,12 @@
 					var names = Object.getOwnPropertyNames(attrs);
 					for(var idx in names) {
 						var k = names[idx];
-						if(k === 'class') {
+						if(k === 'class' &&
+								(typeof (attrs[k]) === 'string' ||
+								 typeof (attrs[k]) === 'function')
+						) {	//addClass can only take string or function.
 							jq.addClass(attrs[k]);
-						} else {
+						} else if(k !== 'class') {
 							jq.attr(k, attrs[k]);
 						}
 					}

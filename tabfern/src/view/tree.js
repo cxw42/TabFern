@@ -244,7 +244,6 @@ function saveTree(save_ephemeral_windows = true, cbk = undefined)
                 thistab.raw_url = tab_val.raw_url;
                 // TODO save favIconUrl?
 
-                //if(T.treeobj.get_type(tab_node_id) === K.NT_TAB_BORDERED) {
                 if(T.treeobj.has_flavor(tab_node_id, K.NF_BORDERED)) {
                     thistab.bordered = true;
                 }
@@ -370,6 +369,7 @@ function actionCloseWindow(node_id, node, unused_action_id, unused_action_el)
     // Collapse the tree, if the user wants that
     if(getBoolSetting("collapse-tree-on-window-close")) {
         T.treeobj.close_node(node);
+        T.treeobj.redraw_node(node);    // to be safe
     }
 
     // Mark the tabs in the tree node closed.
@@ -424,12 +424,9 @@ function actionToggleTabTopBorder(node_id, node, unused_action_id, unused_action
     if(!tab_val) return;
 
     // Note: adjust this if you add another NT_TAB type.
-    //if(T.treeobj.get_type(node_id) !== K.NT_TAB_BORDERED) {
     if(!T.treeobj.has_flavor(node_id, K.NF_BORDERED)) {
-        //T.treeobj.set_type(node_id, K.NT_TAB_BORDERED);
         T.treeobj.add_flavor(node_id, K.NF_BORDERED);
     } else {
-        //T.treeobj.set_type(node_id, K.NT_TAB);
         T.treeobj.remove_flavor(node_id, K.NF_BORDERED);
     }
 
@@ -998,6 +995,10 @@ function treeOnSelect(_evt_unused, evt_data)
                 T.treeobj.set_type(win_node.id, K.NT_WIN_ELVISH);
 
                 T.treeobj.open_node(win_node);
+                T.treeobj.redraw_node(win_node);
+                    // Because open_node() doesn't redraw the parent, only
+                    // its children, and opening the node changes the flavor
+                    // settings at this time.
 
                 // In Chrome 61, with v0.1.4, I observed strange behaviour:
                 // the window would open extra tabs that were copies of
@@ -1110,8 +1111,8 @@ function flavor_callback(flavors, elem)
     if(this.type === K.NT_TAB && flavors.indexOf(K.NF_BORDERED) !== -1)
         return {'class': K.BORDERED_TAB_CLASS};
 
-    if(this.type == K.NT_WIN_ELVISH) return {'class': 'green'};
-    else if(this.type == K.NT_TAB) return {'class': 'blue'};
+    if(this.type === K.NT_WIN_ELVISH) return {'class': 'green'};
+    else if(this.type === K.NT_TAB) return {'class': 'blue'};
     else return {'class': 'red'};
 } //flavor_callback
 
@@ -2411,6 +2412,7 @@ function addOpenWindowsToTree(winarr)
                                                         K.NT_WIN_EPHEMERAL );
 
             T.treeobj.open_node(existing_win.node);
+            T.treeobj.redraw_node(existing_win.node);
 
             // If we reach here, win.tabs.length === existing_win.node.children.length.
             for(let idx=0; idx < win.tabs.length; ++idx) {

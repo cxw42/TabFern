@@ -128,11 +128,6 @@
             icon: 'fff-page',   // per-node icons will override this
         };
 
-//        jstreeTypes[K.NT_TAB_BORDERED] = {
-//            li_attr: { class: K.TAB_CLASS + ' ' + K.BORDERED_TAB_CLASS },
-//            icon: 'fff-page',   // per-node icons will override this
-//        };
-
         jstreeTypes[K.NT_TAB_DORMANT] = {
             li_attr: { class: K.TAB_CLASS },
             icon: 'fff-page',   // per-node icons will override this

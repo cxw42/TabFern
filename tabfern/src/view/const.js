@@ -2,7 +2,7 @@
 // Copyright (c) 2017 Chris White, Jasmine Hegman.
 
 (function (root, factory) {
-    let imports=['jquery','jstree','loglevel','asq.src' ];
+    let imports=['jquery','jstree','loglevel','asynquence' ];
         // asq.src.js is copied from the npm asynquence package
 
     if (typeof define === 'function' && define.amd) {
@@ -84,18 +84,18 @@
         NT_WIN_ELVISH:      'win_elvish',               // open, saved
 
         NT_TAB:             'tab',              // a normal tab
-        NT_TAB_BORDERED:    'tab-bordered',     // a tab with a border on top
-                                    // (this is a hack until I can add dividers)
+
         NT_TAB_DORMANT:     'tab-dormant',
         NT_TAB_OPEN:        'tab-open',
 
         // Node flavors - these are supplemental things layered on top of the
         // node types.
-        NF_BORDERED:        'flavor-bordered',
+        NF_BORDERED:        'flavor-bordered',      // Has a top border
+        NF_RECOVERED:       'flavor-recovered',     // Was recovered
     };
 
     // Sets of node types
-    module.NTs_TAB = [module.NT_TAB, module.NT_TAB_BORDERED];
+    module.NTs_TAB = [module.NT_TAB];
     module.NTs_WIN_OPEN = [module.NT_WIN_EPHEMERAL, module.NT_WIN_ELVISH];
 
     /// Ignore a Chrome callback error, and suppress Chrome's
