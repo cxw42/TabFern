@@ -88,6 +88,22 @@
   env.addReporter(jasmineInterface.jsApiReporter);
   env.addReporter(htmlReporter);
 
+  //---
+  // From https://stackoverflow.com/a/33795262/2877364 by
+  // https://stackoverflow.com/users/1641941/hmr
+  //create a console.log reporter
+  var MyReporter = function(){jasmineRequire.JsApiReporter.apply(this,arguments);};
+  MyReporter.prototype = jasmineRequire.JsApiReporter.prototype;
+  MyReporter.prototype.constructor = MyReporter;
+  MyReporter.prototype.specDone=function(o){
+      o=o||{};
+      if(o.status!=="passed"){
+        console.warn("Failed:" + o.fullName + '\n' + o.failedExpectations[0].message);
+      }
+  };
+  env.addReporter(new MyReporter());
+  //---
+
   /**
    * Filter which specs will be run by matching the start of the full name against the `spec` query param.
    */
@@ -131,3 +147,4 @@
   }
 
 }());
+// vi: set ts=2 sts=2 sw=2 et ai: //
