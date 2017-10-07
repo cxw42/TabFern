@@ -26,32 +26,28 @@
 	if($.jstree.plugins.multitype) { return; }
 
 	/**
-	 * An object storing all types under "types" as an array of objects of
-	 * key value pairs.  Sets of types are offsets in the array: 0, 1, ... .
-	 * Each node can have one type from each set at any given time.  E.g.:
+	 * An object storing all types as key-value pairs.
 	 *
-	 *	{ types: [
-	 *		{	// choices for type set 0
+	 *	types: {
 	 *			custom_icon: { icon: 'my-own-icon' },
-	 *			some_attrs: { li_attr: 'my-li', a_attr: 'my-a' }
-	 *		},
-	 *		{	// choices for type set 1
+	 *			some_attrs: { li_attr: 'my-li', a_attr: 'my-a' },
 	 *			custom_color: { li_attr: 'style-blue' },
-	 *			some_attrs: { li_attr: 'other-li', a_attr: 'other-a' }
-	 *		},
-	 *	]}
+	 *	}
 	 *
-	 * In each type set, the key is the multitype name and the value is
+	 * The key is the multitype name and the value is
 	 * an object that could contain following keys (all optional).
 	 *
-	 * * `max_children` the maximum number of immediate children this node
-	 * 		multitype can have. Do not specify or set to `-1` for unlimited.
-	 * * `max_depth` the maximum number of nesting this node multitype can
-	 * 		have. A value of `1` would mean that the node can have children,
-	 * 		but no grandchildren. Do not specify or set to `-1` for unlimited.
-	 * * `valid_children` an array of node multitype strings, that nodes
-	 * 		of this multitype can have as children. Do not specify or set
-	 * 		to `-1` for no limits.
+	 * Each node can have any number of multitypes.  In case of conflicts,
+	 * e.g., of icon, later multitypes control.
+	 *
+//	 * * `max_children` the maximum number of immediate children this node
+//	 * 		multitype can have. Do not specify or set to `-1` for unlimited.
+//	 * * `max_depth` the maximum number of nesting this node multitype can
+//	 * 		have. A value of `1` would mean that the node can have children,
+//	 * 		but no grandchildren. Do not specify or set to `-1` for unlimited.
+//	 * * `valid_children` an array of node multitype strings, that nodes
+//	 * 		of this multitype can have as children. Do not specify or set
+//	 * 		to `-1` for no limits.
 	 * * `icon` a string - can be a path to an icon or a className, if
 	 * 		using an image that is in the current directory use a `./`
 	 * 		prefix, otherwise it will be detected as a class. Omit to use the
@@ -62,14 +58,12 @@
 	 * * `a_attr` an object of values which will be used to add HTML attributes
 	 *		on the resulting A DOM node (merged with the node's own data)
 	 *
-	 * There are no predefined types
+	 * There are no predefined or default multitypes
 	 *
 	 * @name $.jstree.defaults.multitype
 	 * @plugin multitype
 	 */
-	$.jstree.defaults.multitype = {
-		'types' : []
-	};
+	$.jstree.defaults.multitype = { };
 
 	$.jstree.plugins.multitype = function (options, parent) {
 
@@ -103,39 +97,48 @@
 						var m = this._model.data,
 							dpc = data.nodes,	///< aray of node IDs
 							t = this.settings.multitype,
-							i, j;	//, c = 'default', 
+							i, j;	//, c = 'default',
 						var k;
 						var cs;		///< array of classes to add, one for each type set
 						var typeset_idx;
 
-						for(i = 0, j = dpc.length; i < j; i++) {
+						NODE: for(i = 0, j = dpc.length; i < j; i++) {
 							//c = 'default';
 							// TODO RESUME HERE
 
-							// `original` holds the node's state when it was first loaded, 
-							// as far as I can tell.
-							if(m[dpc[i]].original && m[dpc[i]].original.multitype && t[m[dpc[i]].original.multitype]) {
+							m[dpc[i]].multitype = [];
+
+							// `original` holds the node's state when it was first loaded,
+							// e.g., as provided as the `data` to the jstree() call.
+							if(m[dpc[i]].original && m[dpc[i]].original.multitype) {
+								// && t[m[dpc[i]].original.multitype]
 								//c = m[dpc[i]].original.multitype;
 								cs = m[dpc[i]].original.multitype;
 							}
 
 							// Not sure what this is --- maybe backwards compatibility?
-							if(m[dpc[i]].data && m[dpc[i]].data.jstree && m[dpc[i]].data.jstree.multitype && t[m[dpc[i]].data.jstree.multitype]) {
+							if(m[dpc[i]].data && m[dpc[i]].data.jstree && m[dpc[i]].data.jstree.multitype) {
+							 //	&& t[m[dpc[i]].data.jstree.multitype]
 								//c = m[dpc[i]].data.jstree.multitype;
 								cs = m[dpc[i]].data.jstree.multitype;
 							}
-							
+
 							if(!cs) cs = [];		//default: no types
-							else if(!Array.isArray(cs)) cs = [cs];
+							else if(!$.isArray(cs)) cs = [cs];
+
+							// Make sure each multitype is known
+							for(let ty of cs) {
+								if(!t[ty]) continue NODE;
+							}
 
 							m[dpc[i]].multitype = cs;	//c;
 
 							// Apply each type in order
-							for(var cidx=0; cidx < cs.length; ++cs) {
+							for(var cidx=0; cidx < cs.length; ++cidx) {
 								var c = cs[cidx];
 
 								if(m[dpc[i]].icon === true && t[c].icon !== undefined) {
-									m[dpc[i]].icon = t[c].icon;
+									m[dpc[i]].icon = t[c].icon;		// Later icon assignments override earlier
 								}
 
 								if(t[c].li_attr !== undefined && typeof t[c].li_attr === 'object') {
@@ -274,108 +277,68 @@
 //			return true;
 //		};
 
-		/**
-		 * used to retrieve the multitype settings object for a node
-		 * @name get_rules(obj)
-		 * @param {mixed} obj the node to find the rules for
-		 * @return {Object}
-		 * @plugin multitype
-		 */
-		this.get_mt_rules = function (obj) {
-			obj = this.get_node(obj);
-			if(!obj) { return false; }
-			var tmp = this.get_multitype(obj, true);
-			if(tmp.max_depth === undefined) { tmp.max_depth = -1; }
-			if(tmp.max_children === undefined) { tmp.max_children = -1; }
-			if(tmp.valid_children === undefined) { tmp.valid_children = -1; }
-			return tmp;
-		};
+//		/**
+//		 * used to retrieve the multitype settings object for a node
+//		 * @name get_rules(obj)
+//		 * @param {mixed} obj the node to find the rules for
+//		 * @return {Object}
+//		 * @plugin multitype
+//		 */
+//		this.get_mt_rules = function (obj) {
+//			obj = this.get_node(obj);
+//			if(!obj) { return false; }
+//			var tmp = this.get_multitype(obj, true);
+////			if(tmp.max_depth === undefined) { tmp.max_depth = -1; }
+////			if(tmp.max_children === undefined) { tmp.max_children = -1; }
+////			if(tmp.valid_children === undefined) { tmp.valid_children = -1; }
+//			return tmp;
+//		};
 
 		/**
 		 * used to retrieve the multitype string or settings object for a node
 		 * @name get_multitype(obj [, rules])
 		 * @param {mixed} obj the node to find the rules for
-		 * @param {Boolean} rules if set to `true` instead of a string the settings object will be returned
-		 * @return {String|Object}
+		 * @return {array}
 		 * @plugin multitype
 		 */
-		this.get_multitype = function (obj, rules) {
+		this.get_multitype = function (obj) {
 			obj = this.get_node(obj);
-			return (!obj) ? false : ( rules ? $.extend({ 'multitype' : obj.multitype }, this.settings.multitype[obj.multitype]) : obj.multitype);
+			return (!obj) ? false : obj.multitype;
 		};
 
 		/**
-		 * used to change a node's multitype
+		 * add a multitype to a node
 		 * @name set_multitype(obj, multitype)
 		 * @param {mixed} obj the node to change
 		 * @param {String} multitype the new multitype
 		 * @plugin multitype
 		 */
-		this.set_multitype = function (obj, multitype) {
+		this.add_multitype = function (obj, multitype) {
 			var m = this._model.data, t, t1, t2, old_multitype, old_icon, k, d, a;
+			if(typeof multitype !== 'string') return false;
+
 			if($.isArray(obj)) {
 				obj = obj.slice();
 				for(t1 = 0, t2 = obj.length; t1 < t2; t1++) {
-					this.set_multitype(obj[t1], multitype);
+					this.add_multitype(obj[t1], multitype);
 				}
 				return true;
 			}
+
 			t = this.settings.multitype;
 			obj = this.get_node(obj);
-			if(!t[multitype] || !obj) { return false; }
+			//if(!t[multitype] || !obj) { return false; }
+			if(!obj) { return false; }
+			let tyidx = obj.multitype.indexOf(multitype);
+			if(tyidx !== -1) return true;
+				// Already there - don't add it again
+
 			d = this.get_node(obj, true);
+
 			if (d && d.length) {
 				a = d.children('.jstree-anchor');
 			}
 			old_multitype = obj.multitype;
-			old_icon = this.get_icon(obj);
-			obj.multitype = multitype;
-			if(old_icon === true || !t[old_multitype] || (t[old_multitype].icon !== undefined && old_icon === t[old_multitype].icon)) {
-				this.set_icon(obj, t[multitype].icon !== undefined ? t[multitype].icon : true);
-			}
-
-			// remove old multitype props
-			if(t[old_multitype] && t[old_multitype].li_attr !== undefined && typeof t[old_multitype].li_attr === 'object') {
-				for (k in t[old_multitype].li_attr) {
-					if (t[old_multitype].li_attr.hasOwnProperty(k)) {
-						if (k === 'id') {
-							continue;
-						}
-						else if (k === 'class') {
-							m[obj.id].li_attr['class'] = (m[obj.id].li_attr['class'] || '').replace(t[old_multitype].li_attr[k], '');
-							if (d) { d.removeClass(t[old_multitype].li_attr[k]); }
-						}
-						else if (m[obj.id].li_attr[k] === t[old_multitype].li_attr[k]) {
-							m[obj.id].li_attr[k] = null;
-							if (d) { d.removeAttr(k); }
-						}
-					}
-				}
-			}
-
-			if(t[old_multitype] && t[old_multitype].a_attr !== undefined && typeof t[old_multitype].a_attr === 'object') {
-				for (k in t[old_multitype].a_attr) {
-					if (t[old_multitype].a_attr.hasOwnProperty(k)) {
-						if (k === 'id') {
-							continue;
-						}
-						else if (k === 'class') {
-							m[obj.id].a_attr['class'] = (m[obj.id].a_attr['class'] || '').replace(t[old_multitype].a_attr[k], '');
-							if (a) { a.removeClass(t[old_multitype].a_attr[k]); }
-						}
-						else if (m[obj.id].a_attr[k] === t[old_multitype].a_attr[k]) {
-							if (k === 'href') {
-								m[obj.id].a_attr[k] = '#';
-								if (a) { a.attr('href', '#'); }
-							}
-							else {
-								delete m[obj.id].a_attr[k];
-								if (a) { a.removeAttr(k); }
-							}
-						}
-					}
-				}
-			}
 
 			// add new props
 			if(t[multitype].li_attr !== undefined && typeof t[multitype].li_attr === 'object') {
@@ -433,7 +396,98 @@
 			}
 
 			return true;
-		}; //set_multitype()
+		}; //add_multitype()
+
+		/**
+		 * remove a multitype from a node
+		 * @name set_multitype(obj, multitype)
+		 * @param {mixed} obj the node to change
+		 * @param {String} multitype the new multitype
+		 * @plugin multitype
+		 */
+		this.del_multitype = function (obj, which_multitype) {
+			var m = this._model.data, t, t1, t2, old_icon, k, d, a;
+			if(typeof multitype !== 'string') return false;
+
+			if($.isArray(obj)) {
+				obj = obj.slice();
+				for(t1 = 0, t2 = obj.length; t1 < t2; t1++) {
+					this.add_multitype(obj[t1], multitype);
+				}
+				return true;
+			}
+
+			t = this.settings.multitype;
+			obj = this.get_node(obj);
+			//if(!t[multitype] || !obj) { return false; }
+			if(!obj) { return false; }
+			let tyidx = obj.multitype.indexOf(multitype);
+			if(tyidx === -1) return true;
+				// Already gone - don't remove it again
+
+			obj.multitype.splice(tyidx,1);	// Remove it from the node
+
+			d = this.get_node(obj, true);
+
+			// If this multitype was controlling the icon, clear it and
+			// take any other icon specified.
+			old_icon = this.get_icon(obj);
+			if(t[which_multitype].icon !== undefined && old_icon === t[which_multitype].icon) {
+				let new_icon = true;
+				// Loop down, since later multitypes control
+				for(let idx=obj.multitype.length-1; idx>=0 ; --idx) {
+					if(t[obj.multitype[idx]].icon !== undefined) {
+						new_icon = t[obj.multitype[idx]].icon;
+						break;
+					}
+				}
+				this.set_icon(obj, true);
+			} //endif this multitype was controlling the icon
+
+			// remove old multitype props
+			if(t[which_multitype] && t[which_multitype].li_attr !== undefined && typeof t[which_multitype].li_attr === 'object') {
+				for (k in t[which_multitype].li_attr) {
+					if (t[which_multitype].li_attr.hasOwnProperty(k)) {
+						if (k === 'id') {
+							continue;
+						}
+						else if (k === 'class') {
+							m[obj.id].li_attr['class'] = (m[obj.id].li_attr['class'] || '').replace(t[which_multitype].li_attr[k], '');
+							if (d) { d.removeClass(t[which_multitype].li_attr[k]); }
+						}
+						else if (m[obj.id].li_attr[k] === t[which_multitype].li_attr[k]) {
+							m[obj.id].li_attr[k] = null;
+							if (d) { d.removeAttr(k); }
+						}
+					}
+				}
+			}
+
+			if(t[which_multitype] && t[which_multitype].a_attr !== undefined && typeof t[which_multitype].a_attr === 'object') {
+				for (k in t[which_multitype].a_attr) {
+					if (t[which_multitype].a_attr.hasOwnProperty(k)) {
+						if (k === 'id') {
+							continue;
+						}
+						else if (k === 'class') {
+							m[obj.id].a_attr['class'] = (m[obj.id].a_attr['class'] || '').replace(t[which_multitype].a_attr[k], '');
+							if (a) { a.removeClass(t[which_multitype].a_attr[k]); }
+						}
+						else if (m[obj.id].a_attr[k] === t[which_multitype].a_attr[k]) {
+							if (k === 'href') {
+								m[obj.id].a_attr[k] = '#';
+								if (a) { a.attr('href', '#'); }
+							}
+							else {
+								delete m[obj.id].a_attr[k];
+								if (a) { a.removeAttr(k); }
+							}
+						}
+					}
+				}
+			}
+
+		}; //del_multitype()
 
 	};
 }));
