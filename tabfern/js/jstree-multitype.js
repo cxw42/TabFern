@@ -103,8 +103,6 @@
 						var typeset_idx;
 
 						NODE: for(i = 0, j = dpc.length; i < j; i++) {
-							//c = 'default';
-							// TODO RESUME HERE
 
 							m[dpc[i]].multitype = [];
 
@@ -137,7 +135,7 @@
 							for(var cidx=0; cidx < cs.length; ++cidx) {
 								var c = cs[cidx];
 
-								if(m[dpc[i]].icon === true && t[c].icon !== undefined) {
+								if(t[c].icon !== undefined) {
 									m[dpc[i]].icon = t[c].icon;		// Later icon assignments override earlier
 								}
 
@@ -147,15 +145,15 @@
 											if (k === 'id') {
 												continue;
 											}
-											else if (m[dpc[i]].li_attr[k] === undefined) {
-												m[dpc[i]].li_attr[k] = t[c].li_attr[k];
-											}
 											else if (k === 'class') {
 												m[dpc[i]].li_attr['class'] = t[c].li_attr['class'] + ' ' + m[dpc[i]].li_attr['class'];
 											}
+											else {	//later assignments override earlier
+												m[dpc[i]].li_attr[k] = t[c].li_attr[k];
+											}
 										}
 									}
-								}
+								} //endif t[c] has li_attr
 
 								if(t[c].a_attr !== undefined && typeof t[c].a_attr === 'object') {
 									for (k in t[c].a_attr) {
@@ -163,18 +161,15 @@
 											if (k === 'id') {
 												continue;
 											}
-											else if (m[dpc[i]].a_attr[k] === undefined) {
-												m[dpc[i]].a_attr[k] = t[c].a_attr[k];
-											}
-											else if (k === 'href' && m[dpc[i]].a_attr[k] === '#') {
-												m[dpc[i]].a_attr['href'] = t[c].a_attr['href'];
-											}
 											else if (k === 'class') {
 												m[dpc[i]].a_attr['class'] = t[c].a_attr['class'] + ' ' + m[dpc[i]].a_attr['class'];
 											}
+											else {	//later assignments override earlier
+												m[dpc[i]].a_attr[k] = t[c].a_attr[k];
+											}
 										}
 									}
-								}
+								} //endif t[c] has a_attr
 
 							} //cidx
 
@@ -307,20 +302,21 @@
 		};
 
 		/**
-		 * add a multitype to a node
+		 * add a multitype to a node, at the end of the list.  This means
+		 * the new type's icon will replace those specified by other types.
 		 * @name set_multitype(obj, multitype)
 		 * @param {mixed} obj the node to change
 		 * @param {String} multitype the new multitype
 		 * @plugin multitype
 		 */
-		this.add_multitype = function (obj, multitype) {
+		this.add_multitype = function (obj, new_multitype) {
 			var m = this._model.data, t, t1, t2, old_multitype, old_icon, k, d, a;
-			if(typeof multitype !== 'string') return false;
+			if(typeof new_multitype !== 'string') return false;
 
 			if($.isArray(obj)) {
 				obj = obj.slice();
 				for(t1 = 0, t2 = obj.length; t1 < t2; t1++) {
-					this.add_multitype(obj[t1], multitype);
+					this.add_multitype(obj[t1], new_multitype);
 				}
 				return true;
 			}
@@ -329,7 +325,7 @@
 			obj = this.get_node(obj);
 			//if(!t[multitype] || !obj) { return false; }
 			if(!obj) { return false; }
-			let tyidx = obj.multitype.indexOf(multitype);
+			let tyidx = obj.multitype.indexOf(new_multitype);
 			if(tyidx !== -1) return true;
 				// Already there - don't add it again
 
@@ -340,60 +336,65 @@
 			}
 			old_multitype = obj.multitype;
 
+			// Set the icon
+			if(t[new_multitype].icon !== undefined) {
+				this.set_icon(obj, t[new_multitype].icon);
+			} //endif this multitype was controlling the icon
+
 			// add new props
-			if(t[multitype].li_attr !== undefined && typeof t[multitype].li_attr === 'object') {
-				for (k in t[multitype].li_attr) {
-					if (t[multitype].li_attr.hasOwnProperty(k)) {
+			if(t[new_multitype].li_attr !== undefined && typeof t[new_multitype].li_attr === 'object') {
+				for (k in t[new_multitype].li_attr) {
+					if (t[new_multitype].li_attr.hasOwnProperty(k)) {
 						if (k === 'id') {
 							continue;
 						}
 						else if (m[obj.id].li_attr[k] === undefined) {
-							m[obj.id].li_attr[k] = t[multitype].li_attr[k];
+							m[obj.id].li_attr[k] = t[new_multitype].li_attr[k];
 							if (d) {
 								if (k === 'class') {
-									d.addClass(t[multitype].li_attr[k]);
+									d.addClass(t[new_multitype].li_attr[k]);
 								}
 								else {
-									d.attr(k, t[multitype].li_attr[k]);
+									d.attr(k, t[new_multitype].li_attr[k]);
 								}
 							}
 						}
 						else if (k === 'class') {
-							m[obj.id].li_attr['class'] = t[multitype].li_attr[k] + ' ' + m[obj.id].li_attr['class'];
-							if (d) { d.addClass(t[multitype].li_attr[k]); }
+							m[obj.id].li_attr['class'] = t[new_multitype].li_attr[k] + ' ' + m[obj.id].li_attr['class'];
+							if (d) { d.addClass(t[new_multitype].li_attr[k]); }
 						}
 					}
 				}
-			}
+			} //endif new_multitype specifies li_attr
 
-			if(t[multitype].a_attr !== undefined && typeof t[multitype].a_attr === 'object') {
-				for (k in t[multitype].a_attr) {
-					if (t[multitype].a_attr.hasOwnProperty(k)) {
+			if(t[new_multitype].a_attr !== undefined && typeof t[new_multitype].a_attr === 'object') {
+				for (k in t[new_multitype].a_attr) {
+					if (t[new_multitype].a_attr.hasOwnProperty(k)) {
 						if (k === 'id') {
 							continue;
 						}
 						else if (m[obj.id].a_attr[k] === undefined) {
-							m[obj.id].a_attr[k] = t[multitype].a_attr[k];
+							m[obj.id].a_attr[k] = t[new_multitype].a_attr[k];
 							if (a) {
 								if (k === 'class') {
-									a.addClass(t[multitype].a_attr[k]);
+									a.addClass(t[new_multitype].a_attr[k]);
 								}
 								else {
-									a.attr(k, t[multitype].a_attr[k]);
+									a.attr(k, t[new_multitype].a_attr[k]);
 								}
 							}
 						}
 						else if (k === 'href' && m[obj.id].a_attr[k] === '#') {
-							m[obj.id].a_attr['href'] = t[multitype].a_attr['href'];
-							if (a) { a.attr('href', t[multitype].a_attr['href']); }
+							m[obj.id].a_attr['href'] = t[new_multitype].a_attr['href'];
+							if (a) { a.attr('href', t[new_multitype].a_attr['href']); }
 						}
 						else if (k === 'class') {
-							m[obj.id].a_attr['class'] = t[multitype].a_attr['class'] + ' ' + m[obj.id].a_attr['class'];
-							if (a) { a.addClass(t[multitype].a_attr[k]); }
+							m[obj.id].a_attr['class'] = t[new_multitype].a_attr['class'] + ' ' + m[obj.id].a_attr['class'];
+							if (a) { a.addClass(t[new_multitype].a_attr[k]); }
 						}
 					}
 				}
-			}
+			} //endif new_multitype specifies a_attr
 
 			return true;
 		}; //add_multitype()
@@ -407,12 +408,12 @@
 		 */
 		this.del_multitype = function (obj, which_multitype) {
 			var m = this._model.data, t, t1, t2, old_icon, k, d, a;
-			if(typeof multitype !== 'string') return false;
+			if(typeof which_multitype !== 'string') return false;
 
 			if($.isArray(obj)) {
 				obj = obj.slice();
 				for(t1 = 0, t2 = obj.length; t1 < t2; t1++) {
-					this.add_multitype(obj[t1], multitype);
+					this.del_multitype(obj[t1], which_multitype);
 				}
 				return true;
 			}
@@ -421,13 +422,16 @@
 			obj = this.get_node(obj);
 			//if(!t[multitype] || !obj) { return false; }
 			if(!obj) { return false; }
-			let tyidx = obj.multitype.indexOf(multitype);
+			let tyidx = obj.multitype.indexOf(which_multitype);
 			if(tyidx === -1) return true;
 				// Already gone - don't remove it again
 
 			obj.multitype.splice(tyidx,1);	// Remove it from the node
 
 			d = this.get_node(obj, true);
+			if (d && d.length) {
+				a = d.children('.jstree-anchor');
+			}
 
 			// If this multitype was controlling the icon, clear it and
 			// take any other icon specified.
@@ -441,27 +445,41 @@
 						break;
 					}
 				}
-				this.set_icon(obj, true);
+				this.set_icon(obj, new_icon);
 			} //endif this multitype was controlling the icon
 
 			// remove old multitype props
 			if(t[which_multitype] && t[which_multitype].li_attr !== undefined && typeof t[which_multitype].li_attr === 'object') {
 				for (k in t[which_multitype].li_attr) {
 					if (t[which_multitype].li_attr.hasOwnProperty(k)) {
+
 						if (k === 'id') {
 							continue;
 						}
 						else if (k === 'class') {
+							// TODO? handle each class listed in the string separately?
 							m[obj.id].li_attr['class'] = (m[obj.id].li_attr['class'] || '').replace(t[which_multitype].li_attr[k], '');
 							if (d) { d.removeClass(t[which_multitype].li_attr[k]); }
 						}
 						else if (m[obj.id].li_attr[k] === t[which_multitype].li_attr[k]) {
-							m[obj.id].li_attr[k] = null;
+							delete m[obj.id].li_attr[k];
 							if (d) { d.removeAttr(k); }
+
+							// Iterate down the remaining types to find a new value for this attribute
+							for(let idx=obj.multitype.length-1; idx>=0 ; --idx) {
+								let ty = t[obj.multitype[idx]];
+								if(ty && ty.li_attr && ty.li_attr[k] !== undefined) {
+									m[obj.id].li_attr[k] = t[obj.multitype[idx]].li_attr[k];
+									if(d) { d.attr(k, t[obj.multitype[idx]].li_attr[k]); }
+									break;
+								}
+							}
+
 						}
+
 					}
 				}
-			}
+			} //endif type has li_attr
 
 			if(t[which_multitype] && t[which_multitype].a_attr !== undefined && typeof t[which_multitype].a_attr === 'object') {
 				for (k in t[which_multitype].a_attr) {
@@ -482,11 +500,23 @@
 								delete m[obj.id].a_attr[k];
 								if (a) { a.removeAttr(k); }
 							}
+
+							// Iterate down the remaining types to find a new value for this attribute
+							for(let idx=obj.multitype.length-1; idx>=0 ; --idx) {
+								let ty = t[obj.multitype[idx]];
+								if(ty && ty.a_attr && ty.a_attr[k] !== undefined) {
+									m[obj.id].a_attr[k] = t[obj.multitype[idx]].a_attr[k];
+									if(a) { a.attr(k, t[obj.multitype[idx]].a_attr[k]); }
+									break;
+								}
+							}
+
 						}
 					}
 				}
-			}
+			} //endif type has a_attr
 
+			return true;
 		}; //del_multitype()
 
 	};
