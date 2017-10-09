@@ -45,6 +45,7 @@ describe('jstree-multitype', ()=>{
                                 {text: 'Child 9', id: 'c9', multitype: 'two-a'},
                                 {text: 'Child 10', id: 'c10', multitype: ['two-a','other-a']},
                                 {text: 'Child 11', id: 'c11'},
+                                {text: 'Child 10', id: 'c12', multitype: 'foo'},
                             ],
                         },
                     ],
@@ -257,6 +258,14 @@ describe('jstree-multitype', ()=>{
             expect(jq.attr('class')).toMatch(/\btwo-a-icon\b/);
         });
 
+        it('removes the entry from node.multitype',()=>{
+            let child = treeobj.get_node('c12');
+            expect(child.multitype).toEqual(['foo']);
+            let res = treeobj.del_multitype(child, 'foo');
+            expect(res).toBeTruthy();
+            expect(child.multitype).toEqual([]);
+        });
+
     });
 
     //////////////////////////////////////////////////////////////////////
@@ -306,6 +315,15 @@ describe('jstree-multitype', ()=>{
             expect(a.attr('title')).toBe('title-combo-a');
             expect(i.attr('class')).toMatch(/\bicon-combo\b/);
         });
+
+        it('adds the entry to node.multitype',()=>{
+            let child = treeobj.get_node('c12');
+            expect(child.multitype).toEqual([]);
+            let res = treeobj.add_multitype(child, 'foo');
+            expect(res).toBeTruthy();
+            expect(child.multitype).toEqual(['foo']);
+        });
+
 
     });
 

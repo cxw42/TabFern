@@ -113,7 +113,7 @@
 
         jstreeTypes[K.NT_WIN] = {
             li_attr: { 'class': WIN_CLASS },
-            icon: true,     //default - folder
+            icon: 'clear-icon',  // We will overlay the actual icon in the CSS
         };
 
         jstreeTypes[K.NST_OPEN] = { li_attr: { 'class': OPEN_CLASS } };
@@ -156,9 +156,8 @@
             plugins: ['because', 'wholerow', 'actions',
                         // actions must be after wholerow since we attach the
                         // action buttons to the wholerow div
-                        'dnd', 'types', 'flagnode',
-                        // flagnode must be after types
-                        'multitype',
+                        'dnd', 'multitype', 'flagnode',
+                        // flagnode must be after multitype - TODO update flagnode
                      ], // TODO add state plugin
             core: {
                 animation: false,
@@ -173,7 +172,7 @@
                 key: 'tabfern-jstree'
             },
             flagnode: {
-                css_class: 'tf-focused-tab'
+                css_class: 'tf-focused'
             },
             dnd: {
                 copy: false,

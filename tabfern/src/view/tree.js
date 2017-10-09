@@ -174,7 +174,7 @@ function getWindowSizeFromWindowRecord(win)
 /// Clear flags on all windows; leave tabs alone.
 function unflagAllWindows() {
     //log.trace('unflagAllWindows');
-    T.treeobj.clear_flags_by_type(K.NTs_WIN_OPEN,
+    T.treeobj.clear_flags_by_multitype([K.NT_WIN, K.NST_OPEN],
             undefined,  // any parent
             true        // true => don't need an event
     );
@@ -244,7 +244,7 @@ function saveTree(save_ephemeral_windows = true, cbk = undefined)
                 thistab.raw_url = tab_val.raw_url;
                 // TODO save favIconUrl?
 
-                if(T.treeobj.has_flavor(tab_node_id, K.NF_BORDERED)) {
+                if(T.treeobj.has_multitype(tab_node_id, K.NST_TOP_BORDER)) {
                     thistab.bordered = true;
                 }
 
@@ -329,7 +329,9 @@ function actionForgetWindow(node_id, node, unused_action_id, unused_action_el)
     I.refresh_label(node_id);
 
     if(win_val.isOpen) {    // should always be true, but just in case...
-        T.treeobj.set_type(node, K.NT_WIN_EPHEMERAL);
+        //T.treeobj.set_type(node, K.NT_WIN_EPHEMERAL);
+        T.treeobj.del_multitype(node, K.NST_SAVED);
+        T.treeobj.add_multitype(node, K.NST_OPEN);
     }
 
     saveTree();
@@ -365,6 +367,7 @@ function actionCloseWindow(node_id, node, unused_action_id, unused_action_el)
 
     win_val.isOpen = false;
     I.remember(node_id);
+    T.treeobj.del_multitype(node_id, K.NST_OPEN);
 
     // Collapse the tree, if the user wants that
     if(getBoolSetting("collapse-tree-on-window-close")) {
@@ -381,6 +384,7 @@ function actionCloseWindow(node_id, node, unused_action_id, unused_action_el)
         tab_val.win_id = K.NONE;
         tab_val.index = K.NONE;
         tab_val.isOpen = false;
+        T.treeobj.del_multitype(tab_node_id, K.NST_OPEN);
         D.tabs.change_key(tab_val, 'tab_id', K.NONE);
         // raw_url and raw_title are left alone
     }
@@ -424,10 +428,10 @@ function actionToggleTabTopBorder(node_id, node, unused_action_id, unused_action
     if(!tab_val) return;
 
     // Note: adjust this if you add another NT_TAB type.
-    if(!T.treeobj.has_flavor(node_id, K.NF_BORDERED)) {
-        T.treeobj.add_flavor(node_id, K.NF_BORDERED);
+    if(!T.treeobj.has_multitype(node_id, K.NST_TOP_BORDER)) {
+        T.treeobj.add_multitype(node_id, K.NST_TOP_BORDER);
     } else {
-        T.treeobj.remove_flavor(node_id, K.NF_BORDERED);
+        T.treeobj.del_multitype(node_id, K.NST_TOP_BORDER);
     }
 
     I.remember(node.parent);
@@ -506,12 +510,12 @@ function createNodeForTab(ctab, parent_node_id)
 /// @return node_id         The node id for the new tab
 function createNodeForClosedTab(tab_data_v1, parent_node_id)
 {
-    let node_flavors = (tab_data_v1.bordered ? K.NST_TOP_BORDERED : false);
+    let node_mtype = (tab_data_v1.bordered ? K.NST_TOP_BORDERED : false);
     let {node_id, val} = I.makeItemForTab(
             parent_node_id, false,      // false => no Chrome window open
             tab_data_v1.raw_url,
             tab_data_v1.raw_title,
-            node_flavors
+            node_mtype
     );
     if(tab_data_v1.raw_bullet) {
         val.raw_bullet = String(tab_data_v1.raw_bullet);
@@ -601,7 +605,8 @@ function createNodeForClosedWindow(win_data_v1)
 
     // Mark recovered windows
     if(is_ephemeral) {
-        T.treeobj.set_type(node_id, K.NT_RECOVERED);
+        //T.treeobj.set_type(node_id, K.NT_RECOVERED);
+        T.treeobj.add_multitype(node_id, K.NST_RECOVERED);
     }
 
     // Update the model
@@ -928,8 +933,10 @@ function treeOnSelect(_evt_unused, evt_data)
     // --------
     // Process the actual node click
 
-    if(T.treeobj.get_type(node) === K.NT_RECOVERED) {
-        T.treeobj.set_type(node, 'default');
+    //if(T.treeobj.get_type(node) === K.NT_RECOVERED) {
+    if(T.treeobj.has_multitype(node, K.NST_RECOVERED)) {
+        //T.treeobj.set_type(node, 'default');
+        T.treeobj.del_multitype(node, K.NST_RECOVERED);
     }
 
     if(is_tab && node_val.isOpen) {   // An open tab
@@ -991,7 +998,8 @@ function treeOnSelect(_evt_unused, evt_data)
                 win_val.isOpen = true;
                 win_val.keep = K.WIN_KEEP;      // just in case
                 win_val.win = win;
-                T.treeobj.set_type(win_node.id, K.NT_WIN_ELVISH);
+                //T.treeobj.set_type(win_node.id, K.NT_WIN_ELVISH);
+                T.treeobj.add_multitype(win_node.id, K.NST_OPEN);
 
                 T.treeobj.open_node(win_node);
                 T.treeobj.redraw_node(win_node);
@@ -1033,6 +1041,7 @@ function treeOnSelect(_evt_unused, evt_data)
                     tab_val.raw_title = tab.title || '## Unknown title ##';
                     tab_val.isOpen = true;
                     D.tabs.change_key(tab_val, 'tab_id', tab_val.tab.id);
+                    T.treeobj.add_multitype(tab_node_id, K.NST_OPEN);
                 }
 
                 // Another hack for the strange behaviour above: get rid of
@@ -1086,7 +1095,8 @@ function treeOnSelect(_evt_unused, evt_data)
 
         // Clear the other windows' tabs' flags.
         let node_id = D.windows.by_win_id(win_id, 'node_id');
-        if(node_id) T.treeobj.clear_flags_by_type(K.NTs_TAB, node_id, true);
+        //if(node_id) T.treeobj.clear_flags_by_type(K.NTs_TAB, node_id, true);
+        if(node_id) T.treeobj.clear_flags_by_multitype(K.NT_TAB, node_id, true);
             // Don't clear flags from children of node_id
             // true => no event
 
@@ -2401,14 +2411,16 @@ function addOpenWindowsToTree(winarr)
         if(!existing_win) {
             createNodeForWindow(win, K.WIN_NOKEEP);
         } else {
+            // Attach the open window to the saved window
             log.info('Found existing window in the tree: ' + existing_win.val.raw_title);
             D.windows.change_key(existing_win.val, 'win_id', win.id);
             existing_win.val.isOpen = true;
             // don't change val.keep, which may have either value.
             existing_win.val.win = win;
-            T.treeobj.set_type(existing_win.node,
-                    existing_win.val.keep === K.WIN_KEEP ? K.NT_WIN_ELVISH :
-                                                        K.NT_WIN_EPHEMERAL );
+            T.treeobj.add_multitype(existing_win.node, K.NST_OPEN);
+            if(existing_win.val.keep === K.WIN_KEEP) {
+                T.treeobj.add_multitype(existing_win.node, K.NST_SAVED);
+            }
 
             T.treeobj.open_node(existing_win.node);
             T.treeobj.redraw_node(existing_win.node);
@@ -2428,6 +2440,7 @@ function addOpenWindowsToTree(winarr)
                 tab_val.raw_title = ctab.title || '## Unknown title ##';
                 tab_val.isOpen = true;
                 D.tabs.change_key(tab_val, 'tab_id', tab_val.tab.id);
+                T.treeobj.add_multitype(tab_node_id, K.NST_OPEN);
 
                 if(ctab.favIconUrl) {
                     T.treeobj.set_icon(tab_node_id, encodeURI(ctab.favIconUrl));

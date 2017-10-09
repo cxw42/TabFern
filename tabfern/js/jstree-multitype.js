@@ -310,7 +310,7 @@
 		 * @plugin multitype
 		 */
 		this.add_multitype = function (obj, new_multitype) {
-			var m = this._model.data, t, t1, t2, old_multitype, old_icon, k, d, a;
+			var m = this._model.data, t, t1, t2, old_icon, k, d, a;
 			if(typeof new_multitype !== 'string') return false;
 
 			if($.isArray(obj)) {
@@ -334,7 +334,8 @@
 			if (d && d.length) {
 				a = d.children('.jstree-anchor');
 			}
-			old_multitype = obj.multitype;
+
+			obj.multitype.push(new_multitype);
 
 			// Set the icon
 			if(t[new_multitype].icon !== undefined) {
@@ -519,6 +520,20 @@
 			return true;
 		}; //del_multitype()
 
+		/**
+		 * check whether a node has a multitype
+		 * @name has_multitype(obj, multitype)
+		 * @param {mixed} obj the node
+		 * @param {String} multitype the multitype
+		 * @return {Boolean} true/false, or null if unknown or error
+		 * @plugin multitype
+		 */
+		this.has_multitype = function (obj, multitype) {
+			if(typeof which_multitype !== 'string') return null;
+			obj = this.get_node(obj);
+			if(!obj) { return null; }
+			return (obj.multitype.indexOf(multitype) !== -1);
+		}; //has_multitype()
 	};
 }));
 // vi: set ts=2 sw=2: //

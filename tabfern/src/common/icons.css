@@ -1,14 +1,17 @@
 /* icons.css: Common icon definitions */
 
-.visible-window-icon {
+.tf-window.tfs-saved > a > i {
+    content: url(/assets/icons/folder-from-jstree-default-dark-32px.png);
+}
+.visible-window-icon, .tf-window.tfs-open > a > i {
     content: url(/assets/icons/monitor.png);    /* or folder.png? */
 }
 
-.visible-saved-window-icon {
+.visible-saved-window-icon, .tf-window.tfs-open.tfs-saved > a > i {
     content: url(/assets/icons/monitor_add.png);    /* or folder.png? */
 }
 
-.fff-page {
+.fff-page /*, .tf-tab > i*/ {
     content: url(/assets/icons/page_white.png);
 }
 
@@ -30,6 +33,10 @@
 
 .fff-text-padding-top {
     content: url(/assets/icons/text_padding_top.png);
+}
+
+.clear-icon {
+    content: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQI12NgYGBgAAAABQABXvMqOgAAAABJRU5ErkJggg==);   /*url(/assets/icons/clear-icon.png);*/
 }
 
 /* vi: set ts=4 sts=4 sw=4 et ai: */

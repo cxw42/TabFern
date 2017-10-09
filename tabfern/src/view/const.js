@@ -77,7 +77,8 @@
         IT_WINDOW:  'window',   // strings are used for ease of debugging
         IT_TAB:     'tab',
 
-        // Node types - what kind of thing a list item represents
+        // Node types - what kind of thing a list item represents.  Note that
+        // these are jstree-multitype values just like the NST_* below.
 
         NT_WIN:             'win',
         NT_TAB:             'tab',

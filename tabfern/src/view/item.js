@@ -324,7 +324,7 @@
         if(tab_node_id === false) return error_return;
 
         T.treeobj.add_multitype(tab_node_id, K.NT_TAB);
-        if(ctab) T.treeobj.add_multitype(tab_node_id, K.NTS_OPEN);
+        if(ctab) T.treeobj.add_multitype(tab_node_id, K.NST_OPEN);
 
         if(tys) {
             if(!$.isArray(tys)) tys=[tys];

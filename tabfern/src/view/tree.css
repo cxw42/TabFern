@@ -14,19 +14,14 @@
     text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);  /* from jstree */
 }
 
-/* The browser window that currently has focus */
-.tf-focused-window {
-    font-weight: bold;
-}
-
-/* The tab that currently has focus */
-.tf-focused-tab {
+/* Items that are flagged, e.g., because they currently have focus */
+.tf-focused {
     font-weight: bold;
 }
 
 /* Any browser window or tab that is currently open (as opposed to closed
  * and saved) */
-.tf-visible-window a {
+.tf-visible-window a, .tf-window.tfs-open > a, .tf-tab.tfs-open > a {
     color: #fff !important;    /* because it's a dark theme */
 }
 
@@ -42,11 +37,11 @@
     color: #f33;
 }
 
-li.ephemeral-recovered {
+li.ephemeral-recovered, .tfs-recovered {
     background: darkslategray !important;
 }
 
-.tfs-tab-bordered {
+.tfs-tab-bordered, .tfs-top-bordered {
     border-top: 1px solid #ffa;
 }
 
@@ -250,73 +245,6 @@ ul.jstree-contextmenu i {
 #maintree.jstree-default-dark-small .jstree-anchor {
     line-height: 19px;
     height: 19px;
-}
-
-/* ////////////////////////////////////////////////////////////////////// */
-/* split.js - from its README */
-
-.gutter {
-    background-color: #eee;
-
-    background-repeat: no-repeat;
-    background-position: 50%;
-    z-index: 2;
-}
-
-.gutter.gutter-horizontal {
-    cursor: ew-resize;
-    height: 100%;
-    background-image:  url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIiDjrELjpo5aiZeMwF+yNnOs5KSvgAAAABJRU5ErkJggg==')
-}
-
-.gutter.gutter-vertical {
-    cursor: ns-resize;
-    width: 100%;
-    background-image:  url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAFAQMAAABo7865AAAABlBMVEVHcEzMzMzyAv2sAAAAAXRSTlMAQObYZgAAABBJREFUeF5jOAMEEAIEEFwAn3kMwcB6I2AAAAAASUVORK5CYII=')
-}
-
-.split {
-    box-sizing: border-box;
-}
-
-/* Per:
- * https://github.com/nathancahill/Split.js/issues/36#issuecomment-189209118
- * by https://github.com/ozguruysal */
-body {
-    height: 100%;
-}
-
-/* ////////////////////////////////////////////////////////////////////// */
-/* Space for plugins */
-
-#plugin-container {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 1;
-    /* when you set the height, set the padding-top of #tabfern-container
-     * to the same value. */
-    background: #700;   /* DEBUG */
-}
-
-#tabfern-container-proxy {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 1;
-    /* when you set the height, set the padding-top of #tabfern-container
-     * to the same value. */
-    background: rgba(0, 0, 100, 0.2);   /* DEBUG */
-}
-
-/* Adjust split.js since we are using position: fixed */
-.gutter {
-    position: fixed;
-    left:0;
-    right:0;
-    top: calc(50% - 5px);   /* by default */
 }
 
 /* //////////////////////////////////////////////////////////////////// */
