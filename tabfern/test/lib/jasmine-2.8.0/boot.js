@@ -89,17 +89,28 @@
   env.addReporter(htmlReporter);
 
   //---
-  // From https://stackoverflow.com/a/33795262/2877364 by
+  // Create a console.log reporter.
+  // Modified from https://stackoverflow.com/a/33795262/2877364 by
   // https://stackoverflow.com/users/1641941/hmr
-  //create a console.log reporter
-  var MyReporter = function(){jasmineRequire.JsApiReporter.apply(this,arguments);};
+  var MyReporter = function(){
+    jasmineRequire.JsApiReporter.apply(this,arguments);
+    this.failures = false;
+  };
   MyReporter.prototype = jasmineRequire.JsApiReporter.prototype;
   MyReporter.prototype.constructor = MyReporter;
   MyReporter.prototype.specDone=function(o){
       o=o||{};
       if(o.status!=="passed"){
         console.warn("Failed:" + o.fullName + '\n' + o.failedExpectations[0].message);
+        this.failures = true;
       }
+  };
+//  MyReporter.prototype.suiteDone = function(result) {
+//    console.log(result);
+//    this.failures = this.failures || (!!result.failedExpectations && result.failedExpectations.length>0);
+//  };
+  MyReporter.prototype.jasmineDone = function() {
+    console.log('Finished suite ' + (this.failures ? 'with errors' : 'successfully'));
   };
   env.addReporter(new MyReporter());
   //---
