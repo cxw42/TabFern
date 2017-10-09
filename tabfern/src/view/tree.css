@@ -41,7 +41,7 @@ li.ephemeral-recovered, .tfs-recovered {
     background: darkslategray !important;
 }
 
-.tfs-tab-bordered, .tfs-top-bordered {
+.tfs-top-bordered {
     border-top: 1px solid #ffa;
 }
 
@@ -51,6 +51,17 @@ li.ephemeral-recovered, .tfs-recovered {
 
 .tf--feature--hide-horizontal-scrollbars {
     overflow-x: hidden;
+}
+
+/* If you add a note, then forget the window, your notes are in danger of
+ * being lost.  Warn the user. */
+.jstree-node.tf-window.tfs-open:not(.tfs-saved) .jstree-node.tf-tab .tf-bullet {
+    color: #f44;
+}
+
+/* Same deal with borders. */
+.jstree-node.tf-window.tfs-open:not(.tfs-saved) .jstree-node.tf-tab.tfs-top-bordered {
+    border-top: 1px solid #f44;
 }
 
 /* Notification icon ------------------------------------------------------ */
@@ -102,14 +113,14 @@ li.ephemeral-recovered, .tfs-recovered {
     padding-right: 0.5em;   /* same as hamburger menu, below */
 }
 
-.jstree-wholerow-hovered > .tf-action-group {
+.tf-action-group {
+    visibility: hidden;
+}
+
+div.jstree-wholerow-hovered > .tf-action-group {
     visibility: visible;
 }
 
-/* Not sure why I need the :not() -- it worked or different DOM without :not. */
-div:not(.jstree-wholerow-hovered) > .tf-action-group {
-    visibility: hidden;
-}
 
 /* TODO figure this out */
 /*.tf-action-group > i {*/  /* matches .jstree-hovered for consistency */

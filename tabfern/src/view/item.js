@@ -114,8 +114,8 @@
             // empty strings.
             retval += '<span class="' + K.BULLET_CLASS + '">';
             retval += Esc.escape(val.raw_bullet);
-            retval += '</span>';
-            retval += ' &#x2726; ';   // a dingbat
+            retval += ' &#x2726;';   // a dingbat
+            retval += '</span> ';
         }
 
         retval += Esc.escape(module.get_win_raw_text(val));

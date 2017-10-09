@@ -35,8 +35,12 @@
     content: url(/assets/icons/text_padding_top.png);
 }
 
+/* Class for icons with no content.  Used in jstree.set_icon() when the
+ * icon is actually being set using CSS.
+ */
 .clear-icon {
-    content: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQI12NgYGBgAAAABQABXvMqOgAAAABJRU5ErkJggg==);   /*url(/assets/icons/clear-icon.png);*/
+    /*url(/assets/icons/clear-icon.png);*/
+    /*content: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQI12NgYGBgAAAABQABXvMqOgAAAABJRU5ErkJggg==);*/
 }
 
 /* vi: set ts=4 sts=4 sw=4 et ai: */

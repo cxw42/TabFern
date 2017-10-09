@@ -337,6 +337,19 @@ function actionForgetWindow(node_id, node, unused_action_id, unused_action_el)
     saveTree();
 } //actionForgetWindow()
 
+/// Mark a window as K.KEEP but don't close it
+function actionRememberWindow(node_id, node, unused_action_id, unused_action_el)
+{
+    let win_val = D.windows.by_node_id(node_id);
+    if(!win_val) return;
+
+    I.remember(node_id);
+    I.refresh_label(node_id);
+    T.treeobj.add_multitype(node, K.NST_SAVED);
+
+    saveTree();
+} //actionForgetWindow()
+
 /// Close a window, but don't delete its tree nodes.  Used for saving windows.
 /// ** The caller must call saveTree() --- actionCloseWindow() does not.
 function actionCloseWindow(node_id, node, unused_action_id, unused_action_el)
@@ -510,7 +523,7 @@ function createNodeForTab(ctab, parent_node_id)
 /// @return node_id         The node id for the new tab
 function createNodeForClosedTab(tab_data_v1, parent_node_id)
 {
-    let node_mtype = (tab_data_v1.bordered ? K.NST_TOP_BORDERED : false);
+    let node_mtype = (tab_data_v1.bordered ? K.NST_TOP_BORDER : false);
     let {node_id, val} = I.makeItemForTab(
             parent_node_id, false,      // false => no Chrome window open
             tab_data_v1.raw_url,
@@ -1992,13 +2005,22 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
                 )
             };
 
-        if( win_val.isOpen && (win_val.keep == K.WIN_KEEP) ) {
+        // Forget/Remember
+        if( win_val.isOpen && (win_val.keep === K.WIN_KEEP) ) {
             winItems.forgetItem = {
                 label: "Forget but don't close",
                 title: "Do not save this window when it is closed",
                 icon: 'fa fa-chain-broken',
                 action:
                     function(){actionForgetWindow(node.id, node, null, null);}
+            };
+        } else if( win_val.isOpen && (win_val.keep === K.WIN_NOKEEP) ) {
+            winItems.rememberItem = {
+                label: "Remember",
+                title: "Save this window when it is closed",
+                icon: 'fa fa-link',
+                action:
+                    function(){actionRememberWindow(node.id, node, null, null);}
             };
         }
 

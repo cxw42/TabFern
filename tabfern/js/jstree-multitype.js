@@ -529,7 +529,7 @@
 		 * @plugin multitype
 		 */
 		this.has_multitype = function (obj, multitype) {
-			if(typeof which_multitype !== 'string') return null;
+			if(typeof multitype !== 'string') return null;
 			obj = this.get_node(obj);
 			if(!obj) { return null; }
 			return (obj.multitype.indexOf(multitype) !== -1);

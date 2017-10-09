@@ -182,6 +182,14 @@ describe('jstree-multitype', ()=>{
             expect(jq.attr('class')).not.toMatch(/\bicon-baz\b/);
         });
 
+        it('detects existent multitypes',()=>{
+            expect(treeobj.has_multitype('c4','quux')).toBeTruthy();
+        });
+
+        it('does not detect nonexistent multitypes',()=>{
+            expect(treeobj.has_multitype('c4','no-such-multitype')).toBeFalsy();
+        });
+
     });
 
     //////////////////////////////////////////////////////////////////////
