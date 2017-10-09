@@ -154,12 +154,13 @@
         if(ty !== K.IT_WINDOW) return false;
 
         val.keep = K.WIN_KEEP;
+        T.treeobj.add_multitype(win_node_id, K.NST_SAVED);
 
-        if(val.isOpen) {
-            T.treeobj.set_type(win_node_id, K.NT_WIN_ELVISH);
-        } else {
-            T.treeobj.set_type(win_node_id, K.NT_WIN_DORMANT);
-        }
+//        if(val.isOpen) {
+//            T.treeobj.set_type(win_node_id, K.NT_WIN_ELVISH);
+//        } else {
+//            T.treeobj.set_type(win_node_id, K.NT_WIN_DORMANT);
+//        }
 
         if(cleanup_title) {
             val.raw_title = module.remove_unsaved_markers(
@@ -276,11 +277,15 @@
                 pos
         );
         if(win_node_id === false) return error_return;
-        T.treeobj.set_type(win_node_id,
-            ( cwin ?
-                ( keep ? K.NT_WIN_ELVISH : K.NT_WIN_EPHEMERAL ) :
-                K.NT_WIN_DORMANT)
-        );
+        T.treeobj.add_multitype(win_node_id, K.NT_WIN);
+        if(cwin) T.treeobj.add_multitype(win_node_id, K.NST_OPEN);
+        if(keep) T.treeobj.add_multitype(win_node_id, K.NST_SAVED);
+
+//        T.treeobj.set_type(win_node_id,
+//            ( cwin ?
+//                ( keep ? K.NT_WIN_ELVISH : K.NT_WIN_EPHEMERAL ) :
+//                K.NT_WIN_DORMANT)
+//        );
 
         loginfo({'Adding nodeid map for cwinid': cwin ? cwin.id : 'none'});
         let win_val = D.windows.add({
@@ -304,14 +309,11 @@
     ///                         If falsy, there is no Chrome tab presently.
     /// @param raw_url {string} If #ctab is falsy, the URL of the tab
     /// @param raw_title {string} If #ctab is falsy, the title of the tab
-    /// @param node_type {string} If provided, used for the node type.
-    ///                             Default is K.NT_TAB.
-    /// @param node_flavor {mixed} If provided, used for the node flavors.
-    ///                             Can be a single value, or an array.
+    /// @param tys {mixed} If provided, add those multitypes to the tab
     /// @return {object} {node_id, val}.  On error,
     ///                 at least one of node_id or val will be falsy.
     module.makeItemForTab = function(parent_node_id, ctab, raw_url, raw_title,
-                                        node_type, node_flavors) {
+            tys) {
         let error_return = {node_id:null, val:null};
         if(!parent_node_id) return error_return;
 
@@ -321,13 +323,21 @@
         );
         if(tab_node_id === false) return error_return;
 
-        if(node_type && typeof node_type === 'string') {
-            T.treeobj.set_type(tab_node_id, node_type);
-        } else {
-            T.treeobj.set_type(tab_node_id, K.NT_TAB);
+        T.treeobj.add_multitype(tab_node_id, K.NT_TAB);
+        if(ctab) T.treeobj.add_multitype(tab_node_id, K.NTS_OPEN);
+
+        if(tys) {
+            if(!$.isArray(tys)) tys=[tys];
+            for(let ty of tys) T.treeobj.add_multitype(tab_node_id, ty);
         }
 
-        T.treeobj.add_flavor(tab_node_id, node_flavors);
+//        if(node_type && typeof node_type === 'string') {
+//            T.treeobj.set_type(tab_node_id, node_type);
+//        } else {
+//            T.treeobj.set_type(tab_node_id, K.NT_TAB);
+//        }
+//
+//        T.treeobj.add_flavor(tab_node_id, node_flavors);
 
         let tab_val = D.tabs.add({
             tab_id: (ctab ? ctab.id : K.NONE),

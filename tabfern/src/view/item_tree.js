@@ -4,7 +4,7 @@
 (function (root, factory) {
     let imports=['jquery','jstree','jstree-actions', 'jstree-flagnode',
                     'jstree-because', 'loglevel', 'view/const',
-                    'jstree-flavors' ];
+                    'jstree-multitype' ];
 
     if (typeof define === 'function' && define.amd) {
         // AMD
@@ -24,7 +24,7 @@
         }
         root.tabfern_item_tree = factory(...requirements);
     }
-}(this, function ($, _jstree, _actions, _flagnode, _because, log_orig, K, flavors ) {
+}(this, function ($, _jstree, _actions, _flagnode, _because, log_orig, K, multitype ) {
     "use strict";
 
     function loginfo(...args) { log_orig.info('TabFern view/item_tree.js: ', ...args); };
@@ -92,51 +92,64 @@
         jq_tree.on('after_close.jstree', module.vscroll_function);
     }; //install_vscroll_function()
 
+    // CSS classes
+    const WIN_CLASS = 'tf-window'; // class on all <li>s representing windows
+    const TAB_CLASS = 'tf-tab';    // class on all <li>s representing tabs
+    const OPEN_CLASS = 'tfs-open';
+    const SAVED_CLASS = 'tfs-saved';
+    const RECOVERED_CLASS = 'tfs-recovered';
+    const TOP_BORDER_CLASS = 'tfs-top-bordered';
+
     /// Create the tree.
     /// @param selector {JQuery selector} where to make the tree
     /// @param check_callback {function}
     /// @param is_draggable {function}
     /// @param contextmenu_items {function} If truthy, show a context menu
     module.create = function(selector, check_callback, is_draggable,
-                                contextmenu_items, flavor_callback)
+                                contextmenu_items)
     {
         // Node types - use constants as the keys
         let jstreeTypes = {};
 
-        jstreeTypes[K.NT_WIN_DORMANT] = {
-            li_attr: { class: K.WIN_CLASS },
+        jstreeTypes[K.NT_WIN] = {
+            li_attr: { 'class': WIN_CLASS },
             icon: true,     //default - folder
         };
 
-        jstreeTypes[K.NT_WIN_EPHEMERAL] = {
-            li_attr: { class: K.WIN_CLASS + ' ' + K.VISIBLE_WIN_CLASS },
-            icon: 'visible-window-icon',
-        };
+        jstreeTypes[K.NST_OPEN] = { li_attr: { 'class': OPEN_CLASS } };
+        jstreeTypes[K.NST_SAVED] = { li_attr: { 'class': SAVED_CLASS } };
+        jstreeTypes[K.NST_RECOVERED] = { li_attr: { 'class': RECOVERED_CLASS } };
+        jstreeTypes[K.NST_TOP_BORDER] = { li_attr: { 'class': TOP_BORDER_CLASS } };
 
-        jstreeTypes[K.NT_WIN_ELVISH] = {
-            li_attr: { class: K.WIN_CLASS + ' ' + K.VISIBLE_WIN_CLASS },
-            icon: 'visible-saved-window-icon',
-        };
-
-        jstreeTypes[K.NT_RECOVERED] = {
-            li_attr: { class: K.WIN_CLASS + ' ' + K.CLASS_RECOVERED },
-            icon: true,     //default - folder
-        };
+//        jstreeTypes[K.NT_WIN_EPHEMERAL] = {
+//            li_attr: { class: K.WIN_CLASS + ' ' + K.VISIBLE_WIN_CLASS },
+//            icon: 'visible-window-icon',
+//        };
+//
+//        jstreeTypes[K.NT_WIN_ELVISH] = {
+//            li_attr: { class: K.WIN_CLASS + ' ' + K.VISIBLE_WIN_CLASS },
+//            icon: 'visible-saved-window-icon',
+//        };
+//
+//        jstreeTypes[K.NT_RECOVERED] = {
+//            li_attr: { class: K.WIN_CLASS + ' ' + K.CLASS_RECOVERED },
+//            icon: true,     //default - folder
+//        };
 
         jstreeTypes[K.NT_TAB] = {
-            li_attr: { class: K.TAB_CLASS },
+            li_attr: { 'class': TAB_CLASS },
             icon: 'fff-page',   // per-node icons will override this
         };
 
-        jstreeTypes[K.NT_TAB_DORMANT] = {
-            li_attr: { class: K.TAB_CLASS },
-            icon: 'fff-page',   // per-node icons will override this
-        };
-
-        jstreeTypes[K.NT_TAB_OPEN] = {
-            li_attr: { class: K.TAB_CLASS },
-            icon: 'fff-page',   // per-node icons will override this
-        };
+//        jstreeTypes[K.NT_TAB_DORMANT] = {
+//            li_attr: { class: K.TAB_CLASS },
+//            icon: 'fff-page',   // per-node icons will override this
+//        };
+//
+//        jstreeTypes[K.NT_TAB_OPEN] = {
+//            li_attr: { class: K.TAB_CLASS },
+//            icon: 'fff-page',   // per-node icons will override this
+//        };
 
         // The main config
         let jstreeConfig = {
@@ -145,7 +158,7 @@
                         // action buttons to the wholerow div
                         'dnd', 'types', 'flagnode',
                         // flagnode must be after types
-                        'flavors',
+                        'multitype',
                      ], // TODO add state plugin
             core: {
                 animation: false,
@@ -170,13 +183,10 @@
                 //, use_html5: true     // Didn't work in my testing
                 //, check_while_dragging: false   // For debugging only
             },
-            types: jstreeTypes,
+            multitype: jstreeTypes,
             actions: {
                 propagation: 'stop'
                     // clicks on action buttons don't also go to any other elements
-            },
-            flavors: {
-                callback: flavor_callback,
             },
         };
 

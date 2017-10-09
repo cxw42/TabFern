@@ -40,23 +40,23 @@
 
         SAVE_DATA_AS_VERSION: 1,       // version we are currently saving
 
-        WIN_CLASS: 'tabfern-window',    // class on all <li>s representing windows
-        TAB_CLASS: 'tabfern-tab',       // class on all <li>s representing tabs
         BORDERED_TAB_CLASS: 'tabfern-tab-bordered',     // class on <li>s with a top border
         FOCUSED_WIN_CLASS: 'tf-focused-window',  // Class on the currently-focused win
         VISIBLE_WIN_CLASS: 'tf-visible-window',  // Class on all visible wins
-        ACTION_GROUP_WIN_CLASS: 'tf-action-group',   // Class on action-group div
-        ACTION_BUTTON_WIN_CLASS: 'tf-action-button', // Class on action buttons (<i>)
+
         SHOW_ACTIONS_CLASS:  'tf-show-actions',
             // Class on a .jstree-node to indicate its actions should be shown
 
         BULLET_CLASS: 'tf-bullet',      // class on spans showing bullets for items
+        CLASS_RECOVERED:  'ephemeral-recovered',
 
         INIT_TIME_ALLOWED_MS:  3000,  // After this time, if init isn't done,
                                             // display an error message.
         INIT_MSG_SEL:  'div#init-incomplete',     // Selector for that message
 
-        CLASS_RECOVERED:  'ephemeral-recovered',
+        ACTION_GROUP_WIN_CLASS: 'tf-action-group',   // Class on action-group div
+        ACTION_BUTTON_WIN_CLASS: 'tf-action-button', // Class on action buttons (<i>)
+
 
         /// How often to check whether our window has been moved or resized
         RESIZE_DETECTOR_INTERVAL_MS:  5000,
@@ -73,30 +73,42 @@
         // Item-type enumeration.  Here because there may be more item
         // types in the future (e.g., dividers or plugins).  Each IT_*
         // must be truthy.
+        // Used, e.g., by item.js:get_node_tyval().
         IT_WINDOW:  'window',   // strings are used for ease of debugging
         IT_TAB:     'tab',
 
-        // Node types - these control the display of the
-        // corresponding list items.
-        NT_WIN_DORMANT:     'win_dormant',              // closed, saved
-        NT_WIN_RECOVERED:   'win_ephemeral_recovered',  // closed, saved, recovered
-        NT_WIN_EPHEMERAL:   'win_ephemeral',            // open, unsaved
-        NT_WIN_ELVISH:      'win_elvish',               // open, saved
+        // Node types - what kind of thing a list item represents
 
-        NT_TAB:             'tab',              // a normal tab
+        NT_WIN:             'win',
+        NT_TAB:             'tab',
 
-        NT_TAB_DORMANT:     'tab-dormant',
-        NT_TAB_OPEN:        'tab-open',
+//        NT_WIN_DORMANT:     'win_dormant',              // closed, saved
+//        NT_WIN_RECOVERED:   'win_ephemeral_recovered',  // closed, saved, recovered
+//        NT_WIN_EPHEMERAL:   'win_ephemeral',            // open, unsaved
+//        NT_WIN_ELVISH:      'win_elvish',               // open, saved
+//
+//        NT_TAB:             'tab',              // a normal tab
+//
+//        NT_TAB_DORMANT:     'tab-dormant',
+//        NT_TAB_OPEN:        'tab-open',
 
-        // Node flavors - these are supplemental things layered on top of the
-        // node types.
-        NF_BORDERED:        'flavor-bordered',      // Has a top border
-        NF_RECOVERED:       'flavor-recovered',     // Was recovered
+//        // Node flavors - these are supplemental things layered on top of the
+//        // node types.
+//        NF_BORDERED:        'flavor-bordered',      // Has a top border
+//        NF_RECOVERED:       'flavor-recovered',     // Was recovered
+
+        // Node subtypes that can be layered onto the basic node types
+        NST_OPEN:           'open',     // Present if a window or tab is open
+        NST_SAVED:          'saved',    // Present if a window or tab has been saved
+
+        NST_RECOVERED:      'recovered',    // Present on windows recovered from a crash
+
+        NST_TOP_BORDER:     'top-bordered', // Present on tabs that have a top border
     };
 
     // Sets of node types
-    module.NTs_TAB = [module.NT_TAB];
-    module.NTs_WIN_OPEN = [module.NT_WIN_EPHEMERAL, module.NT_WIN_ELVISH];
+//    module.NTs_TAB = [module.NT_TAB];
+//    module.NTs_WIN_OPEN = [module.NT_WIN_EPHEMERAL, module.NT_WIN_ELVISH];
 
     /// Ignore a Chrome callback error, and suppress Chrome's
     /// `runtime.lastError` diagnostic.
