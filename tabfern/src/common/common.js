@@ -196,4 +196,26 @@ function ObjectCompare(obj1, obj2) {
     return true;
 } //ObjectCompare
 
+// Helpers for asynquence
+
+/// Chrome Callback: make a Chrome extension API callback that
+/// wraps the done() callback of an asynquence step.
+var CC = (function(){
+    /// A special-purpose empty object, per getify
+    const ø = Object.create(null);
+
+    return (done)=>{
+        return function cbk() {
+            if(typeof(chrome.runtime.lastError) !== 'undefined') {
+                done.fail(chrome.runtime.lastError);
+            } else {
+                //done.apply(ø,...args);
+                    // for some reason done() doesn't get the args
+                    // provided to cbk(...args)
+                done.apply(ø,[].slice.call(arguments));
+            }
+        }
+    }
+})(); //CC()
+
 // vi: set ts=4 sts=4 sw=4 et ai fo-=o: //

@@ -167,6 +167,10 @@
                 "text":
 `
 <ul>
+<li>You can now drag individual tabs in the tree from an open window to a
+closed window.  When you do so, the tab will close.  It will be available when
+you open that closed window, though.
+(Closed to open is still not yet implemented.)</li>
 <li>On the right-click menu for a window, there is now a "Remember" option
 (${icon('fa fa-link')})
 to mark a window to be saved.  Previously you had to add a note or a border,

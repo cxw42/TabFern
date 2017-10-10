@@ -40,6 +40,9 @@ var I;
 /// HACK - a global for loglevel because typing `Modules.log` everywhere is a pain.
 var log;
 
+/// Shorthand for asynquence
+var ASQ;
+
 //////////////////////////////////////////////////////////////////////////
 // Globals //
 
@@ -102,6 +105,7 @@ function local_init()
     D = Modules['view/item_details'];
     T = Modules['view/item_tree'];
     I = Modules['view/item'];
+    ASQ = Modules['asynquence-contrib'];
 
     // Check development status.  Thanks to
     // https://stackoverflow.com/a/12833511/2877364 by
@@ -1561,6 +1565,11 @@ function tabOnRemoved(tabid, removeinfo)
 
         // Remove the node
         let tab_val = D.tabs.by_tab_id(tabid);
+
+        // See if it's a tab we have already marked as removed.  If so,
+        // whichever code marked it is responsible, and we're off the hook.
+        if(!tab_val || !tab_val.tab_id) return;
+
         D.tabs.remove_value(tab_val);
             // So any events that are triggered won't try to look for a
             // nonexistent tab.
@@ -1672,7 +1681,7 @@ function eventOnResize(evt)
     // Save the size, but only after two seconds go by.  This is to avoid
     // saving until the user is actually done resizing.
     resize_save_timer_id = window.setTimeout(
-            function(){saveViewSize(size_data);}, 2000);
+            ()=>{saveViewSize(size_data);}, 2000);
 
 } //eventOnResize
 
@@ -2099,32 +2108,74 @@ var treeCheckCallback = (function(){
         // Don't know if we need to delay until the next tick, but I'm going
         // to just to be on the safe side.  This will give T.treeobj.move_node
         // a chance to finish.
-        setTimeout(function(){
-            T.treeobj.delete_node(data.old_parent);
-        },0);
+        ASQ().val(()=>{ T.treeobj.delete_node(data.old_parent); });
     } //remove_empty_window
 
-    /// Move a tab within its Chrome window.
-    /// Chrome fires a tabOnMoved after we do this, so we don't have to update
-    /// the tree here.
-    function move_tab_in_window(evt, data)
+    /// Move a tab within its Chrome window, or from an open window to a
+    /// closed window.
+    function move_open_tab_in_window(evt, data)
     {
-        setTimeout(function(){      // As above, delay to be on the safe side.
-            // Which tab we're moving
-            let val = D.tabs.by_node_id(data.node.id);
-            if( !val || val.tab_id === K.NONE ) return;
+        // Which tab we're moving
+        let val = D.tabs.by_node_id(data.node.id);
+        if( !val || val.tab_id === K.NONE ) return;
 
-            // Which window we're moving it to
-            let parent_val = D.windows.by_node_id(data.parent);
-            if( !parent_val || parent_val.win_id === K.NONE) return;
+        // Which window we're moving it to
+        let parent_val = D.windows.by_node_id(data.parent);
+        if(!parent_val) return;
 
-            // Do the move
-            chrome.tabs.move(val.tab_id,
-                {windowId: parent_val.win_id, index: data.position}
-                , K.ignore_chrome_error
-            );
-        },0);
-    } //move_tab_in_window
+        if(parent_val.isOpen) {
+            if( parent_val.win_id === K.NONE) return;
+            // Move an open tab from one open window to another.
+            // Chrome fires a tabOnMoved after we do this, so we
+            // don't have to update the tree here.
+            // As above, delay to be on the safe side.
+            ASQ().val(()=>{
+                chrome.tabs.move(val.tab_id,
+                    {windowId: parent_val.win_id, index: data.position}
+                    , K.ignore_chrome_error);
+            });
+
+        } else {
+            // Move an open tab to a closed window
+
+            let old_parent_val = D.windows.by_node_id(data.old_parent);
+            let old_parent_node = T.treeobj.get_node(data.old_parent);
+            if( !old_parent_val || old_parent_val.win_id === K.NONE ||
+                !old_parent_node ) return;
+
+            // As above, delay to be on the safe side.
+            let seq = ASQ();
+            let tab_id = val.tab_id;
+
+            // Disconnect the tab first, so tabOnRemoved() doesn't
+            // delete it after the chrome.tabs.remove() call.
+            seq.val(()=>{
+                D.tabs.change_key(val, 'tab_id', K.NONE);
+                val.tab = undefined;
+                val.win_id = K.NONE;
+                val.index = K.NONE;
+                val.isOpen = false;
+                T.treeobj.del_multitype(val.node_id, K.NST_OPEN);
+            });
+
+            // Now that it's disconnected, close the actual tab
+            seq['try']((done)=>{
+                chrome.tabs.remove(tab_id, CC(done));
+                // if tab_id was the last tab in old_parent, winOnRemoved
+                // will delete the tree node.  Therefore, we do not have
+                // to do so.
+            });
+
+            // Whether or not the removal succeeded, update the tab indices
+            // on both windows for safety.
+            seq.val((result_unused)=>{
+                updateTabIndexValues(data.parent);
+                updateTabIndexValues(data.old_parent);
+            });
+
+        } //endif open parent window else
+
+    } //move_open_tab_in_window
 
     // --- The main check callback ---
     function inner(operation, node, new_parent, node_position, more)
@@ -2170,11 +2221,14 @@ var treeCheckCallback = (function(){
 
             } else if(tyval.ty === K.IT_TAB) {          // Dragging tabs
                 // Tabs: Can drop closed tabs in closed windows, or open
-                // tabs in open windows.  TODO revisit this when we later
-                // permit opening tab-by-tab (#35)
+                // tabs in open windows.  Can also drop open tabs to closed
+                // windows, in which case the tab is closed.
+                // TODO revisit this when we later
+                // permit opening tab-by-tab (#35).
+
 
                 if(tyval.val.isOpen) {      // open tab
-                    if( !new_parent_tyval || !new_parent_tyval.val.isOpen ||
+                    if( !new_parent_tyval || //!new_parent_tyval.val.isOpen ||
                         new_parent_tyval.ty !== K.IT_WINDOW
                     ) {
                         return false;
@@ -2216,10 +2270,12 @@ var treeCheckCallback = (function(){
 
                 if(tyval.val.isOpen) {
 
-                    // Can move open tabs between open windows or the holding pen
+                    // Can move open tabs between open windows or the
+                    // holding pen.  Also, can move open tabs to closed
+                    // windows.
                     if( curr_parent_id !== T.holding_node_id &&
                         new_parent_id !== T.holding_node_id &&
-                        (!new_parent_tyval || !new_parent_tyval.val.isOpen) )
+                        (!new_parent_tyval) ) // || !new_parent_tyval.val.isOpen) )
                         return false;
 
                 } else {
@@ -2264,7 +2320,8 @@ var treeCheckCallback = (function(){
                 (old_parent.id !== T.holding_node_id) &&
                 (new_parent.id !== T.holding_node_id)
             ) {
-                T.treeobj.element.one('move_node.jstree', move_tab_in_window);
+                T.treeobj.element.one('move_node.jstree',
+                                            move_open_tab_in_window);
             }
 
         } //endif this is a non-dnd move
@@ -2350,7 +2407,7 @@ function initTreeFinal()
         // if everything initialized successfully, since hamSortOpenToTop
         // is not guaranteed to work correctly otherwise.
         if(getBoolSetting(CFG_OPEN_TOP_ON_STARTUP)) {
-            setTimeout(hamSortOpenToTop, 0);
+            ASQ().val(hamSortOpenToTop);
         }
 
     } //endif loaded OK
@@ -2607,7 +2664,7 @@ let dependencies = [
     'jstree-because',
     'loglevel', 'hamburger', 'bypasser', 'multidex', 'justhtmlescape',
     'signals', 'local/fileops/export', 'local/fileops/import',
-    'split-cw',
+    'asynquence-contrib',
 
     // Modules for keyboard-shortcut handling.  Not really TabFern-specific,
     // but not yet disentangled fully.

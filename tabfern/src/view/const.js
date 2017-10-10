@@ -1,9 +1,9 @@
 // view/const.js: constants and generic helpers for the TabFern view
 // Copyright (c) 2017 Chris White, Jasmine Hegman.
+// Note: requires common/common.js be loaded first, for CC
 
 (function (root, factory) {
-    let imports=['jquery','jstree','loglevel','asynquence' ];
-        // asq.src.js is copied from the npm asynquence package
+    let imports=['jquery','jstree','loglevel','asynquence-contrib' ];
 
     if (typeof define === 'function' && define.amd) {
         // AMD
@@ -125,28 +125,6 @@
         }
         return inner;
     } //nextTickRunner()
-
-    // Helpers for asynquence
-
-    /// A special-purpose empty object, per getify
-    const ø = Object.create(null);
-
-    /// Chrome Callback: make a Chrome extension API callback that
-    /// wraps the done() callback of an asynquence step.
-    function CC(done) {
-        return function cbk() {
-            if(typeof(chrome.runtime.lastError) !== 'undefined') {
-                done.fail(chrome.runtime.lastError);
-            } else {
-                //done.apply(ø,...args);
-                    // for some reason done() doesn't get the args
-                    // provided to cbk(...args)
-                done.apply(ø,[].slice.call(arguments));
-            }
-        }
-    } //CC
-
-    module.CC = CC;     // might be useful elsewhere
 
     /// Open a new window with a given URL.  Also remove the default
     /// tab that appears because we are letting the window open at the
