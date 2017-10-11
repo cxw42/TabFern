@@ -1381,28 +1381,60 @@ function initFocusHandler()
 /// Process creation of a tab.  NOTE: in Chrome 60.0.3112.101, we sometimes
 /// get two consecutive tabs.onCreated events for the same tab.  Therefore,
 /// we check for that here.
-function tabOnCreated(tab)
+function tabOnCreated(ctab)
 {
-    log.info({'Tab created': tab.id, tab});
+    log.info({'Tab created': ctab.id, ctab});
 
-    let win_node_id = D.windows.by_win_id(tab.windowId, 'node_id')
+    let win_node_id = D.windows.by_win_id(ctab.windowId, 'node_id')
     if(!win_node_id) return;
 
     let tab_node_id;
 
     // See if this is a duplicate of an existing tab
-    let tab_val = D.tabs.by_tab_id(tab.id);
+    let tab_val = D.tabs.by_tab_id(ctab.id);
     let check_existing = false;
 
+    // Check if we're manually opening a tab.  This is indicated by
+    // the URL being /src/view/newtab.html.
+    CHECK: if(!tab_val) {
+        let url = new URL(ctab.url);
+        if(!url.hash) break CHECK;
+
+        let hash = url.hash.slice(1);
+        if(!hash) break CHECK;
+
+        if(url.href.split("#")[0] !==
+            chrome.runtime.getURL('/src/view/newtab.html')
+        ) {
+            break CHECK;
+        }
+
+        // See if the hash is a node ID for a tab.
+        tab_val = D.tabs.by_node_id(hash);
+    }
+
+    if(tab_val && tab_val.being_opened) {
+        tab_val.being_opened = false;
+        // Change the URL to the actual URL
+        ASQ().then((done)=>{
+            chrome.tabs.update(ctab.id, {url: tab_val.raw_url}, CC(done));
+        }); //tabOnUpdated should handle the renaming.
+        //.val(()=>{  // Then rename the node properly
+        //    T.treeobj.rename_node(tab_node_id, I.get_html_label(moving_val));
+        //});
+        
+        return;
+    }
+
     if(tab_val === undefined) {     // If not, create the tab
-        let tab_node_id = createNodeForTab(tab, win_node_id);   // Adds at end
-        T.treeobj.because('chrome','move_node',tab_node_id, win_node_id, tab.index);
+        let tab_node_id = createNodeForTab(ctab, win_node_id);   // Adds at end
+        T.treeobj.because('chrome','move_node',tab_node_id, win_node_id, ctab.index);
             // Put it in the right place
-        tab_val = D.tabs.by_tab_id(tab.id);
+        tab_val = D.tabs.by_tab_id(ctab.id);
         check_existing = true;
     } else {
         log.info('   - That tab already exists.');
-        T.treeobj.because('chrome', 'move_node', tab_val.node_id, win_node_id, tab.index);
+        T.treeobj.because('chrome', 'move_node', tab_val.node_id, win_node_id, ctab.index);
             // Just put it where it now belongs.
     }
 
@@ -1425,9 +1457,9 @@ function tabOnCreated(tab)
     }
 } //tabOnCreated
 
-function tabOnUpdated(tabid, changeinfo, tab)
+function tabOnUpdated(tabid, changeinfo, ctab)
 {
-    log.info({'Tab updated': tabid, changeinfo, tab});
+    log.info({'Tab updated': tabid, changeinfo, ctab});
 
     let tab_node_val = D.tabs.by_tab_id(tabid);
     if(!tab_node_val) return;
@@ -1435,13 +1467,13 @@ function tabOnUpdated(tabid, changeinfo, tab)
 
     let node = T.treeobj.get_node(tab_node_id);
     tab_node_val.isOpen = true;     //lest there be any doubt
-    tab_node_val.raw_url = changeinfo.url || tab.url || 'about:blank';
+    tab_node_val.raw_url = changeinfo.url || ctab.url || 'about:blank';
 
     // Set the name
     if(changeinfo.title) {
         tab_node_val.raw_title = changeinfo.title;
-    } else if(tab.title) {
-        tab_node_val.raw_title = tab.title;
+    } else if(ctab.title) {
+        tab_node_val.raw_title = ctab.title;
     } else {
         tab_node_val.raw_title = 'Tab';
     }
@@ -1451,8 +1483,8 @@ function tabOnUpdated(tabid, changeinfo, tab)
         let icon_text;
         if(changeinfo.favIconUrl) {
             icon_text = encodeURI(changeinfo.favIconUrl);
-        } else if(tab.favIconUrl) {
-            icon_text = encodeURI(tab.favIconUrl);
+        } else if(ctab.favIconUrl) {
+            icon_text = encodeURI(ctab.favIconUrl);
         } else if((/\.pdf$/i).test(tab_node_val.raw_url)) {
             // Special case for PDFs because I use them a lot.
             // Not using the Silk page_white_acrobat icon.
@@ -1471,7 +1503,7 @@ function tabOnUpdated(tabid, changeinfo, tab)
     // that window.
     chrome.windows.getLastFocused(function(win){
         if(typeof(chrome.runtime.lastError) === 'undefined') {
-            if(tab.windowId === win.id) {
+            if(ctab.windowId === win.id) {
                 winOnFocusChanged(win.id, true);
             }
         }
@@ -2098,6 +2130,7 @@ var treeCheckCallback = (function(){
     /// when dragging the last tab out of a window
     function remove_empty_window(evt, data)
     {   // Note: data.old_parent is the node ID of the former parent
+        if(!data.old_parent) return;
         if(log.getLevel() <= log.levels.TRACE) {
             console.group('remove_empty_window');
             console.log(evt);
@@ -2111,10 +2144,12 @@ var treeCheckCallback = (function(){
         ASQ().val(()=>{ T.treeobj.delete_node(data.old_parent); });
     } //remove_empty_window
 
-    /// Move a tab within its Chrome window, or from an open window to a
-    /// closed window.
+    /// Move an open tab within its Chrome window, or from an open window
+    /// to a closed window.
     function move_open_tab_in_window(evt, data)
     {
+        if(!data.parent||!data.old_parent||!data.node||!data.node.id) return;
+
         // Which tab we're moving
         let val = D.tabs.by_node_id(data.node.id);
         if( !val || val.tab_id === K.NONE ) return;
@@ -2159,7 +2194,7 @@ var treeCheckCallback = (function(){
             });
 
             // Now that it's disconnected, close the actual tab
-            seq['try']((done)=>{
+            seq.try((done)=>{
                 chrome.tabs.remove(tab_id, CC(done));
                 // if tab_id was the last tab in old_parent, winOnRemoved
                 // will delete the tree node.  Therefore, we do not have
@@ -2176,6 +2211,51 @@ var treeCheckCallback = (function(){
         } //endif open parent window else
 
     } //move_open_tab_in_window
+
+    /// Add a tab to an open window.
+    function open_tab_within_window(evt, data)
+    {
+        if(!data.parent||!data.old_parent||!data.node||!data.node.id) return;
+
+        // Which tab we're moving
+        let tab_node_id = data.node.id;
+        let moving_val = D.tabs.by_node_id(tab_node_id);
+        if(!moving_val) return;
+
+        // Which window we're moving it to
+        let parent_val = D.windows.by_node_id(data.parent);
+        if(!parent_val || parent_val.win_id === K.NONE ) return;
+
+        let seq = ASQ();
+
+        // Update the index values first, so we know which index the
+        // tab should have.
+        seq.then((done)=>{
+            updateTabIndexValues(data.parent);
+            updateTabIndexValues(data.old_parent);
+
+            moving_val.being_opened = true;
+                // so tabOnCreated doesn't duplicate it
+
+            chrome.tabs.create({
+                windowId: parent_val.win_id,
+                url: chrome.runtime.getURL('/src/view/newtab.html') + '#' + moving_val.node_id,
+                    // pass the node to the tabOnUpdated callback
+                index: moving_val.index
+            }, CC(done));
+        });
+
+        seq.then((done, ctab)=>{
+            D.tabs.change_key(moving_val, 'tab_id', ctab.id);
+            moving_val.win_id = ctab.windowId;
+            moving_val.index = ctab.index;
+            moving_val.tab = ctab;
+            T.treeobj.add_multitype(tab_node_id, K.NST_OPEN);
+            // TODO set icon per item.js:makeItemForTab
+        });
+
+
+    } //open_tab_within_window
 
     // --- The main check callback ---
     function inner(operation, node, new_parent, node_position, more)
@@ -2199,8 +2279,8 @@ var treeCheckCallback = (function(){
             console.groupEnd();
         } //logging
 
-        let tyval = I.get_node_tyval(node.id);
-        if(!tyval) return false;    // sanity check
+        let moving_tyval = I.get_node_tyval(node.id);
+        if(!moving_tyval) return false;    // sanity check
 
         let new_parent_tyval;
         if(new_parent.id !== $.jstree.root) {
@@ -2212,22 +2292,23 @@ var treeCheckCallback = (function(){
 
             node_being_dragged = node.id;
 
-            if(tyval.ty === K.IT_WINDOW) {              // Dragging windows
+            if(moving_tyval.ty === K.IT_WINDOW) {              // Dragging windows
                 // Can't drop inside another window - only before or after
                 if(more.pos==='i') return false;
 
                 // Can't drop other than in the root
                 if(new_parent.id !== $.jstree.root) return false;
 
-            } else if(tyval.ty === K.IT_TAB) {          // Dragging tabs
+            } else if(moving_tyval.ty === K.IT_TAB) {          // Dragging tabs
                 // Tabs: Can drop closed tabs in closed windows, or open
                 // tabs in open windows.  Can also drop open tabs to closed
                 // windows, in which case the tab is closed.
+                // Can also drop closed tabs to open windows.
                 // TODO revisit this when we later
                 // permit opening tab-by-tab (#35).
 
 
-                if(tyval.val.isOpen) {      // open tab
+                if(moving_tyval.val.isOpen) {      // open tab
                     if( !new_parent_tyval || //!new_parent_tyval.val.isOpen ||
                         new_parent_tyval.ty !== K.IT_WINDOW
                     ) {
@@ -2235,7 +2316,7 @@ var treeCheckCallback = (function(){
                     }
 
                 } else {                    // closed tab
-                    if( !new_parent_tyval || new_parent_tyval.val.isOpen ||
+                    if( !new_parent_tyval || // new_parent_tyval.val.isOpen ||
                         new_parent_tyval.ty !== K.IT_WINDOW
                     ) {
                         return false;
@@ -2253,7 +2334,7 @@ var treeCheckCallback = (function(){
 
             if(log.getLevel() <= log.levels.TRACE) {
                 console.group('check callback for node move');
-                console.log(tyval);
+                console.log(moving_tyval);
                 console.log(node);
                 console.log(new_parent);
                 if(more) console.log(more);
@@ -2261,14 +2342,14 @@ var treeCheckCallback = (function(){
             }
 
             // Windows: can only drop in root
-            if(tyval.ty === K.IT_WINDOW) {
+            if(moving_tyval.ty === K.IT_WINDOW) {
                 if(new_parent.id !== $.jstree.root) return false;
 
-            } else if(tyval.ty === K.IT_TAB) {
+            } else if(moving_tyval.ty === K.IT_TAB) {
                 let curr_parent_id = node.parent;
                 let new_parent_id = new_parent.id;
 
-                if(tyval.val.isOpen) {
+                if(moving_tyval.val.isOpen) {
 
                     // Can move open tabs between open windows or the
                     // holding pen.  Also, can move open tabs to closed
@@ -2279,8 +2360,9 @@ var treeCheckCallback = (function(){
                         return false;
 
                 } else {
-                    // Can move closed tabs to any closed window
-                    if(!new_parent_tyval || new_parent_tyval.val.isOpen) return false;
+                    // Can move closed tabs to any window
+                    if(!new_parent_tyval //|| new_parent_tyval.val.isOpen
+                    ) return false;
                 }
             }
             if(log.getLevel()<=log.levels.TRACE) console.log('OK to move');
@@ -2299,9 +2381,10 @@ var treeCheckCallback = (function(){
             let old_parent = T.treeobj.get_node(node.parent);
 
             // If we are moving the last tab out of a window other than the
-            // holding pen, set up the window to be deleted once the
-            // move completes.
-            if( !tyval.val.isOpen &&
+            // holding pen, and the tab is closed, set up the window to be
+            // deleted once the move completes.
+            // If the last tab is open, it is handled below.
+            if( !moving_tyval.val.isOpen &&
                 old_parent &&
                 old_parent.children &&
                 (node.id !== T.holding_node_id) &&
@@ -2314,7 +2397,7 @@ var treeCheckCallback = (function(){
             } else
 
             // If we are moving an open tab, set up to move the tab in Chrome.
-            if( tyval.val.isOpen &&
+            if( moving_tyval.val.isOpen &&
                 old_parent &&
                 (node.id !== T.holding_node_id) &&
                 (old_parent.id !== T.holding_node_id) &&
@@ -2322,6 +2405,16 @@ var treeCheckCallback = (function(){
             ) {
                 T.treeobj.element.one('move_node.jstree',
                                             move_open_tab_in_window);
+            } else
+
+            // If we are moving a closed tab into an open window, set up
+            // to open the tab in Chrome.
+            if( !moving_tyval.val.isOpen &&
+                new_parent_tyval &&
+                new_parent_tyval.val.isOpen
+            ) {
+                T.treeobj.element.one('move_node.jstree',
+                                            open_tab_within_window);
             }
 
         } //endif this is a non-dnd move

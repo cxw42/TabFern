@@ -42,6 +42,7 @@
             'win_id',       // from Chrome
             'index',        // in the current window
             'tab',          // the actual Tab record from Chrome
+            'being_opened', // true if we are manually opening the Chrome tab
             'raw_url',      // the tab's URL
             'raw_title',    // the tab's title.  null => default.
             'isOpen',       // open or not
