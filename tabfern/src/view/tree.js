@@ -1411,20 +1411,28 @@ function tabOnCreated(ctab)
 
         // See if the hash is a node ID for a tab.
         tab_val = D.tabs.by_node_id(hash);
-    }
+        if(!tab_val || !tab_val.being_opened) break CHECK;
 
-    if(tab_val && tab_val.being_opened) {
+        // It is a manually-opened tab.  Process it.
+
+        tab_node_id = hash;
         tab_val.being_opened = false;
-        // Change the URL to the actual URL
+
+        // Attach the ctab to the value
+        D.tabs.change_key(tab_val, 'tab_id', ctab.id);
+        tab_val.win_id = ctab.windowId;
+        tab_val.index = ctab.index;
+        tab_val.tab = ctab;
+        T.treeobj.add_multitype(tab_node_id, K.NST_OPEN);
+
+        // Change the URL to the actual URL.  Use ASQ() so errors will
+        // be reported to the console.
         ASQ().then((done)=>{
             chrome.tabs.update(ctab.id, {url: tab_val.raw_url}, CC(done));
-        }); //tabOnUpdated should handle the renaming.
-        //.val(()=>{  // Then rename the node properly
-        //    T.treeobj.rename_node(tab_node_id, I.get_html_label(moving_val));
-        //});
-        
+        }); //tabOnUpdated will handle the rest.
+
         return;
-    }
+    } //endif CHECK
 
     if(tab_val === undefined) {     // If not, create the tab
         let tab_node_id = createNodeForTab(ctab, win_node_id);   // Adds at end
@@ -2226,34 +2234,24 @@ var treeCheckCallback = (function(){
         let parent_val = D.windows.by_node_id(data.parent);
         if(!parent_val || parent_val.win_id === K.NONE ) return;
 
-        let seq = ASQ();
-
-        // Update the index values first, so we know which index the
-        // tab should have.
-        seq.then((done)=>{
+        // Update the index values, so we know which index the
+        // tab should have.  The tab node has already been moved, so the
+        // index values match what will be the case once the ctab is created.
+        ASQ().then((done)=>{
             updateTabIndexValues(data.parent);
             updateTabIndexValues(data.old_parent);
 
             moving_val.being_opened = true;
                 // so tabOnCreated doesn't duplicate it
 
-            chrome.tabs.create({
+            chrome.tabs.create({                // open the tab
                 windowId: parent_val.win_id,
                 url: chrome.runtime.getURL('/src/view/newtab.html') + '#' + moving_val.node_id,
-                    // pass the node to the tabOnUpdated callback
+                    // pass the node ID to the tabOnUpdated callback
                 index: moving_val.index
             }, CC(done));
         });
-
-        seq.then((done, ctab)=>{
-            D.tabs.change_key(moving_val, 'tab_id', ctab.id);
-            moving_val.win_id = ctab.windowId;
-            moving_val.index = ctab.index;
-            moving_val.tab = ctab;
-            T.treeobj.add_multitype(tab_node_id, K.NST_OPEN);
-            // TODO set icon per item.js:makeItemForTab
-        });
-
+        // The URL and the item will be linked in tabOnCreated, so we're done.
 
     } //open_tab_within_window
 
