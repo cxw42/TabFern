@@ -47,6 +47,8 @@
     /// https://stackoverflow.com/users/939547/jsarma
     module.vscroll_function = function()
     { //TODO make this a closure over a specific win, jq
+        if(getBoolSetting(CFG_HIDE_HORIZONTAL_SCROLLBARS)) return;
+
         //log.info('Updating V positions');
         let scrolltop = $(window).scrollTop();
         $('.' + K.ACTION_GROUP_WIN_CLASS).each(function(idx, dom_elem) {
@@ -80,6 +82,9 @@
     /// @param jq_tree {JQuery element} the jQuery element for the tree root
     module.install_vscroll_function = function(win, jq_tree)
     {
+        if(getBoolSetting(CFG_HIDE_HORIZONTAL_SCROLLBARS)) return;
+            // Don't need this with absolute positions
+
         // Need to update when scrolling because the action-group divs
         // are fixed rather than absolute :( .
         // TODO make them absolute, and no scroll handler, when the

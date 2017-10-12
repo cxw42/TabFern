@@ -49,8 +49,11 @@ li.ephemeral-recovered, .tfs-recovered {
     font-family: serif; /* since the default is sans */
 }
 
-.tf--feature--hide-horizontal-scrollbars {
+/* Applied to the html */
+.tf--feature--hide-horizontal-scrollbars,
+.tf--feature--hide-horizontal-scrollbars body {
     overflow-x: hidden;
+    width: 100%;
 }
 
 /* If you add a note, then forget the window, your notes are in danger of
@@ -109,6 +112,14 @@ li.ephemeral-recovered, .tfs-recovered {
     z-index: 10;
     position: fixed;        /* starts a new stacking context */
     right: 0;
+    display: inline-block;  /* Be on the same row as the window */
+    padding-right: 0.5em;   /* same as hamburger menu, below */
+}
+
+.tf--feature--hide-horizontal-scrollbars .jstree-wholerow > .tf-action-group {
+    z-index: 10;
+    position: absolute;     /* starts a new stacking context */
+    right: 0;               /* at the right of the containing element */
     display: inline-block;  /* Be on the same row as the window */
     padding-right: 0.5em;   /* same as hamburger menu, below */
 }

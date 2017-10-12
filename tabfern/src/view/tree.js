@@ -2540,7 +2540,7 @@ function basicInit(done)
 {
     log.info('TabFern tree.js initializing view - ' + TABFERN_VERSION);
 
-    if(getBoolSetting(CFG_HIDE_HORIZONTAL_SCROLLBARS, false)) {
+    if(getBoolSetting(CFG_HIDE_HORIZONTAL_SCROLLBARS)) {
         document.querySelector('html').classList += ' tf--feature--hide-horizontal-scrollbars';
     }
 
