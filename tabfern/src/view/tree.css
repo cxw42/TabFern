@@ -179,6 +179,12 @@ div.jstree-wholerow-hovered > .tf-action-group {
     padding-right: 0.5em;
 }
 
+/* No animations on the wholerow since I haven't figured out how to sync them
+ * with the action buttons.  This is more snappy, anyway. */
+.jstree-default-dark .jstree-wholerow {
+    transition: unset;
+}
+
 /* --- Main (hamburger) menu and related ---------------------------------- */
 
 #hamburger-menu {
