@@ -40,7 +40,7 @@ function R(deps, dest, extra_work)
     if(!deps) deps = [];
     if(typeof deps === 'string') deps = [deps];
 
-    if(typeof dest !== 'undefined' && dest != null && 
+    if(typeof dest !== 'undefined' && dest != null &&
             typeof dest !== 'object') {
         throw new Error('Invalid "dest" parameter to R().  Did you list several dependencies without enclosing them in an array?');
     }
