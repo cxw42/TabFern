@@ -2536,95 +2536,80 @@ function checkWhatIsNew(selector)
 //////////////////////////////////////////////////////////////////////////
 // Startup / shutdown //
 
-// This is done in vaguely continuation-passing style.  TODO make it cleaner.
-// Maybe use promises?
-
-/// The last function to be called after all other initialization has
-/// completed successfully.
-function initTreeFinal(done)
+function basicInit(done)
 {
-    if(!was_loading_error) {
-        did_init_complete = true;
-        // Assume the document is loaded by this point.
-        $(K.INIT_MSG_SEL).css('display','none');
-            // just in case initialization took a long time, and the message
-            // already appeared.
+    log.info('TabFern tree.js initializing view - ' + TABFERN_VERSION);
 
-        // If the user wishes, sort the open windows to the top.  Do this only
-        // if everything initialized successfully, since hamSortOpenToTop
-        // is not guaranteed to work correctly otherwise.
-        if(getBoolSetting(CFG_OPEN_TOP_ON_STARTUP)) {
-            ASQ().val(hamSortOpenToTop);
-        }
+    if(getBoolSetting(CFG_HIDE_HORIZONTAL_SCROLLBARS, false)) {
+        document.querySelector('html').classList += ' tf--feature--hide-horizontal-scrollbars';
+    }
 
-    } //endif loaded OK
+    Hamburger = Modules.hamburger('#hamburger-menu', getHamburgerMenuItems
+            , K.CONTEXT_MENU_MOUSEOUT_TIMEOUT_MS
+            );
 
-    done();
-} //initTreeFinal()
+    checkWhatIsNew('#hamburger-menu');
 
-/// Called after ASQ.try(chrome.storage.local.get(LOCN_KEY))
-function moveWinToLastPositionIfAny(done, items_or_err)
-{   // move the popup window to its last position/size.
-    // If there was an error (e.g., nonexistent key), just
-    // accept the default size.
+    initFocusHandler();
 
-    if(!is_asq_try_err(items_or_err)) {
-        let parsed = items_or_err[K.LOCN_KEY];
-        if( (parsed !== null) && (typeof parsed === 'object') ) {
-            // + and || are to provide some sensible defaults - thanks to
-            // https://stackoverflow.com/a/7540412/2877364 by
-            // https://stackoverflow.com/users/113716/user113716
-            let size_data =
-                {
-                      'left': +parsed.left || 0
-                    , 'top': +parsed.top || 0
-                    , 'width': Math.max(+parsed.width || 300, 100)
-                        // don't let it shrink too small, in case something went wrong
-                    , 'height': Math.max(+parsed.height || 600, 200)
-                };
-            last_saved_size = $.extend({}, size_data);
-            chrome.windows.update(my_winid, size_data, K.ignore_chrome_error);
-        }
-    } //endif no error
+    // Stash our current size, which is the default window size.
+    newWinSize = getWindowSize(window);
 
-    // Start the detection of moved or resized windows
-    setTimeout(timedResizeDetector, K.RESIZE_DETECTOR_INTERVAL_MS);
+    // TODO? get screen size of the current monitor and make sure the TabFern
+    // window is fully visible -
+    // chrome.windows.create({state:'fullscreen'},function(win){console.log(win); chrome.windows.remove(win.id);})
+    // appears to provide valid `win.width` and `win.height` values.
+    // TODO? also make sure the TabFern window is at least 300px wide, or at
+    // at least 30% of screen width if <640px.  Also make sure that the
+    // TabFern window is tall enough.
+    // TODO? Snap the TabFern window to within n pixels of the Chrome window?
 
     done();
-} //moveWinToLastPositionIfAny()
+} //basicInit
 
-function addEventListeners(done)
+/// Called after ASQ.try(chrome.runtime.sendMessage)
+function createMainTreeIfWinIdReceived(done, win_id_or_error)
 {
-    // Set event listeners
-    T.treeobj.element.on('changed.jstree', treeOnSelect);
+    if(is_asq_try_err(win_id_or_error)) {
+        // This is fatal
+        return done.fail("Couldn't get win ID: " + win_id_or_error.catch);
+        // TODO add a "couldn't load" message to the popup.
+    }
 
-    T.treeobj.element.on('move_node.jstree', K.nextTickRunner(saveTree));
-        // Save after drag-and-drop.  TODO? find a better way to do this?
-        // -> Is this redundant now?  I think the saving in the dnd handlers
-        // should take care of this.
+    let win_id = win_id_or_error;
+    my_winid = win_id;
 
-    chrome.windows.onCreated.addListener(winOnCreated);
-    chrome.windows.onRemoved.addListener(winOnRemoved);
-    chrome.windows.onFocusChanged.addListener(winOnFocusChanged);
+    // Init the main jstree
+    log.info('TabFern tree.js initializing tree in window ' + win_id.toString());
 
-    // Chrome tabs API, listed in the order given in the API docs at
-    // https://developer.chrome.com/extensions/tabs
-    chrome.tabs.onCreated.addListener(tabOnCreated);
-    chrome.tabs.onUpdated.addListener(tabOnUpdated);
-    chrome.tabs.onMoved.addListener(tabOnMoved);
-    //onSelectionChanged: deprecated
-    //onActiveChanged: deprecated
-    chrome.tabs.onActivated.addListener(tabOnActivated);
-    //onHighlightChanged: deprecated
-    //onHighlighted: not yet implemented
-    chrome.tabs.onDetached.addListener(tabOnDetached);
-    chrome.tabs.onAttached.addListener(tabOnAttached);
-    chrome.tabs.onRemoved.addListener(tabOnRemoved);
-    chrome.tabs.onReplaced.addListener(tabOnReplaced);
-    //onZoomChange: not yet implemented, and we probably won't ever need it.
+    let contextmenu_items =
+        getBoolSetting(CFG_ENB_CONTEXT_MENU, true) ? getMainContextMenuItems
+                                                    : false;
 
-    done();
-} //addEventListeners
+    T.create('#maintree', treeCheckCallback, dndIsDraggable,
+            contextmenu_items);
+
+    // Install keyboard shortcuts.  This includes the keyboard listener for
+    // context menus.
+    Modules.shortcuts.install(
+        {
+            window,
+            keybindings: Modules.default_shortcuts,
+            drivers: [Modules.dmauro_keypress]
+        },
+        function initialized(err) {
+            if ( err ) {
+                console.log({['Failed loading a shortcut driver!  Initializing '+
+                            'context menu with no shortcut driver']:err});
+                Bypasser = Modules.bypasser.create(window, T.treeobj);
+            } else {
+                Bypasser = Modules.bypasser.create(window, T.treeobj, Modules.shortcuts);
+            }
+            // Continue initialization by loading the tree
+            loadSavedWindowsIntoTree(done);
+        }
+    );
+} //createMainTreeIfWinIdReceived()
 
 function addOpenWindowsToTree(done, winarr)
 {
@@ -2695,80 +2680,94 @@ function addOpenWindowsToTree(done, winarr)
     done();
 } //addOpenWindowsToTree(done,winarr)
 
-/// Called after ASQ.try(chrome.runtime.sendMessage)
-function createMainTreeIfWinIdReceived(done, win_id_or_error)
+function addEventListeners(done)
 {
-    if(is_asq_try_err(win_id_or_error)) {
-        // This is fatal
-        return done.fail("Couldn't get win ID: " + win_id_or_error.catch);
-        // TODO add a "couldn't load" message to the popup.
-    }
+    // Set event listeners
+    T.treeobj.element.on('changed.jstree', treeOnSelect);
 
-    let win_id = win_id_or_error;
-    my_winid = win_id;
+    T.treeobj.element.on('move_node.jstree', K.nextTickRunner(saveTree));
+        // Save after drag-and-drop.  TODO? find a better way to do this?
+        // -> Is this redundant now?  I think the saving in the dnd handlers
+        // should take care of this.
 
-    // Init the main jstree
-    log.info('TabFern tree.js initializing tree in window ' + win_id.toString());
+    chrome.windows.onCreated.addListener(winOnCreated);
+    chrome.windows.onRemoved.addListener(winOnRemoved);
+    chrome.windows.onFocusChanged.addListener(winOnFocusChanged);
 
-    let contextmenu_items =
-        getBoolSetting(CFG_ENB_CONTEXT_MENU, true) ? getMainContextMenuItems
-                                                    : false;
-
-    T.create('#maintree', treeCheckCallback, dndIsDraggable,
-            contextmenu_items);
-
-    // Install keyboard shortcuts.  This includes the keyboard listener for
-    // context menus.
-    Modules.shortcuts.install(
-        {
-            window,
-            keybindings: Modules.default_shortcuts,
-            drivers: [Modules.dmauro_keypress]
-        },
-        function initialized(err) {
-            if ( err ) {
-                console.log({['Failed loading a shortcut driver!  Initializing '+
-                            'context menu with no shortcut driver']:err});
-                Bypasser = Modules.bypasser.create(window, T.treeobj);
-            } else {
-                Bypasser = Modules.bypasser.create(window, T.treeobj, Modules.shortcuts);
-            }
-            // Continue initialization by loading the tree
-            loadSavedWindowsIntoTree(done);
-        }
-    );
-} //createMainTreeIfWinIdReceived()
-
-function basicInit(done)
-{
-    log.info('TabFern tree.js initializing view - ' + TABFERN_VERSION);
-
-    if(getBoolSetting(CFG_HIDE_HORIZONTAL_SCROLLBARS, false)) {
-        document.querySelector('html').classList += ' tf--feature--hide-horizontal-scrollbars';
-    }
-
-    Hamburger = Modules.hamburger('#hamburger-menu', getHamburgerMenuItems
-            , K.CONTEXT_MENU_MOUSEOUT_TIMEOUT_MS
-            );
-
-    checkWhatIsNew('#hamburger-menu');
-
-    initFocusHandler();
-
-    // Stash our current size, which is the default window size.
-    newWinSize = getWindowSize(window);
-
-    // TODO? get screen size of the current monitor and make sure the TabFern
-    // window is fully visible -
-    // chrome.windows.create({state:'fullscreen'},function(win){console.log(win); chrome.windows.remove(win.id);})
-    // appears to provide valid `win.width` and `win.height` values.
-    // TODO? also make sure the TabFern window is at least 300px wide, or at
-    // at least 30% of screen width if <640px.  Also make sure that the
-    // TabFern window is tall enough.
-    // TODO? Snap the TabFern window to within n pixels of the Chrome window?
+    // Chrome tabs API, listed in the order given in the API docs at
+    // https://developer.chrome.com/extensions/tabs
+    chrome.tabs.onCreated.addListener(tabOnCreated);
+    chrome.tabs.onUpdated.addListener(tabOnUpdated);
+    chrome.tabs.onMoved.addListener(tabOnMoved);
+    //onSelectionChanged: deprecated
+    //onActiveChanged: deprecated
+    chrome.tabs.onActivated.addListener(tabOnActivated);
+    //onHighlightChanged: deprecated
+    //onHighlighted: not yet implemented
+    chrome.tabs.onDetached.addListener(tabOnDetached);
+    chrome.tabs.onAttached.addListener(tabOnAttached);
+    chrome.tabs.onRemoved.addListener(tabOnRemoved);
+    chrome.tabs.onReplaced.addListener(tabOnReplaced);
+    //onZoomChange: not yet implemented, and we probably won't ever need it.
 
     done();
-} //basicInit
+} //addEventListeners
+
+/// Called after ASQ.try(chrome.storage.local.get(LOCN_KEY))
+function moveWinToLastPositionIfAny(done, items_or_err)
+{   // move the popup window to its last position/size.
+    // If there was an error (e.g., nonexistent key), just
+    // accept the default size.
+
+    if(!is_asq_try_err(items_or_err)) {
+        let parsed = items_or_err[K.LOCN_KEY];
+        if( (parsed !== null) && (typeof parsed === 'object') ) {
+            // + and || are to provide some sensible defaults - thanks to
+            // https://stackoverflow.com/a/7540412/2877364 by
+            // https://stackoverflow.com/users/113716/user113716
+            let size_data =
+                {
+                      'left': +parsed.left || 0
+                    , 'top': +parsed.top || 0
+                    , 'width': Math.max(+parsed.width || 300, 100)
+                        // don't let it shrink too small, in case something went wrong
+                    , 'height': Math.max(+parsed.height || 600, 200)
+                };
+            last_saved_size = $.extend({}, size_data);
+            chrome.windows.update(my_winid, size_data, K.ignore_chrome_error);
+        }
+    } //endif no error
+
+    // Start the detection of moved or resized windows
+    setTimeout(timedResizeDetector, K.RESIZE_DETECTOR_INTERVAL_MS);
+
+    done();
+} //moveWinToLastPositionIfAny()
+
+/// The last function to be called after all other initialization has
+/// completed successfully.
+function initTreeFinal(done)
+{
+    if(!was_loading_error) {
+        did_init_complete = true;
+        // Assume the document is loaded by this point.
+        $(K.INIT_MSG_SEL).css('display','none');
+            // just in case initialization took a long time, and the message
+            // already appeared.
+
+        // If the user wishes, sort the open windows to the top.  Do this only
+        // if everything initialized successfully, since hamSortOpenToTop
+        // is not guaranteed to work correctly otherwise.
+        if(getBoolSetting(CFG_OPEN_TOP_ON_STARTUP)) {
+            ASQ().val(hamSortOpenToTop);
+        }
+
+    } //endif loaded OK
+
+    done();
+} //initTreeFinal()
+
+// ----------------------------------------------
 
 /// Save the tree on window.unload
 function shutdownTree()
