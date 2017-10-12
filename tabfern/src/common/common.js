@@ -218,4 +218,11 @@ var CC = (function(){
     }
 })(); //CC()
 
+/// Check for an asynquence-contrib try() error return
+function is_asq_try_err(o)
+{
+    return  (typeof o === 'object' && o &&
+             typeof o.catch !== 'undefined');
+} //is_asq_try_err
+
 // vi: set ts=4 sts=4 sw=4 et ai fo-=o: //

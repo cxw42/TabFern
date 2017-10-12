@@ -829,6 +829,7 @@ function loadSavedWindowsIntoTree(next_action) {
 
         // Even if there was an error, call the next action so that
         // the initialization can complete.
+        // TODO report this via the DOM?
         if(typeof next_action !== 'function') return;
         next_action();
     }); //storage.local.get
@@ -894,6 +895,7 @@ function treeOnSelect(_evt_unused, evt_data)
 
     let win_id;     // If assigned, this window will be brought to the front
                     // at the end of this function.
+    let win_node_id;
 
     if(node_val = D.tabs.by_node_id(node.id)) {
         is_tab = true;
@@ -982,6 +984,7 @@ function treeOnSelect(_evt_unused, evt_data)
 
         if(is_win) {    // A closed window
             win_node = node;
+            win_node_id = win_node.id;
             win_val = node_val;
 
         } else {        // A closed tab - get its window record
@@ -991,6 +994,7 @@ function treeOnSelect(_evt_unused, evt_data)
             if(!parent_node) return;
 
             win_node = parent_node;
+            win_node_id = win_node.id;
             win_val = D.windows.by_node_id(parent_node_id);
             if(!win_val) return;
         }
@@ -1120,17 +1124,22 @@ function treeOnSelect(_evt_unused, evt_data)
         // Clear the other windows' tabs' flags.
         let node_id = D.windows.by_win_id(win_id, 'node_id');
         //if(node_id) T.treeobj.clear_flags_by_type(K.NTs_TAB, node_id, true);
-        if(node_id) T.treeobj.clear_flags_by_multitype(K.NT_TAB, node_id, true);
+        if(node_id) {
+            T.treeobj.clear_flags_by_multitype(K.NT_TAB, node_id, true);
             // Don't clear flags from children of node_id
             // true => no event
+            T.treeobj.open_node(node_id);
+        }
 
         // Activate the window, if it still exists.
-        chrome.windows.get(win_id, function(win) {
-            if(typeof(chrome.runtime.lastError) !== 'undefined') return;
+// this is a test - trying for a bit of speed by calling windows.update
+// in the current tick
+//        chrome.windows.get(win_id, function(win) {
+//            if(typeof(chrome.runtime.lastError) !== 'undefined') return;
             log.debug({'About to activate':win_id});
             chrome.windows.update(win_id,{focused:true}, K.ignore_chrome_error);
             // winOnFocusedChange will set the flag on the newly-focused window
-        });
+//        });
     }
 } //treeOnSelect
 
@@ -1320,7 +1329,8 @@ function initFocusHandler()
         else if(old_win_id === WINID_NONE) change_from = FC_FROM_NONE;
         else change_from = FC_FROM_OPEN;
 
-        log.info({change_from, old_win_id, change_to, win_id});
+        // Uncomment if you are debugging focus-change behaviour
+        //log.info({change_from, old_win_id, change_to, win_id});
 
         let same_window = (old_win_id === win_id);
         previously_focused_winid = win_id;
@@ -2531,7 +2541,7 @@ function checkWhatIsNew(selector)
 
 /// The last function to be called after all other initialization has
 /// completed successfully.
-function initTreeFinal()
+function initTreeFinal(done)
 {
     if(!was_loading_error) {
         did_init_complete = true;
@@ -2548,15 +2558,18 @@ function initTreeFinal()
         }
 
     } //endif loaded OK
+
+    done();
 } //initTreeFinal()
 
-function initTree4(items)
+/// Called after ASQ.try(chrome.storage.local.get(LOCN_KEY))
+function moveWinToLastPositionIfAny(done, items_or_err)
 {   // move the popup window to its last position/size.
     // If there was an error (e.g., nonexistent key), just
     // accept the default size.
 
-    if(typeof(chrome.runtime.lastError) === 'undefined') {
-        let parsed = items[K.LOCN_KEY];
+    if(!is_asq_try_err(items_or_err)) {
+        let parsed = items_or_err[K.LOCN_KEY];
         if( (parsed !== null) && (typeof parsed === 'object') ) {
             // + and || are to provide some sensible defaults - thanks to
             // https://stackoverflow.com/a/7540412/2877364 by
@@ -2570,23 +2583,25 @@ function initTree4(items)
                     , 'height': Math.max(+parsed.height || 600, 200)
                 };
             last_saved_size = $.extend({}, size_data);
-            chrome.windows.update(my_winid, size_data);
+            chrome.windows.update(my_winid, size_data, K.ignore_chrome_error);
         }
     } //endif no error
 
     // Start the detection of moved or resized windows
     setTimeout(timedResizeDetector, K.RESIZE_DETECTOR_INTERVAL_MS);
 
-    initTreeFinal();
-} //initTree4()
+    done();
+} //moveWinToLastPositionIfAny()
 
-function initTree3()
+function addEventListeners(done)
 {
     // Set event listeners
     T.treeobj.element.on('changed.jstree', treeOnSelect);
 
     T.treeobj.element.on('move_node.jstree', K.nextTickRunner(saveTree));
         // Save after drag-and-drop.  TODO? find a better way to do this?
+        // -> Is this redundant now?  I think the saving in the dnd handlers
+        // should take care of this.
 
     chrome.windows.onCreated.addListener(winOnCreated);
     chrome.windows.onRemoved.addListener(winOnRemoved);
@@ -2608,11 +2623,10 @@ function initTree3()
     chrome.tabs.onReplaced.addListener(tabOnReplaced);
     //onZoomChange: not yet implemented, and we probably won't ever need it.
 
-    // Move this view to where it was, if anywhere
-    chrome.storage.local.get(K.LOCN_KEY, initTree4);
-} //initTree3
+    done();
+} //addEventListeners
 
-function addOpenWindowsToTree(winarr)
+function addOpenWindowsToTree(done, winarr)
 {
     let dat = {};
     let focused_win_id;
@@ -2678,21 +2692,19 @@ function addOpenWindowsToTree(winarr)
         winOnFocusChanged(focused_win_id, true);
     }
 
-    initTree3();
-} //addOpenWindowsToTree(winarr)
+    done();
+} //addOpenWindowsToTree(done,winarr)
 
-function initTree2()
+/// Called after ASQ.try(chrome.runtime.sendMessage)
+function createMainTreeIfWinIdReceived(done, win_id_or_error)
 {
-    chrome.windows.getAll({'populate': true}, addOpenWindowsToTree);
-} //initTree2()
-
-function initTree1(win_id)
-{ //called as a callback from sendMessage
-    if(typeof(chrome.runtime.lastError) !== 'undefined') {
-        log.error("Couldn't get win ID: " + chrome.runtime.lastError);
+    if(is_asq_try_err(win_id_or_error)) {
+        // This is fatal
+        return done.fail("Couldn't get win ID: " + win_id_or_error.catch);
         // TODO add a "couldn't load" message to the popup.
-        return;     // This actually is fatal.
     }
+
+    let win_id = win_id_or_error;
     my_winid = win_id;
 
     // Init the main jstree
@@ -2715,23 +2727,19 @@ function initTree1(win_id)
         },
         function initialized(err) {
             if ( err ) {
-                console.log('Failed loading a shortcut driver!  Initializing context menu with no shortcut driver.  ' + err);
+                console.log({['Failed loading a shortcut driver!  Initializing '+
+                            'context menu with no shortcut driver']:err});
                 Bypasser = Modules.bypasser.create(window, T.treeobj);
-
-                // Continue initialization by loading the tree
-                loadSavedWindowsIntoTree(initTree2);
-
             } else {
                 Bypasser = Modules.bypasser.create(window, T.treeobj, Modules.shortcuts);
-
-                // Continue initialization by loading the tree
-                loadSavedWindowsIntoTree(initTree2);
             }
+            // Continue initialization by loading the tree
+            loadSavedWindowsIntoTree(done);
         }
     );
-} //initTree1()
+} //createMainTreeIfWinIdReceived()
 
-function initTree0()
+function basicInit(done)
 {
     log.info('TabFern tree.js initializing view - ' + TABFERN_VERSION);
 
@@ -2759,11 +2767,8 @@ function initTree0()
     // TabFern window is tall enough.
     // TODO? Snap the TabFern window to within n pixels of the Chrome window?
 
-    // Get our Chrome-extensions-API window ID from the background page.
-    // I don't know a way to get this directly from the JS window object.
-    // TODO maybe getCurrent?  Not sure if that's reliable.
-    chrome.runtime.sendMessage(MSG_GET_VIEW_WIN_ID, initTree1);
-} //initTree0
+    done();
+} //basicInit
 
 /// Save the tree on window.unload
 function shutdownTree()
@@ -2843,7 +2848,29 @@ function main(...args)
         // This doesn't detect window movement without a resize, which is why
         // we have timedResizeDetector above.
 
-    callbackOnLoad(initTree0);      // Fire off the main init
+    // Run the main init steps once the page has loaded
+    ASQ.react((proceed)=>{callbackOnLoad(proceed);})
+    .then(basicInit)
+    .try((done)=>{
+        // Get our Chrome-extensions-API window ID from the background page.
+        // I don't know a way to get this directly from the JS window object.
+        // TODO maybe getCurrent?  Not sure if that's reliable.
+        chrome.runtime.sendMessage(MSG_GET_VIEW_WIN_ID, CC(done));
+    })
+    .then(createMainTreeIfWinIdReceived)
+    .then((done)=>{
+        chrome.windows.getAll({'populate': true}, CC(done));
+    })
+    .then(addOpenWindowsToTree)
+    .then(addEventListeners)
+    .try((done)=>{
+        // Find out where the view was before, if anywhere
+        chrome.storage.local.get(K.LOCN_KEY, CC(done));
+    })
+    .then(moveWinToLastPositionIfAny)
+    .then(initTreeFinal)
+    //.or(TODO show "couldn't load" in the popup)
+    ;
 
 } // main()
 
