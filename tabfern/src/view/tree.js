@@ -185,7 +185,7 @@ function getWindowSizeFromWindowRecord(win)
 /// Clear flags on all windows; leave tabs alone.
 function unflagAllWindows() {
     //log.trace('unflagAllWindows');
-    T.treeobj.clear_flags_by_multitype([K.NT_WIN, K.NST_OPEN],
+    T.treeobj.clear_flags_by_multitype([K.IT_WIN, K.NST_OPEN],
             undefined,  // any parent
             true        // true => don't need an event
     );
@@ -451,7 +451,7 @@ function actionToggleTabTopBorder(node_id, node, unused_action_id, unused_action
     let tab_val = D.tabs.by_node_id(node_id);
     if(!tab_val) return;
 
-    // Note: adjust this if you add another NT_TAB type.
+    // Note: adjust this if you add another IT_TAB type.
     if(!T.treeobj.has_multitype(node_id, K.NST_TOP_BORDER)) {
         T.treeobj.add_multitype(node_id, K.NST_TOP_BORDER);
     } else {
@@ -473,7 +473,7 @@ function actionEditBullet(node_id, node, unused_action_id, unused_action_el)
 
     // TODO replace window.prompt with an in-DOM GUI.
     let new_bullet = window.prompt('Note for this ' +
-            (val.ty === K.IT_WINDOW ? 'window' : 'tab') + '?',
+            (val.ty === K.IT_WIN ? 'window' : 'tab') + '?',
             val.raw_bullet || '');
     if(new_bullet === null) return;   // user cancelled
 
@@ -1126,7 +1126,7 @@ function treeOnSelect(_evt_unused, evt_data)
         let node_id = D.windows.by_win_id(win_id, 'node_id');
         //if(node_id) T.treeobj.clear_flags_by_type(K.NTs_TAB, node_id, true);
         if(node_id) {
-            T.treeobj.clear_flags_by_multitype(K.NT_TAB, node_id, true);
+            T.treeobj.clear_flags_by_multitype(K.IT_TAB, node_id, true);
             // Don't clear flags from children of node_id
             // true => no event
             T.treeobj.open_node(node_id);
@@ -1151,11 +1151,11 @@ function treeOnSelect(_evt_unused, evt_data)
 //function flavor_callback(flavors, elem)
 //{
 //    // Apply borders to bordered tabs
-//    if(this.type === K.NT_TAB && flavors.indexOf(K.NF_BORDERED) !== -1)
+//    if(this.type === K.IT_TAB && flavors.indexOf(K.NF_BORDERED) !== -1)
 //        return {'class': K.BORDERED_TAB_CLASS};
 //
 //    if(this.type === K.NT_WIN_ELVISH) return {'class': 'green'};
-//    else if(this.type === K.NT_TAB) return {'class': 'blue'};
+//    else if(this.type === K.IT_TAB) return {'class': 'blue'};
 //    else return {'class': 'red'};
 //} //flavor_callback
 
@@ -2055,7 +2055,7 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
     let nodeType, win_val, tab_val;
     {
         win_val = D.windows.by_node_id(node.id);
-        if(win_val) nodeType = K.IT_WINDOW;
+        if(win_val) nodeType = K.IT_WIN;
     }
 
     if(!nodeType) {
@@ -2088,7 +2088,7 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
         return tabItems;
     }
 
-    if(nodeType === K.IT_WINDOW) {
+    if(nodeType === K.IT_WIN) {
         let winItems = {};
 
         winItems.renameItem = {
@@ -2139,7 +2139,7 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
             };
 
         return winItems;
-    } //endif K.IT_WINDOW
+    } //endif K.IT_WIN
 
     return false;   // if it's a node we don't have a menu for
 
@@ -2347,7 +2347,7 @@ var treeCheckCallback = (function(){
 
             node_being_dragged = node.id;
 
-            if(moving_val.ty === K.IT_WINDOW) {              // Dragging windows
+            if(moving_val.ty === K.IT_WIN) {              // Dragging windows
                 // Can't drop inside another window - only before or after
                 if(more.pos==='i') return false;
 
@@ -2365,14 +2365,14 @@ var treeCheckCallback = (function(){
 
                 if(moving_val.isOpen) {      // open tab
                     if( !new_parent_val || //!new_parent_val.isOpen ||
-                        new_parent_val.ty !== K.IT_WINDOW
+                        new_parent_val.ty !== K.IT_WIN
                     ) {
                         return false;
                     }
 
                 } else {                    // closed tab
                     if( !new_parent_val || // new_parent_val.isOpen ||
-                        new_parent_val.ty !== K.IT_WINDOW
+                        new_parent_val.ty !== K.IT_WIN
                     ) {
                         return false;
                     }
@@ -2397,7 +2397,7 @@ var treeCheckCallback = (function(){
             }
 
             // Windows: can only drop in root
-            if(moving_val.ty === K.IT_WINDOW) {
+            if(moving_val.ty === K.IT_WIN) {
                 if(new_parent.id !== $.jstree.root) return false;
 
             } else if(moving_val.ty === K.IT_TAB) {

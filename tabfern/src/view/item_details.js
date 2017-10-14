@@ -55,7 +55,7 @@
 
     /// Map between open-window IDs and node IDs
     module.windows = multidex(
-        K.IT_WINDOW,  //type
+        K.IT_WIN,  //type
         [ //keys
             'win_id',   // from Chrome
             'node_id',  // from jstree

@@ -111,7 +111,7 @@
         // Node types - use constants as the keys
         let jstreeTypes = {};
 
-        jstreeTypes[K.NT_WIN] = {
+        jstreeTypes[K.IT_WIN] = {
             li_attr: { 'class': WIN_CLASS },
             icon: 'clear-icon',  // We will overlay the actual icon in the CSS
         };
@@ -136,7 +136,7 @@
 //            icon: true,     //default - folder
 //        };
 
-        jstreeTypes[K.NT_TAB] = {
+        jstreeTypes[K.IT_TAB] = {
             li_attr: { 'class': TAB_CLASS },
             icon: 'fff-page',   // per-node icons will override this
         };

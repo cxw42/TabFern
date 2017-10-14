@@ -149,16 +149,10 @@
         if(!win_node_id) return false;
         let val = D.get_node_val(win_node_id);
         if(!val) return false;
-        if(val.ty !== K.IT_WINDOW) return false;
+        if(val.ty !== K.IT_WIN) return false;
 
         val.keep = K.WIN_KEEP;
         T.treeobj.add_multitype(win_node_id, K.NST_SAVED);
-
-//        if(val.isOpen) {
-//            T.treeobj.set_type(win_node_id, K.NT_WIN_ELVISH);
-//        } else {
-//            T.treeobj.set_type(win_node_id, K.NT_WIN_DORMANT);
-//        }
 
         if(cleanup_title) {
             val.raw_title = module.remove_unsaved_markers(
@@ -180,7 +174,7 @@
         let retval = {node: null, val: null};
         switch(node_ty) {
             // TODO
-            case K.IT_WINDOW:
+            case K.IT_WIN:
                 break;
             case K.IT_TAB:
                 break;
@@ -275,15 +269,9 @@
                 pos
         );
         if(win_node_id === false) return error_return;
-        T.treeobj.add_multitype(win_node_id, K.NT_WIN);
+        T.treeobj.add_multitype(win_node_id, K.IT_WIN);
         if(cwin) T.treeobj.add_multitype(win_node_id, K.NST_OPEN);
         if(keep) T.treeobj.add_multitype(win_node_id, K.NST_SAVED);
-
-//        T.treeobj.set_type(win_node_id,
-//            ( cwin ?
-//                ( keep ? K.NT_WIN_ELVISH : K.NT_WIN_EPHEMERAL ) :
-//                K.NT_WIN_DORMANT)
-//        );
 
         loginfo({'Adding nodeid map for cwinid': cwin ? cwin.id : 'none'});
         let win_val = D.windows.add({
@@ -321,21 +309,13 @@
         );
         if(tab_node_id === false) return error_return;
 
-        T.treeobj.add_multitype(tab_node_id, K.NT_TAB);
+        T.treeobj.add_multitype(tab_node_id, K.IT_TAB);
         if(ctab) T.treeobj.add_multitype(tab_node_id, K.NST_OPEN);
 
         if(tys) {
             if(!$.isArray(tys)) tys=[tys];
             for(let ty of tys) T.treeobj.add_multitype(tab_node_id, ty);
         }
-
-//        if(node_type && typeof node_type === 'string') {
-//            T.treeobj.set_type(tab_node_id, node_type);
-//        } else {
-//            T.treeobj.set_type(tab_node_id, K.NT_TAB);
-//        }
-//
-//        T.treeobj.add_flavor(tab_node_id, node_flavors);
 
         let tab_val = D.tabs.add({
             tab_id: (ctab ? ctab.id : K.NONE),
