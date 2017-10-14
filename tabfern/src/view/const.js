@@ -72,9 +72,8 @@
 
         // Item-type enumeration.  Here because there may be more item
         // types in the future (e.g., dividers or plugins).  Each IT_*
-        // must be truthy.
-        // Used, e.g., by item.js:get_node_tyval().
-        IT_WINDOW:  'window',   // strings are used for ease of debugging
+        // must be truthy.  These are used as the types in multidexes.
+        IT_WINDOW:  'window',   // strings are used as required by multidex
         IT_TAB:     'tab',
 
         // Node types - what kind of thing a list item represents.  Note that

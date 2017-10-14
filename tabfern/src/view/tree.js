@@ -468,12 +468,12 @@ function actionToggleTabTopBorder(node_id, node, unused_action_id, unused_action
 /// Edit a node's bullet
 function actionEditBullet(node_id, node, unused_action_id, unused_action_el)
 {
-    let {ty, val} = I.get_node_tyval(node_id);
+    let val = I.get_node_val(node_id);
     if(!val) return;
 
     // TODO replace window.prompt with an in-DOM GUI.
     let new_bullet = window.prompt('Note for this ' +
-            (ty === K.IT_WINDOW ? 'window' : 'tab') + '?',
+            (val.ty === K.IT_WINDOW ? 'window' : 'tab') + '?',
             val.raw_bullet || '');
     if(new_bullet === null) return;   // user cancelled
 
@@ -670,7 +670,8 @@ var was_loading_error = false;
 /// tree.  This may happen, e.g., due to TabFern refresh or Chrome reload.
 /// @param cwin {Chrome Window} the open Chrome window we're checking for
 ///                             a match.
-/// @return {mixed} the existing window's node and value, or false if no match.
+/// @return {mixed} the existing window's node and value as {node, val},
+///                 or false if no match.
 function winAlreadyExists(cwin)
 {
     WIN:
@@ -2333,12 +2334,12 @@ var treeCheckCallback = (function(){
             console.groupEnd();
         } //logging
 
-        let moving_tyval = I.get_node_tyval(node.id);
-        if(!moving_tyval) return false;    // sanity check
+        let moving_val = I.get_node_val(node.id);
+        if(!moving_val) return false;    // sanity check
 
-        let new_parent_tyval;
+        let new_parent_val;
         if(new_parent.id !== $.jstree.root) {
-            new_parent_tyval = I.get_node_tyval(new_parent.id);
+            new_parent_val = I.get_node_val(new_parent.id);
         }
 
         // The "can I drop here?" check.
@@ -2346,14 +2347,14 @@ var treeCheckCallback = (function(){
 
             node_being_dragged = node.id;
 
-            if(moving_tyval.ty === K.IT_WINDOW) {              // Dragging windows
+            if(moving_val.ty === K.IT_WINDOW) {              // Dragging windows
                 // Can't drop inside another window - only before or after
                 if(more.pos==='i') return false;
 
                 // Can't drop other than in the root
                 if(new_parent.id !== $.jstree.root) return false;
 
-            } else if(moving_tyval.ty === K.IT_TAB) {          // Dragging tabs
+            } else if(moving_val.ty === K.IT_TAB) {          // Dragging tabs
                 // Tabs: Can drop closed tabs in closed windows, or open
                 // tabs in open windows.  Can also drop open tabs to closed
                 // windows, in which case the tab is closed.
@@ -2362,16 +2363,16 @@ var treeCheckCallback = (function(){
                 // permit opening tab-by-tab (#35).
 
 
-                if(moving_tyval.val.isOpen) {      // open tab
-                    if( !new_parent_tyval || //!new_parent_tyval.val.isOpen ||
-                        new_parent_tyval.ty !== K.IT_WINDOW
+                if(moving_val.isOpen) {      // open tab
+                    if( !new_parent_val || //!new_parent_val.isOpen ||
+                        new_parent_val.ty !== K.IT_WINDOW
                     ) {
                         return false;
                     }
 
                 } else {                    // closed tab
-                    if( !new_parent_tyval || // new_parent_tyval.val.isOpen ||
-                        new_parent_tyval.ty !== K.IT_WINDOW
+                    if( !new_parent_val || // new_parent_val.isOpen ||
+                        new_parent_val.ty !== K.IT_WINDOW
                     ) {
                         return false;
                     }
@@ -2388,7 +2389,7 @@ var treeCheckCallback = (function(){
 
             if(log.getLevel() <= log.levels.TRACE) {
                 console.group('check callback for node move');
-                console.log(moving_tyval);
+                console.log(moving_val);
                 console.log(node);
                 console.log(new_parent);
                 if(more) console.log(more);
@@ -2396,26 +2397,26 @@ var treeCheckCallback = (function(){
             }
 
             // Windows: can only drop in root
-            if(moving_tyval.ty === K.IT_WINDOW) {
+            if(moving_val.ty === K.IT_WINDOW) {
                 if(new_parent.id !== $.jstree.root) return false;
 
-            } else if(moving_tyval.ty === K.IT_TAB) {
+            } else if(moving_val.ty === K.IT_TAB) {
                 let curr_parent_id = node.parent;
                 let new_parent_id = new_parent.id;
 
-                if(moving_tyval.val.isOpen) {
+                if(moving_val.isOpen) {
 
                     // Can move open tabs between open windows or the
                     // holding pen.  Also, can move open tabs to closed
                     // windows.
                     if( curr_parent_id !== T.holding_node_id &&
                         new_parent_id !== T.holding_node_id &&
-                        (!new_parent_tyval) ) // || !new_parent_tyval.val.isOpen) )
+                        (!new_parent_val) ) // || !new_parent_val.isOpen) )
                         return false;
 
                 } else {
                     // Can move closed tabs to any window
-                    if(!new_parent_tyval //|| new_parent_tyval.val.isOpen
+                    if(!new_parent_val //|| new_parent_val.isOpen
                     ) return false;
                 }
             }
@@ -2438,7 +2439,7 @@ var treeCheckCallback = (function(){
             // holding pen, and the tab is closed, set up the window to be
             // deleted once the move completes.
             // If the last tab is open, it is handled below.
-            if( !moving_tyval.val.isOpen &&
+            if( !moving_val.isOpen &&
                 old_parent &&
                 old_parent.children &&
                 (node.id !== T.holding_node_id) &&
@@ -2451,7 +2452,7 @@ var treeCheckCallback = (function(){
             } else
 
             // If we are moving an open tab, set up to move the tab in Chrome.
-            if( moving_tyval.val.isOpen &&
+            if( moving_val.isOpen &&
                 old_parent &&
                 (node.id !== T.holding_node_id) &&
                 (old_parent.id !== T.holding_node_id) &&
@@ -2463,9 +2464,9 @@ var treeCheckCallback = (function(){
 
             // If we are moving a closed tab into an open window, set up
             // to open the tab in Chrome.
-            if( !moving_tyval.val.isOpen &&
-                new_parent_tyval &&
-                new_parent_tyval.val.isOpen
+            if( !moving_val.isOpen &&
+                new_parent_val &&
+                new_parent_val.isOpen
             ) {
                 T.treeobj.element.one('move_node.jstree',
                                             open_tab_within_window);
