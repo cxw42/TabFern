@@ -59,7 +59,7 @@
             node_id = node.id;
         }
 
-        return D.get_node_val(node_id);
+        return D.val_by_node_id(node_id);
     }; //get_node_val()
 
     /// Get the textual version of raw_title for a window's value
@@ -128,7 +128,7 @@
     /// @return truthy on success, falsy on failure.
     module.refresh_label = function(node_id) {
         if(!node_id) return false;
-        let val = D.get_node_val(node_id);
+        let val = D.val_by_node_id(node_id);
         if(!val) return false;
         let retval = T.treeobj.rename_node(node_id, module.get_html_label(val));
         // TODO also update the icon?
@@ -147,7 +147,7 @@
     /// @return truthy on success; falsy on failure
     module.remember = function(win_node_id, cleanup_title = true) {
         if(!win_node_id) return false;
-        let val = D.get_node_val(win_node_id);
+        let val = D.val_by_node_id(win_node_id);
         if(!val) return false;
         if(val.ty !== K.IT_WIN) return false;
 

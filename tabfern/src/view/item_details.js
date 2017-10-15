@@ -73,7 +73,7 @@
     ///                         this module does not depend on item_tree.
     /// @return ret {object} the value, or ===false if the node wasn't found.
     ///                         val.ty holds the type.
-    module.get_node_val = function(node_id)
+    module.val_by_node_id = function(node_id)
     {
         if(typeof node_id !== 'string') return false;
 
@@ -86,7 +86,7 @@
         if(val) return val;
 
         return false;   //not found
-    } //get_node_val
+    } //val_by_node_id
 
     return module;
 }));

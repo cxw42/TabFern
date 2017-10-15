@@ -534,6 +534,44 @@
 			if(!obj) { return null; }
 			return (obj.multitype.indexOf(multitype) !== -1);
 		}; //has_multitype()
+
+		/**
+		 * set the node icon for a node (override)
+		 * @name set_icon(obj, icon)
+		 * @param {mixed} obj
+		 * @param {String} icon the new icon - can be a path to an icon or a className, if using an image that is in the current directory use a `./` prefix, otherwise it will be detected as a class
+		 */
+		this.set_icon = function (obj, icon) {
+
+			if($.isArray(obj)) {
+				obj = obj.slice();
+				for(t1 = 0, t2 = obj.length; t1 < t2; t1++) {
+					this.set_icon(obj[t1], icon);
+				}
+				return true;
+			}
+
+			obj = this.get_node(obj);
+			if(!obj || obj.id === $.jstree.root) { return false; }
+
+			let new_icon = (icon === true || icon === null || icon === undefined ||
+                        icon === '') ? true : icon;
+
+      if(new_icon === true) { // default icon --- see if one from a multitype should take effect
+			  let t = this.settings.multitype;
+
+				// Loop down, since later multitypes control
+				for(let idx=obj.multitype.length-1; idx>=0 ; --idx) {
+					if(t[obj.multitype[idx]].icon !== undefined) {
+						new_icon = t[obj.multitype[idx]].icon;
+						break;
+					}
+				}
+      }
+
+      return parent.set_icon.call(this,obj,new_icon);
+    }; //set_icon()
+
 	};
 }));
 // vi: set ts=2 sw=2: //
