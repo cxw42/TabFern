@@ -96,6 +96,13 @@
                 "label": i18n.get('Hide horizontal scrollbar' + refresh_message),
             },
             // Maybe add some theming options here?
+            {
+                "tab": i18n.get("Appearance"),
+                "group": i18n.get("Tree"),
+                "name": CFG_SHOW_TREE_LINES,
+                "type": "checkbox",
+                "label": i18n.get('Show connecting lines between nodes' + refresh_message),
+            },
 
             // Features
             {
