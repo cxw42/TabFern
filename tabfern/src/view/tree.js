@@ -2408,6 +2408,10 @@ var treeCheckCallback = (function(){
         // drag and also for express calls to move_node.
         if(operation==='move_node') {
 
+            if(!more || !more.dnd) {    // No longer actively dragging
+                void 0; // a place to put a breakpoint
+            }
+
             if(log.getLevel() <= log.levels.TRACE) {
                 console.group('check callback for node move');
                 console.log(moving_val);
@@ -2456,6 +2460,27 @@ var treeCheckCallback = (function(){
 
             let old_parent = T.treeobj.get_node(node.parent);
 
+            // If we are moving an open tab, set up to move the tab in Chrome.
+            if( moving_val.isOpen &&
+                old_parent &&
+                (node.id !== T.holding_node_id) &&
+                (old_parent.id !== T.holding_node_id) &&
+                (new_parent.id !== T.holding_node_id)
+            ) {
+                T.treeobj.element.one('move_node.jstree',
+                                            move_open_tab_in_window);
+            }
+
+            // If we are moving a closed tab into an open window, set up
+            // to open the tab in Chrome.
+            if( !moving_val.isOpen &&
+                new_parent_val &&
+                new_parent_val.isOpen
+            ) {
+                T.treeobj.element.one('move_node.jstree',
+                                            open_tab_within_window);
+            }
+
             // If we are moving the last tab out of a window other than the
             // holding pen, and the tab is closed, set up the window to be
             // deleted once the move completes.
@@ -2470,27 +2495,6 @@ var treeCheckCallback = (function(){
                 (old_parent.children.length === 1)
             ) {
                 T.treeobj.element.one('move_node.jstree', remove_empty_window);
-            } else
-
-            // If we are moving an open tab, set up to move the tab in Chrome.
-            if( moving_val.isOpen &&
-                old_parent &&
-                (node.id !== T.holding_node_id) &&
-                (old_parent.id !== T.holding_node_id) &&
-                (new_parent.id !== T.holding_node_id)
-            ) {
-                T.treeobj.element.one('move_node.jstree',
-                                            move_open_tab_in_window);
-            } else
-
-            // If we are moving a closed tab into an open window, set up
-            // to open the tab in Chrome.
-            if( !moving_val.isOpen &&
-                new_parent_val &&
-                new_parent_val.isOpen
-            ) {
-                T.treeobj.element.one('move_node.jstree',
-                                            open_tab_within_window);
             }
 
         } //endif this is a non-dnd move
