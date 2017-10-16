@@ -45,24 +45,22 @@
     /// Find a node's value in the model, regardless of type.
     /// @param node_ref {mixed} If a string, the node id; otherwise, anything
     ///                         that can be passed to jstree.get_node.
-    /// @return ret {object} .ty = K.IT_*; .val = the value, or
-    ///                         .ty=false if the node wasn't found.
-    module.get_node_tyval = function(node_ref)
+    /// @return ret {object} the value, or ===false if the node wasn't found.
+    module.get_node_val = function(node_ref)
     {
         // Get the node ID
         let node_id;
-        let retval = {ty: false, val: null};
 
         if(typeof node_ref === 'string') {
             node_id = node_ref;
         } else {
             let node = T.treeobj.get_node(node_ref);
-            if(node === false) return retval;
+            if(node === false) return false;
             node_id = node.id;
         }
 
-        return D.get_node_tyval(node_id);
-    }; //get_node_tyval()
+        return D.val_by_node_id(node_id);
+    }; //get_node_val()
 
     /// Get the textual version of raw_title for a window's value
     module.get_win_raw_text = function(val)
@@ -114,8 +112,8 @@
             // empty strings.
             retval += '<span class="' + K.BULLET_CLASS + '">';
             retval += Esc.escape(val.raw_bullet);
-            retval += '</span>';
-            retval += ' &#x2726; ';   // a dingbat
+            retval += ' &#x2726;';   // a dingbat
+            retval += '</span> ';
         }
 
         retval += Esc.escape(module.get_win_raw_text(val));
@@ -130,7 +128,7 @@
     /// @return truthy on success, falsy on failure.
     module.refresh_label = function(node_id) {
         if(!node_id) return false;
-        let {ty, val} = D.get_node_tyval(node_id);
+        let val = D.val_by_node_id(node_id);
         if(!val) return false;
         let retval = T.treeobj.rename_node(node_id, module.get_html_label(val));
         // TODO also update the icon?
@@ -149,17 +147,12 @@
     /// @return truthy on success; falsy on failure
     module.remember = function(win_node_id, cleanup_title = true) {
         if(!win_node_id) return false;
-        let {ty, val} = D.get_node_tyval(win_node_id);
+        let val = D.val_by_node_id(win_node_id);
         if(!val) return false;
-        if(ty !== K.IT_WINDOW) return false;
+        if(val.ty !== K.IT_WIN) return false;
 
         val.keep = K.WIN_KEEP;
-
-        if(val.isOpen) {
-            T.treeobj.set_type(win_node_id, K.NT_WIN_ELVISH);
-        } else {
-            T.treeobj.set_type(win_node_id, K.NT_WIN_DORMANT);
-        }
+        T.treeobj.add_multitype(win_node_id, K.NST_SAVED);
 
         if(cleanup_title) {
             val.raw_title = module.remove_unsaved_markers(
@@ -181,7 +174,7 @@
         let retval = {node: null, val: null};
         switch(node_ty) {
             // TODO
-            case K.IT_WINDOW:
+            case K.IT_WIN:
                 break;
             case K.IT_TAB:
                 break;
@@ -191,11 +184,10 @@
     }; //makeNodeAndValue
 
     /// Update the model and the tree to map a tab's node to an open Chrome tab.
-    /// Fails if the tab is already mapped.
+    /// @param node_ref {mixed} a reference to the node for the tab
     /// @param ctab {Chrome Tab} the open tab
-    /// @param node_ref {mixed} a reference to the fern for the window
-    /// @return The node ID of the tab's node, or false on error
-    module.bindTabToTree_NOTYETDONE = function(ctab, node_ref)
+    /// @return True on success, or false on error
+    module.realizeTab_NOTYETDONE = function(node_ref, ctab)
     {
         // Sanity check
         let tab_val = D.tabs.by_tab_id(ctab.id);
@@ -222,7 +214,12 @@
         });
 
         return node.id;
-    } //bindTabToTree
+    } //realizeTab
+
+    /// Remove a tab's connection to #ctab.  The tab's node stays in the tree.
+    module.virtualizeTab_NOTYETDONE = function(node_ref, ctab)
+    {
+    } //virtualizeTab
 
     /// Update the model and the tree to map a fern to an open Chrome window
     /// @param cwin {Chrome Window} the open window
@@ -276,11 +273,9 @@
                 pos
         );
         if(win_node_id === false) return error_return;
-        T.treeobj.set_type(win_node_id,
-            ( cwin ?
-                ( keep ? K.NT_WIN_ELVISH : K.NT_WIN_EPHEMERAL ) :
-                K.NT_WIN_DORMANT)
-        );
+        T.treeobj.add_multitype(win_node_id, K.IT_WIN);
+        if(cwin) T.treeobj.add_multitype(win_node_id, K.NST_OPEN);
+        if(keep) T.treeobj.add_multitype(win_node_id, K.NST_SAVED);
 
         loginfo({'Adding nodeid map for cwinid': cwin ? cwin.id : 'none'});
         let win_val = D.windows.add({
@@ -304,11 +299,11 @@
     ///                         If falsy, there is no Chrome tab presently.
     /// @param raw_url {string} If #ctab is falsy, the URL of the tab
     /// @param raw_title {string} If #ctab is falsy, the title of the tab
-    /// @param node_type {string} If provided, used for the node type.
+    /// @param tys {mixed} If provided, add those multitypes to the tab
     /// @return {object} {node_id, val}.  On error,
     ///                 at least one of node_id or val will be falsy.
     module.makeItemForTab = function(parent_node_id, ctab, raw_url, raw_title,
-                                        node_type) {
+            tys) {
         let error_return = {node_id:null, val:null};
         if(!parent_node_id) return error_return;
 
@@ -318,10 +313,12 @@
         );
         if(tab_node_id === false) return error_return;
 
-        if(node_type && typeof node_type === 'string') {
-            T.treeobj.set_type(tab_node_id, node_type);
-        } else {
-            T.treeobj.set_type(tab_node_id, K.NT_TAB);
+        T.treeobj.add_multitype(tab_node_id, K.IT_TAB);
+        if(ctab) T.treeobj.add_multitype(tab_node_id, K.NST_OPEN);
+
+        if(tys) {
+            if(!$.isArray(tys)) tys=[tys];
+            for(let ty of tys) T.treeobj.add_multitype(tab_node_id, ty);
         }
 
         let tab_val = D.tabs.add({

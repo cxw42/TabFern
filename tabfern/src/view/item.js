@@ -184,11 +184,10 @@
     }; //makeNodeAndValue
 
     /// Update the model and the tree to map a tab's node to an open Chrome tab.
-    /// Fails if the tab is already mapped.
+    /// @param node_ref {mixed} a reference to the node for the tab
     /// @param ctab {Chrome Tab} the open tab
-    /// @param node_ref {mixed} a reference to the fern for the window
-    /// @return The node ID of the tab's node, or false on error
-    module.bindTabToTree_NOTYETDONE = function(ctab, node_ref)
+    /// @return True on success, or false on error
+    module.realizeTab_NOTYETDONE = function(node_ref, ctab)
     {
         // Sanity check
         let tab_val = D.tabs.by_tab_id(ctab.id);
@@ -215,7 +214,12 @@
         });
 
         return node.id;
-    } //bindTabToTree
+    } //realizeTab
+
+    /// Remove a tab's connection to #ctab.  The tab's node stays in the tree.
+    module.virtualizeTab_NOTYETDONE = function(node_ref, ctab)
+    {
+    } //virtualizeTab
 
     /// Update the model and the tree to map a fern to an open Chrome window
     /// @param cwin {Chrome Window} the open window

@@ -11,7 +11,7 @@ console.log('TabFern common.js loading');
 
 /// The TabFern extension friendly version number.  Displayed in the
 /// title bar of the popup window, so lowercase (no shouting!).
-const TABFERN_VERSION='0.1.10 alpha \u26a0'
+const TABFERN_VERSION='0.1.11-pre.1 alpha \u26a0'
     // When you change this, also update:
     //  - manifest.json: both the version and version_name
     //  - package.json
@@ -41,6 +41,7 @@ const CFG_COLLAPSE_ON_STARTUP = 'collapse-trees-on-startup';
 const CFG_OPEN_TOP_ON_STARTUP = 'open-to-top-on-startup';
 const CFG_HIDE_HORIZONTAL_SCROLLBARS = 'hide-horizontal-scrollbars';
 const CFG_NEW_WINS_AT_TOP = 'open-new-windows-at-top';
+const CFG_SHOW_TREE_LINES = 'show-tree-lines';
 
 const CFG_DEFAULTS = {
     __proto__: null,
@@ -51,10 +52,11 @@ const CFG_DEFAULTS = {
     [CFG_OPEN_TOP_ON_STARTUP]: false,
     [CFG_HIDE_HORIZONTAL_SCROLLBARS]: false,
     [CFG_NEW_WINS_AT_TOP]: false,
+    [CFG_SHOW_TREE_LINES]: false,
 };
 
 //////////////////////////////////////////////////////////////////////////
-// Helper functions //
+// Setting-related functions //
 
 const SETTING_PREFIX = 'store.settings.';
 
@@ -106,6 +108,9 @@ function setSettingIfNonexistent(setting_name, setting_value)
     if(!haveSetting(setting_name)) setSetting(setting_name, setting_value);
 }
 
+//////////////////////////////////////////////////////////////////////////
+// DOM-related functions //
+
 /// Append a <script> to the <head> of #document.
 /// @param {Document} document
 /// @param {String} url URL of script to load
@@ -128,6 +133,21 @@ function asyncAppendScriptToHead(document, url, callback, type = 'text/javascrip
     // Fire the loading
     head.appendChild(script);
 } //asyncAppendScriptToHead()
+
+/// Invoke a callback only when the document is loaded
+function callbackOnLoad(callback)
+{
+    if(document.readyState !== 'complete') {
+        // Thanks to https://stackoverflow.com/a/28093606/2877364 by
+        // https://stackoverflow.com/users/4483389/matthias-samsel
+        window.addEventListener('load', callback, { 'once': true });
+    } else {
+        window.setTimeout(callback, 0);    //always async
+    }
+} //callbackOnLoad
+
+//////////////////////////////////////////////////////////////////////////
+// Miscellaneous functions //
 
 /// Deep-compare two objects for memberwise equality.  However, if either
 /// object contains a pointer to the other, this will return false rather
@@ -177,5 +197,34 @@ function ObjectCompare(obj1, obj2) {
     }
     return true;
 } //ObjectCompare
+
+// Helpers for asynquence
+
+/// Chrome Callback: make a Chrome extension API callback that
+/// wraps the done() callback of an asynquence step.
+var CC = (function(){
+    /// A special-purpose empty object, per getify
+    const ø = Object.create(null);
+
+    return (done)=>{
+        return function cbk() {
+            if(typeof(chrome.runtime.lastError) !== 'undefined') {
+                done.fail(chrome.runtime.lastError);
+            } else {
+                //done.apply(ø,...args);
+                    // for some reason done() doesn't get the args
+                    // provided to cbk(...args)
+                done.apply(ø,[].slice.call(arguments));
+            }
+        }
+    }
+})(); //CC()
+
+/// Check for an asynquence-contrib try() error return
+function is_asq_try_err(o)
+{
+    return  (typeof o === 'object' && o &&
+             typeof o.catch !== 'undefined');
+} //is_asq_try_err
 
 // vi: set ts=4 sts=4 sw=4 et ai fo-=o: //

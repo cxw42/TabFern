@@ -183,6 +183,8 @@ you open that closed window, though.
 (${icon('fa fa-link')})
 to mark a window to be saved.  Previously you had to add a note or a border,
 or close the window &mdash; now you don't have to do any of those.</li>
+<li>On the Appearance tab, you can turn on and off connecting lines
+between the nodes in the tree.</li>
 <li>If you forget a window that has notes on some of the tabs, those notes will
 be shown in red to remind you that they will be gone if you don't save
 the window.  A small thing, but I hope it helps!</li>

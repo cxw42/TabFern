@@ -150,50 +150,100 @@
 			return obj;
 		}; //redraw_node
 
-		// If the "types" plugin isn't loaded, don't create the functions that require it
-		if(!$.jstree.plugins.types || !(this instanceof $.jstree.plugins.types)) return;
-
 		// === Type support ===
 
-		/**
-		 * clear flags on all nodes of a specific type
-		 * @name clear_flags_by_type()
-		 * @param {mixed} type The type of node (other types won't be affected).
-		 *						Pass an array for multiple types.
-		 * @param except_parent_node_id If present, only clear nodes that are
-		 * 						are not children of #except_parent_node_id.
-		 * 						TODO refactor this into a general clear
-		 * 						function that will take an object of criteria.
-		 * @param {Boolean} suppress_event If true, don't trigger an event
-		 * @plugin flagnode
-		 * @trigger clear_flagnode.jstree
-		 */
-		this.clear_flags_by_type = function(type, except_parent_node_id,
-											suppress_event) {
-			if(!Array.isArray(type)) type = [type];
+		// If the "types" plugin isn't loaded, don't create the functions that require it
+		if($.jstree.plugins.types && (this instanceof $.jstree.plugins.types)) {
 
-			// Collect the nodes
-			let nodes_to_clear = [];
-			for(let node_id in this._data.flagnode.flagged_nodes) {
-				let jstree_node = this.get_node(node_id);
+			/**
+			 * clear flags on all nodes of a specific type
+			 * @name clear_flags_by_type()
+			 * @param {mixed} type The type of node (other types won't be affected).
+			 *						Pass an array for multiple types.
+			 * @param except_parent_node_id If present, only clear nodes that are
+			 * 						are not children of #except_parent_node_id.
+			 * 						TODO refactor this into a general clear
+			 * 						function that will take an object of criteria.
+			 * @param {Boolean} suppress_event If true, don't trigger an event
+			 * @plugin flagnode
+			 * @trigger clear_flagnode.jstree
+			 */
+			this.clear_flags_by_type = function(type, except_parent_node_id,
+												suppress_event) {
+				if(!Array.isArray(type)) type = [type];
 
-				if(!type.includes(jstree_node.type)) continue;
-				if(except_parent_node_id &&
-						jstree_node.parent === except_parent_node_id) continue;
+				// Collect the nodes
+				let nodes_to_clear = [];
+				for(let node_id in this._data.flagnode.flagged_nodes) {
+					let jstree_node = this.get_node(node_id);
 
-				nodes_to_clear.push(this.get_node(node_id,true));
-			}
-			this._setflagstate(nodes_to_clear, false);
+					if(!type.includes(jstree_node.type)) continue;
+					if(except_parent_node_id &&
+							jstree_node.parent === except_parent_node_id) continue;
 
-			if(!suppress_event) {
-				this.trigger('clear_flagnode',
-					{ 	flagged: Object.keys(this._data.flagnode.flagged_nodes),
-						cleared_except_parent_node_id: except_parent_node_id,
-						cleared_type: type,
+					nodes_to_clear.push(this.get_node(node_id,true));
+				}
+				this._setflagstate(nodes_to_clear, false);
+
+				if(!suppress_event) {
+					this.trigger('clear_flagnode',
+						{ 	flagged: Object.keys(this._data.flagnode.flagged_nodes),
+							cleared_except_parent_node_id: except_parent_node_id,
+							cleared_type: type,
+						}
+					);
+				}
+			}; //clear_flags_by_type
+		} //endif "types" plugin loaded
+
+		// If the "multitype" plugin isn't loaded, don't create the functions that require it
+		if($.jstree.plugins.multitype && (this instanceof $.jstree.plugins.multitype)) {
+
+			/**
+			 * clear flags on all nodes having a specific multitype
+			 * @name clear_flags_by_type()
+			 * @param {mixed} type The type of node (other types won't be affected).
+			 *						Pass an array for multiple types; only nodes
+			 *						having all those types will be affected.
+			 * @param except_parent_node_id If present, only clear nodes that are
+			 * 						are not children of #except_parent_node_id.
+			 * 						TODO refactor this into a general clear
+			 * 						function that will take an object of criteria.
+			 * @param {Boolean} suppress_event If true, don't trigger an event
+			 * @plugin flagnode
+			 * @trigger clear_flagnode.jstree
+			 */
+			this.clear_flags_by_multitype = function(type, except_parent_node_id,
+												suppress_event) {
+				if(!Array.isArray(type)) type = [type];
+
+				// Collect the nodes
+				let nodes_to_clear = [];
+				NODE: for(let node_id in this._data.flagnode.flagged_nodes) {
+					let jstree_node = this.get_node(node_id);
+
+					for(let ty of type) {	// check each multitype
+						if(!this.has_multitype(jstree_node, ty)) continue NODE;
 					}
-				);
-			}
-		}; //clear_flags_by_type
+
+					if(except_parent_node_id &&
+							jstree_node.parent === except_parent_node_id) continue;
+
+					nodes_to_clear.push(this.get_node(node_id,true));
+				}
+
+				this._setflagstate(nodes_to_clear, false);
+
+				if(!suppress_event) {
+					this.trigger('clear_flagnode',
+						{ 	flagged: Object.keys(this._data.flagnode.flagged_nodes),
+							cleared_except_parent_node_id: except_parent_node_id,
+							cleared_type: type,
+						}
+					);
+				}
+			}; //clear_flags_by_type
+		} //endif "multitype" plugin loaded
 
 	}; //flagnode plugin
 
