@@ -362,8 +362,8 @@ function actionRememberWindow(node_id, node, unused_action_id, unused_action_el)
 } //actionForgetWindow()
 
 /// Close a window, but don't delete its tree nodes.  Used for saving windows.
-/// ** The caller must call saveTree() --- actionCloseWindow() does not.
-function actionCloseWindow(node_id, node, unused_action_id, unused_action_el)
+/// ** The caller must call saveTree() --- actionCloseWindowButDoNotSave() does not.
+function actionCloseWindowButDoNotSave(node_id, node, unused_action_id, unused_action_el)
 {
     let win_val = D.windows.by_node_id(node_id);
     if(!win_val) return;
@@ -415,12 +415,21 @@ function actionCloseWindow(node_id, node, unused_action_id, unused_action_el)
 
     T.treeobj.clear_flags();
         // On close, we can't know where the focus will go next.
-} //actionCloseWindow
 
-function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el)
+    // don't call saveTree --- that's the caller's responsibility
+} //actionCloseWindowButDoNotSave
+
+/// Close the window and save
+function actionCloseWindowAndSave(node_id, node, unused_action_id, unused_action_el)
+{
+    actionCloseWindowButDoNotSave(node_id, node, unused_action_id, unused_action_el);
+    saveTree();
+} //actionCloseWindowAndSave
+
+function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el, evt)
 {
     // Close the window and adjust the tree
-    actionCloseWindow(node_id, node, unused_action_id, unused_action_el);
+    actionCloseWindowButDoNotSave(node_id, node, unused_action_id, unused_action_el);
 
     lastDeletedWindow = [];
     // Remove the tabs from D.tabs
@@ -432,6 +441,8 @@ function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el)
         lastDeletedWindow.push(tab_val.raw_url);
     }
 
+    let next_node = T.treeobj.get_next_dom(node, true);
+
     // Remove the window's node and value
     let scrollOffsets = [window.scrollX, window.scrollY];
     T.treeobj.delete_node(node_id);   //also deletes child nodes
@@ -439,6 +450,18 @@ function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el)
 
     let win_val = D.windows.by_node_id(node_id);
     D.windows.remove_value(win_val);
+
+    // We had a click --- hover the node that is now under the mouse.
+    // That is the node that was the next-sibling node before.
+    // This fixes a bug in which clicking the delete button removes the row,
+    // and the row that had been below moves up, but the wholerow hover and the
+    // action buttons don't appear for that row.
+    //
+    // TODO update this when adding full hierarchy (#34).
+
+    if(evt && evt.type === 'click' && next_node) {
+        T.treeobj.hover_node(next_node);
+    }
 
     saveTree();
 } //actionDeleteWindow
@@ -575,7 +598,7 @@ function addWindowNodeActions(win_node_id)
         class: 'fff-picture-delete ' + K.ACTION_BUTTON_WIN_CLASS,
         text: '&nbsp;',
         grouped: true,
-        callback: actionCloseWindow,
+        callback: actionCloseWindowAndSave,
         dataset: { action: 'closeWindow' }
     });
 
@@ -594,11 +617,8 @@ function addWindowNodeActions(win_node_id)
 /// @returns the tree-node ID, or undefined on error.
 function createNodeForWindow(cwin, keep)
 {
-    // Don't put this popup window (view/index.html) in the list
-    if( (typeof(cwin.id) !== 'undefined') &&
-        (cwin.id == my_winid) ) {
-        return;
-    }
+    // Don't put our own popup window in the list
+    if( cwin.id && (cwin.id === my_winid) ) return;
 
     let {node_id, val} = I.makeItemForWindow(cwin, keep);
     if(!node_id) return;    //sanity check
@@ -874,6 +894,16 @@ function flagOnlyCurrentTab(win)
     } //foreach tab
 } //flagOnlyCurrentTab()
 
+// Chrome callback version of flagOnlyCurrentTab()
+function flagOnlyCurrentTabCC(win)
+{
+    if(typeof chrome.runtime.lastError === 'undefined') {
+        flagOnlyCurrentTab(win);
+    } else {
+        log.error(chrome.runtime.lastError);
+    }
+} //flagOnlyCurrentTabCC
+
 /// ID for a timeout shared by newWinFocusCheckTest() and treeOnSelect()
 var awaitSelectTimeoutId = undefined;
 
@@ -938,9 +968,12 @@ function treeOnSelect(_evt_unused, evt_data)
                 case 'renameWindow':
                     actionRenameWindow(node.id, node, null, null); break;
                 case 'closeWindow':
-                    actionCloseWindow(node.id, node, null, null); break;
+                    actionCloseWindowAndSave(node.id, node, null, null); break;
                 case 'deleteWindow':
-                    actionDeleteWindow(node.id, node, null, null); break;
+                    actionDeleteWindow(node.id, node, null, null, evt_data.event);
+                        // Pass the event so actionDeleteWindow will treat it as
+                        // a click and refresh the hover state.
+                    break;
                 case 'editBullet':
                     actionEditBullet(node.id, node, null, null); break;
                 default: break;     //no-op if unknown
@@ -1224,10 +1257,10 @@ function winOnRemoved(win_id)
             node.children && node.children.length > 0
     ) {
         node_val.isOpen = false;   // because it's already gone
-        if(node_val.win) actionCloseWindow(node_id, node, null, null);
+        if(node_val.win) actionCloseWindowButDoNotSave(node_id, node, null, null);
             // Since it was saved, leave it saved.  You can only get rid
             // of saved sessions by X-ing them expressly (actionDeleteWindow).
-            // if(node_val.win) because a window closed via actionCloseWindow
+            // if(node_val.win) because a window closed via actionCloseWindowButDoNotSave
             // or actionDeleteWindow will have a falsy node_val.win, so we
             // don't need to call those functions again.
         saveTree();     // TODO figure out if we need this.
@@ -1352,7 +1385,7 @@ function initFocusHandler()
             }
 
             // Flag the current tab within the new window
-            chrome.windows.get(win_id, {populate:true}, flagOnlyCurrentTab);
+            chrome.windows.get(win_id, {populate:true}, flagOnlyCurrentTabCC);
         } //endif to_open
 
         else if(change_to === FC_TO_NONE) {
@@ -2114,7 +2147,7 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
                     label: 'Close and remember',
                     icon: 'fff-picture-delete',
                     action:
-                        function(){actionCloseWindow(node.id,node,null,null);}
+                        function(){actionCloseWindowAndSave(node.id,node,null,null);}
                 };
         }
 
@@ -2606,10 +2639,23 @@ function addOpenWindowsToTree(done, winarr)
     let focused_win_id;
 
     for(let win of winarr) {
-        //log.info('Window ' + win.id.toString());
+        log.info('Open window ' + win.id +
+            ((win.tabs && win.tabs[0] && win.tabs[0].title) ?
+                ` "${win.tabs[0].title}"` : ' (no title)'));
+
         if(win.focused) {
             focused_win_id = win.id;
         }
+
+        if(win.id === my_winid) continue;
+            // This used to be taken care of by createNodeForWindow,
+            // but doing it here is cleaner.
+
+        // TODO? skip popups here and throughout, or handle them better.
+//        if(win.type === 'popup') {
+//            log.debug(`Skipping popup window ${win.id}`);
+//            continue;
+//        }
 
         let existing_win = winAlreadyExists(win);
         if(!existing_win) {
