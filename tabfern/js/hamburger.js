@@ -4,15 +4,15 @@
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD
-        define(['jquery'], factory);
+        define(['jquery', 'loglevel', 'jstree'], factory);
     } else if (typeof exports === 'object') {
         // Node, CommonJS-like
-        module.exports = factory(require('jquery'));
+        module.exports = factory(require('jquery'), require('loglevel'), require('jstree'));
     } else {
         // Browser globals (root is window)
-        root.HamburgerMenuMaker = factory(root.jQuery);
+        root.HamburgerMenuMaker = factory(root.jQuery, root.log, root.jQuery.jstree);
     }
-}(this, function ($) {
+}(this, function ($, log) {
 
     /// The prototype for a hamburger-menu object
     let Proto = {};

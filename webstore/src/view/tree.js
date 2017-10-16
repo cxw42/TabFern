@@ -2499,7 +2499,7 @@ function checkWhatIsNew(selector)
                     should_notify = false;          // seen the notification.
                 }
             }
-        }
+        } //endif we have a LASTVER_KEY
 
         if(should_notify) {
             ShowWhatIsNew = true;
@@ -2513,8 +2513,8 @@ function checkWhatIsNew(selector)
             chrome.storage.local.set(
                 { [K.LASTVER_KEY]: 'installed, but no version viewed yet' },
                 function() {
-                    ignore_chrome_error();
-                    openWindowForURL('https://cxw42.github.io/TabFern/#usage');
+                    K.ignore_chrome_error();
+                    K.openWindowForURL('https://cxw42.github.io/TabFern/#usage');
                 }
             );
         }
