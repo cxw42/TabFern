@@ -2337,7 +2337,11 @@ var treeCheckCallback = (function(){
     function inner(operation, node, new_parent, node_position, more)
     {
         // Fast bail when possible
-        if(operation === 'copy_node') return false; // we can't handle copies at present
+        if(operation === 'copy_node') return false;
+            // we can't handle copies at present
+        if(operation === 'edit') return false;
+            // Don't let the user edit node names with F2
+
         if(operation !== 'move_node') return true;
 
         // Don't log checks during initial tree population
