@@ -188,7 +188,15 @@ between the nodes in the tree.</li>
 <li>If you forget a window that has notes on some of the tabs, those notes will
 be shown in red to remind you that they will be gone if you don't save
 the window.  A small thing, but I hope it helps!</li>
-</ul>`,
+</ul>
+<p>Would you be willing to run a pre-release version?  You would get the
+new features a week earlier that way :) .  If so, please
+<a href="mailto:tabfern@zoho.com">send me a note</a> or ping me
+<a href="https://github.com/cxw42">on GitHub</a>.  The only requirements are
+a <a href="https://github.com/join">free GitHub account</a> and the willingness
+to <a href="https://github.com/cxw42/TabFern/issues/new">report issues</a>
+if you run across them.  Thanks for considering this request!
+</p>`,
             },
 
             {
