@@ -1,6 +1,6 @@
 {
   "name": "tabfern",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "description": "Google Chrome extension for displaying, saving, and managing tabs",
   "main": "src/view/main.js",
   "directories": {
@@ -27,7 +27,10 @@
     "url": "https://github.com/cxw42/TabFern/issues"
   },
   "homepage": "https://cxw42.github.io/TabFern/",
-  "dependencies": {},
+  "dependencies": {
+    "asynquence": "^0.10.0",
+    "split.js": "^1.3.5"
+  },
   "devDependencies": {
     "css-loader": "^0.28.7",
     "extract-text-webpack-plugin": "^3.0.0",

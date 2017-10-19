@@ -1,0 +1,46 @@
+/* icons.css: Common icon definitions */
+
+.tf-window.tfs-saved > a > i {
+    content: url(/assets/icons/folder-from-jstree-default-dark-32px.png);
+}
+.visible-window-icon, .tf-window.tfs-open > a > i {
+    content: url(/assets/icons/monitor.png);    /* or folder.png? */
+}
+
+.visible-saved-window-icon, .tf-window.tfs-open.tfs-saved > a > i {
+    content: url(/assets/icons/monitor_add.png);    /* or folder.png? */
+}
+
+.fff-page /*, .tf-tab > i*/ {
+    content: url(/assets/icons/page_white.png);
+}
+
+.fff-page-white-with-red-banner {
+    content: url(/assets/icons/page_white_red_banner.png);
+}
+
+.fff-pencil {
+    content: url(/assets/icons/pencil.png);
+}
+
+.fff-cross {
+    content: url(/assets/icons/cross.png);
+}
+
+.fff-picture-delete {
+    content: url(/assets/icons/picture_delete.png);
+}
+
+.fff-text-padding-top {
+    content: url(/assets/icons/text_padding_top.png);
+}
+
+/* Class for icons with no content.  Used in jstree.set_icon() when the
+ * icon is actually being set using CSS.
+ */
+.clear-icon {
+    /*url(/assets/icons/clear-icon.png);*/
+    /*content: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQI12NgYGBgAAAABQABXvMqOgAAAABJRU5ErkJggg==);*/
+}
+
+/* vi: set ts=4 sts=4 sw=4 et ai: */
