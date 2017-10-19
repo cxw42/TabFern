@@ -32,4 +32,11 @@ Reminder: I didn't check assets/icons, so if you pulled any of those, you'll
 need to copy them manually.
 EOF
 
+if [[ $1 = '-z' ]]; then
+    rm -f ./webstore.zip
+    pushd webstore
+    zip -r ../webstore.zip *
+    popd
+fi
+
 # vi: set ts=4 sts=4 sw=4 et ai ff=unix: #

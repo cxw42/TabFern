@@ -1764,6 +1764,19 @@ function saveViewSize(size_data)
 
     let to_save = {};
     to_save[K.LOCN_KEY] = size_data;
+
+    // TODO RESUME HERE
+    // replace the below with an errfcb, so that the
+    // chrome.storage.local.set call
+    // can be done on this tick.  Something like:
+    //
+    //   function chrcb2(seq) { let f = seq.errfcb();
+    //      return function(...args) { f(chrome.runtime.lastError, ...args); } }
+    //   var s, cc;
+    //   s = ASQ(); cc = chrcb2(s);
+    //   s.val((msg)=>{console.log({Got:msg});});
+    //   chrome.windows.getAll(cc);
+
     ASQ().then((done)=>{
         chrome.storage.local.set(to_save, CC(done));
     })
