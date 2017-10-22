@@ -11,7 +11,7 @@ console.log('TabFern common.js loading');
 
 /// The TabFern extension friendly version number.  Displayed in the
 /// title bar of the popup window, so lowercase (no shouting!).
-const TABFERN_VERSION='0.1.11 alpha \u26a0'
+const TABFERN_VERSION='0.1.12-pre.1 alpha \u26a0'
     // When you change this, also update:
     //  - manifest.json: both the version and version_name
     //  - package.json
@@ -134,7 +134,8 @@ function asyncAppendScriptToHead(document, url, callback, type = 'text/javascrip
     head.appendChild(script);
 } //asyncAppendScriptToHead()
 
-/// Invoke a callback only when the document is loaded
+/// Invoke a callback only when the document is loaded.  Does not pass any
+/// parameters to the callback.
 function callbackOnLoad(callback)
 {
     if(document.readyState !== 'complete') {
@@ -197,34 +198,5 @@ function ObjectCompare(obj1, obj2) {
     }
     return true;
 } //ObjectCompare
-
-// Helpers for asynquence
-
-/// Chrome Callback: make a Chrome extension API callback that
-/// wraps the done() callback of an asynquence step.
-var CC = (function(){
-    /// A special-purpose empty object, per getify
-    const ø = Object.create(null);
-
-    return (done)=>{
-        return function cbk() {
-            if(typeof(chrome.runtime.lastError) !== 'undefined') {
-                done.fail(chrome.runtime.lastError);
-            } else {
-                //done.apply(ø,...args);
-                    // for some reason done() doesn't get the args
-                    // provided to cbk(...args)
-                done.apply(ø,[].slice.call(arguments));
-            }
-        }
-    }
-})(); //CC()
-
-/// Check for an asynquence-contrib try() error return
-function is_asq_try_err(o)
-{
-    return  (typeof o === 'object' && o &&
-             typeof o.catch !== 'undefined');
-} //is_asq_try_err
 
 // vi: set ts=4 sts=4 sw=4 et ai fo-=o: //

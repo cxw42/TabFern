@@ -43,6 +43,9 @@ var log;
 /// Shorthand for asynquence
 var ASQ;
 
+/// Shorthand for asq-helpers
+var ASQH;
+
 //////////////////////////////////////////////////////////////////////////
 // Globals //
 
@@ -106,6 +109,7 @@ function local_init()
     T = Modules['view/item_tree'];
     I = Modules['view/item'];
     ASQ = Modules['asynquence-contrib'];
+    ASQH = Modules['asq-helpers'];
 
     // Check development status.  Thanks to
     // https://stackoverflow.com/a/12833511/2877364 by
@@ -1434,13 +1438,15 @@ function initFocusHandler()
 /// we check for that here.
 var tabOnCreated = (function(){
 
-    /// Make a callback that will check if the window matches an existing window
-    function check_if_should_merge(win_id)
+    /// Make a callback that will check if the window matches an existing
+    /// window.  The callback can be invoked either as an ASQ callback (done)
+    /// or as an error-first callback.
+    function make_merge_check_cbk(win_id)
     {
-        return function inner(inner_done) {
+        return function inner(inner_done_or_err) {
             //DEBUG
             log.debug({'(unimplemented) merge check for window':win_id});
-            if(typeof inner_done === 'function') inner_done();
+            if(typeof inner_done_or_err === 'function') inner_done_or_err();
             return;
 
             // TODO fill this in
@@ -1456,7 +1462,7 @@ var tabOnCreated = (function(){
 //            });
 
         };
-    } //check_if_should_merge
+    } //make_merge_check_cbk
 
     return function inner(ctab)
     {
@@ -1510,18 +1516,18 @@ var tabOnCreated = (function(){
 
             // Change the URL to the actual URL.  Use ASQ() so errors will
             // be reported to the console.
-            ASQ().then((done)=>{
-                chrome.tabs.update(ctab.id, {url: tab_val.raw_url}, CC(done));
-            }) //tabOnUpdated will handle the rest.
-            .then(check_if_should_merge(ctab.windowId));
+            let seq = ASQ();
+            chrome.tabs.update(ctab.id, {url: tab_val.raw_url}, ASQH.CCgo(seq));
+            //tabOnUpdated will change the tree based on the update.
+            seq.then(make_merge_check_cbk(ctab.windowId));
 
             // TODO check_existing once that's filled in.
 
-            return;
+            return; // *** EXIT POINT ***
         } //endif CHECK
 
         /// What to do after saving
-        let cbk = check_if_should_merge(ctab.windowId);
+        let cbk = make_merge_check_cbk(ctab.windowId);
 
         if(tab_val === undefined) {     // If not, create the tab
             let tab_node_id = createNodeForTab(ctab, win_node_id);   // Adds at end
@@ -1765,22 +1771,9 @@ function saveViewSize(size_data)
     let to_save = {};
     to_save[K.LOCN_KEY] = size_data;
 
-    // TODO RESUME HERE
-    // replace the below with an errfcb, so that the
-    // chrome.storage.local.set call
-    // can be done on this tick.  Something like:
-    //
-    //   function chrcb2(seq) { let f = seq.errfcb();
-    //      return function(...args) { f(chrome.runtime.lastError, ...args); } }
-    //   var s, cc;
-    //   s = ASQ(); cc = chrcb2(s);
-    //   s.val((msg)=>{console.log({Got:msg});});
-    //   chrome.windows.getAll(cc);
-
-    ASQ().then((done)=>{
-        chrome.storage.local.set(to_save, CC(done));
-    })
-    .val(()=>{
+    let s = ASQ();
+    chrome.storage.local.set(to_save, ASQH.CCgo(s));
+    s.val(()=>{
         last_saved_size = $.extend({}, size_data);
         log.info('Saved size');
     })
@@ -2292,7 +2285,7 @@ var treeCheckCallback = (function(){
 
             // Now that it's disconnected, close the actual tab
             seq.try((done)=>{
-                chrome.tabs.remove(tab_id, CC(done));
+                chrome.tabs.remove(tab_id, ASQH.CC(done));
                 // if tab_id was the last tab in old_parent, winOnRemoved
                 // will delete the tree node.  Therefore, we do not have
                 // to do so.
@@ -2340,7 +2333,7 @@ var treeCheckCallback = (function(){
                 url: chrome.runtime.getURL('/src/view/newtab.html') + '#' + moving_val.node_id,
                     // pass the node ID to the tabOnUpdated callback
                 index: moving_val.index
-            }, CC(done));
+            }, ASQH.CC(done));
         });
         // The URL and the item will be linked in tabOnCreated, so we're done.
 
@@ -2613,7 +2606,7 @@ function basicInit(done)
 /// Called after ASQ.try(chrome.runtime.sendMessage)
 function createMainTreeIfWinIdReceived(done, win_id_or_error)
 {
-    if(is_asq_try_err(win_id_or_error)) {
+    if(ASQH.is_asq_try_err(win_id_or_error)) {
         // This is fatal
         return done.fail("Couldn't get win ID: " + win_id_or_error.catch);
         // TODO add a "couldn't load" message to the popup.
@@ -2775,7 +2768,7 @@ function moveWinToLastPositionIfAny(done, items_or_err)
     // If there was an error (e.g., nonexistent key), just
     // accept the default size.
 
-    if(!is_asq_try_err(items_or_err)) {
+    if(!ASQH.is_asq_try_err(items_or_err)) {
         let parsed = items_or_err[K.LOCN_KEY];
         if( (parsed !== null) && (typeof parsed === 'object') ) {
             // + and || are to provide some sensible defaults - thanks to
@@ -2861,7 +2854,7 @@ let dependencies = [
     'jstree-because',
     'loglevel', 'hamburger', 'bypasser', 'multidex', 'justhtmlescape',
     'signals', 'local/fileops/export', 'local/fileops/import',
-    'asynquence-contrib',
+    'asynquence-contrib', 'asq-helpers',
 
     // Modules for keyboard-shortcut handling.  Not really TabFern-specific,
     // but not yet disentangled fully.
@@ -2904,23 +2897,24 @@ function main(...args)
         // we have timedResizeDetector above.
 
     // Run the main init steps once the page has loaded
-    ASQ.react((proceed)=>{callbackOnLoad(proceed);})
-    .then(basicInit)
+    let s = ASQ();
+    callbackOnLoad(s.errfcb());
+    s.then(basicInit)
     .try((done)=>{
         // Get our Chrome-extensions-API window ID from the background page.
         // I don't know a way to get this directly from the JS window object.
         // TODO maybe getCurrent?  Not sure if that's reliable.
-        chrome.runtime.sendMessage(MSG_GET_VIEW_WIN_ID, CC(done));
+        chrome.runtime.sendMessage(MSG_GET_VIEW_WIN_ID, ASQH.CC(done));
     })
     .then(createMainTreeIfWinIdReceived)
     .then((done)=>{
-        chrome.windows.getAll({'populate': true}, CC(done));
+        chrome.windows.getAll({'populate': true}, ASQH.CC(done));
     })
     .then(addOpenWindowsToTree)
     .then(addEventListeners)
     .try((done)=>{
         // Find out where the view was before, if anywhere
-        chrome.storage.local.get(K.LOCN_KEY, CC(done));
+        chrome.storage.local.get(K.LOCN_KEY, ASQH.CC(done));
     })
     .then(moveWinToLastPositionIfAny)
     .then(initTreeFinal)
