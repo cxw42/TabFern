@@ -997,10 +997,12 @@ function treeOnSelect(_evt_unused, evt_data)
     // --------
     // Process the actual node click
 
-    //if(T.treeobj.get_type(node) === K.NT_RECOVERED) {
-    if(T.treeobj.has_multitype(node, K.NST_RECOVERED)) {
-        //T.treeobj.set_type(node, 'default');
-        T.treeobj.del_multitype(node, K.NST_RECOVERED);
+    { // Remove "recovered" flags.  TODO update this when #34 is implemented.
+        let win_node = is_win ? node : T.treeobj.get_node(node.parent);
+        //if(T.treeobj.get_type(node) === K.NT_RECOVERED) {
+        if(win_node && T.treeobj.has_multitype(win_node, K.NST_RECOVERED)) {
+            T.treeobj.del_multitype(win_node, K.NST_RECOVERED);
+        }
     }
 
     if(is_tab && node_val.isOpen) {   // An open tab
