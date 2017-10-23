@@ -492,16 +492,16 @@ function actionToggleTabTopBorder(node_id, node, unused_action_id, unused_action
     saveTree();
 } //actionToggleTabTopBorder
 
-/// Edit a node's bullet
+/// Edit a node's bullet.  ** Synchronous **.
+/// @param node_id {string} The ID of a node representing a tab.
 function actionEditBullet(node_id, node, unused_action_id, unused_action_el)
 {
     let val = I.get_node_val(node_id);
-    if(!val) return;
+    if(!val || val.ty !== K.IT_TAB) return;
 
     // TODO replace window.prompt with an in-DOM GUI.
-    let new_bullet = window.prompt('Note for this ' +
-            (val.ty === K.IT_WIN ? 'window' : 'tab') + '?',
-            val.raw_bullet || '');
+    let question = `Note for tab "${val.raw_title}"?`;
+    let new_bullet = window.prompt(question, val.raw_bullet || '');
     if(new_bullet === null) return;   // user cancelled
 
     val.raw_bullet = new_bullet;
@@ -2570,6 +2570,49 @@ function checkWhatIsNew(selector)
 } //checkWhatIsNew
 
 //////////////////////////////////////////////////////////////////////////
+// Chrome message listener //
+
+function messageListener(request, sender, sendResponse)
+{
+    log.info({'tree.js got message':request, from:sender});
+    if(!request || !request.msg || !sender) {
+        return;
+    }
+
+    // For now, only accept messages from our extension
+    if(!sender.id || sender.id !== chrome.runtime.id) {
+        return;
+    }
+
+    if(request.msg === MSG_EDIT_TAB_NOTE && !request.response) {
+        let success = false;
+        TAB: if(request.tab_id) {
+            let tab_val = D.tabs.by_tab_id(request.tab_id);
+            if(!tab_val || !tab_val.isOpen) break TAB;
+
+            ASQH.NowCC((cc)=>{  // Focus the TabFern popup
+                chrome.windows.update(my_winid, {focused:true}, cc);
+            })
+            .then((done)=>{     // Do the edit (synchronous)
+                actionEditBullet(tab_val.node_id,
+                                T.treeobj.get_node(tab_val.node_id),
+                                null,null);
+                done();
+            })
+            .then((done)=>{     // Switch back to the window that was focused
+                chrome.windows.update(tab_val.win_id, {focused:true},
+                    ASQH.CC(done)
+                );
+            })
+            ;
+            success = true;
+        }
+        sendResponse({msg: request.msg, response: true, success});
+    } //endif MSG_EDIT_TAB_NOTE
+
+} //messageListener
+
+//////////////////////////////////////////////////////////////////////////
 // Startup / shutdown //
 
 function basicInit(done)
@@ -2604,15 +2647,21 @@ function basicInit(done)
 } //basicInit
 
 /// Called after ASQ.try(chrome.runtime.sendMessage)
-function createMainTreeIfWinIdReceived(done, win_id_or_error)
+function createMainTreeIfWinIdReceived(done, win_id_msg_or_error)
 {
-    if(ASQH.is_asq_try_err(win_id_or_error)) {
+    if(ASQH.is_asq_try_err(win_id_msg_or_error)) {
         // This is fatal
-        return done.fail("Couldn't get win ID: " + win_id_or_error.catch);
+        return done.fail("Couldn't get win ID: " + win_id_msg_or_error.catch);
         // TODO add a "couldn't load" message to the popup.
     }
+    let msg = win_id_msg_or_error;
+    if(!msg || msg.msg !== MSG_GET_VIEW_WIN_ID || !msg.response || !msg.id) {
+        return done.fail("Couldn't get win ID from invalid message " +
+                JSON.stringify(msg));
+        // TODO report as noted above.
+    }
 
-    let win_id = win_id_or_error;
+    let win_id = win_id_msg_or_error.id;
     my_winid = win_id;
 
     // Init the main jstree
@@ -2759,6 +2808,8 @@ function addEventListeners(done)
     chrome.tabs.onReplaced.addListener(tabOnReplaced);
     //onZoomChange: not yet implemented, and we probably won't ever need it.
 
+    chrome.runtime.onMessage.addListener(messageListener);
+
     done();
 } //addEventListeners
 
@@ -2904,7 +2955,7 @@ function main(...args)
         // Get our Chrome-extensions-API window ID from the background page.
         // I don't know a way to get this directly from the JS window object.
         // TODO maybe getCurrent?  Not sure if that's reliable.
-        chrome.runtime.sendMessage(MSG_GET_VIEW_WIN_ID, ASQH.CC(done));
+        chrome.runtime.sendMessage({msg:MSG_GET_VIEW_WIN_ID}, ASQH.CC(done));
     })
     .then(createMainTreeIfWinIdReceived)
     .then((done)=>{

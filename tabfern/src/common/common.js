@@ -29,7 +29,12 @@ const TABFERN_VERSION='0.1.12-pre.1 alpha \u26a0'
 //////////////////////////////////////////////////////////////////////////
 // Messages between parts of TabFern //
 
+// The format of a message is
+// { msg: <one of the below constants> [, anything else] }
+// For responses, response:true is also included.
+
 const MSG_GET_VIEW_WIN_ID = 'getViewWindowID';
+const MSG_EDIT_TAB_NOTE = 'editTabNote';
 
 //////////////////////////////////////////////////////////////////////////
 // Names of settings, and their defaults //
