@@ -1,8 +1,9 @@
 // view/const.js: constants and generic helpers for the TabFern view
 // Copyright (c) 2017 Chris White, Jasmine Hegman.
+// Note: requires common/common.js be loaded first, for CC
 
 (function (root, factory) {
-    let imports=['jquery','jstree','loglevel' ];
+    let imports=['jquery','jstree','loglevel','asynquence-contrib' ];
 
     if (typeof define === 'function' && define.amd) {
         // AMD
@@ -22,7 +23,7 @@
         }
         root.tabfern_const = factory(...requirements);
     }
-}(this, function ($, _unused_jstree_placeholder_, log_orig ) {
+}(this, function ($, _unused_jstree_placeholder_, log_orig, ASQ ) {
     "use strict";
 
     function loginfo(...args) { log_orig.info('TabFern view/const.js: ', ...args); };
@@ -39,23 +40,22 @@
 
         SAVE_DATA_AS_VERSION: 1,       // version we are currently saving
 
-        WIN_CLASS: 'tabfern-window',    // class on all <li>s representing windows
-        TAB_CLASS: 'tabfern-tab',       // class on all <li>s representing tabs
         BORDERED_TAB_CLASS: 'tabfern-tab-bordered',     // class on <li>s with a top border
         FOCUSED_WIN_CLASS: 'tf-focused-window',  // Class on the currently-focused win
         VISIBLE_WIN_CLASS: 'tf-visible-window',  // Class on all visible wins
-        ACTION_GROUP_WIN_CLASS: 'tf-action-group',   // Class on action-group div
-        ACTION_BUTTON_WIN_CLASS: 'tf-action-button', // Class on action buttons (<i>)
+
         SHOW_ACTIONS_CLASS:  'tf-show-actions',
             // Class on a .jstree-node to indicate its actions should be shown
 
         BULLET_CLASS: 'tf-bullet',      // class on spans showing bullets for items
+        CLASS_RECOVERED:  'ephemeral-recovered',
 
         INIT_TIME_ALLOWED_MS:  3000,  // After this time, if init isn't done,
                                             // display an error message.
         INIT_MSG_SEL:  'div#init-incomplete',     // Selector for that message
 
-        CLASS_RECOVERED:  'ephemeral-recovered',
+        ACTION_GROUP_WIN_CLASS: 'tf-action-group',   // Class on action-group div
+        ACTION_BUTTON_WIN_CLASS: 'tf-action-button', // Class on action buttons (<i>)
 
         /// How often to check whether our window has been moved or resized
         RESIZE_DETECTOR_INTERVAL_MS:  5000,
@@ -71,25 +71,19 @@
 
         // Item-type enumeration.  Here because there may be more item
         // types in the future (e.g., dividers or plugins).  Each IT_*
-        // must be truthy.
-        IT_WINDOW:  'window',   // strings are used for ease of debugging
+        // must be truthy.  These are used as the types in multidexes.
+        // They are also applied to nodes using jstree-multitype.
+        IT_WIN:  'win',      // strings are used as required by multidex
         IT_TAB:     'tab',
 
-        // Node types - these control the display of the
-        // corresponding list items.
-        NT_WIN_DORMANT:     'win_closed',               // closed, saved
-        NT_WIN_EPHEMERAL:   'win_ephemeral',            // open, unsaved
-        NT_WIN_ELVISH:      'win_open_saved',           // open, saved
-        NT_WIN_RECOVERED:   'win_ephemeral_recovered',  // closed, saved, recovered
+        // Node subtypes that can be layered onto the basic node types using jstree-multitype
+        NST_OPEN:           'open',     // Present if a window or tab is open
+        NST_SAVED:          'saved',    // Present if a window or tab has been saved
 
-        NT_TAB:             'tab',              // a normal tab
-        NT_TAB_BORDERED:    'tab-bordered',     // a tab with a border on top
-                                    // (this is a hack until I can add dividers)
+        NST_RECOVERED:      'recovered',    // Present on windows recovered from a crash
+
+        NST_TOP_BORDER:     'top-bordered', // Present on tabs that have a top border
     };
-
-    // Sets of node types
-    module.NTs_TAB = [module.NT_TAB, module.NT_TAB_BORDERED];
-    module.NTs_WIN_OPEN = [module.NT_WIN_EPHEMERAL, module.NT_WIN_ELVISH];
 
     /// Ignore a Chrome callback error, and suppress Chrome's
     /// `runtime.lastError` diagnostic.
@@ -100,7 +94,7 @@
     module.nextTickRunner = function(fn) {
         function inner(...args) {   // the actual callback
             setTimeout( function() { fn(...args); } ,0);
-                // on a later tick, call #fn, passing it ther arguments the
+                // on a later tick, call #fn, passing it the arguments the
                 // actual callback (inner()) got.
         }
         return inner;
@@ -108,31 +102,30 @@
 
     /// Open a new window with a given URL.  Also remove the default
     /// tab that appears because we are letting the window open at the
-    /// default size.  Yes, this is quite ugly.  TODO fix the ugliness.
-    /// Maybe use asynquence?
-    module.openWindowForURL = function(url)
-    {
-        chrome.windows.create(
-            function(win) {
-                if(typeof(chrome.runtime.lastError) === 'undefined') {
-                    chrome.tabs.create({windowId: win.id, url: url},
-                        function(keep_tab) {
-                            if(typeof(chrome.runtime.lastError) === 'undefined') {
-                                chrome.tabs.query({windowId: win.id, index: 0},
-                                    function(tabs) {
-                                        if(typeof(chrome.runtime.lastError) === 'undefined') {
-                                            chrome.tabs.remove(tabs[0].id,
-                                                K.ignore_chrome_error
-                                            ); //tabs.remove
-                                        }
-                                    } //function(tabs)
-                                ); //tabs.query
-                            }
-                        } //function(keep_tab)
-                    ); //tabs.create
-                }
-            } //function(win)
-        ); //windows.create
+    /// default size.  Yes, this is a bit like a FOUC, but oh well.
+    module.openWindowForURL = function(url) {
+        let win_id;     // TODO is there a better way to pass data down
+                        // the sequence?
+        let tab0_id;    ///< The tab automatically created with the window
+
+        ASQ()
+        .then(function open_win(done){
+            chrome.windows.create(CC(done));
+        })
+        .then(function open_tab(done, new_win){
+            win_id = new_win.id;
+            tab0_id = new_win.tabs[0].id;
+            chrome.tabs.create({windowId: win_id, url: url}, CC(done));
+        })
+        .then(function remove_old_tab(done){
+            chrome.tabs.remove(tab0_id, CC(done));
+        })
+        .or(function(err){log_orig.error({'Load error':err, url});})
+        ;
+
+        // To start the sequence paused, use `let seq = ASQ().duplicate()` above
+        // instead of just ASQ().  Then, to fire it off, `seq.unpause();`.
+
     } //openWindowForURL
 
     return Object.freeze(module);   // all fields constant

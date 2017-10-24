@@ -116,7 +116,7 @@
         // Node types - use constants as the keys
         let jstreeTypes = {};
 
-        jstreeTypes[K.NT_WIN] = {
+        jstreeTypes[K.IT_WIN] = {
             li_attr: { 'class': WIN_CLASS },
             icon: 'clear-icon',  // We will overlay the actual icon in the CSS
         };
@@ -141,7 +141,7 @@
 //            icon: true,     //default - folder
 //        };
 
-        jstreeTypes[K.NT_TAB] = {
+        jstreeTypes[K.IT_TAB] = {
             li_attr: { 'class': TAB_CLASS },
             icon: 'fff-page',   // per-node icons will override this
         };
@@ -169,9 +169,9 @@
                 multiple: false,          // for now
                 //check_callback added below if provided
                 themes: {
-                    name: 'default-dark'
-                  , variant: 'small'
-                }
+                    name: 'default-dark',
+                    variant: 'small',
+                },
             },
             state: {
                 key: 'tabfern-jstree'
@@ -214,8 +214,16 @@
 
         // Create the tree
         let jq_tree = $(selector);
-        jq_tree.jstree(jstreeConfig);
-        module.treeobj = jq_tree.jstree(true);
+        module.treeobj = jq_tree.jstree(jstreeConfig).jstree(true);
+
+        // wholerow hides the dots on ready.jstree and set_state.jstree.
+        // Show them again.
+        if(getBoolSetting(CFG_SHOW_TREE_LINES)) {
+            jq_tree.on('ready.jstree set_state.jstree', ()=>{
+                module.treeobj.show_dots();
+            });
+            module.treeobj.show_dots();     // in case of a race with
+        }                                   // those events.
 
         // Add custom event handlers
         module.install_vscroll_function(window, jq_tree);

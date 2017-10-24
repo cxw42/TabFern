@@ -1,9 +1,9 @@
 // view/const.js: constants and generic helpers for the TabFern view
 // Copyright (c) 2017 Chris White, Jasmine Hegman.
-// Note: requires common/common.js be loaded first, for CC
 
 (function (root, factory) {
-    let imports=['jquery','jstree','loglevel','asynquence-contrib' ];
+    let imports=['jquery','jstree','loglevel','asynquence-contrib',
+                    'asq-helpers' ];
 
     if (typeof define === 'function' && define.amd) {
         // AMD
@@ -23,7 +23,7 @@
         }
         root.tabfern_const = factory(...requirements);
     }
-}(this, function ($, _unused_jstree_placeholder_, log_orig, ASQ ) {
+}(this, function ($, _unused_jstree_placeholder_, log_orig, ASQ, ASQH ) {
     "use strict";
 
     function loginfo(...args) { log_orig.info('TabFern view/const.js: ', ...args); };
@@ -57,7 +57,6 @@
         ACTION_GROUP_WIN_CLASS: 'tf-action-group',   // Class on action-group div
         ACTION_BUTTON_WIN_CLASS: 'tf-action-button', // Class on action buttons (<i>)
 
-
         /// How often to check whether our window has been moved or resized
         RESIZE_DETECTOR_INTERVAL_MS:  5000,
 
@@ -72,33 +71,12 @@
 
         // Item-type enumeration.  Here because there may be more item
         // types in the future (e.g., dividers or plugins).  Each IT_*
-        // must be truthy.
-        // Used, e.g., by item.js:get_node_tyval().
-        IT_WINDOW:  'window',   // strings are used for ease of debugging
+        // must be truthy.  These are used as the types in multidexes.
+        // They are also applied to nodes using jstree-multitype.
+        IT_WIN:  'win',      // strings are used as required by multidex
         IT_TAB:     'tab',
 
-        // Node types - what kind of thing a list item represents.  Note that
-        // these are jstree-multitype values just like the NST_* below.
-
-        NT_WIN:             'win',
-        NT_TAB:             'tab',
-
-//        NT_WIN_DORMANT:     'win_dormant',              // closed, saved
-//        NT_WIN_RECOVERED:   'win_ephemeral_recovered',  // closed, saved, recovered
-//        NT_WIN_EPHEMERAL:   'win_ephemeral',            // open, unsaved
-//        NT_WIN_ELVISH:      'win_elvish',               // open, saved
-//
-//        NT_TAB:             'tab',              // a normal tab
-//
-//        NT_TAB_DORMANT:     'tab-dormant',
-//        NT_TAB_OPEN:        'tab-open',
-
-//        // Node flavors - these are supplemental things layered on top of the
-//        // node types.
-//        NF_BORDERED:        'flavor-bordered',      // Has a top border
-//        NF_RECOVERED:       'flavor-recovered',     // Was recovered
-
-        // Node subtypes that can be layered onto the basic node types
+        // Node subtypes that can be layered onto the basic node types using jstree-multitype
         NST_OPEN:           'open',     // Present if a window or tab is open
         NST_SAVED:          'saved',    // Present if a window or tab has been saved
 
@@ -106,10 +84,6 @@
 
         NST_TOP_BORDER:     'top-bordered', // Present on tabs that have a top border
     };
-
-    // Sets of node types
-//    module.NTs_TAB = [module.NT_TAB];
-//    module.NTs_WIN_OPEN = [module.NT_WIN_EPHEMERAL, module.NT_WIN_ELVISH];
 
     /// Ignore a Chrome callback error, and suppress Chrome's
     /// `runtime.lastError` diagnostic.
@@ -120,7 +94,7 @@
     module.nextTickRunner = function(fn) {
         function inner(...args) {   // the actual callback
             setTimeout( function() { fn(...args); } ,0);
-                // on a later tick, call #fn, passing it ther arguments the
+                // on a later tick, call #fn, passing it the arguments the
                 // actual callback (inner()) got.
         }
         return inner;
@@ -132,18 +106,18 @@
     module.openWindowForURL = function(url) {
         let win_id;     // TODO is there a better way to pass data down
                         // the sequence?
+        let tab0_id;    ///< The tab automatically created with the window
 
-        ASQ()
-        .then(function open_win(done){ chrome.windows.create(CC(done)); })
+        ASQH.NowCC((cc)=>{
+            chrome.windows.create(cc);
+        })
         .then(function open_tab(done, new_win){
             win_id = new_win.id;
-            chrome.tabs.create({windowId: win_id, url: url}, CC(done));
+            tab0_id = new_win.tabs[0].id;
+            chrome.tabs.create({windowId: win_id, url: url}, ASQH.CC(done));
         })
-        .then(function get_old_tab(done){
-            chrome.tabs.query({windowId: win_id, index: 0}, CC(done));
-        })
-        .then(function remove_old_tab(done, tabs){
-            chrome.tabs.remove(tabs[0].id, CC(done));
+        .then(function remove_old_tab(done){
+            chrome.tabs.remove(tab0_id, ASQH.CC(done));
         })
         .or(function(err){log_orig.error({'Load error':err, url});})
         ;

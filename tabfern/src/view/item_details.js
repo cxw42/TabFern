@@ -46,7 +46,7 @@
             'raw_url',      // the tab's URL
             'raw_title',    // the tab's title.  null => default.
             'isOpen',       // open or not
-          // TODO save favIconUrl?
+            // TODO save favIconUrl?
             'raw_bullet',   // User-provided descriptive text (brief).
                             // null => none.
                             // It's not called a "note" because we may
@@ -55,7 +55,7 @@
 
     /// Map between open-window IDs and node IDs
     module.windows = multidex(
-        K.IT_WINDOW,  //type
+        K.IT_WIN,  //type
         [ //keys
             'win_id',   // from Chrome
             'node_id',  // from jstree
@@ -69,32 +69,24 @@
         ]);
 
     /// Find a node's value in the model, regardless of type.
-    /// @param node_id {string} The node ID
-    /// @return ret {object} .ty = K.IT_*; .val = the value, or
-    ///                         .ty=false if the node wasn't found.
-    module.get_node_tyval = function(node_id)
+    /// @param node_id {string} The node ID.  This has to be a string, because
+    ///                         this module does not depend on item_tree.
+    /// @return ret {object} the value, or ===false if the node wasn't found.
+    ///                         val.ty holds the type.
+    module.val_by_node_id = function(node_id)
     {
-        let retval = {ty: false, val: null};
-        if(typeof node_id !== 'string') return retval;
+        if(typeof node_id !== 'string') return false;
 
         // Check each piece of the model in turn
-        let val, ty;
+        let val;
         val = module.windows.by_node_id(node_id);
-        if(val) {
-            retval.ty = K.IT_WINDOW;
-            retval.val = val;
-            return retval;
-        }
+        if(val) return val;
 
         val = module.tabs.by_node_id(node_id);
-        if(val) {
-            retval.ty = K.IT_TAB;
-            retval.val = val;
-            return retval;
-        }
+        if(val) return val;
 
-        return retval;
-    } //get_node_tyval
+        return false;   //not found
+    } //val_by_node_id
 
     return module;
 }));

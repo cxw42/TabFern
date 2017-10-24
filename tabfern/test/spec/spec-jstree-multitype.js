@@ -332,7 +332,53 @@ describe('jstree-multitype', ()=>{
             expect(child.multitype).toEqual(['foo']);
         });
 
+    });
 
+    //////////////////////////////////////////////////////////////////////
+
+    describe('icons',()=>{
+        let node_id, li, a, i;
+
+        it('creates a node',(done)=>{
+            ASQ().then((sdone)=>{
+            node_id = treeobj.create_node(null,
+                {text:'New', icon:'icon-plain'}, 'last',
+                sdone);
+            })
+            .val(()=>{
+                expect(node_id).toBeTruthy();
+                expect(typeof node_id).toBe('string');
+                li = treeobj.get_node(node_id,true);
+                a = $('a',li);
+                i = $('i',a);
+                done();
+            });
+        });
+
+        it('overrides manually-set icons by the multitype',()=>{
+            expect(i.attr('class')).toMatch(/\bicon-plain\b/);
+            expect(i.attr('class')).not.toMatch(/\bicon-foo\b/);
+
+            expect(treeobj.add_multitype(node_id,'foo')).toBeTruthy();
+            expect(i.attr('class')).not.toMatch(/\bicon-plain\b/);
+            expect(i.attr('class')).toMatch(/\bicon-foo\b/);
+        });
+
+        it('overrides the multitype by manually-set icons',()=>{
+
+            treeobj.set_icon(node_id, 'icon-manual');
+            expect(i.attr('class')).toMatch(/\bicon-manual\b/);
+            expect(i.attr('class')).not.toMatch(/\bicon-plain\b/);
+            expect(i.attr('class')).not.toMatch(/\bicon-foo\b/);
+        });
+
+        it('keeps multitype overrides on the default icon',()=>{
+
+            treeobj.set_icon(node_id, true);
+            expect(i.attr('class')).not.toMatch(/\bicon-manual\b/);
+            expect(i.attr('class')).not.toMatch(/\bicon-plain\b/);
+            expect(i.attr('class')).toMatch(/\bicon-foo\b/);
+        });
     });
 
     //////////////////////////////////////////////////////////////////////
