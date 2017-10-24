@@ -110,16 +110,16 @@ li.ephemeral-recovered, .tfs-recovered {
 
 .jstree-wholerow > .tf-action-group {
     z-index: 10;
-    position: fixed;        /* starts a new stacking context */
-    right: 0;
+    position: relative;     /* starts a new stacking context */
+    right: -100px;          /* slide it right to start with, for ease of debugging */
     display: inline-block;  /* Be on the same row as the window */
     padding-right: 0.5em;   /* same as hamburger menu, below */
 }
 
 .tf--feature--hide-horizontal-scrollbars .jstree-wholerow > .tf-action-group {
     z-index: 10;
-    position: absolute;     /* starts a new stacking context */
-    right: 0;               /* at the right of the containing element */
+    position: relative;     /* starts a new stacking context */
+    right: -100px;          /* for ease of debugging */
     display: inline-block;  /* Be on the same row as the window */
     padding-right: 0.5em;   /* same as hamburger menu, below */
 }

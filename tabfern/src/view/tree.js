@@ -1226,6 +1226,8 @@ function winOnCreated(win)
     }
 
     createNodeForWindow(win, K.WIN_NOKEEP);
+    // TODO RESUME HERE --- change calls to vscroll_function, and remove them
+    // if possible, given the new regime.
     T.vscroll_function();
     saveTree();     // for now, brute-force save on any change.
 } //winOnCreated
@@ -2675,6 +2677,11 @@ function createMainTreeIfWinIdReceived(done, win_id_msg_or_error)
 
     T.create('#maintree', treeCheckCallback, dndIsDraggable,
             contextmenu_items);
+
+    $(window).on('inner_resize', function(evt, wid) {
+        log.info({inner_resize:evt, wid});
+        T.rjustify_action_group_at(wid);
+    });
 
     // Install keyboard shortcuts.  This includes the keyboard listener for
     // context menus.

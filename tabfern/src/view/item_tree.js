@@ -47,7 +47,18 @@
     /// https://stackoverflow.com/users/939547/jsarma
     module.vscroll_function = function()
     { //TODO make this a closure over a specific win, jq
-        if(getBoolSetting(CFG_HIDE_HORIZONTAL_SCROLLBARS)) return;
+        //if(getBoolSetting(CFG_HIDE_HORIZONTAL_SCROLLBARS)) return;
+
+        // TODO? If we have been called from redraw.jstree, check the reason.
+        // If it was a move_node within a specific parent, only redo the
+        // scrolls for that parent?
+
+        // TODO? Keep a list of the current action groups, updated when
+        // the tree changes (or open_node/close_node) so we don't have
+        // to do $() here?
+
+        // Better yet --- use position:absolute with
+        // https://stackoverflow.com/a/20888342/2877364
 
         //log.info('Updating V positions');
         let scrolltop = $(window).scrollTop();
@@ -56,6 +67,40 @@
             jq.css('top',jq.parent().offset().top - scrolltop);
         });
     } //vscroll_function
+
+    /// The most recently seen right edge
+    module.last_r_edge = undefined;
+
+    /// Set each action group's css('right') to line up with the right
+    /// edge at #rt, assuming position:relative with right: specified,
+    /// and with left: not specified.  ** NOTE ** assumes LTR.
+    /// TODO support RTL
+    module.rjustify_action_group_at = function(r_edge) {
+
+        // When called from an open or close action, r_edge will actually
+        // be an event, and we will have a second argument holding
+        // {node, instance}.  Use the saved edge, if we have one.
+        if(typeof r_edge !== 'number') r_edge = module.last_r_edge;
+        if(typeof r_edge !== 'number') return;
+
+        module.last_r_edge = r_edge;
+
+        // TODO if it's an after_open or after_close, only process nodes
+        // from that node to the bottom of the tree.
+        $('.' + K.ACTION_GROUP_WIN_CLASS).each(function(idx, dom_elem) {
+            let jq = $(dom_elem);
+
+            // Get the position with right:0 in force.  This is the native
+            // position, to which specifications of right: are negative.
+            // TODO? memoize this?
+            jq.css('right',0);
+            let orig_left = jq.offset().left;
+
+            // Move the box to where it should be.
+            jq.css( 'right', 0 - (r_edge - jq.outerWidth() - orig_left) );
+                // right: has to be negative to move the box to the right.
+        });
+    } //rjustify_action_group_at
 
     /// Update only once per frame when scrolling - Suggested by MDN -
     /// https://developer.mozilla.org/en-US/docs/Web/Events/scroll#Example
@@ -96,6 +141,53 @@
         jq_tree.on('after_open.jstree', module.vscroll_function);
         jq_tree.on('after_close.jstree', module.vscroll_function);
     }; //install_vscroll_function()
+
+    // Trying it a different way --- resize detection modified from
+    // https://stackoverflow.com/a/22571956/2877364 by
+    // https://stackoverflow.com/users/95733/commonpike , based on
+    // https://stackoverflow.com/a/20888342/2877364 and
+    // https://gist.github.com/OrganicPanda/8222636 by
+    // https://stackoverflow.com/users/178959/organicpanda
+    //
+    // This is nice because it will also trigger when the V scrollbar
+    // appears or disappears.
+
+    module.install_resize_detector = function(win, jq_tree){
+        $('<iframe id="scrollbar-listener"/>').css({
+            'position'      : 'fixed',
+            'width'         : '100%',
+            'height'        : 0,
+            'bottom'        : 0,
+            'border'        : 0,
+            'background-color'  : 'transparent'
+        }).on('load',function() {
+            //var vsb     = (document.body.scrollHeight > document.body.clientHeight);
+            var timer   = null;
+            var iframe = this;
+            this.contentWindow.addEventListener('resize', function() {
+                clearTimeout(timer);
+                timer = setTimeout(function() {
+                    $(win).trigger('inner_resize',[iframe.clientWidth]);
+                    //var vsbnew = (document.body.scrollHeight > document.body.clientHeight);
+                    //if (vsbnew) {
+                    //    if (!vsb) {
+                    //        $(top.window).trigger('scrollbar',[true]);
+                    //        vsb=true;
+                    //    }
+                    //} else {
+                    //    if (vsb) {
+                    //        $(top.window).trigger('scrollbar',[false]);
+                    //        vsb=false;
+                    //    }
+                    //}
+                }, 100);
+            });
+
+        }).appendTo('body');
+
+        jq_tree.on('after_open.jstree', module.rjustify_action_group_at);
+        jq_tree.on('after_close.jstree', module.rjustify_action_group_at);
+    }; //install_resize_detector
 
     // CSS classes
     const WIN_CLASS = 'tf-window'; // class on all <li>s representing windows
@@ -226,7 +318,8 @@
         }                                   // those events.
 
         // Add custom event handlers
-        module.install_vscroll_function(window, jq_tree);
+        //module.install_vscroll_function(window, jq_tree);
+        module.install_resize_detector(window, jq_tree);
 
         // Add a spare node that will be hidden and that will serve as a
         // holding pen when tabs are being attached and detached.
