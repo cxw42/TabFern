@@ -501,6 +501,8 @@ function actionEditBullet(node_id, node, unused_action_id, unused_action_el)
 
     // TODO replace window.prompt with an in-DOM GUI.
     let question = `Note for tab "${val.raw_title}"?`;
+    //DEBUG
+    //new_bullet='42';
     let new_bullet = window.prompt(question, val.raw_bullet || '');
     if(new_bullet === null) return;   // user cancelled
 
@@ -1228,7 +1230,7 @@ function winOnCreated(win)
     createNodeForWindow(win, K.WIN_NOKEEP);
     // TODO RESUME HERE --- change calls to vscroll_function, and remove them
     // if possible, given the new regime.
-    T.vscroll_function();
+    //## T.vscroll_function();
     saveTree();     // for now, brute-force save on any change.
 } //winOnCreated
 
@@ -1278,7 +1280,7 @@ function winOnRemoved(win_id)
             // This removes the node's children also.
             // actionDeleteWindow also saves the tree, so we don't need to.
     }
-    T.vscroll_function();
+    //## T.vscroll_function();
 } //winOnRemoved
 
 /// Update the highlight for the current window.  Note: this does not always
@@ -1549,7 +1551,7 @@ var tabOnCreated = (function(){
 
         // Check if we now match a saved window.  If so, merge the two.
 
-        T.vscroll_function();
+        //## T.vscroll_function();
 
         saveTree(true, cbk);
 
@@ -1698,7 +1700,7 @@ function tabOnRemoved(tabid, removeinfo)
     // Refresh the tab.index values for the remaining tabs
     updateTabIndexValues(window_node_id);
 
-    T.vscroll_function();
+    //## T.vscroll_function();
     saveTree();
 } //tabOnRemoved
 
@@ -2675,13 +2677,17 @@ function createMainTreeIfWinIdReceived(done, win_id_msg_or_error)
         getBoolSetting(CFG_ENB_CONTEXT_MENU, true) ? getMainContextMenuItems
                                                     : false;
 
-    T.create('#maintree', treeCheckCallback, dndIsDraggable,
-            contextmenu_items);
-
+    // Set up to receive resize notifications from item_tree.
+    // Do this before calling T.create(), which triggers an initial
+    // inner_resize event.
+    // TODO? move this into item_tree?
     $(window).on('inner_resize', function(evt, wid) {
         log.info({inner_resize:evt, wid});
         T.rjustify_action_group_at(wid);
     });
+
+    T.create('#maintree', treeCheckCallback, dndIsDraggable,
+            contextmenu_items);
 
     // Install keyboard shortcuts.  This includes the keyboard listener for
     // context menus.
@@ -2700,7 +2706,7 @@ function createMainTreeIfWinIdReceived(done, win_id_msg_or_error)
                 Bypasser = Modules.bypasser.create(window, T.treeobj, Modules.shortcuts);
             }
             // Continue initialization by loading the tree
-            loadSavedWindowsIntoTree(done);
+            done();
         }
     );
 } //createMainTreeIfWinIdReceived()
@@ -2789,6 +2795,40 @@ function addOpenWindowsToTree(done, winarr)
 
 function addEventListeners(done)
 {
+    // At this point, the saved and open windows have been loaded into the
+    // tree.  Therefore, we can position the action groups.  We already
+    // saved the position, so do not need to specify it here.
+    log.info({'rjustify all at':T.last_r_edge});
+    T.rjustify_action_group_at();
+
+    // And, since we're loaded, make sure we reset these when the tree
+    // is redrawn, in whole or in part.
+
+    T.treeobj.element.on('redraw.jstree', function(evt, evt_data) {
+        if(!evt_data.nodes) {
+            //log.info({'redraw -> rjustify all at':T.last_r_edge});
+            T.rjustify_action_group_at();   // TODO do we need this?
+        } else {
+            //log.info({'redraw -> rjustify':evt_data.nodes,
+            //            'redge':T.last_r_edge});
+            $(evt_data.nodes).each(T.rjustify_node_actions);
+        }
+    });
+
+    // TODO determine whether we need the above, given that we have the below.
+    // It appears we do need the above, at least on startup, and after
+    // removing a closed window from the tree without changing the scrollbar
+    // visibility.
+    // We need the below for editing the bullet on a tab, which causes
+    // that node to be redrawn, but does not trigger a redraw.jstree.
+
+    T.treeobj.element.on('redraw_event.jstree', function(evt, evt_data){
+        //log.info({redraw_event:arguments});
+        if(evt_data && typeof evt_data === 'object' && evt_data.obj) {
+            T.rjustify_node_actions(evt_data.obj);
+        }
+    });
+
     // Set event listeners
     T.treeobj.element.on('changed.jstree', treeOnSelect);
 
@@ -2967,6 +3007,7 @@ function main(...args)
         chrome.runtime.sendMessage({msg:MSG_GET_VIEW_WIN_ID}, ASQH.CC(done));
     })
     .then(createMainTreeIfWinIdReceived)
+    .then(loadSavedWindowsIntoTree)
     .then((done)=>{
         chrome.windows.getAll({'populate': true}, ASQH.CC(done));
     })
