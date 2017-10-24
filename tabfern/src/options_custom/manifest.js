@@ -171,6 +171,20 @@
             // Changelog
             {
                 "tab": i18n.get("What's new?"),
+                "group": "Version 0.1.12",
+                "type": "description",
+                "text":
+`<ul>
+<li>You can now right-click on the TabFern icon in the Chrome toolbar,
+and select "Add/edit a note for the current tab."  That will switch you to the
+TabFern window, where you can edit the note, and then will switch you right
+back to your tab.  Just hit Cancel if you want to see the note, but not
+change it.  If the TabFern window is offscreen, double-click the TabFern
+icon to bring it to the current window.  ${issue(71)}</li>
+</ul>`
+            },
+            {
+                "tab": i18n.get("What's new?"),
                 "group": "Version 0.1.11",
                 "type": "description",
                 "text":
