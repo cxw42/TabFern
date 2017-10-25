@@ -74,7 +74,8 @@
     /// Inner function to set #jq's css('right') to line up with #r_edge,
     /// given the same assumptions as rjustify_action_group_at() below.
     /// For speed, assumes jq.length > 0.
-    function rjustify_inner(jq, r_edge) {
+    function rjustify_inner(jq, r_edge, scroll_left) {
+        scroll_left = (+scroll_left || 0) |0;
         // Get the position with right:0 in force.  This is the native
         // position, to which specifications of right: are negative.
         // TODO? memoize this?
@@ -82,7 +83,7 @@
         let orig_left = jq.offset().left;
 
         // Move the box to where it should be.
-        jq.css( 'right', 0 - (r_edge - jq.outerWidth() - orig_left) );
+        jq.css( 'right', 0 - (r_edge - jq.outerWidth() - orig_left + scroll_left) );
             // right: has to be negative to move the box to the right.
     } //rjustify_inner
 
@@ -109,7 +110,8 @@
         jq = $('> div > .' + K.ACTION_GROUP_WIN_CLASS, node_dom_elem);
 
         if(jq.length) {     // Do this node
-            rjustify_inner(jq, module.last_r_edge);
+            let sl = $(window).scrollLeft();
+            rjustify_inner(jq, module.last_r_edge, sl);
         }
 
         // Do this node's children, if any.  They appear not to always be
@@ -134,7 +136,8 @@
         // TODO if it's an after_open or after_close, only process nodes
         // from that node to the bottom of the tree.
         $('.' + K.ACTION_GROUP_WIN_CLASS).each(function(idx, dom_elem) {
-            rjustify_inner($(dom_elem), r_edge);
+            let sl = $(window).scrollLeft();
+            rjustify_inner($(dom_elem), r_edge, sl);
         });
     } //rjustify_action_group_at
 
@@ -230,7 +233,24 @@
 
         }).appendTo('body');
 
-        //Do we need these?
+        // Set up for hscroll detection, if necessary
+        if(!getBoolSetting(CFG_HIDE_HORIZONTAL_SCROLLBARS)) {
+            let timer = null;
+            let last_scrollLeft = null;
+            $(win).scroll(function() {
+                clearTimeout(timer);
+                timer = setTimeout(()=>{
+                    let sl = $(this).scrollLeft();  //lexical `this`
+                    if(sl !== last_scrollLeft) {
+                        last_scrollLeft = sl;
+                        module.rjustify_action_group_at();
+                    }
+                },50);
+            });
+            //$(win).scroll(function(evt){console.log({top: $(this).scrollTop(), left:$(this).scrollLeft()});})
+        }
+
+        //Do we need the following?
 
         // We also need this on redraw.jstree, but I am going to add that
         // later, in tree.js, after we've loaded the tree initially.

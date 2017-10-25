@@ -1228,8 +1228,6 @@ function winOnCreated(win)
     }
 
     createNodeForWindow(win, K.WIN_NOKEEP);
-    // TODO RESUME HERE --- change calls to vscroll_function, and remove them
-    // if possible, given the new regime.
     //## T.vscroll_function();
     saveTree();     // for now, brute-force save on any change.
 } //winOnCreated
@@ -1777,9 +1775,10 @@ function saveViewSize(size_data)
     let to_save = {};
     to_save[K.LOCN_KEY] = size_data;
 
-    let s = ASQ();
-    chrome.storage.local.set(to_save, ASQH.CCgo(s));
-    s.val(()=>{
+    ASQH.NowCC((cc)=>{
+        chrome.storage.local.set(to_save, cc);
+    })
+    .val(()=>{
         last_saved_size = $.extend({}, size_data);
         log.info('Saved size');
     })
