@@ -35,6 +35,34 @@
     const [A_FIRST, EQUAL, B_FIRST] = [-1, 0, 1];
         // God bless destructuring assignments!  They are my new favorite.
 
+    /// A stable in-place array sort.  Modified from
+    /// https://gist.github.com/fsufitch/718616fe41e92a2a2b62355c5ee14b86 by
+    /// https://gist.github.com/fsufitch to be standalone rather than in
+    /// Array.prototype.
+    /// Also modified to include tweaks from
+    /// https://stackoverflow.com/a/45422645/2877364 by
+    /// https://stackoverflow.com/users/1541563/patrick-roberts
+    ///
+    /// @param arr_to_sort {Array} the array.
+    /// @param cmp {function} the comparison function
+    module.stable_sort = function(arr_to_sort, cmp) {
+        // Set up to sort
+        let arr_with_idxes = arr_to_sort.map((el,index)=>[el,index]);
+
+        let stable_cmp = function(a,b) {
+            let order = this(a[0], b[0]);   // this === cmp because of the
+            return order || (a[1] - b[1]);  // bind() below
+        }.bind(cmp);
+
+        // Sort
+        arr_with_idxes.sort(stable_cmp);
+
+        // Push back into the source array
+        for(let i=0; i<arr_to_sort.length; ++i) {
+            arr_to_sort[i] = arr_with_idxes[i][0];
+        }
+    }; //stable_sort()
+
     /// Run basic checks on two nodes.
     /// If either node is unknown to the tree, it is sorted later.  If both
     /// nodes are unknown, they are sorted equally.
@@ -131,8 +159,9 @@
         return module.compare_node_num(b_id,a_id);
     } //compare_node_num_desc
 
-    /// Sorting criterion to sort by name, with open windows grouped
-    /// at the top of the list.
+    /// Sorting criterion to sort open windows by name at the top of the list.
+    /// Other windows stay in their relative positions.
+    /// @pre Each node being sorted must be a child of a common parent.
     module.open_windows_to_top = function(a_id,b_id)
     {
         let ans = basic_comparisons(a_id, b_id);
@@ -148,8 +177,21 @@
             return A_FIRST;
         } else if(!a_val.isOpen && b_val.isOpen) {
             return B_FIRST;
-        } else {
+        } else if(a_val.isOpen && b_val.isOpen) {   // both open
             return compare_text_simple(ans.a_node.text, ans.b_node.text);
+        } else {    // neither open --- preserve the existing order
+            let par = T.treeobj.get_node(ans.a_node.parent);
+            if(!par || !par.children) return EQUAL;     //unknown
+            let siblings = par.children;
+            let a_pos = siblings.indexOf(a_id);
+            let b_pos = siblings.indexOf(b_id);
+            if(a_pos === -1 && b_pos !== -1) {  // a unknown => a later
+                return B_FIRST;
+            } else if(a_pos !== -1 && b_pos === -1) {
+                return A_FIRST;
+            } else {
+                return (a_pos <= b_pos ? A_FIRST : B_FIRST);
+            }
         }
     } //open_windows_to_top
 

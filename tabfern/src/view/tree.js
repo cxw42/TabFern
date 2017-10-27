@@ -1921,7 +1921,8 @@ function hamCollapseAll()
 function hamSorter(compare_fn)
 {
     return function() {
-        T.treeobj.get_node($.jstree.root).children.sort(compare_fn);
+        let arr = T.treeobj.get_node($.jstree.root).children;
+        Modules['view/sorts'].stable_sort(arr, compare_fn);
             // children[] holds node IDs, so compare_fn will always get strings.
         T.treeobj.redraw(true);   // true => full redraw
     };

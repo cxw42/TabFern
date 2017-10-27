@@ -181,6 +181,9 @@ TabFern window, where you can edit the note, and then will switch you right
 back to your tab.  Just hit Cancel if you want to see the note, but not
 change it.  If the TabFern window is offscreen, double-click the TabFern
 icon to bring it to the current window.  ${issue(71)}</li>
+<li>Sorting open windows to top keeps the order of closed windows as it is.
+${issue(78)}</li>
+<li>Other fixes: ${issue(72)}</li>
 </ul>`
             },
             {
