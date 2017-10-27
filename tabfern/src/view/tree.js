@@ -2954,7 +2954,7 @@ let dependencies = [
     'jstree-because',
     'loglevel', 'hamburger', 'bypasser', 'multidex', 'justhtmlescape',
     'signals', 'local/fileops/export', 'local/fileops/import',
-    'asynquence-contrib', 'asq-helpers',
+    'asynquence-contrib', 'asq-helpers', 'rmodal',
 
     // Modules for keyboard-shortcut handling.  Not really TabFern-specific,
     // but not yet disentangled fully.
