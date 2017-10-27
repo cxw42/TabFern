@@ -47,6 +47,8 @@ const CFG_OPEN_TOP_ON_STARTUP = 'open-to-top-on-startup';
 const CFG_HIDE_HORIZONTAL_SCROLLBARS = 'hide-horizontal-scrollbars';
 const CFG_NEW_WINS_AT_TOP = 'open-new-windows-at-top';
 const CFG_SHOW_TREE_LINES = 'show-tree-lines';
+const CFG_CONFIRM_DEL_OF_SAVED = 'confirm-del-of-saved-wins';
+const CFG_CONFIRM_DEL_OF_UNSAVED = 'confirm-del-of-unsaved-wins';
 
 const CFG_DEFAULTS = {
     __proto__: null,
@@ -58,6 +60,8 @@ const CFG_DEFAULTS = {
     [CFG_HIDE_HORIZONTAL_SCROLLBARS]: true,
     [CFG_NEW_WINS_AT_TOP]: false,
     [CFG_SHOW_TREE_LINES]: false,
+    [CFG_CONFIRM_DEL_OF_SAVED]: true,
+    [CFG_CONFIRM_DEL_OF_UNSAVED]: false,
 };
 
 //////////////////////////////////////////////////////////////////////////

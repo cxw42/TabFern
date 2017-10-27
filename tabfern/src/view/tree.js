@@ -432,6 +432,20 @@ function actionCloseWindowAndSave(node_id, node, unused_action_id, unused_action
 
 function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el, evt)
 {
+    let win_val = D.windows.by_node_id(node_id);
+    if(!win_val) return;
+    if( (win_val.keep === K.WIN_KEEP &&
+            getBoolSetting(CFG_CONFIRM_DEL_OF_SAVED)) ||
+        (win_val.keep === K.WIN_NOKEEP &&
+            getBoolSetting(CFG_CONFIRM_DEL_OF_UNSAVED))
+    ) {
+        // TODO replace this with rmodal
+        let res = window.confirm(
+                'Delete window "' + I.get_win_raw_text(win_val) + '"?'
+        );
+        if(!res) return;
+    }
+
     // Close the window and adjust the tree
     actionCloseWindowButDoNotSave(node_id, node, unused_action_id, unused_action_el);
 
@@ -452,7 +466,6 @@ function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el, e
     T.treeobj.delete_node(node_id);   //also deletes child nodes
     window.scrollTo(...scrollOffsets);
 
-    let win_val = D.windows.by_node_id(node_id);
     D.windows.remove_value(win_val);
 
     // We had a click --- hover the node that is now under the mouse.

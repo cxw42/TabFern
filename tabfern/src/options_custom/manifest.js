@@ -89,6 +89,21 @@
                         open windows" box above.`
             },
 
+            {
+                "tab": i18n.get("Behaviour"),
+                "group": i18n.get("Deletion"),
+                "name": CFG_CONFIRM_DEL_OF_SAVED,
+                "type": "checkbox",
+                "label": i18n.get('Prompt for confirmation before deleting <b>saved</b> windows'),
+            },
+            {
+                "tab": i18n.get("Behaviour"),
+                "group": i18n.get("Deletion"),
+                "name": CFG_CONFIRM_DEL_OF_UNSAVED,
+                "type": "checkbox",
+                "label": i18n.get('Prompt for confirmation before deleting <b>unsaved</b> windows'),
+            },
+
             // Appearance
             {
                 "tab": i18n.get("Appearance"),
@@ -183,6 +198,9 @@ change it.  If the TabFern window is offscreen, double-click the TabFern
 icon to bring it to the current window.  ${issue(71)}</li>
 <li>Sorting open windows to top keeps the order of closed windows as it is.
 ${issue(78)}</li>
+<li>New options on the "Behaviour" tab to prompt before deleting windows.
+The UI for this is a bit clunky, but at least the function is there.
+${issue(48)}
 <li>Other fixes: ${issue(72)}</li>
 </ul>`
             },
