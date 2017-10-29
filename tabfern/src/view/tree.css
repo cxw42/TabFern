@@ -3,6 +3,10 @@
 /* //////////////////////////////////////////////////////////////////// */
 /* Local styles */
 
+.clear {
+    clear: both;
+}
+
 .tabfern-popup-footer {
     position:fixed;
     bottom:0;
@@ -240,6 +244,40 @@ div.jstree-wholerow-hovered > .tf-action-group {
  * hamburger menu. */
 #maintree {
     margin-bottom: 30px;    /* empirical, based on the hamburger menu's box */
+}
+
+/* ////////////////////////////////////////////////////////////////////// */
+/* The modal dialog */
+
+/* This needs attention from a front-end designer :) */
+
+/* Position the dialog consistently in our use case */
+.modal .modal-dialog {
+    padding: 10px;
+    margin: 8px;    /* same as the space around the tree */
+    position: fixed;
+    left: 0;
+    right: 0;
+    width: auto;
+}
+
+.modal {
+    /* Darken the shadow a bit */
+    background: rgba(0, 0, 0, .80);
+}
+
+/* Clean up the look of the dialog just a bit */
+.modal-header {
+    padding-bottom: 10px;
+}
+
+.modal-footer button {
+    padding: 2px;
+    margin: 0px 3px;
+}
+
+.modal-footer .button-container {
+    float: right;
 }
 
 /* ////////////////////////////////////////////////////////////////////// */

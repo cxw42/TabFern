@@ -505,12 +505,14 @@ function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el,
         let seq = ASQ();
         let cbk = seq.errfcb();
 
+        // Modified from the rmodal sample at https://rmodal.js.org/
         $('#confirm-dialog-question').text(
                 'Delete window "' + I.get_win_raw_text(win_val) + '"?'
         );
         dlg = new Modules['rmodal'](
             document.getElementById('confirm-dialog'),
             {
+                closeTimeout: 0,
                 //content: 'Abracadabra'
 //                    beforeOpen: function(next) {
 //                        console.log('beforeOpen');

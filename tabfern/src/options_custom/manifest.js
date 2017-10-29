@@ -196,11 +196,12 @@ TabFern window, where you can edit the note, and then will switch you right
 back to your tab.  Just hit Cancel if you want to see the note, but not
 change it.  If the TabFern window is offscreen, double-click the TabFern
 icon to bring it to the current window.  ${issue(71)}</li>
+<li>On the "Behaviour" tab, you now have the option of telling TabFern to
+ask you for confirmation before it deletes a window from the tree.
+This does not change what happens when you close a browser window outside
+of the TabFern tree.  ${issue(48)}
 <li>Sorting open windows to top keeps the order of closed windows as it is.
 ${issue(78)}</li>
-<li>New options on the "Behaviour" tab to prompt before deleting windows.
-The UI for this is a bit clunky, but at least the function is there.
-${issue(48)}
 <li>Other fixes: ${issue(72)}</li>
 </ul>`
             },

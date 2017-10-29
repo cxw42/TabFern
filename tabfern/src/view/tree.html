@@ -61,12 +61,15 @@
                         -->
 
                         <div class="modal-footer">
-                            <!-- note: don't use <button type=submit>, which
-                                reloads the page. -->
-                            <button data-which="cancel" class="btn btn-default" type="button">Cancel</button>
-                            <button data-which="no" class="btn" type="button">No</button>
-                            <button data-which="yes" class="btn btn-primary" type="button">Yes</button>
+                            <div class="button-container"><!-- this floats right -->
+                                <!-- note: don't use <button type=submit>, which
+                                    reloads the page. -->
+                                <button data-which="yes" class="btn btn-primary" type="button">Yes</button>
+                                <button data-which="no" class="btn" type="button">No</button>
+                                <button data-which="cancel" class="btn btn-default" type="button">Cancel</button>
+                            </div>
                         </div>
+                        <div class="clear" />
                     </form>
                 </div>
             </div>
