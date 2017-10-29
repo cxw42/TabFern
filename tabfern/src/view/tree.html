@@ -38,6 +38,40 @@
 
         <div id="hamburger-menu" class="hamburger-menu"></div><!-- a jstree to use as a hamburger menu -->
 
+        <!-- Modal dialog ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+        <!-- rmodal sets display:none on .modal automatically, so we don't
+             have to here. -->
+        <div id="confirm-dialog" class="modal">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form class="form-horizontal" method="get">
+                        <div class="modal-header">
+                            <strong id="confirm-dialog-question">Are you sure?</strong>
+                        </div>
+
+                        <!--
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label for="dummyText" class="control-label col-xs-4">Dummy text</label>
+                                <div class="input-group col-xs-7">
+                                    <input type="text" name="dummyText" id="dummyText" class="form-control" />
+                                </div>
+                            </div>
+                        </div>
+                        -->
+
+                        <div class="modal-footer">
+                            <!-- note: don't use <button type=submit>, which
+                                reloads the page. -->
+                            <button data-which="cancel" class="btn btn-default" type="button">Cancel</button>
+                            <button data-which="no" class="btn" type="button">No</button>
+                            <button data-which="yes" class="btn btn-primary" type="button">Yes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div><!-- #confirm-dialog -->
+
     </div><!-- tabfern-container -->
 
     <!-- Main script ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->

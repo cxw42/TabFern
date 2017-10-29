@@ -430,57 +430,158 @@ function actionCloseWindowAndSave(node_id, node, unused_action_id, unused_action
     saveTree();
 } //actionCloseWindowAndSave
 
-function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el, evt)
+/// Delete a window's entry in the tree.
+/// @param node_id {string} the ID of the node to delete
+/// @param node the node to delete
+/// @param evt {Event} (optional) If truthy, the event that triggered the action
+/// @param is_internal {Boolean} (optional) If truthy, this is an internal
+///                              action, so don't prompt for confirmation.
+function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el,
+                            evt, is_internal)
 {
     let win_val = D.windows.by_node_id(node_id);
     if(!win_val) return;
-    if( (win_val.keep === K.WIN_KEEP &&
-            getBoolSetting(CFG_CONFIRM_DEL_OF_SAVED)) ||
+
+    /// Helper to actually do the deletion
+    function doDeletion()
+    {
+        // Close the window and adjust the tree
+        actionCloseWindowButDoNotSave(node_id, node, unused_action_id, unused_action_el);
+
+        lastDeletedWindow = [];
+        // Remove the tabs from D.tabs
+        for(let tab_node_id of node.children) {
+            let tab_val = D.tabs.by_node_id(tab_node_id);
+            if(!tab_val) continue;
+            D.tabs.remove_value(tab_val);
+            // Save the URLs for "Restore last deleted"
+            lastDeletedWindow.push(tab_val.raw_url);
+        }
+
+        let next_node = T.treeobj.get_next_dom(node, true);
+
+        // Remove the window's node and value
+        let scrollOffsets = [window.scrollX, window.scrollY];
+        T.treeobj.delete_node(node_id);   //also deletes child nodes
+        window.scrollTo(...scrollOffsets);
+
+        D.windows.remove_value(win_val);
+
+        // We had a click --- hover the node that is now under the mouse.
+        // That is the node that was the next-sibling node before.
+        // This fixes a bug in which clicking the delete button removes the row,
+        // and the row that had been below moves up, but the wholerow hover and the
+        // action buttons don't appear for that row.
+        //
+        // TODO update this when adding full hierarchy (#34).
+
+        if(evt && evt.type === 'click' && next_node) {
+            T.treeobj.hover_node(next_node);
+        }
+
+        saveTree();
+    } //doDeletion()
+
+    // Prompt for confirmation, if necessary
+    if( is_internal ||
+        (win_val.keep === K.WIN_KEEP &&
+            !getBoolSetting(CFG_CONFIRM_DEL_OF_SAVED)) ||
         (win_val.keep === K.WIN_NOKEEP &&
-            getBoolSetting(CFG_CONFIRM_DEL_OF_UNSAVED))
-    ) {
-        // TODO replace this with rmodal
-        let res = window.confirm(
+            !getBoolSetting(CFG_CONFIRM_DEL_OF_UNSAVED))
+    ) { // No confirmation required - just do it
+        doDeletion();
+
+    } else {    // Confirmation required
+
+//        // TODO replace this with rmodal
+//        let res = window.confirm(
+//                'Delete window "' + I.get_win_raw_text(win_val) + '"?'
+//        );
+//        if(!res) return;
+
+        log.info('Setting up dialog seq');
+
+        let dlg;
+        let seq = ASQ();
+        let cbk = seq.errfcb();
+
+        $('#confirm-dialog-question').text(
                 'Delete window "' + I.get_win_raw_text(win_val) + '"?'
         );
-        if(!res) return;
-    }
+        dlg = new Modules['rmodal'](
+            document.getElementById('confirm-dialog'),
+            {
+                //content: 'Abracadabra'
+//                    beforeOpen: function(next) {
+//                        console.log('beforeOpen');
+//                        next();
+//                    }
+//                    , afterOpen: function() {
+//                        console.log('opened');
+//                    }
+//
+//                    , beforeClose: function(next) {
+//                        console.log('beforeClose');
+//                        next();
+//                    },
+                afterClose: function() {
+                    console.log('closed');
+                    cbk(null, dlg.reason);   // *** Run the sequence
+                }
+                // , bodyClass: 'modal-open'
+                // , dialogClass: 'modal-dialog'
+                // , dialogOpenClass: 'animated fadeIn'
+                // , dialogCloseClass: 'animated fadeOut'
 
-    // Close the window and adjust the tree
-    actionCloseWindowButDoNotSave(node_id, node, unused_action_id, unused_action_el);
+                // , focus: true
+                // , focusElements: ['input.form-control', 'textarea', 'button.btn-primary']
 
-    lastDeletedWindow = [];
-    // Remove the tabs from D.tabs
-    for(let tab_node_id of node.children) {
-        let tab_val = D.tabs.by_node_id(tab_node_id);
-        if(!tab_val) continue;
-        D.tabs.remove_value(tab_val);
-        // Save the URLs for "Restore last deleted"
-        lastDeletedWindow.push(tab_val.raw_url);
-    }
+                // , escapeClose: true
+            }
+        );
 
-    let next_node = T.treeobj.get_next_dom(node, true);
+        dlg.reason = null;   // to store which button is pressed
 
-    // Remove the window's node and value
-    let scrollOffsets = [window.scrollX, window.scrollY];
-    T.treeobj.delete_node(node_id);   //also deletes child nodes
-    window.scrollTo(...scrollOffsets);
+        // Add the button listeners, to avoid inline scripts
+        $('#confirm-dialog .modal-footer button').on('click.TFrmodal', function(){
+            dlg.reason = this.dataset.which;
+            dlg.close();
+        });
 
-    D.windows.remove_value(win_val);
+        // Add the keyboard listener
+        $(document).on('keydown.TFrmodal', function(ev) {
+            dlg.keydown(ev);
+        });
+        //document.addEventListener('keydown', kbd_listener, false);
 
-    // We had a click --- hover the node that is now under the mouse.
-    // That is the node that was the next-sibling node before.
-    // This fixes a bug in which clicking the delete button removes the row,
-    // and the row that had been below moves up, but the wholerow hover and the
-    // action buttons don't appear for that row.
-    //
-    // TODO update this when adding full hierarchy (#34).
+        seq.try((done, reason)=>{       // try() so the handler below will
+                                        // always be called.
+            log.info(`Dialog closed; reason ${reason}`);
+            if(reason === 'yes') {
+                doDeletion();
+            }
+            done();
+        });
 
-    if(evt && evt.type === 'click' && next_node) {
-        T.treeobj.hover_node(next_node);
-    }
+        // Teardown.  This works because the preceding step is a try().
+        seq.then((done, maybe_err)=>{
+            log.info('Tearing down dialog seq');
+            //document.removeEventListener('keydown', kbd_listener, false);
+            $(document).off('keydown.TFrmodal');
+            $('#confirm-dialog .modal-footer button').off('click.TFrmodal');
 
-    saveTree();
+            // If there were any errors in the previous step, report them.
+            if(maybe_err && typeof maybe_err === 'object' && maybe_err.catch) {
+                done.fail(maybe_err.catch);
+            } else {
+                done();
+            }
+        });
+
+        // Show the dialog
+        dlg.open();
+
+    } //endif confirmation required
 } //actionDeleteWindow
 
 /// Toggle the top border on a node.  This is a hack until I can add
@@ -1287,9 +1388,10 @@ function winOnRemoved(win_id)
         saveTree();     // TODO figure out if we need this.
     } else {
         // Not saved - just toss it.
-        actionDeleteWindow(node_id, node, null, null);
+        actionDeleteWindow(node_id, node, null, null, null, true);
             // This removes the node's children also.
             // actionDeleteWindow also saves the tree, so we don't need to.
+            // true => it's internal, so don't prompt for confirmation.
     }
     //## T.vscroll_function();
 } //winOnRemoved
