@@ -2708,7 +2708,7 @@ function messageListener(request, sender, sendResponse)
     }
 
     if(request.msg === MSG_EDIT_TAB_NOTE && !request.response) {
-        let success = false;
+
         TAB: if(request.tab_id) {
             let tab_val = D.tabs.by_tab_id(request.tab_id);
             if(!tab_val || !tab_val.isOpen) break TAB;
@@ -2727,11 +2727,30 @@ function messageListener(request, sender, sendResponse)
                     ASQH.CC(done)
                 );
             })
+            // At one point, the edited tab wasn't being flagged when focus
+            // switched back to it, so I tried the below.  I was not able to
+            // reproduce the problem consistently, but the below seems to help
+            // at least sometimes.  Related to #71.
+            .val(()=>{
+                T.treeobj.flag_node(tab_val.node_id);
+                //winOnFocusChanged(tab_val.win_id, true);
+            })
+            .val(()=>{
+                sendResponse({msg: request.msg, response: true, success: true});
+            })
+            .or(()=>{   // Report any errors back to the sender
+                sendResponse({msg: request.msg, response: true, success: false});
+            })
             ;
-            success = true;
+            return true;    // Don't send a response yet - wait for the seq
+                            // to run.  true => keep sendResponse alive
         }
-        sendResponse({msg: request.msg, response: true, success});
+
+        // If we didn't kick off the sequence, report failure right away.
+        sendResponse({msg: request.msg, response: true, success: false});
     } //endif MSG_EDIT_TAB_NOTE
+
+    // Ignore all other messages --- don't send a response
 
 } //messageListener
 

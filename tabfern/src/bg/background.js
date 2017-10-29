@@ -98,7 +98,7 @@ function editNoteOnClick(info, tab)
 {
     console.log({editNoteOnClick:info, tab});
     if(!tab.id) return;
-    console.log(`Sending editNote for ${tab.id}`);
+    console.log(`Sending editNote for ${tab.id}`);
     chrome.runtime.sendMessage({msg:MSG_EDIT_TAB_NOTE, tab_id: tab.id},
         // This callback is only for debugging --- all the action happens in
         // src/view/tree.js, the receiver.
