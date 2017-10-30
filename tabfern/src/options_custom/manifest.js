@@ -199,7 +199,8 @@ icon to bring it to the current window.  ${issue(71)}</li>
 <li>On the "Behaviour" tab, you now have the option of telling TabFern to
 ask you for confirmation before it deletes a window from the tree.
 This does not change what happens when you close a browser window outside
-of the TabFern tree.  ${issue(48)}
+of the TabFern tree.  ${issue(48)}</li>
+<li>Faster vertical scrolling!  ${issue(73)}</li>
 <li>Sorting open windows to top keeps the order of closed windows as it is.
 ${issue(78)}</li>
 <li>Other fixes: ${issue(72)}</li>
