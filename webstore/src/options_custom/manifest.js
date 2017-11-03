@@ -89,6 +89,21 @@
                         open windows" box above.`
             },
 
+            {
+                "tab": i18n.get("Behaviour"),
+                "group": i18n.get("Deletion"),
+                "name": CFG_CONFIRM_DEL_OF_SAVED,
+                "type": "checkbox",
+                "label": i18n.get('Prompt for confirmation before deleting <b>saved</b> windows'),
+            },
+            {
+                "tab": i18n.get("Behaviour"),
+                "group": i18n.get("Deletion"),
+                "name": CFG_CONFIRM_DEL_OF_UNSAVED,
+                "type": "checkbox",
+                "label": i18n.get('Prompt for confirmation before deleting <b>unsaved</b> windows'),
+            },
+
             // Appearance
             {
                 "tab": i18n.get("Appearance"),
@@ -169,6 +184,28 @@
             },
 
             // Changelog
+            {
+                "tab": i18n.get("What's new?"),
+                "group": "Version 0.1.12",
+                "type": "description",
+                "text":
+`<ul>
+<li>You can now right-click on the TabFern icon in the Chrome toolbar,
+and select "Add/edit a note for the current tab."  That will switch you to the
+TabFern window, where you can edit the note, and then will switch you right
+back to your tab.  Just hit Cancel if you want to see the note, but not
+change it.  If the TabFern window is offscreen, double-click the TabFern
+icon to bring it to the current window.  ${issue(71)}</li>
+<li>On the "Behaviour" tab, you now have the option of telling TabFern to
+ask you for confirmation before it deletes a window from the tree.
+This does not change what happens when you close a browser window outside
+of the TabFern tree.  ${issue(48)}</li>
+<li>Faster vertical scrolling!  ${issue(73)}</li>
+<li>Sorting open windows to top keeps the order of closed windows as it is.
+${issue(78)}</li>
+<li>Other fixes: ${issue(72)}</li>
+</ul>`
+            },
             {
                 "tab": i18n.get("What's new?"),
                 "group": "Version 0.1.11",

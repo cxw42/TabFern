@@ -1,9 +1,9 @@
 // view/const.js: constants and generic helpers for the TabFern view
 // Copyright (c) 2017 Chris White, Jasmine Hegman.
-// Note: requires common/common.js be loaded first, for CC
 
 (function (root, factory) {
-    let imports=['jquery','jstree','loglevel','asynquence-contrib' ];
+    let imports=['jquery','jstree','loglevel','asynquence-contrib',
+                    'asq-helpers' ];
 
     if (typeof define === 'function' && define.amd) {
         // AMD
@@ -23,7 +23,7 @@
         }
         root.tabfern_const = factory(...requirements);
     }
-}(this, function ($, _unused_jstree_placeholder_, log_orig, ASQ ) {
+}(this, function ($, _unused_jstree_placeholder_, log_orig, ASQ, ASQH ) {
     "use strict";
 
     function loginfo(...args) { log_orig.info('TabFern view/const.js: ', ...args); };
@@ -108,17 +108,16 @@
                         // the sequence?
         let tab0_id;    ///< The tab automatically created with the window
 
-        ASQ()
-        .then(function open_win(done){
-            chrome.windows.create(CC(done));
+        ASQH.NowCC((cc)=>{
+            chrome.windows.create(cc);
         })
         .then(function open_tab(done, new_win){
             win_id = new_win.id;
             tab0_id = new_win.tabs[0].id;
-            chrome.tabs.create({windowId: win_id, url: url}, CC(done));
+            chrome.tabs.create({windowId: win_id, url: url}, ASQH.CC(done));
         })
         .then(function remove_old_tab(done){
-            chrome.tabs.remove(tab0_id, CC(done));
+            chrome.tabs.remove(tab0_id, ASQH.CC(done));
         })
         .or(function(err){log_orig.error({'Load error':err, url});})
         ;

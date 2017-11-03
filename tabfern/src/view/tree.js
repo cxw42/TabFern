@@ -391,6 +391,9 @@ function actionCloseWindowButDoNotSave(node_id, node, unused_action_id, unused_a
         // Ignore exceptions - when we are called from winOnRemoved,
         // the window is already gone, so the remove() throws.
         // See https://stackoverflow.com/a/45871870/2877364 by cxw
+
+        // TODO RESUME HERE --- don't actually proceed until
+        // the window is gone.  Test case: window.beforeonunload=()=>true;
     }
 
     win_val.isOpen = false;
@@ -463,6 +466,8 @@ function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el,
         // Remove the window's node and value
         let scrollOffsets = [window.scrollX, window.scrollY];
         T.treeobj.delete_node(node_id);   //also deletes child nodes
+            // TODO RESUME HERE --- don't actually delete the node until
+            // the window is gone.  Test case: window.beforeonunload=()=>true;
         window.scrollTo(...scrollOffsets);
 
         D.windows.remove_value(win_val);
