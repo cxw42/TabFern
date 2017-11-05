@@ -2,6 +2,7 @@
 // TODO move the names into constants in common.js
 // Note: the tabs and groups are created in the order they
 // first appear in the manifest.
+// {{{2
 (function(root){
     // Shortcuts for frequently-used items
     function icon(cls) { return `<i class="${cls}"></i>`; }
@@ -182,20 +183,27 @@
                 "type": "button",
                 "text": "X or + or don't show when these are dynamic"
             },
+// }}}2
 
-            // Changelog
+            // Changelog                                          {{{1
             {
                 "tab": i18n.get("What's new?"),
                 "group": "Version 0.1.12",
                 "type": "description",
                 "text":
-`<ul>
+`<ul><li class="gold-star">TabFern now has more than 60 users!  Thank you for
+using TabFern, and for spreading the word!  I also appreciate those of you
+that have contributed through GitHub, sent me an email, left a
+review, or otherwise let me know what you think of TabFern or would like to
+see in future versions.</li></ul>
+<ul>
 <li>You can now right-click on the TabFern icon in the Chrome toolbar,
 and select "Add/edit a note for the current tab."  That will switch you to the
 TabFern window, where you can edit the note, and then will switch you right
-back to your tab.  Just hit Cancel if you want to see the note, but not
+back to your tab.  Just click Cancel (or press Escape)
+if you want to see the note, but not
 change it.  If the TabFern window is offscreen, double-click the TabFern
-icon to bring it to the current window.  ${issue(71)}</li>
+icon first to bring it to the current window.  ${issue(71)}</li>
 <li>On the "Behaviour" tab, you now have the option of telling TabFern to
 ask you for confirmation before it deletes a window from the tree.
 This does not change what happens when you close a browser window outside
@@ -331,8 +339,8 @@ and Expand All/Collapse All.`
                 "group": "Version 0.1.2",
                 "type": "description",
                 "text": "First version released to the Chrome Web Store"
-            }
+            }                                                     // }}}1
         ]
     };
 })(this);
-// vi: set ts=4 sts=4 sw=4 et ai: //
+// vi: set ts=4 sts=4 sw=4 et ai foldmethod=marker foldenable foldlevel=1: //
