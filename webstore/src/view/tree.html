@@ -4,14 +4,15 @@
 <!-- view/index.html: TabFern popup main source.
      CC-BY-SA 4.0 International -->
 <head>
-    <title>TabFern</title>
+    <title>TabFern tree</title>
     <meta http-equiv="Content-Type" content="text/html" />
 
     <!-- Stylesheets ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
 
-    <link href="/js/jstree-3.3.4/themes/default-dark/style.css" rel="stylesheet" type="text/css" />
-    <link href="/js/fontawesome/css/font-awesome.css" rel="stylesheet" type="text/css" />
-    <link rel="stylesheet" type="text/css" media="all" href="/src/common/icons.css" /><!-- this one should always be the last stylesheet listed -->
+    <link href="/assets/jstree-3.3.4/themes/default-dark/style.css" rel="stylesheet" type="text/css" />
+    <link href="/assets/fontawesome/css/font-awesome.css" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" type="text/css" media="all" href="/assets/css/rmodal-no-bootstrap.css" />
+    <link rel="stylesheet" type="text/css" media="all" href="/assets/css/icons.css" />
     <link rel="stylesheet" type="text/css" media="all" href="tree.css" /><!-- this one should always be the last stylesheet listed -->
 
     <!-- Scripts, except for those loaded by require.js ~~~~~~~~~~~~~~~~~~~ -->
@@ -27,14 +28,52 @@
 
     <div id="tabfern-container">
 
-        <div id="init-incomplete">Initialization not complete.  Changes
-        will not be saved.</div><!-- hidden if init does complete. -->
+        <div id="init-incomplete">Initialization not complete (or not yet
+            complete).  Changes will not be saved.
+        </div><!-- hidden if init does complete. -->
 
         <!-- Content ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
         <div id="maintree"></div><!-- the window tree -->
         <div id="view-messages"></div><!-- for error messages -->
 
         <div id="hamburger-menu" class="hamburger-menu"></div><!-- a jstree to use as a hamburger menu -->
+
+        <!-- Modal dialog ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+        <!-- rmodal sets display:none on .modal automatically, so we don't
+             have to here. -->
+        <div id="confirm-dialog" class="modal">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form class="form-horizontal" method="get">
+                        <div class="modal-header">
+                            <strong id="confirm-dialog-question">Are you sure?</strong>
+                        </div>
+
+                        <!--
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label for="dummyText" class="control-label col-xs-4">Dummy text</label>
+                                <div class="input-group col-xs-7">
+                                    <input type="text" name="dummyText" id="dummyText" class="form-control" />
+                                </div>
+                            </div>
+                        </div>
+                        -->
+
+                        <div class="modal-footer">
+                            <div class="button-container"><!-- this floats right -->
+                                <!-- note: don't use <button type=submit>, which
+                                    reloads the page. -->
+                                <button data-which="yes" class="btn btn-primary" type="button">Yes</button>
+                                <button data-which="no" class="btn" type="button">No</button>
+                                <button data-which="cancel" class="btn btn-default" type="button">Cancel</button>
+                            </div>
+                        </div>
+                        <div class="clear" />
+                    </form>
+                </div>
+            </div>
+        </div><!-- #confirm-dialog -->
 
     </div><!-- tabfern-container -->
 

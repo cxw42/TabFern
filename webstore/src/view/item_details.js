@@ -46,7 +46,7 @@
             'raw_url',      // the tab's URL
             'raw_title',    // the tab's title.  null => default.
             'isOpen',       // open or not
-          // TODO save favIconUrl?
+            // TODO save favIconUrl?
             'raw_bullet',   // User-provided descriptive text (brief).
                             // null => none.
                             // It's not called a "note" because we may

@@ -2,6 +2,7 @@
 // TODO move the names into constants in common.js
 // Note: the tabs and groups are created in the order they
 // first appear in the manifest.
+// {{{2
 (function(root){
     // Shortcuts for frequently-used items
     function icon(cls) { return `<i class="${cls}"></i>`; }
@@ -89,6 +90,21 @@
                         open windows" box above.`
             },
 
+            {
+                "tab": i18n.get("Behaviour"),
+                "group": i18n.get("Deletion"),
+                "name": CFG_CONFIRM_DEL_OF_SAVED,
+                "type": "checkbox",
+                "label": i18n.get('Prompt for confirmation before deleting <b>saved</b> windows'),
+            },
+            {
+                "tab": i18n.get("Behaviour"),
+                "group": i18n.get("Deletion"),
+                "name": CFG_CONFIRM_DEL_OF_UNSAVED,
+                "type": "checkbox",
+                "label": i18n.get('Prompt for confirmation before deleting <b>unsaved</b> windows'),
+            },
+
             // Appearance
             {
                 "tab": i18n.get("Appearance"),
@@ -167,8 +183,37 @@
                 "type": "button",
                 "text": "X or + or don't show when these are dynamic"
             },
+// }}}2
 
-            // Changelog
+            // Changelog                                          {{{1
+            {
+                "tab": i18n.get("What's new?"),
+                "group": "Version 0.1.12",
+                "type": "description",
+                "text":
+`<ul><li class="gold-star">TabFern now has more than 60 users!  Thank you for
+using TabFern, and for spreading the word!  I also appreciate those of you
+that have contributed through GitHub, sent me an email, left a
+review, or otherwise let me know what you think of TabFern or would like to
+see in future versions.</li></ul>
+<ul>
+<li>You can now right-click on the TabFern icon in the Chrome toolbar,
+and select "Add/edit a note for the current tab."  That will switch you to the
+TabFern window, where you can edit the note, and then will switch you right
+back to your tab.  Just click Cancel (or press Escape)
+if you want to see the note, but not
+change it.  If the TabFern window is offscreen, double-click the TabFern
+icon first to bring it to the current window.  ${issue(71)}</li>
+<li>On the "Behaviour" tab, you now have the option of telling TabFern to
+ask you for confirmation before it deletes a window from the tree.
+This does not change what happens when you close a browser window outside
+of the TabFern tree.  ${issue(48)}</li>
+<li>Faster vertical scrolling!  ${issue(73)}</li>
+<li>Sorting open windows to top keeps the order of closed windows as it is.
+${issue(78)}</li>
+<li>Other fixes: ${issue(72)}</li>
+</ul>`
+            },
             {
                 "tab": i18n.get("What's new?"),
                 "group": "Version 0.1.11",
@@ -294,8 +339,8 @@ and Expand All/Collapse All.`
                 "group": "Version 0.1.2",
                 "type": "description",
                 "text": "First version released to the Chrome Web Store"
-            }
+            }                                                     // }}}1
         ]
     };
 })(this);
-// vi: set ts=4 sts=4 sw=4 et ai: //
+// vi: set ts=4 sts=4 sw=4 et ai foldmethod=marker foldenable foldlevel=1: //

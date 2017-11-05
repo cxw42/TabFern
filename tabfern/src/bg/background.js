@@ -92,14 +92,50 @@ chrome.windows.onRemoved.addListener(function(windowId) {
 });
 
 //////////////////////////////////////////////////////////////////////////
+// Action button context-menu items //
+
+function editNoteOnClick(info, tab)
+{
+    console.log({editNoteOnClick:info, tab});
+    if(!tab.id) return;
+    console.log(`Sending editNote for ${tab.id}`);
+    chrome.runtime.sendMessage({msg:MSG_EDIT_TAB_NOTE, tab_id: tab.id},
+        // This callback is only for debugging --- all the action happens in
+        // src/view/tree.js, the receiver.
+        function(resp){
+            if(typeof chrome.runtime.lastError !== 'undefined') {
+                console.log('Couldn\'t send edit-note to ' + tab.id + ': ' +
+                    chrome.runtime.lastError);
+            } else {
+                console.log({[`response to edit-note for ${tab.id}`]: resp});
+            }
+        }
+    );
+} //editNoteOnClick
+
+chrome.contextMenus.create({
+    id: 'editNote', title: 'Add/edit a note for the current tab',
+    contexts: ['browser_action'], onclick: editNoteOnClick
+});
+
+//////////////////////////////////////////////////////////////////////////
 // Messages //
 
 function messageListener(request, sender, sendResponse)
 {
-    //console.log('Got message ' + request.toString());
-    if(request === MSG_GET_VIEW_WIN_ID) {
+    console.log({'bg got message':request,from:sender});
+    if(!request || !request.msg) {
+        return;
+    }
+
+    // For now, only accept messages from our extension
+    if(!sender.id || sender.id !== chrome.runtime.id) {
+        return;
+    }
+
+    if(request.msg === MSG_GET_VIEW_WIN_ID && !request.response) {
         //console.log('Responding with window ID ' + viewWindowID.toString());
-        sendResponse(viewWindowID);
+        sendResponse({msg: request.msg, response: true, id: viewWindowID});
     }
 } //messageListener
 

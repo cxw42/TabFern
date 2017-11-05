@@ -43,6 +43,9 @@ var log;
 /// Shorthand for asynquence
 var ASQ;
 
+/// Shorthand for asq-helpers
+var ASQH;
+
 //////////////////////////////////////////////////////////////////////////
 // Globals //
 
@@ -106,6 +109,7 @@ function local_init()
     T = Modules['view/item_tree'];
     I = Modules['view/item'];
     ASQ = Modules['asynquence-contrib'];
+    ASQH = Modules['asq-helpers'];
 
     // Check development status.  Thanks to
     // https://stackoverflow.com/a/12833511/2877364 by
@@ -387,6 +391,9 @@ function actionCloseWindowButDoNotSave(node_id, node, unused_action_id, unused_a
         // Ignore exceptions - when we are called from winOnRemoved,
         // the window is already gone, so the remove() throws.
         // See https://stackoverflow.com/a/45871870/2877364 by cxw
+
+        // TODO RESUME HERE --- don't actually proceed until
+        // the window is gone.  Test case: window.beforeonunload=()=>true;
     }
 
     win_val.isOpen = false;
@@ -426,44 +433,162 @@ function actionCloseWindowAndSave(node_id, node, unused_action_id, unused_action
     saveTree();
 } //actionCloseWindowAndSave
 
-function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el, evt)
+/// Delete a window's entry in the tree.
+/// @param node_id {string} the ID of the node to delete
+/// @param node the node to delete
+/// @param evt {Event} (optional) If truthy, the event that triggered the action
+/// @param is_internal {Boolean} (optional) If truthy, this is an internal
+///                              action, so don't prompt for confirmation.
+function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el,
+                            evt, is_internal)
 {
-    // Close the window and adjust the tree
-    actionCloseWindowButDoNotSave(node_id, node, unused_action_id, unused_action_el);
-
-    lastDeletedWindow = [];
-    // Remove the tabs from D.tabs
-    for(let tab_node_id of node.children) {
-        let tab_val = D.tabs.by_node_id(tab_node_id);
-        if(!tab_val) continue;
-        D.tabs.remove_value(tab_val);
-        // Save the URLs for "Restore last deleted"
-        lastDeletedWindow.push(tab_val.raw_url);
-    }
-
-    let next_node = T.treeobj.get_next_dom(node, true);
-
-    // Remove the window's node and value
-    let scrollOffsets = [window.scrollX, window.scrollY];
-    T.treeobj.delete_node(node_id);   //also deletes child nodes
-    window.scrollTo(...scrollOffsets);
-
     let win_val = D.windows.by_node_id(node_id);
-    D.windows.remove_value(win_val);
+    if(!win_val) return;
 
-    // We had a click --- hover the node that is now under the mouse.
-    // That is the node that was the next-sibling node before.
-    // This fixes a bug in which clicking the delete button removes the row,
-    // and the row that had been below moves up, but the wholerow hover and the
-    // action buttons don't appear for that row.
-    //
-    // TODO update this when adding full hierarchy (#34).
+    /// Helper to actually do the deletion
+    function doDeletion()
+    {
+        // Close the window and adjust the tree
+        actionCloseWindowButDoNotSave(node_id, node, unused_action_id, unused_action_el);
 
-    if(evt && evt.type === 'click' && next_node) {
-        T.treeobj.hover_node(next_node);
-    }
+        lastDeletedWindow = [];
+        // Remove the tabs from D.tabs
+        for(let tab_node_id of node.children) {
+            let tab_val = D.tabs.by_node_id(tab_node_id);
+            if(!tab_val) continue;
+            D.tabs.remove_value(tab_val);
+            // Save the URLs for "Restore last deleted"
+            lastDeletedWindow.push(tab_val.raw_url);
+        }
 
-    saveTree();
+        let next_node = T.treeobj.get_next_dom(node, true);
+
+        // Remove the window's node and value
+        let scrollOffsets = [window.scrollX, window.scrollY];
+        T.treeobj.delete_node(node_id);   //also deletes child nodes
+            // TODO RESUME HERE --- don't actually delete the node until
+            // the window is gone.  Test case: window.beforeonunload=()=>true;
+        window.scrollTo(...scrollOffsets);
+
+        D.windows.remove_value(win_val);
+
+        // We had a click --- hover the node that is now under the mouse.
+        // That is the node that was the next-sibling node before.
+        // This fixes a bug in which clicking the delete button removes the row,
+        // and the row that had been below moves up, but the wholerow hover and the
+        // action buttons don't appear for that row.
+        //
+        // TODO update this when adding full hierarchy (#34).
+
+        if(evt && evt.type === 'click' && next_node) {
+            T.treeobj.hover_node(next_node);
+        }
+
+        saveTree();
+    } //doDeletion()
+
+    // Prompt for confirmation, if necessary
+    if( is_internal ||
+        (win_val.keep === K.WIN_KEEP &&
+            !getBoolSetting(CFG_CONFIRM_DEL_OF_SAVED)) ||
+        (win_val.keep === K.WIN_NOKEEP &&
+            !getBoolSetting(CFG_CONFIRM_DEL_OF_UNSAVED))
+    ) { // No confirmation required - just do it
+        doDeletion();
+
+    } else {    // Confirmation required
+
+//        // TODO replace this with rmodal
+//        let res = window.confirm(
+//                'Delete window "' + I.get_win_raw_text(win_val) + '"?'
+//        );
+//        if(!res) return;
+
+        log.info('Setting up dialog seq');
+
+        let dlg;
+        let seq = ASQ();
+        let cbk = seq.errfcb();
+
+        // Modified from the rmodal sample at https://rmodal.js.org/
+        $('#confirm-dialog-question').text(
+                'Delete window "' + I.get_win_raw_text(win_val) + '"?'
+        );
+        dlg = new Modules['rmodal'](
+            document.getElementById('confirm-dialog'),
+            {
+                closeTimeout: 0,
+                //content: 'Abracadabra'
+//                    beforeOpen: function(next) {
+//                        console.log('beforeOpen');
+//                        next();
+//                    }
+//                    , afterOpen: function() {
+//                        console.log('opened');
+//                    }
+//
+//                    , beforeClose: function(next) {
+//                        console.log('beforeClose');
+//                        next();
+//                    },
+                afterClose: function() {
+                    console.log('closed');
+                    cbk(null, dlg.reason);   // *** Run the sequence
+                }
+                // , bodyClass: 'modal-open'
+                // , dialogClass: 'modal-dialog'
+                // , dialogOpenClass: 'animated fadeIn'
+                // , dialogCloseClass: 'animated fadeOut'
+
+                // , focus: true
+                // , focusElements: ['input.form-control', 'textarea', 'button.btn-primary']
+
+                // , escapeClose: true
+            }
+        );
+
+        dlg.reason = null;   // to store which button is pressed
+
+        // Add the button listeners, to avoid inline scripts
+        $('#confirm-dialog .modal-footer button').on('click.TFrmodal', function(){
+            dlg.reason = this.dataset.which;
+            dlg.close();
+        });
+
+        // Add the keyboard listener
+        $(document).on('keydown.TFrmodal', function(ev) {
+            dlg.keydown(ev);
+        });
+        //document.addEventListener('keydown', kbd_listener, false);
+
+        seq.try((done, reason)=>{       // try() so the handler below will
+                                        // always be called.
+            log.info(`Dialog closed; reason ${reason}`);
+            if(reason === 'yes') {
+                doDeletion();
+            }
+            done();
+        });
+
+        // Teardown.  This works because the preceding step is a try().
+        seq.then((done, maybe_err)=>{
+            log.info('Tearing down dialog seq');
+            //document.removeEventListener('keydown', kbd_listener, false);
+            $(document).off('keydown.TFrmodal');
+            $('#confirm-dialog .modal-footer button').off('click.TFrmodal');
+
+            // If there were any errors in the previous step, report them.
+            if(maybe_err && typeof maybe_err === 'object' && maybe_err.catch) {
+                done.fail(maybe_err.catch);
+            } else {
+                done();
+            }
+        });
+
+        // Show the dialog
+        dlg.open();
+
+    } //endif confirmation required
 } //actionDeleteWindow
 
 /// Toggle the top border on a node.  This is a hack until I can add
@@ -488,16 +613,18 @@ function actionToggleTabTopBorder(node_id, node, unused_action_id, unused_action
     saveTree();
 } //actionToggleTabTopBorder
 
-/// Edit a node's bullet
+/// Edit a node's bullet.  ** Synchronous **.
+/// @param node_id {string} The ID of a node representing a tab.
 function actionEditBullet(node_id, node, unused_action_id, unused_action_el)
 {
     let val = I.get_node_val(node_id);
-    if(!val) return;
+    if(!val || val.ty !== K.IT_TAB) return;
 
     // TODO replace window.prompt with an in-DOM GUI.
-    let new_bullet = window.prompt('Note for this ' +
-            (val.ty === K.IT_WIN ? 'window' : 'tab') + '?',
-            val.raw_bullet || '');
+    let question = `Note for tab "${val.raw_title}"?`;
+    //DEBUG
+    //new_bullet='42';
+    let new_bullet = window.prompt(question, val.raw_bullet || '');
     if(new_bullet === null) return;   // user cancelled
 
     val.raw_bullet = new_bullet;
@@ -993,10 +1120,12 @@ function treeOnSelect(_evt_unused, evt_data)
     // --------
     // Process the actual node click
 
-    //if(T.treeobj.get_type(node) === K.NT_RECOVERED) {
-    if(T.treeobj.has_multitype(node, K.NST_RECOVERED)) {
-        //T.treeobj.set_type(node, 'default');
-        T.treeobj.del_multitype(node, K.NST_RECOVERED);
+    { // Remove "recovered" flags.  TODO update this when #34 is implemented.
+        let win_node = is_win ? node : T.treeobj.get_node(node.parent);
+        //if(T.treeobj.get_type(node) === K.NT_RECOVERED) {
+        if(win_node && T.treeobj.has_multitype(win_node, K.NST_RECOVERED)) {
+            T.treeobj.del_multitype(win_node, K.NST_RECOVERED);
+        }
     }
 
     if(is_tab && node_val.isOpen) {   // An open tab
@@ -1220,7 +1349,7 @@ function winOnCreated(win)
     }
 
     createNodeForWindow(win, K.WIN_NOKEEP);
-    T.vscroll_function();
+    //## T.vscroll_function();
     saveTree();     // for now, brute-force save on any change.
 } //winOnCreated
 
@@ -1266,11 +1395,12 @@ function winOnRemoved(win_id)
         saveTree();     // TODO figure out if we need this.
     } else {
         // Not saved - just toss it.
-        actionDeleteWindow(node_id, node, null, null);
+        actionDeleteWindow(node_id, node, null, null, null, true);
             // This removes the node's children also.
             // actionDeleteWindow also saves the tree, so we don't need to.
+            // true => it's internal, so don't prompt for confirmation.
     }
-    T.vscroll_function();
+    //## T.vscroll_function();
 } //winOnRemoved
 
 /// Update the highlight for the current window.  Note: this does not always
@@ -1434,13 +1564,15 @@ function initFocusHandler()
 /// we check for that here.
 var tabOnCreated = (function(){
 
-    /// Make a callback that will check if the window matches an existing window
-    function check_if_should_merge(win_id)
+    /// Make a callback that will check if the window matches an existing
+    /// window.  The callback can be invoked either as an ASQ callback (done)
+    /// or as an error-first callback.
+    function make_merge_check_cbk(win_id)
     {
-        return function inner(inner_done) {
+        return function inner(inner_done_or_err) {
             //DEBUG
             log.debug({'(unimplemented) merge check for window':win_id});
-            if(typeof inner_done === 'function') inner_done();
+            if(typeof inner_done_or_err === 'function') inner_done_or_err();
             return;
 
             // TODO fill this in
@@ -1456,7 +1588,7 @@ var tabOnCreated = (function(){
 //            });
 
         };
-    } //check_if_should_merge
+    } //make_merge_check_cbk
 
     return function inner(ctab)
     {
@@ -1510,18 +1642,18 @@ var tabOnCreated = (function(){
 
             // Change the URL to the actual URL.  Use ASQ() so errors will
             // be reported to the console.
-            ASQ().then((done)=>{
-                chrome.tabs.update(ctab.id, {url: tab_val.raw_url}, CC(done));
-            }) //tabOnUpdated will handle the rest.
-            .then(check_if_should_merge(ctab.windowId));
+            let seq = ASQ();
+            chrome.tabs.update(ctab.id, {url: tab_val.raw_url}, ASQH.CCgo(seq));
+            //tabOnUpdated will change the tree based on the update.
+            seq.then(make_merge_check_cbk(ctab.windowId));
 
             // TODO check_existing once that's filled in.
 
-            return;
+            return; // *** EXIT POINT ***
         } //endif CHECK
 
         /// What to do after saving
-        let cbk = check_if_should_merge(ctab.windowId);
+        let cbk = make_merge_check_cbk(ctab.windowId);
 
         if(tab_val === undefined) {     // If not, create the tab
             let tab_node_id = createNodeForTab(ctab, win_node_id);   // Adds at end
@@ -1539,7 +1671,7 @@ var tabOnCreated = (function(){
 
         // Check if we now match a saved window.  If so, merge the two.
 
-        T.vscroll_function();
+        //## T.vscroll_function();
 
         saveTree(true, cbk);
 
@@ -1688,7 +1820,7 @@ function tabOnRemoved(tabid, removeinfo)
     // Refresh the tab.index values for the remaining tabs
     updateTabIndexValues(window_node_id);
 
-    T.vscroll_function();
+    //## T.vscroll_function();
     saveTree();
 } //tabOnRemoved
 
@@ -1765,20 +1897,8 @@ function saveViewSize(size_data)
     let to_save = {};
     to_save[K.LOCN_KEY] = size_data;
 
-    // TODO RESUME HERE
-    // replace the below with an errfcb, so that the
-    // chrome.storage.local.set call
-    // can be done on this tick.  Something like:
-    //
-    //   function chrcb2(seq) { let f = seq.errfcb();
-    //      return function(...args) { f(chrome.runtime.lastError, ...args); } }
-    //   var s, cc;
-    //   s = ASQ(); cc = chrcb2(s);
-    //   s.val((msg)=>{console.log({Got:msg});});
-    //   chrome.windows.getAll(cc);
-
-    ASQ().then((done)=>{
-        chrome.storage.local.set(to_save, CC(done));
+    ASQH.NowCC((cc)=>{
+        chrome.storage.local.set(to_save, cc);
     })
     .val(()=>{
         last_saved_size = $.extend({}, size_data);
@@ -1923,7 +2043,8 @@ function hamCollapseAll()
 function hamSorter(compare_fn)
 {
     return function() {
-        T.treeobj.get_node($.jstree.root).children.sort(compare_fn);
+        let arr = T.treeobj.get_node($.jstree.root).children;
+        Modules['view/sorts'].stable_sort(arr, compare_fn);
             // children[] holds node IDs, so compare_fn will always get strings.
         T.treeobj.redraw(true);   // true => full redraw
     };
@@ -2292,7 +2413,7 @@ var treeCheckCallback = (function(){
 
             // Now that it's disconnected, close the actual tab
             seq.try((done)=>{
-                chrome.tabs.remove(tab_id, CC(done));
+                chrome.tabs.remove(tab_id, ASQH.CC(done));
                 // if tab_id was the last tab in old_parent, winOnRemoved
                 // will delete the tree node.  Therefore, we do not have
                 // to do so.
@@ -2340,7 +2461,7 @@ var treeCheckCallback = (function(){
                 url: chrome.runtime.getURL('/src/view/newtab.html') + '#' + moving_val.node_id,
                     // pass the node ID to the tabOnUpdated callback
                 index: moving_val.index
-            }, CC(done));
+            }, ASQH.CC(done));
         });
         // The URL and the item will be linked in tabOnCreated, so we're done.
 
@@ -2577,13 +2698,75 @@ function checkWhatIsNew(selector)
 } //checkWhatIsNew
 
 //////////////////////////////////////////////////////////////////////////
+// Chrome message listener //
+
+function messageListener(request, sender, sendResponse)
+{
+    log.info({'tree.js got message':request, from:sender});
+    if(!request || !request.msg || !sender) {
+        return;
+    }
+
+    // For now, only accept messages from our extension
+    if(!sender.id || sender.id !== chrome.runtime.id) {
+        return;
+    }
+
+    if(request.msg === MSG_EDIT_TAB_NOTE && !request.response) {
+
+        TAB: if(request.tab_id) {
+            let tab_val = D.tabs.by_tab_id(request.tab_id);
+            if(!tab_val || !tab_val.isOpen) break TAB;
+
+            ASQH.NowCC((cc)=>{  // Focus the TabFern popup
+                chrome.windows.update(my_winid, {focused:true}, cc);
+            })
+            .then((done)=>{     // Do the edit (synchronous)
+                actionEditBullet(tab_val.node_id,
+                                T.treeobj.get_node(tab_val.node_id),
+                                null,null);
+                done();
+            })
+            .then((done)=>{     // Switch back to the window that was focused
+                chrome.windows.update(tab_val.win_id, {focused:true},
+                    ASQH.CC(done)
+                );
+            })
+            // At one point, the edited tab wasn't being flagged when focus
+            // switched back to it, so I tried the below.  I was not able to
+            // reproduce the problem consistently, but the below seems to help
+            // at least sometimes.  Related to #71.
+            .val(()=>{
+                T.treeobj.flag_node(tab_val.node_id);
+                //winOnFocusChanged(tab_val.win_id, true);
+            })
+            .val(()=>{
+                sendResponse({msg: request.msg, response: true, success: true});
+            })
+            .or(()=>{   // Report any errors back to the sender
+                sendResponse({msg: request.msg, response: true, success: false});
+            })
+            ;
+            return true;    // Don't send a response yet - wait for the seq
+                            // to run.  true => keep sendResponse alive
+        }
+
+        // If we didn't kick off the sequence, report failure right away.
+        sendResponse({msg: request.msg, response: true, success: false});
+    } //endif MSG_EDIT_TAB_NOTE
+
+    // Ignore all other messages --- don't send a response
+
+} //messageListener
+
+//////////////////////////////////////////////////////////////////////////
 // Startup / shutdown //
 
 function basicInit(done)
 {
     log.info('TabFern tree.js initializing view - ' + TABFERN_VERSION);
 
-    if(getBoolSetting(CFG_HIDE_HORIZONTAL_SCROLLBARS, false)) {
+    if(getBoolSetting(CFG_HIDE_HORIZONTAL_SCROLLBARS)) {
         document.querySelector('html').classList += ' tf--feature--hide-horizontal-scrollbars';
     }
 
@@ -2611,15 +2794,21 @@ function basicInit(done)
 } //basicInit
 
 /// Called after ASQ.try(chrome.runtime.sendMessage)
-function createMainTreeIfWinIdReceived(done, win_id_or_error)
+function createMainTreeIfWinIdReceived(done, win_id_msg_or_error)
 {
-    if(is_asq_try_err(win_id_or_error)) {
+    if(ASQH.is_asq_try_err(win_id_msg_or_error)) {
         // This is fatal
-        return done.fail("Couldn't get win ID: " + win_id_or_error.catch);
+        return done.fail("Couldn't get win ID: " + win_id_msg_or_error.catch);
         // TODO add a "couldn't load" message to the popup.
     }
+    let msg = win_id_msg_or_error;
+    if(!msg || msg.msg !== MSG_GET_VIEW_WIN_ID || !msg.response || !msg.id) {
+        return done.fail("Couldn't get win ID from invalid message " +
+                JSON.stringify(msg));
+        // TODO report as noted above.
+    }
 
-    let win_id = win_id_or_error;
+    let win_id = win_id_msg_or_error.id;
     my_winid = win_id;
 
     // Init the main jstree
@@ -2628,6 +2817,15 @@ function createMainTreeIfWinIdReceived(done, win_id_or_error)
     let contextmenu_items =
         getBoolSetting(CFG_ENB_CONTEXT_MENU, true) ? getMainContextMenuItems
                                                     : false;
+
+    // Set up to receive resize notifications from item_tree.
+    // Do this before calling T.create(), which triggers an initial
+    // inner_resize event.
+    // TODO? move this into item_tree?
+    $(window).on('inner_resize', function(evt, wid) {
+        log.info({inner_resize:evt, wid});
+        T.rjustify_action_group_at(wid);
+    });
 
     T.create('#maintree', treeCheckCallback, dndIsDraggable,
             contextmenu_items);
@@ -2649,7 +2847,7 @@ function createMainTreeIfWinIdReceived(done, win_id_or_error)
                 Bypasser = Modules.bypasser.create(window, T.treeobj, Modules.shortcuts);
             }
             // Continue initialization by loading the tree
-            loadSavedWindowsIntoTree(done);
+            done();
         }
     );
 } //createMainTreeIfWinIdReceived()
@@ -2738,6 +2936,40 @@ function addOpenWindowsToTree(done, winarr)
 
 function addEventListeners(done)
 {
+    // At this point, the saved and open windows have been loaded into the
+    // tree.  Therefore, we can position the action groups.  We already
+    // saved the position, so do not need to specify it here.
+    log.info({'rjustify all at':T.last_r_edge});
+    T.rjustify_action_group_at();
+
+    // And, since we're loaded, make sure we reset these when the tree
+    // is redrawn, in whole or in part.
+
+    T.treeobj.element.on('redraw.jstree', function(evt, evt_data) {
+        if(!evt_data.nodes) {
+            //log.info({'redraw -> rjustify all at':T.last_r_edge});
+            T.rjustify_action_group_at();   // TODO do we need this?
+        } else {
+            //log.info({'redraw -> rjustify':evt_data.nodes,
+            //            'redge':T.last_r_edge});
+            $(evt_data.nodes).each(T.rjustify_node_actions);
+        }
+    });
+
+    // TODO determine whether we need the above, given that we have the below.
+    // It appears we do need the above, at least on startup, and after
+    // removing a closed window from the tree without changing the scrollbar
+    // visibility.
+    // We need the below for editing the bullet on a tab, which causes
+    // that node to be redrawn, but does not trigger a redraw.jstree.
+
+    T.treeobj.element.on('redraw_event.jstree', function(evt, evt_data){
+        //log.info({redraw_event:arguments});
+        if(evt_data && typeof evt_data === 'object' && evt_data.obj) {
+            T.rjustify_node_actions(evt_data.obj);
+        }
+    });
+
     // Set event listeners
     T.treeobj.element.on('changed.jstree', treeOnSelect);
 
@@ -2766,6 +2998,8 @@ function addEventListeners(done)
     chrome.tabs.onReplaced.addListener(tabOnReplaced);
     //onZoomChange: not yet implemented, and we probably won't ever need it.
 
+    chrome.runtime.onMessage.addListener(messageListener);
+
     done();
 } //addEventListeners
 
@@ -2775,7 +3009,7 @@ function moveWinToLastPositionIfAny(done, items_or_err)
     // If there was an error (e.g., nonexistent key), just
     // accept the default size.
 
-    if(!is_asq_try_err(items_or_err)) {
+    if(!ASQH.is_asq_try_err(items_or_err)) {
         let parsed = items_or_err[K.LOCN_KEY];
         if( (parsed !== null) && (typeof parsed === 'object') ) {
             // + and || are to provide some sensible defaults - thanks to
@@ -2861,7 +3095,7 @@ let dependencies = [
     'jstree-because',
     'loglevel', 'hamburger', 'bypasser', 'multidex', 'justhtmlescape',
     'signals', 'local/fileops/export', 'local/fileops/import',
-    'asynquence-contrib',
+    'asynquence-contrib', 'asq-helpers', 'rmodal',
 
     // Modules for keyboard-shortcut handling.  Not really TabFern-specific,
     // but not yet disentangled fully.
@@ -2904,23 +3138,25 @@ function main(...args)
         // we have timedResizeDetector above.
 
     // Run the main init steps once the page has loaded
-    ASQ.react((proceed)=>{callbackOnLoad(proceed);})
-    .then(basicInit)
+    let s = ASQ();
+    callbackOnLoad(s.errfcb());
+    s.then(basicInit)
     .try((done)=>{
         // Get our Chrome-extensions-API window ID from the background page.
         // I don't know a way to get this directly from the JS window object.
         // TODO maybe getCurrent?  Not sure if that's reliable.
-        chrome.runtime.sendMessage(MSG_GET_VIEW_WIN_ID, CC(done));
+        chrome.runtime.sendMessage({msg:MSG_GET_VIEW_WIN_ID}, ASQH.CC(done));
     })
     .then(createMainTreeIfWinIdReceived)
+    .then(loadSavedWindowsIntoTree)
     .then((done)=>{
-        chrome.windows.getAll({'populate': true}, CC(done));
+        chrome.windows.getAll({'populate': true}, ASQH.CC(done));
     })
     .then(addOpenWindowsToTree)
     .then(addEventListeners)
     .try((done)=>{
         // Find out where the view was before, if anywhere
-        chrome.storage.local.get(K.LOCN_KEY, CC(done));
+        chrome.storage.local.get(K.LOCN_KEY, ASQH.CC(done));
     })
     .then(moveWinToLastPositionIfAny)
     .then(initTreeFinal)

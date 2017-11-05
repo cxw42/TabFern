@@ -11,7 +11,7 @@ console.log('TabFern common.js loading');
 
 /// The TabFern extension friendly version number.  Displayed in the
 /// title bar of the popup window, so lowercase (no shouting!).
-const TABFERN_VERSION='0.1.11 alpha \u26a0'
+const TABFERN_VERSION='0.1.12 alpha \u26a0'
     // When you change this, also update:
     //  - manifest.json: both the version and version_name
     //  - package.json
@@ -29,7 +29,12 @@ const TABFERN_VERSION='0.1.11 alpha \u26a0'
 //////////////////////////////////////////////////////////////////////////
 // Messages between parts of TabFern //
 
+// The format of a message is
+// { msg: <one of the below constants> [, anything else] }
+// For responses, response:true is also included.
+
 const MSG_GET_VIEW_WIN_ID = 'getViewWindowID';
+const MSG_EDIT_TAB_NOTE = 'editTabNote';
 
 //////////////////////////////////////////////////////////////////////////
 // Names of settings, and their defaults //
@@ -42,6 +47,8 @@ const CFG_OPEN_TOP_ON_STARTUP = 'open-to-top-on-startup';
 const CFG_HIDE_HORIZONTAL_SCROLLBARS = 'hide-horizontal-scrollbars';
 const CFG_NEW_WINS_AT_TOP = 'open-new-windows-at-top';
 const CFG_SHOW_TREE_LINES = 'show-tree-lines';
+const CFG_CONFIRM_DEL_OF_SAVED = 'confirm-del-of-saved-wins';
+const CFG_CONFIRM_DEL_OF_UNSAVED = 'confirm-del-of-unsaved-wins';
 
 const CFG_DEFAULTS = {
     __proto__: null,
@@ -50,9 +57,11 @@ const CFG_DEFAULTS = {
     [CFG_JUMP_WITH_SORT_OPEN_TOP]: true,
     [CFG_COLLAPSE_ON_STARTUP]: true,
     [CFG_OPEN_TOP_ON_STARTUP]: false,
-    [CFG_HIDE_HORIZONTAL_SCROLLBARS]: false,
+    [CFG_HIDE_HORIZONTAL_SCROLLBARS]: true,
     [CFG_NEW_WINS_AT_TOP]: false,
     [CFG_SHOW_TREE_LINES]: false,
+    [CFG_CONFIRM_DEL_OF_SAVED]: true,
+    [CFG_CONFIRM_DEL_OF_UNSAVED]: false,
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -134,7 +143,8 @@ function asyncAppendScriptToHead(document, url, callback, type = 'text/javascrip
     head.appendChild(script);
 } //asyncAppendScriptToHead()
 
-/// Invoke a callback only when the document is loaded
+/// Invoke a callback only when the document is loaded.  Does not pass any
+/// parameters to the callback.
 function callbackOnLoad(callback)
 {
     if(document.readyState !== 'complete') {
@@ -197,34 +207,5 @@ function ObjectCompare(obj1, obj2) {
     }
     return true;
 } //ObjectCompare
-
-// Helpers for asynquence
-
-/// Chrome Callback: make a Chrome extension API callback that
-/// wraps the done() callback of an asynquence step.
-var CC = (function(){
-    /// A special-purpose empty object, per getify
-    const ø = Object.create(null);
-
-    return (done)=>{
-        return function cbk() {
-            if(typeof(chrome.runtime.lastError) !== 'undefined') {
-                done.fail(chrome.runtime.lastError);
-            } else {
-                //done.apply(ø,...args);
-                    // for some reason done() doesn't get the args
-                    // provided to cbk(...args)
-                done.apply(ø,[].slice.call(arguments));
-            }
-        }
-    }
-})(); //CC()
-
-/// Check for an asynquence-contrib try() error return
-function is_asq_try_err(o)
-{
-    return  (typeof o === 'object' && o &&
-             typeof o.catch !== 'undefined');
-} //is_asq_try_err
 
 // vi: set ts=4 sts=4 sw=4 et ai fo-=o: //
