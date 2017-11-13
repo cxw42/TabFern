@@ -263,7 +263,7 @@ div.jstree-wholerow-hovered > .tf-action-group {
 
 .modal {
     /* Darken the shadow a bit */
-    background: rgba(0, 0, 0, .80);
+    background: rgba(0, 0, 0, .70);
 }
 
 /* Clean up the look of the dialog just a bit */
@@ -276,8 +276,54 @@ div.jstree-wholerow-hovered > .tf-action-group {
     margin: 0px 3px;
 }
 
+/*
 .modal-footer .button-container {
     float: right;
+}
+*/
+
+.modal-content .accel {
+    text-decoration: underline;
+}
+
+/* The grid */
+
+.modal-content {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    grid-gap: 0.5em;
+}
+
+/*
+.modal-content .form-horizontal, .modal-content .modal-header,
+.modal-content .modal-body, .modal-content .modal-footer {
+    grid-column: span 6;
+}
+*/
+
+.modal-content .col-3 {
+    grid-column: span 3;
+}
+
+.modal-content .col-0p5 {
+    grid-column: span 1;
+}
+
+.modal-content .col-1 {
+    grid-column: span 3;
+}
+
+.modal-content .end-align {
+    align-self: end;
+}
+
+.modal-content .col-5 {
+    grid-column: span 10;
+}
+
+.modal-content .full-row {
+    grid-row: span 1;
+    grid-column: span 12;
 }
 
 /* ////////////////////////////////////////////////////////////////////// */

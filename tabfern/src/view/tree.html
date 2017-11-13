@@ -43,35 +43,39 @@
              have to here. -->
         <div id="confirm-dialog" class="modal">
             <div class="modal-dialog">
-                <div class="modal-content">
-                    <form class="form-horizontal" method="get">
-                        <div class="modal-header">
-                            <strong id="confirm-dialog-question">Are you sure?</strong>
-                        </div>
+                <form class="form-horizontal" method="get">
+                    <div class="modal-content">
+                        <strong id="confirm-dialog-question" class="full-row">
+                            Are you sure?
+                        </strong>
 
-                        <!--
-                        <div class="modal-body">
-                            <div class="form-group">
-                                <label for="dummyText" class="control-label col-xs-4">Dummy text</label>
-                                <div class="input-group col-xs-7">
-                                    <input type="text" name="dummyText" id="dummyText" class="form-control" />
-                                </div>
-                            </div>
-                        </div>
-                        -->
-
-                        <div class="modal-footer">
-                            <div class="button-container"><!-- this floats right -->
-                                <!-- note: don't use <button type=submit>, which
-                                    reloads the page. -->
-                                <button data-which="yes" class="btn btn-primary" type="button">Yes</button>
-                                <button data-which="no" class="btn" type="button">No</button>
-                                <button data-which="cancel" class="btn btn-default" type="button">Cancel</button>
-                            </div>
-                        </div>
-                        <div class="clear" />
-                    </form>
-                </div>
+                        <input type="checkbox" name="notAgain"
+                            id="notAgain"
+                            class="form-control col-0p5" />
+                        <label for="notAgain"
+                            class="control-label col-xs-4 col-5">
+                            Don't ask again
+                            (<abbr title="You can change this in Settings | Behaviour">note</abbr>)
+                        </label>
+                        <!-- note: don't use <button type=submit>, which
+                            reloads the page. -->
+                        <div class="col-3">&nbsp;</div>
+                        <button data-which="yes"
+                            class="btn btn-primary col-1"
+                            type="button" accesskey="y">
+                            <span class="accel">Y</span>es
+                        </button>
+                        <button data-which="no" class="btn col-1"
+                            type="button" accesskey="n">
+                            <span class="accel">N</span>o
+                        </button>
+                        <button data-which="cancel"
+                            class="btn btn-default col-1" type="button"
+                            accesskey="c">
+                            <span class="accel">C</span>ancel
+                        </button>
+                    </div><!-- .modal-content -->
+                </form>
             </div>
         </div><!-- #confirm-dialog -->
 

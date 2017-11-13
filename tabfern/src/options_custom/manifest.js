@@ -188,6 +188,17 @@
             // Changelog                                          {{{1
             {
                 "tab": i18n.get("What's new?"),
+                "group": "Version 0.1.13",
+                "type": "description",
+                "text":
+`<ul>
+<li>The delete-confirmation dialog now takes keyboard shortcuts, and provides
+an option to not ask again.  You can always re-enable confirmation dialogs
+from ${ham} ${gt} Settings ${gt} Behaviour.  ${issue(85)}</li>
+</ul>`
+            },
+            {
+                "tab": i18n.get("What's new?"),
                 "group": "Version 0.1.12",
                 "type": "description",
                 "text":
