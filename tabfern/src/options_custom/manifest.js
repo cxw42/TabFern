@@ -7,6 +7,8 @@
     // Shortcuts for frequently-used items
     function icon(cls) { return `<i class="${cls}"></i>`; }
     function issue(num) { return `(<a href="https://github.com/cxw42/TabFern/issues/${num|0}">#${num|0}</a>)`; }
+    function brplain(date_str){return `<br/><span class="plain">${date_str}</span>`;}
+
     let ham = icon('fa fa-bars');
     let gt = icon('fa fa-lg fa-caret-right');
     let refresh_message = " (refresh the TabFern window after you change this to make the change take effect)"
@@ -199,7 +201,8 @@ from ${ham} ${gt} Settings ${gt} Behaviour.  ${issue(85)}</li>
             },
             {
                 "tab": i18n.get("What's new?"),
-                "group": "Version 0.1.12",
+                "group": `Version 0.1.12${brplain('2017-11-05')}`,
+                'group_html':true,
                 "type": "description",
                 "text":
 `<ul><li class="gold-star">TabFern now has more than 60 users!  Thank you for
@@ -227,7 +230,8 @@ ${issue(78)}</li>
             },
             {
                 "tab": i18n.get("What's new?"),
-                "group": "Version 0.1.11",
+                "group": `Version 0.1.11${brplain('2017-10-19')}`,
+                'group_html':true,
                 "type": "description",
                 "text":
 `
@@ -259,7 +263,8 @@ if you run across them.  Thanks for considering this request!
 
             {
                 "tab": i18n.get("What's new?"),
-                "group": "Version 0.1.10",
+                "group": `Version 0.1.10${brplain('2017-09-26')}`,
+                'group_html':true,
                 "type": "description",
                 "text":
 `
@@ -280,7 +285,8 @@ locally-stored PDFs, and this helps me find them more quickly.</li>
             },
             {
                 "tab": i18n.get("What's new?"),
-                "group": "Versions 0.1.8 and 0.1.9",
+                "group": `Versions 0.1.8 and 0.1.9${brplain('2017-09-22')}`,
+                'group_html':true,
                 "type": "description",
                 "text":
 `<ul>
@@ -302,7 +308,8 @@ ready yet.)  ${issue(36)}</li>
             },
             {
                 "tab": i18n.get("What's new?"),
-                "group": "Version 0.1.7",
+                "group": `Version 0.1.7${brplain('2017-09-18')}`,
+                'group_html':true,
                 "type": "description",
                 "text":
     '<ul>' +
@@ -317,7 +324,8 @@ ready yet.)  ${issue(36)}</li>
             },
             {
                 "tab": i18n.get("What's new?"),
-                "group": "Version 0.1.6",
+                "group": `Version 0.1.6${brplain('2017-09-10')}`,
+                'group_html':true,
                 "type": "description",
                 "text":
     '<ul>' +
@@ -329,7 +337,8 @@ ready yet.)  ${issue(36)}</li>
             },
             {
                 "tab": i18n.get("What's new?"),
-                "group": "Version 0.1.5",
+                "group": `Version 0.1.5${brplain('2017-09-07')}`,
+                'group_html':true,
                 "type": "description",
                 "text": "You can now right-click on a saved window and choose "+
                     '"Forget" to leave the window as open, but not save it '+
@@ -338,7 +347,8 @@ ready yet.)  ${issue(36)}</li>
             },
             {
                 "tab": i18n.get("What's new?"),
-                "group": "Version 0.1.4",
+                "group": `Version 0.1.4${brplain('2017-09-06')}`,
+                'group_html':true,
                 "type": "description",
                 "text":
 `Added context menus ${issue(6)},
@@ -347,7 +357,8 @@ and Expand All/Collapse All.`
             },
             {
                 "tab": i18n.get("What's new?"),
-                "group": "Version 0.1.2",
+                "group": `Version 0.1.2${brplain('2017-09-02')}`,
+                'group_html':true,
                 "type": "description",
                 "text": "First version released to the Chrome Web Store"
             }                                                     // }}}1
