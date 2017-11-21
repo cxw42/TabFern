@@ -114,6 +114,24 @@ function local_init()
 //////////////////////////////////////////////////////////////////////////
 // General utility routines //
 
+/// Validate a CSS color.  Modified from a gist by
+/// https://gist.github.com/HatScripts at
+/// https://gist.github.com/olmokramer/82ccce673f86db7cda5e#gistcomment-2082703
+function isValidColor(color) {
+    color = color.trim();
+    if (color.charAt(0) === "#") {                  // hex colors
+        color = color.substring(1);
+        return (
+            ([3, 4, 6, 8].indexOf(color.length) > -1) &&
+            (!isNaN(parseInt(color, 16)))
+        );
+    } else if(/^[A-Za-z]{1,32}$/.test(color)) {     // color names
+        return true;    // for now, allow any alpha string
+    } else {                                        // RGB, HSL colors
+        return /^(rgb|hsl)a?\((-?\d+%?(deg|rad|grad|turn)?[,\s]+){2,3}[\s\/]*[\d\.]+%?\)$/i.test(color);
+    }
+} //isValidColor
+
 //////////////////////////////////////////////////////////////////////////
 // DOM Manipulation //
 
@@ -2800,6 +2818,27 @@ function basicInit(done)
     // at least 30% of screen width if <640px.  Also make sure that the
     // TabFern window is tall enough.
     // TODO? Snap the TabFern window to within n pixels of the Chrome window?
+
+    // Apply custom background, if any
+    BG: if(haveSetting(CFGS_BACKGROUND)) {
+        let bg = getStringSetting(CFGS_BACKGROUND, '').trim();
+
+        if(bg.length < 2) break BG;     // no valid color is one character
+
+        if(isValidColor(bg)) {
+            $('body').css('background', bg);
+            break BG;
+        }
+
+        // not a color --- try to parse it as a URL
+        try {
+            let url = new URL(bg);
+            $('body').css('background', `url("${url.href}")`);
+            break BG;
+        } catch(e) {
+            // do nothing
+        }
+    } //endif have a background
 
     done();
 } //basicInit

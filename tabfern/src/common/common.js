@@ -39,6 +39,7 @@ const MSG_EDIT_TAB_NOTE = 'editTabNote';
 //////////////////////////////////////////////////////////////////////////
 // Names of settings, and their defaults //
 
+// Booleans
 const CFG_ENB_CONTEXT_MENU = 'ContextMenu.Enabled';
 const CFG_RESTORE_ON_LAST_DELETED = 'open-tree-on-restore-last-deleted';
 const CFG_JUMP_WITH_SORT_OPEN_TOP = 'jump-to-top-when-sort-open-to-top';
@@ -49,6 +50,9 @@ const CFG_NEW_WINS_AT_TOP = 'open-new-windows-at-top';
 const CFG_SHOW_TREE_LINES = 'show-tree-lines';
 const CFG_CONFIRM_DEL_OF_SAVED = 'confirm-del-of-saved-wins';
 const CFG_CONFIRM_DEL_OF_UNSAVED = 'confirm-del-of-unsaved-wins';
+
+// Strings
+const CFGS_BACKGROUND = 'window-background';
 
 const CFG_DEFAULTS = {
     __proto__: null,
@@ -68,6 +72,29 @@ const CFG_DEFAULTS = {
 // Setting-related functions //
 
 const SETTING_PREFIX = 'store.settings.';
+
+/// Get the string value of a setting, if it is a string.
+function getStringSetting(setting_name, default_value = undefined)
+{
+    if(typeof default_value === 'undefined' && setting_name in CFG_DEFAULTS) {
+        default_value = CFG_DEFAULTS[setting_name];
+    }
+
+    let locStorageValue = localStorage.getItem(SETTING_PREFIX + setting_name);
+
+    if ( locStorageValue !== null ) {   // key exists
+        // Get the value, which is stored as JSON
+        try {
+            let val = JSON.parse(locStorageValue);
+            if(typeof val === 'string') return val;
+        } catch(e) {
+            // do nothing
+        }
+    }
+
+    // If we get here, we didn't have a value, or didn't have a string.
+    return String(default_value);
+} //getStringSetting
 
 /// Get a boolean setting from options_custom, which uses HTML5 localStorage.
 function getBoolSetting(setting_name, default_value = undefined)

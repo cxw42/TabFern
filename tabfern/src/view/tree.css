@@ -1,7 +1,6 @@
 /* tree.css: CSS for tree.html */
 
-/* //////////////////////////////////////////////////////////////////// */
-/* Local styles */
+/* --- Local styles ----------------------------------------------- {{{1 -- */
 
 .clear {
     clear: both;
@@ -71,7 +70,8 @@ li.ephemeral-recovered, .tfs-recovered {
     border-top: 1px solid #f44;
 }
 
-/* Notification icon ------------------------------------------------------ */
+/* }}}1 */
+/* --- Notification icon ------------------------------------------ {{{1 -- */
 
 /* Need the parents of notification icons to have position other than static.
  * Thanks to https://stackoverflow.com/a/9404641/2877364 by
@@ -94,7 +94,8 @@ li.ephemeral-recovered, .tfs-recovered {
     top:-25%;
 }
 
-/* Action buttons and Z-order --------------------------------------------- */
+/* }}}1 */
+/* --- Action buttons and Z-order --------------------------------- {{{1 -- */
 
 /* Z order of items within a node - make sure the action group is on top */
 .jstree-node {
@@ -200,7 +201,8 @@ div.jstree-wholerow-hovered > .tf-action-group {
     transition: unset;
 }
 
-/* --- Main (hamburger) menu and related ---------------------------------- */
+/* }}}1 */
+/* --- Main (hamburger) menu and related -------------------------- {{{1 -- */
 
 #hamburger-menu {
     position: fixed;
@@ -246,9 +248,8 @@ div.jstree-wholerow-hovered > .tf-action-group {
     margin-bottom: 30px;    /* empirical, based on the hamburger menu's box */
 }
 
-/* ////////////////////////////////////////////////////////////////////// */
-/* The modal dialog */
-
+/* }}}1 */
+/* --- Modal dialog ----------------------------------------------- {{{1 -- */
 /* This needs attention from a front-end designer :) */
 
 /* Position the dialog consistently in our use case */
@@ -294,13 +295,6 @@ div.jstree-wholerow-hovered > .tf-action-group {
     grid-gap: 0.5em;
 }
 
-/*
-.modal-content .form-horizontal, .modal-content .modal-header,
-.modal-content .modal-body, .modal-content .modal-footer {
-    grid-column: span 6;
-}
-*/
-
 .modal-content .col-3 {
     grid-column: span 3;
 }
@@ -326,8 +320,8 @@ div.jstree-wholerow-hovered > .tf-action-group {
     grid-column: span 12;
 }
 
-/* ////////////////////////////////////////////////////////////////////// */
-/* Tweak up jstree */
+/* }}}1 */
+/* --- Tweak up jstree -------------------------------------------- {{{1 -- */
 
 /* shrink large favicons to fit, if necessary */
 .jstree-children .jstree-children .jstree-anchor .jstree-icon {
@@ -359,7 +353,14 @@ ul.jstree-contextmenu i {
     height: 19px;
 }
 
-/* //////////////////////////////////////////////////////////////////// */
+/* The tree itself has no background, so that background images applied to
+ * the body can show through. */
+#maintree {
+    background: transparent;
+}
+
+/* }}}1 */
+/* --- Debug ------------------------------------------------------ {{{1 -- */
 /* Debug.  These come last, so they override any equally-specific styles
  * earlier in the file. */
 
@@ -375,5 +376,6 @@ ul.jstree-contextmenu i {
     color: #88f !important;
 }
 
+/* }}}1 */
 
-/* vi: set ts=4 sts=4 sw=4 et ai: */
+/* vi: set ts=4 sts=4 sw=4 et ai foldmethod=marker: */
