@@ -125,19 +125,20 @@
             },
             {
                 "tab": i18n.get("Appearance"),
-                "group": i18n.get("Window"),
+                "group": i18n.get("Theme"),
                 "name": CFGS_BACKGROUND,
                 "type": "text",
                 "label": i18n.get('Background color or image'),
             },
             {
                 "tab": i18n.get("Appearance"),
-                "group": i18n.get("Window"),
+                "group": i18n.get("Theme"),
                 "type": "description",
                 "text":
 `${refresh_message}<br/>
 The background can be specified as a CSS color name, rgb(r,g,b), hsl(h,s,l),
-or a URL.  To use images from your local disk:
+or a URL (data, https, chrome-extension, or file).
+To use images from your local disk (file):
 <ul>
 <li>Check the box for "Allow access to file URLs" in chrome://extensions</li>
 <li>Open the image you want in Chrome and copy the address out of the address
@@ -215,9 +216,10 @@ bar (it will start with "file://")</li>
                 "type": "description",
                 "text":
 `<ul>
-<li>The delete-confirmation dialog now takes keyboard shortcuts, and provides
-an option to not ask again.  You can always re-enable confirmation dialogs
-from ${ham} ${gt} Settings ${gt} Behaviour.  ${issue(85)}</li>
+<li>The delete-confirmation dialog now takes keyboard shortcuts (y, n, c),
+and provides an option to not ask again.  You can always re-enable
+confirmation dialogs from ${ham} ${gt} Settings ${gt} Behaviour.
+${issue(85)}</li>
 <li>You can now specify a custom color or background for the TabFern window.
 Go to ${ham} ${gt} Settings ${gt} Appearance, and put a
 <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/color_value">CSS color</a> or an image URL in the "Background color or image" box.
