@@ -32,41 +32,9 @@
     /// The module we are creating
     let module = {
         treeobj: null,      ///< The jstree instance
-        invoked: false,     ///< A flag set by module.invoke()
     };
 
     // --- Scrolling support ---
-//
-//    // When scrolling, with the CSS I am using, actions do not scroll with the
-//    // tree.  TODO figure out how to handle this more effectively.  Maybe
-//    // float, now that we have an action group?
-//
-//    /// A scroll function to make sure the action-group divs stay
-//    /// in the right place.  Inspired by
-//    /// https://stackoverflow.com/a/16248243/2877364 by
-//    /// https://stackoverflow.com/users/939547/jsarma
-//    module.vscroll_function = function()
-//    { //TODO make this a closure over a specific win, jq
-//        //if(getBoolSetting(CFG_HIDE_HORIZONTAL_SCROLLBARS)) return;
-//
-//        // TODO? If we have been called from redraw.jstree, check the reason.
-//        // If it was a move_node within a specific parent, only redo the
-//        // scrolls for that parent?
-//
-//        // TODO? Keep a list of the current action groups, updated when
-//        // the tree changes (or open_node/close_node) so we don't have
-//        // to do $() here?
-//
-//        // Better yet --- use position:absolute with
-//        // https://stackoverflow.com/a/20888342/2877364
-//
-//        //log.info('Updating V positions');
-//        let scrolltop = $(window).scrollTop();
-//        $('.' + K.ACTION_GROUP_WIN_CLASS).each(function(idx, dom_elem) {
-//            let jq = $(dom_elem);
-//            jq.css('top',jq.parent().offset().top - scrolltop);
-//        });
-//    } //vscroll_function
 
     /// The most recently seen right edge
     module.last_r_edge = undefined;
@@ -122,7 +90,7 @@
     /// Set each action group's css('right') to line up with the right
     /// edge at #rt, assuming position:relative with right: specified,
     /// and with left: not specified.  ** NOTE ** assumes LTR.
-    /// TODO support RTL
+    /// TODO support RTL.
     module.rjustify_action_group_at = function(r_edge) {
 
         // When called from an open or close action, r_edge will actually
@@ -141,49 +109,7 @@
         });
     } //rjustify_action_group_at
 
-    // TODO change this to Hscroll calling rjustify
-
-//    /// Update only once per frame when scrolling - Suggested by MDN -
-//    /// https://developer.mozilla.org/en-US/docs/Web/Events/scroll#Example
-//    ///
-//    /// Maybe a bit better, but not great --- maybe try
-//    /// https://stackoverflow.com/a/3701328/2877364 by
-//    /// https://stackoverflow.com/users/124238/stephan-muller
-//    let onscroll_handler = (function(){
-//        let pending = false;
-//
-//        function onframe() {
-//            module.vscroll_function();
-//            pending = false;
-//        }
-//
-//        return function onscroll(){
-//            if(!pending) window.requestAnimationFrame(onframe);
-//            pending = true;
-//        }
-//    })();
-//
-//    /// Set up the vscroll function to be called when appropriate.
-//    /// @param win {DOM Window} window
-//    /// @param jq_tree {JQuery element} the jQuery element for the tree root
-//    module.install_vscroll_function = function(win, jq_tree)
-//    {
-//        if(getBoolSetting(CFG_HIDE_HORIZONTAL_SCROLLBARS)) return;
-//            // Don't need this with absolute positions
-//
-//        // Need to update when scrolling because the action-group divs
-//        // are fixed rather than absolute :( .
-//        // TODO make them absolute, and no scroll handler, when the
-//        // H scrollbar is hidden.
-//        $(win).scroll(onscroll_handler);
-//
-//        // We also have to reset the positions on tree redraw.  Ugly.
-//        jq_tree.on('redraw.jstree', module.vscroll_function);
-//        jq_tree.on('after_open.jstree', module.vscroll_function);
-//        jq_tree.on('after_close.jstree', module.vscroll_function);
-//    }; //install_vscroll_function()
-
-    // Trying it a different way --- resize detection modified from
+    // Resize detection modified from
     // https://stackoverflow.com/a/22571956/2877364 by
     // https://stackoverflow.com/users/95733/commonpike , based on
     // https://stackoverflow.com/a/20888342/2877364 and
@@ -203,7 +129,6 @@
             'border'        : 0,
             'background-color'  : 'transparent'
         }).on('load',function() {
-            //var vsb     = (document.body.scrollHeight > document.body.clientHeight);
             var timer   = null;
             var iframe = this;
 
@@ -216,18 +141,6 @@
                 clearTimeout(timer);
                 timer = setTimeout(function() {
                     $(win).trigger('inner_resize',[iframe.clientWidth]);
-                    //var vsbnew = (document.body.scrollHeight > document.body.clientHeight);
-                    //if (vsbnew) {
-                    //    if (!vsb) {
-                    //        $(top.window).trigger('scrollbar',[true]);
-                    //        vsb=true;
-                    //    }
-                    //} else {
-                    //    if (vsb) {
-                    //        $(top.window).trigger('scrollbar',[false]);
-                    //        vsb=false;
-                    //    }
-                    //}
                 }, 50);
             });
 
@@ -247,7 +160,6 @@
                     }
                 },50);
             });
-            //$(win).scroll(function(evt){console.log({top: $(this).scrollTop(), left:$(this).scrollLeft()});})
         }
 
         //Do we need the following?
@@ -290,35 +202,10 @@
         jstreeTypes[K.NST_RECOVERED] = { li_attr: { 'class': RECOVERED_CLASS } };
         jstreeTypes[K.NST_TOP_BORDER] = { li_attr: { 'class': TOP_BORDER_CLASS } };
 
-//        jstreeTypes[K.NT_WIN_EPHEMERAL] = {
-//            li_attr: { class: K.WIN_CLASS + ' ' + K.VISIBLE_WIN_CLASS },
-//            icon: 'visible-window-icon',
-//        };
-//
-//        jstreeTypes[K.NT_WIN_ELVISH] = {
-//            li_attr: { class: K.WIN_CLASS + ' ' + K.VISIBLE_WIN_CLASS },
-//            icon: 'visible-saved-window-icon',
-//        };
-//
-//        jstreeTypes[K.NT_RECOVERED] = {
-//            li_attr: { class: K.WIN_CLASS + ' ' + K.CLASS_RECOVERED },
-//            icon: true,     //default - folder
-//        };
-
         jstreeTypes[K.IT_TAB] = {
             li_attr: { 'class': TAB_CLASS },
             icon: 'fff-page',   // per-node icons will override this
         };
-
-//        jstreeTypes[K.NT_TAB_DORMANT] = {
-//            li_attr: { class: K.TAB_CLASS },
-//            icon: 'fff-page',   // per-node icons will override this
-//        };
-//
-//        jstreeTypes[K.NT_TAB_OPEN] = {
-//            li_attr: { class: K.TAB_CLASS },
-//            icon: 'fff-page',   // per-node icons will override this
-//        };
 
         // The main config
         let jstreeConfig = {
@@ -416,15 +303,6 @@
         // Or maybe make vscroll a jstree plugin?
 
     }; //module.create()
-
-    /// Invoke a function on T.treeobj, setting a flag before and clearing it
-    /// after.  This is so a synchronous callback (e.g., check()) can tell
-    /// that it was called as a result of an invoke().
-    module.invoke = function(which, ...args) {
-        module.invoked = true;
-        which(...args);
-        module.invoked = false;
-    }; //module.invoke()
 
     return module;
 }));
