@@ -2,7 +2,6 @@
 // TODO move the names into constants in common.js
 // Note: the tabs and groups are created in the order they
 // first appear in the manifest.
-// {{{2
 (function(root){
     // Shortcuts for frequently-used items
     function icon(cls) { return `<i class="${cls}"></i>`; }
@@ -11,8 +10,10 @@
 
     let ham = icon('fa fa-bars');
     let gt = icon('fa fa-lg fa-caret-right');
+    let settings = `${ham} ${gt} Settings ${gt}`;
     let refresh_message = " (refresh the TabFern window after you change this to make the change take effect)"
 
+// Settings {{{2
     // Assign the settings
     root.manifest = {
         "name": "Settings - ver. "+TABFERN_VERSION+' - TabFern',
@@ -110,10 +111,17 @@
             // Appearance
             {
                 "tab": i18n.get("Appearance"),
-                "group": i18n.get("Functions"),
+                "group": i18n.get("Scrollbars"),
                 "name": CFG_HIDE_HORIZONTAL_SCROLLBARS,
                 "type": "checkbox",
                 "label": i18n.get('Hide horizontal scrollbar' + refresh_message),
+            },
+            {
+                "tab": i18n.get("Appearance"),
+                "group": i18n.get("Scrollbars"),
+                "name": CFG_SKINNY_SCROLLBARS,
+                "type": "checkbox",
+                "label": i18n.get('Skinny scrollbars' + refresh_message),
             },
             // Maybe add some theming options here?
             {
@@ -143,7 +151,7 @@ To use images from your local disk (file):
 <li>Check the box for "Allow access to file URLs" in chrome://extensions</li>
 <li>Open the image you want in Chrome and copy the address out of the address
 bar (it will start with "file://")</li>
-<li>Paste the "file://..." URL into this box.</li>`
+<li>Paste the "file://..." URL into the box above.</li>`
             },
 
             // Features
@@ -207,8 +215,8 @@ bar (it will start with "file://")</li>
                 "type": "button",
                 "text": "X or + or don't show when these are dynamic"
             },
-// }}}2
 
+// }}}2
             // Changelog                                          {{{1
             {
                 "tab": i18n.get("What's new?"),
@@ -218,12 +226,15 @@ bar (it will start with "file://")</li>
 `<ul>
 <li>The delete-confirmation dialog now takes keyboard shortcuts (y, n, c),
 and provides an option to not ask again.  You can always re-enable
-confirmation dialogs from ${ham} ${gt} Settings ${gt} Behaviour.
+confirmation dialogs from ${settings} Behaviour.
 ${issue(85)}</li>
 <li>You can now specify a custom color or background for the TabFern window.
-Go to ${ham} ${gt} Settings ${gt} Appearance, and put a
+Go to ${settings} Appearance ${gt} Theme, and put a
 <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/color_value">CSS color</a> or an image URL in the "Background color or image" box.
 ${issue(86)}</li>
+<li>You can use skinny scrollbars to make more text visible in the TabFern
+window.  Go to ${settings} Appearance ${gt} Scrollbars, and check "Skinny
+scrollbars."  ${issue(68)}
 </ul>`
             },
             {

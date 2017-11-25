@@ -2,12 +2,12 @@
 // cxw42, 2017
 // See /doc/design.md for information about notation and organization.
 
-// TODO break this into some separate modules
+// TODO break more of this into separate modules
 
 console.log('Loading TabFern ' + TABFERN_VERSION);
 
 //////////////////////////////////////////////////////////////////////////
-// Modules //
+// Modules // {{{1
 
 // Hacks so I can keep everything in the global scope for ease of
 // use or inspection in the console while developing.
@@ -36,8 +36,8 @@ var I;      ///< Shorthand access to the item routines, view/item.js ("Item")
 var ASQ;    ///< Shorthand for asynquence
 var ASQH;   ///< Shorthand for asq-helpers
 
-//////////////////////////////////////////////////////////////////////////
-// Globals //
+////////////////////////////////////////////////////////////////////////// }}}1
+// Globals // {{{1
 
 // - Operation state -
 var my_winid;                   ///< window ID of this popup window
@@ -83,8 +83,8 @@ var Esc;
 /// The module that handles <Shift> bypassing of the jstree context menu
 var Bypasser;
 
-//////////////////////////////////////////////////////////////////////////
-// Initialization //
+////////////////////////////////////////////////////////////////////////// }}}1
+// Initialization // {{{1
 
 /// Init those of our globals that don't require any data to be loaded.
 /// Call after Modules has been populated.
@@ -111,8 +111,8 @@ function local_init()
 
 } //init()
 
-//////////////////////////////////////////////////////////////////////////
-// DOM Manipulation //
+////////////////////////////////////////////////////////////////////////// }}}1
+// DOM Manipulation // {{{1
 
 /// Set the tab.index values of the tab nodes in a window.  Assumes that
 /// the nodes are in the proper order in the tree.
@@ -182,8 +182,8 @@ function unflagAllWindows() {
     );
 };
 
-//////////////////////////////////////////////////////////////////////////
-// Saving //
+////////////////////////////////////////////////////////////////////////// }}}1
+// Saving // {{{1
 
 /// Wrap up the save data with a magic header and the current version number
 function makeSaveData(data)
@@ -279,8 +279,8 @@ function saveTree(save_ephemeral_windows = true, cbk = undefined)
     ); //storage.local.set
 } //saveTree()
 
-//////////////////////////////////////////////////////////////////////////
-// jstree-action callbacks //
+////////////////////////////////////////////////////////////////////////// }}}1
+// jstree-action callbacks // {{{1
 
 /// Wrapper to call jstree-action style callbacks from jstree contextmenu
 /// actions
@@ -645,8 +645,8 @@ function actionEditBullet(node_id, node, unused_action_id, unused_action_el)
     saveTree();
 } //actionEditBullet
 
-//////////////////////////////////////////////////////////////////////////
-// Tree-node creation //
+////////////////////////////////////////////////////////////////////////// }}}1
+// Tree-node creation // {{{1
 
 // = = = Tabs = = = = = = = = = = = = = = = = = =
 
@@ -815,8 +815,8 @@ function createNodeForClosedWindow(win_data_v1)
     return node_id;
 } //createNodeForClosedWindow
 
-//////////////////////////////////////////////////////////////////////////
-// Loading //
+////////////////////////////////////////////////////////////////////////// }}}1
+// Loading // {{{1
 
 /// Did we have a problem loading save data?
 var was_loading_error = false;
@@ -1005,8 +1005,8 @@ function DBG_printSaveData()
     });
 } //DBG_printSaveData()
 
-//////////////////////////////////////////////////////////////////////////
-// jstree callbacks //
+////////////////////////////////////////////////////////////////////////// }}}1
+// jstree callbacks // {{{1
 
 /// Helper for treeOnSelect() and winOnFocusChanged().
 /// chrome.windows.get() callback to flag the current tab in a window
@@ -1329,8 +1329,8 @@ function treeOnSelect(_evt_unused, evt_data)
 //    else return {'class': 'red'};
 //} //flavor_callback
 
-//////////////////////////////////////////////////////////////////////////
-// Chrome window/tab callbacks //
+////////////////////////////////////////////////////////////////////////// }}}1
+// Chrome window/tab callbacks // {{{1
 
 function winOnCreated(win)
 {
@@ -1888,8 +1888,8 @@ function tabOnReplaced(addedTabId, removedTabId)
                 removedTabId);
 } //tabOnReplaced
 
-//////////////////////////////////////////////////////////////////////////
-// DOM event handlers //
+////////////////////////////////////////////////////////////////////////// }}}1
+// DOM event handlers // {{{1
 
 /// ID of a timer to save the new window size after a resize event
 var resize_save_timer_id;
@@ -1947,8 +1947,8 @@ function timedResizeDetector()
     setTimeout(timedResizeDetector, K.RESIZE_DETECTOR_INTERVAL_MS);
 } //timedResizeDetector
 
-//////////////////////////////////////////////////////////////////////////
-// Hamburger menu //
+////////////////////////////////////////////////////////////////////////// }}}1
+// Hamburger menu // {{{1
 
 /// Open a new window with the TabFern homepage.
 function hamAboutWindow()
@@ -2177,7 +2177,7 @@ function getHamburgerMenuItems(node, _unused_proxyfunc, e)
                 // Test of sub-submenus --- jstree doesn't seem to correctly
                 // constrain them to the viewport.
                 //test: { label: 'test', submenu:
-                //  { foo: {label:'foo'},bar:{label:'bar'},bat:{label:'bat'}}},
+                //  { foo: {label:'foo'},bar:{label:'bar'},bat:{label:'bat'} }},
                 numItem90: {
                     label: '9-0',
                     title: 'Sort descending by window name, numeric, case-insensitive',
@@ -2201,8 +2201,8 @@ function getHamburgerMenuItems(node, _unused_proxyfunc, e)
     return items;
 } //getHamburgerMenuItems()
 
-//////////////////////////////////////////////////////////////////////////
-// Context menu for the main tree
+////////////////////////////////////////////////////////////////////////// }}}1
+// Context menu for the main tree // {{{1
 
 function getMainContextMenuItems(node, _unused_proxyfunc, e)
 {
@@ -2314,8 +2314,8 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
 
 } //getMainContextMenuItems
 
-//////////////////////////////////////////////////////////////////////////
-// Drag-and-drop support //
+////////////////////////////////////////////////////////////////////////// }}}1
+// Drag-and-drop support // {{{1
 
 /// Determine whether a node or set of nodes can be dragged.
 /// @param {array} nodes The full jstree node record(s) being dragged
@@ -2661,8 +2661,8 @@ var treeCheckCallback = (function(){
 
 })(); //treeCheckCallback
 
-//////////////////////////////////////////////////////////////////////////
-// What's New //
+////////////////////////////////////////////////////////////////////////// }}}1
+// What's New // {{{1
 
 /// Check whether to show a "what's new" notification.
 /// Sets ShowWhatIsNew, used by getHamburgerMenuItems().
@@ -2705,8 +2705,8 @@ function checkWhatIsNew(selector)
     });
 } //checkWhatIsNew
 
-//////////////////////////////////////////////////////////////////////////
-// Chrome message listener //
+////////////////////////////////////////////////////////////////////////// }}}1
+// Chrome message listener // {{{1
 
 function messageListener(request, sender, sendResponse)
 {
@@ -2767,8 +2767,8 @@ function messageListener(request, sender, sendResponse)
 
 } //messageListener
 
-//////////////////////////////////////////////////////////////////////////
-// Startup / shutdown //
+////////////////////////////////////////////////////////////////////////// }}}1
+// Startup / shutdown // {{{1
 
 function basicInit(done)
 {
@@ -2776,6 +2776,10 @@ function basicInit(done)
 
     if(getBoolSetting(CFG_HIDE_HORIZONTAL_SCROLLBARS)) {
         document.querySelector('html').classList += ' tf--feature--hide-horizontal-scrollbars';
+    }
+
+    if(getBoolSetting(CFG_SKINNY_SCROLLBARS)) {
+        document.querySelector('html').classList += ' skinny-scrollbar';
     }
 
     Hamburger = Modules.hamburger('#hamburger-menu', getHamburgerMenuItems
@@ -3211,6 +3215,7 @@ function main(...args)
 } // main()
 
 require(dependencies, main);
+// }}}1
 
 // ###########################################################################
 
@@ -3221,4 +3226,4 @@ require(dependencies, main);
 // can get T.treeobj from $(selector).data('jstree')
 // can get element from T.treeobj.element
 
-// vi: set ts=4 sts=4 sw=4 et ai fo-=o fo-=r: //
+// vi: set ts=4 sts=4 sw=4 et ai fo-=ro foldmethod=marker: //

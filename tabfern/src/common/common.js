@@ -46,6 +46,7 @@ const CFG_JUMP_WITH_SORT_OPEN_TOP = 'jump-to-top-when-sort-open-to-top';
 const CFG_COLLAPSE_ON_STARTUP = 'collapse-trees-on-startup';
 const CFG_OPEN_TOP_ON_STARTUP = 'open-to-top-on-startup';
 const CFG_HIDE_HORIZONTAL_SCROLLBARS = 'hide-horizontal-scrollbars';
+const CFG_SKINNY_SCROLLBARS = 'skinny-scrollbars';
 const CFG_NEW_WINS_AT_TOP = 'open-new-windows-at-top';
 const CFG_SHOW_TREE_LINES = 'show-tree-lines';
 const CFG_CONFIRM_DEL_OF_SAVED = 'confirm-del-of-saved-wins';
@@ -62,6 +63,7 @@ const CFG_DEFAULTS = {
     [CFG_COLLAPSE_ON_STARTUP]: true,
     [CFG_OPEN_TOP_ON_STARTUP]: false,
     [CFG_HIDE_HORIZONTAL_SCROLLBARS]: true,
+    [CFG_SKINNY_SCROLLBARS]: true,
     [CFG_NEW_WINS_AT_TOP]: false,
     [CFG_SHOW_TREE_LINES]: false,
     [CFG_CONFIRM_DEL_OF_SAVED]: true,
