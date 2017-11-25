@@ -1203,7 +1203,7 @@ function treeOnSelect(_evt_unused, evt_data)
                 T.treeobj.open_node(win_node);
                 T.treeobj.redraw_node(win_node);
                     // Because open_node() doesn't redraw the parent, only
-                    // its children, and opening the node changes the flavor
+                    // its children, and opening the node changes the
                     // settings at this time.
 
                 // In Chrome 61, with v0.1.4, I observed strange behaviour:
@@ -1313,21 +1313,6 @@ function treeOnSelect(_evt_unused, evt_data)
 //        });
     }
 } //treeOnSelect
-
-///// Callback for flavors.
-///// @param this {jstree Node} The node
-///// @param flavors {array} the flavors
-///// @param elem {DOM Element} the <li>
-//function flavor_callback(flavors, elem)
-//{
-//    // Apply borders to bordered tabs
-//    if(this.type === K.IT_TAB && flavors.indexOf(K.NF_BORDERED) !== -1)
-//        return {'class': K.BORDERED_TAB_CLASS};
-//
-//    if(this.type === K.NT_WIN_ELVISH) return {'class': 'green'};
-//    else if(this.type === K.IT_TAB) return {'class': 'blue'};
-//    else return {'class': 'red'};
-//} //flavor_callback
 
 ////////////////////////////////////////////////////////////////////////// }}}1
 // Chrome window/tab callbacks // {{{1
@@ -2770,10 +2755,11 @@ function messageListener(request, sender, sendResponse)
 ////////////////////////////////////////////////////////////////////////// }}}1
 // Startup / shutdown // {{{1
 
-function basicInit(done)
-{
-    log.info('TabFern tree.js initializing view - ' + TABFERN_VERSION);
+let custom_bg_color = false;
 
+/// Initialization that happens before the full DOM is loaded
+function preLoadInit()
+{
     if(getBoolSetting(CFG_HIDE_HORIZONTAL_SCROLLBARS)) {
         document.querySelector('html').classList += ' tf--feature--hide-horizontal-scrollbars';
     }
@@ -2782,9 +2768,65 @@ function basicInit(done)
         document.querySelector('html').classList += ' skinny-scrollbar';
     }
 
+    let url = chrome.runtime.getURL(
+                `/assets/jstree-3.3.4/themes/${getThemeName()}/style.css`);
+    let before = document.getElementById('last-stylesheet');
+    loadCSS(document, url, before);
+
+    let body = document.querySelector('body');
+    if(body) {
+        body.classList += ` jstree-${getThemeName()}`;
+    }
+
+    // Apply custom background, if any
+    BG: if(haveSetting(CFGS_BACKGROUND)) {
+        let bg = getStringSetting(CFGS_BACKGROUND, '').trim();
+
+        if(bg.length < 2) break BG;     // no valid color is one character
+
+        if(Modules['common/validation'].isValidColor(bg)) {
+            custom_bg_color = bg;
+            break BG;
+        }
+
+        // not a color --- try to parse it as a URL
+        try {
+            let url = new URL(bg);
+            if(url.protocol === "file:" ||
+                    //url.protocol === "http:" ||
+                    // For now, disallow http so we don't have to worry
+                    // about HTTP-hijacking attacks.  I don't know of any
+                    // attack vectors in CSS background images off-hand,
+                    // but that doesn't mean there aren't any :) .
+                    url.protocol === "https:" ||
+                    url.protocol === "data:" ||
+                    url.protocol === "chrome-extension:") {
+                custom_bg_color = `url("${url.href}")`;
+            }
+            break BG;
+        } catch(e) {
+            // do nothing
+        }
+    } //endif have a background setting
+
+    if(custom_bg_color) {
+        $('body').css('background', custom_bg_color);
+    }
+
+} //preLoadInit
+
+/// Beginning of the onload initialization.
+function basicInit(done)
+{
+    log.info('TabFern tree.js initializing view - ' + TABFERN_VERSION);
+
     Hamburger = Modules.hamburger('#hamburger-menu', getHamburgerMenuItems
             , K.CONTEXT_MENU_MOUSEOUT_TIMEOUT_MS
             );
+
+    if(custom_bg_color) {
+        $('#hamburger-menu').css('background','transparent');
+    }
 
     checkWhatIsNew('#hamburger-menu');
 
@@ -2801,43 +2843,6 @@ function basicInit(done)
     // at least 30% of screen width if <640px.  Also make sure that the
     // TabFern window is tall enough.
     // TODO? Snap the TabFern window to within n pixels of the Chrome window?
-
-    // Apply custom background, if any
-    let newcolor = false;
-    BG: if(haveSetting(CFGS_BACKGROUND)) {
-        let bg = getStringSetting(CFGS_BACKGROUND, '').trim();
-
-        if(bg.length < 2) break BG;     // no valid color is one character
-
-        if(Modules['common/validation'].isValidColor(bg)) {
-            newcolor = bg;
-            break BG;
-        }
-
-        // not a color --- try to parse it as a URL
-        try {
-            let url = new URL(bg);
-            if(url.protocol === "file:" ||
-                    //url.protocol === "http:" ||
-                    // For now, disallow http so we don't have to worry
-                    // about HTTP-hijacking attacks.  I don't know of any
-                    // attack vectors in CSS background images off-hand,
-                    // but that doesn't mean there aren't any :) .
-                    url.protocol === "https:" ||
-                    url.protocol === "data:" ||
-                    url.protocol === "chrome-extension:") {
-                newcolor = `url("${url.href}")`;
-            }
-            break BG;
-        } catch(e) {
-            // do nothing
-        }
-    } //endif have a background setting
-
-    if(newcolor) {
-        $('body').css('background', newcolor);
-        $('#hamburger-menu').css('background','transparent');
-    }
 
     done();
 } //basicInit
@@ -3179,6 +3184,8 @@ function main(...args)
     // Timer to display the warning message if initialization doesn't complete
     // quickly enough.
     window.setTimeout(initIncompleteWarning, K.INIT_TIME_ALLOWED_MS);
+
+    preLoadInit();
 
     // Main events
     window.addEventListener('unload', shutdownTree, { 'once': true });

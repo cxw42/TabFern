@@ -24,8 +24,21 @@
 
 /* Any browser window or tab that is currently open (as opposed to closed
  * and saved) */
+/*
 .tf-visible-window a, .tf-window.tfs-open > a, .tf-tab.tfs-open > a {
-    color: #fff !important;    /* because it's a dark theme */
+    color: #fff !important;    */ /* because it's a dark theme */
+/*
+}
+*/
+
+/* Color for open items, in a light theme */
+.jstree-default .tfs-open a {
+    color: #000;
+}
+
+/* Color for open items, in a dark theme */
+.jstree-default-dark .tfs-open a {
+    color: #fff;
 }
 
 .tf-action-button {
@@ -44,7 +57,13 @@ li.ephemeral-recovered, .tfs-recovered {
     background: darkslategray !important;
 }
 
-.tfs-top-bordered {
+/* divider color, light theme */
+.jstree-default .tfs-top-bordered {
+    border-top: 1px solid #00b;
+}
+
+/* divider color, dark theme */
+.jstree-default-dark .tfs-top-bordered {
     border-top: 1px solid #ffa;
 }
 
@@ -197,7 +216,7 @@ div.jstree-wholerow-hovered > .tf-action-group {
 
 /* No animations on the wholerow since I haven't figured out how to sync them
  * with the action buttons.  This is more snappy, anyway. */
-.jstree-default-dark .jstree-wholerow {
+.jstree-wholerow {
     transition: unset;
 }
 
@@ -347,8 +366,10 @@ ul.jstree-contextmenu i {
     z-index: 1;
 }
 
-/* A bit more space between rows, for easier reading */
-#maintree.jstree-default-dark-small .jstree-anchor {
+/* A bit more space between rows, for easier reading.  TODO make this
+ * orthogonal to the theme. */
+#maintree.jstree-default-dark-small .jstree-anchor,
+#maintree.jstree-default-small .jstree-anchor, {
     line-height: 19px;
     height: 19px;
 }

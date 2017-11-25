@@ -55,6 +55,9 @@ const CFG_CONFIRM_DEL_OF_UNSAVED = 'confirm-del-of-unsaved-wins';
 // Strings
 const CFGS_BACKGROUND = 'window-background';
 
+// Other
+const CFGS_THEME_NAME = 'theme-name';
+
 const CFG_DEFAULTS = {
     __proto__: null,
     [CFG_ENB_CONTEXT_MENU]: true,
@@ -68,6 +71,7 @@ const CFG_DEFAULTS = {
     [CFG_SHOW_TREE_LINES]: false,
     [CFG_CONFIRM_DEL_OF_SAVED]: true,
     [CFG_CONFIRM_DEL_OF_UNSAVED]: false,
+    [CFGS_THEME_NAME]: 'default-dark',
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -146,6 +150,14 @@ function setSettingIfNonexistent(setting_name, setting_value)
     if(!haveSetting(setting_name)) setSetting(setting_name, setting_value);
 }
 
+/// Custom getter for theme names.  This enforces known themes.
+function getThemeName()
+{
+    let theme = getStringSetting(CFGS_THEME_NAME);
+    if( theme === 'default' || theme === 'default-dark') return theme;
+    else return CFG_DEFAULTS[CFGS_THEME_NAME];
+} //getThemeName
+
 //////////////////////////////////////////////////////////////////////////
 // DOM-related functions //
 
@@ -184,6 +196,25 @@ function callbackOnLoad(callback)
         window.setTimeout(callback, 0);    //always async
     }
 } //callbackOnLoad
+
+/// Add a CSS file to the specified document.
+/// Modified from http://requirejs.org/docs/faq-advanced.html#css
+/// @param doc {DOM Document}
+/// @param url {String}
+/// @param before {DOM Node} Optional --- if provided, the new sheet
+/// will be inserted before #before.
+function loadCSS(doc, url, before) {
+    let link = doc.createElement("link");
+    link.type = "text/css";
+    link.rel = "stylesheet";
+    link.href = url;
+    let head = document.getElementsByTagName("head")[0];
+    if(before) {
+        head.insertBefore(link, before);
+    } else {
+        head.appendChild(link);
+    }
+} //loadCSS
 
 //////////////////////////////////////////////////////////////////////////
 // Miscellaneous functions //

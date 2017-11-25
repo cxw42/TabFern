@@ -40,9 +40,9 @@
 
         SAVE_DATA_AS_VERSION: 1,       // version we are currently saving
 
-        BORDERED_TAB_CLASS: 'tabfern-tab-bordered',     // class on <li>s with a top border
-        FOCUSED_WIN_CLASS: 'tf-focused-window',  // Class on the currently-focused win
-        VISIBLE_WIN_CLASS: 'tf-visible-window',  // Class on all visible wins
+        //BORDERED_TAB_CLASS: 'tabfern-tab-bordered',     // class on <li>s with a top border
+        //FOCUSED_WIN_CLASS: 'tf-focused-window',  // Class on the currently-focused win
+        //VISIBLE_WIN_CLASS: 'tf-visible-window',  // Class on all visible wins
 
         SHOW_ACTIONS_CLASS:  'tf-show-actions',
             // Class on a .jstree-node to indicate its actions should be shown

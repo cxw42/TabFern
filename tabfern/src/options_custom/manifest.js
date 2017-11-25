@@ -134,6 +134,17 @@
             {
                 "tab": i18n.get("Appearance"),
                 "group": i18n.get("Theme"),
+                "name": CFGS_THEME_NAME,
+                "type": "popupButton",
+                "label": i18n.get('Theme'),
+                'options': [
+                    { value: 'default-dark', text: 'Dark' },
+                    { value: 'default', text: 'Light' },
+                ],
+            },
+            {
+                "tab": i18n.get("Appearance"),
+                "group": i18n.get("Theme"),
                 "name": CFGS_BACKGROUND,
                 "type": "text",
                 "label": i18n.get('Background color or image'),
@@ -232,6 +243,9 @@ ${issue(85)}</li>
 Go to ${settings} Appearance ${gt} Theme, and put a
 <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/color_value">CSS color</a> or an image URL in the "Background color or image" box.
 ${issue(86)}</li>
+<li>Going along with the custom backgrounds, you can also select a light
+theme (dark text, light backgrounds) from
+${settings} Appearance ${gt} Theme.  ${issue(89)}
 <li>You can use skinny scrollbars to make more text visible in the TabFern
 window.  Go to ${settings} Appearance ${gt} Scrollbars, and check "Skinny
 scrollbars."  ${issue(68)}

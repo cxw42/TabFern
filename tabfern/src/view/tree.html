@@ -9,12 +9,15 @@
 
     <!-- Stylesheets ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
 
-    <link href="/assets/jstree-3.3.4/themes/default-dark/style.css" rel="stylesheet" type="text/css" />
+    <!--link href="/assets/jstree-3.3.4/themes/default-dark/style.css" rel="stylesheet" type="text/css" />-->
     <link href="/assets/fontawesome/css/font-awesome.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" type="text/css" media="all" href="/assets/css/rmodal-no-bootstrap.css" />
     <link rel="stylesheet" type="text/css" media="all" href="/assets/css/icons.css" />
     <link rel="stylesheet" type="text/css" media="all" href="/assets/css/custom-scrollbars.css" /><!-- TODO load dynamically only if needed? -->
-    <link rel="stylesheet" type="text/css" media="all" href="tree.css" /><!-- this one should always be the last stylesheet listed -->
+
+    <link rel="stylesheet" type="text/css" media="all" href="tree.css"
+        id="last-stylesheet" />
+        <!-- this one should always be the last stylesheet listed -->
 
     <!-- Scripts, except for those loaded by require.js ~~~~~~~~~~~~~~~~~~~ -->
     <script src="../common/common.js" type="text/javascript"></script>  <!-- not requirejs -->
@@ -24,8 +27,8 @@
 
 </head>
 
-<body class="jstree-default-dark">
-<!-- jstree-default-dark to set background, text colors -->
+<body><!--<body class="jstree-default-dark">-->
+<!-- jstree-default-dark was to set background, text colors.  Now done in JS. -->
 
     <div id="tabfern-container">
 

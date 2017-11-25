@@ -220,7 +220,7 @@
                 multiple: false,          // for now
                 //check_callback added below if provided
                 themes: {
-                    name: 'default-dark',
+                    name: getThemeName(),
                     variant: 'small',
                 },
             },
