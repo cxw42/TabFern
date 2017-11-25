@@ -2,12 +2,12 @@
 // cxw42, 2017
 // See /doc/design.md for information about notation and organization.
 
-// TODO break this into some separate modules
+// TODO break more of this into separate modules
 
 console.log('Loading TabFern ' + TABFERN_VERSION);
 
 //////////////////////////////////////////////////////////////////////////
-// Modules //
+// Modules // {{{1
 
 // Hacks so I can keep everything in the global scope for ease of
 // use or inspection in the console while developing.
@@ -25,29 +25,19 @@ console.log('Loading TabFern ' + TABFERN_VERSION);
 /// Modules loaded via requirejs
 var Modules = {};
 
-/// Constants loaded from view/const.js, for ease of access
-var K;
-
-/// Shorthand access to the details, view/item_details.js
-var D;
-
-/// Shorthand access to the tree, view/item_tree.js ("Tree")
-var T;
-
-/// Shorthand access to the item routines, view/item.js ("Item")
-var I;
-
-/// HACK - a global for loglevel because typing `Modules.log` everywhere is a pain.
+/// HACK - a global for loglevel (typing `Modules.log` everywhere is a pain).
 var log;
 
-/// Shorthand for asynquence
-var ASQ;
+// Shorthands for easier access:
+var K;      ///< Constants loaded from view/const.js, for ease of access
+var D;      ///< Shorthand access to the details, view/item_details.js
+var T;      ///< Shorthand access to the tree, view/item_tree.js ("Tree")
+var I;      ///< Shorthand access to the item routines, view/item.js ("Item")
+var ASQ;    ///< Shorthand for asynquence
+var ASQH;   ///< Shorthand for asq-helpers
 
-/// Shorthand for asq-helpers
-var ASQH;
-
-//////////////////////////////////////////////////////////////////////////
-// Globals //
+////////////////////////////////////////////////////////////////////////// }}}1
+// Globals // {{{1
 
 // - Operation state -
 var my_winid;                   ///< window ID of this popup window
@@ -93,8 +83,8 @@ var Esc;
 /// The module that handles <Shift> bypassing of the jstree context menu
 var Bypasser;
 
-//////////////////////////////////////////////////////////////////////////
-// Initialization //
+////////////////////////////////////////////////////////////////////////// }}}1
+// Initialization // {{{1
 
 /// Init those of our globals that don't require any data to be loaded.
 /// Call after Modules has been populated.
@@ -121,11 +111,8 @@ function local_init()
 
 } //init()
 
-//////////////////////////////////////////////////////////////////////////
-// General utility routines //
-
-//////////////////////////////////////////////////////////////////////////
-// DOM Manipulation //
+////////////////////////////////////////////////////////////////////////// }}}1
+// DOM Manipulation // {{{1
 
 /// Set the tab.index values of the tab nodes in a window.  Assumes that
 /// the nodes are in the proper order in the tree.
@@ -195,8 +182,8 @@ function unflagAllWindows() {
     );
 };
 
-//////////////////////////////////////////////////////////////////////////
-// Saving //
+////////////////////////////////////////////////////////////////////////// }}}1
+// Saving // {{{1
 
 /// Wrap up the save data with a magic header and the current version number
 function makeSaveData(data)
@@ -292,8 +279,8 @@ function saveTree(save_ephemeral_windows = true, cbk = undefined)
     ); //storage.local.set
 } //saveTree()
 
-//////////////////////////////////////////////////////////////////////////
-// jstree-action callbacks //
+////////////////////////////////////////////////////////////////////////// }}}1
+// jstree-action callbacks // {{{1
 
 /// Wrapper to call jstree-action style callbacks from jstree contextmenu
 /// actions
@@ -471,6 +458,7 @@ function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el,
         window.scrollTo(...scrollOffsets);
 
         D.windows.remove_value(win_val);
+        win_val = null;
 
         // We had a click --- hover the node that is now under the mouse.
         // That is the node that was the next-sibling node before.
@@ -498,83 +486,103 @@ function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el,
 
     } else {    // Confirmation required
 
-//        // TODO replace this with rmodal
-//        let res = window.confirm(
-//                'Delete window "' + I.get_win_raw_text(win_val) + '"?'
-//        );
-//        if(!res) return;
+        //log.info('Setting up dialog seq');
 
-        log.info('Setting up dialog seq');
-
-        let dlg;
-        let seq = ASQ();
-        let cbk = seq.errfcb();
+        let dlg;    ///< The rmodal instance
+        let after_close = ASQ();    ///< processing after dlg closes
+        let cbk = after_close.errfcb();
 
         // Modified from the rmodal sample at https://rmodal.js.org/
         $('#confirm-dialog-question').text(
                 'Delete window "' + I.get_win_raw_text(win_val) + '"?'
         );
-        dlg = new Modules['rmodal'](
+        dlg = new (Modules['rmodal'])(
             document.getElementById('confirm-dialog'),
             {
                 closeTimeout: 0,
-                //content: 'Abracadabra'
-//                    beforeOpen: function(next) {
-//                        console.log('beforeOpen');
-//                        next();
-//                    }
-//                    , afterOpen: function() {
-//                        console.log('opened');
-//                    }
-//
-//                    , beforeClose: function(next) {
-//                        console.log('beforeClose');
-//                        next();
-//                    },
+
+                afterOpen: function() {
+                    $('#confirm-dialog .btn-primary').focus();
+                    //console.log('opened');
+                },
+
                 afterClose: function() {
                     console.log('closed');
-                    cbk(null, dlg.reason);   // *** Run the sequence
-                }
-                // , bodyClass: 'modal-open'
-                // , dialogClass: 'modal-dialog'
-                // , dialogOpenClass: 'animated fadeIn'
-                // , dialogCloseClass: 'animated fadeOut'
-
-                // , focus: true
-                // , focusElements: ['input.form-control', 'textarea', 'button.btn-primary']
-
-                // , escapeClose: true
+                    cbk(null, {reason: dlg.reason, notAgain: dlg.notAgain});
+                        // *** Run the sequence
+                },
             }
         );
 
-        dlg.reason = null;   // to store which button is pressed
+        dlg.reason = null;      // to store which button is pressed
+        dlg.notAgain = false;   // to store the "not again" checkbox
 
         // Add the button listeners, to avoid inline scripts
-        $('#confirm-dialog .modal-footer button').on('click.TFrmodal', function(){
+        $('#confirm-dialog button').on('click.TFrmodal', function(){
             dlg.reason = this.dataset.which;
             dlg.close();
         });
 
+        // The "don't ask again" checkbox
+        let notAgain = $('#confirm-dialog #notAgain');
+        notAgain[0].checked = false;
+        notAgain.on('change.TFrmodal', function(){
+            dlg.notAgain = this.checked;
+        });
+
         // Add the keyboard listener
         $(document).on('keydown.TFrmodal', function(ev) {
-            dlg.keydown(ev);
-        });
-        //document.addEventListener('keydown', kbd_listener, false);
+            //log.info({'keydown during dlg':ev});
 
-        seq.try((done, reason)=>{       // try() so the handler below will
+            let key = (ev && typeof ev.key === 'string') ?
+                        ev.key.toLowerCase(): null;
+
+            // Send the events on the next cycle.  Not sure if this is required.
+            if(key === 'y') {
+                ASQ().val(()=>{$("#confirm-dialog .btn[data-which='yes']").click();});
+            } else if(key === 'n') {
+                ASQ().val(()=>{$("#confirm-dialog .btn[data-which='no']").click();});
+            } else if(key === 'c') {
+                ASQ().val(()=>{$("#confirm-dialog .btn[data-which='cancel']").click();});
+            } else {
+                dlg.keydown(ev);
+            }
+
+        });
+
+        // Processing after the dialog closes
+
+        after_close.try((done, reason)=>{       // try() so the handler below will
                                         // always be called.
-            log.info(`Dialog closed; reason ${reason}`);
-            if(reason === 'yes') {
+            //log.info({'Dialog closed; reason':reason});
+            if(!reason) {
+                done({'catch': 'No reason provided by the dialog'});
+            }
+
+            // Handle "don't ask again", but cancel is always nop.
+            if(reason.reason !== 'cancel' && reason.notAgain) {
+                /// The configuration key to clear
+                let conf_key = (win_val.keep === K.WIN_KEEP) ?
+                    CFG_CONFIRM_DEL_OF_SAVED :
+                    CFG_CONFIRM_DEL_OF_UNSAVED;
+                //log.info({"Don't ask again":conf_key});
+                setSetting(conf_key, false);
+            }
+
+            if(reason.reason === 'yes') {
                 doDeletion();
             }
+
             done();
         });
 
-        // Teardown.  This works because the preceding step is a try().
-        seq.then((done, maybe_err)=>{
-            log.info('Tearing down dialog seq');
+        // Teardown.  This always runs because the preceding step is a try().
+        after_close.then((done, maybe_err)=>{
+            //log.info('Tearing down dialog seq');
+
             //document.removeEventListener('keydown', kbd_listener, false);
             $(document).off('keydown.TFrmodal');
+            notAgain.off('change.TFrmodal');
             $('#confirm-dialog .modal-footer button').off('click.TFrmodal');
 
             // If there were any errors in the previous step, report them.
@@ -637,8 +645,8 @@ function actionEditBullet(node_id, node, unused_action_id, unused_action_el)
     saveTree();
 } //actionEditBullet
 
-//////////////////////////////////////////////////////////////////////////
-// Tree-node creation //
+////////////////////////////////////////////////////////////////////////// }}}1
+// Tree-node creation // {{{1
 
 // = = = Tabs = = = = = = = = = = = = = = = = = =
 
@@ -807,8 +815,8 @@ function createNodeForClosedWindow(win_data_v1)
     return node_id;
 } //createNodeForClosedWindow
 
-//////////////////////////////////////////////////////////////////////////
-// Loading //
+////////////////////////////////////////////////////////////////////////// }}}1
+// Loading // {{{1
 
 /// Did we have a problem loading save data?
 var was_loading_error = false;
@@ -997,8 +1005,8 @@ function DBG_printSaveData()
     });
 } //DBG_printSaveData()
 
-//////////////////////////////////////////////////////////////////////////
-// jstree callbacks //
+////////////////////////////////////////////////////////////////////////// }}}1
+// jstree callbacks // {{{1
 
 /// Helper for treeOnSelect() and winOnFocusChanged().
 /// chrome.windows.get() callback to flag the current tab in a window
@@ -1195,7 +1203,7 @@ function treeOnSelect(_evt_unused, evt_data)
                 T.treeobj.open_node(win_node);
                 T.treeobj.redraw_node(win_node);
                     // Because open_node() doesn't redraw the parent, only
-                    // its children, and opening the node changes the flavor
+                    // its children, and opening the node changes the
                     // settings at this time.
 
                 // In Chrome 61, with v0.1.4, I observed strange behaviour:
@@ -1306,23 +1314,8 @@ function treeOnSelect(_evt_unused, evt_data)
     }
 } //treeOnSelect
 
-///// Callback for flavors.
-///// @param this {jstree Node} The node
-///// @param flavors {array} the flavors
-///// @param elem {DOM Element} the <li>
-//function flavor_callback(flavors, elem)
-//{
-//    // Apply borders to bordered tabs
-//    if(this.type === K.IT_TAB && flavors.indexOf(K.NF_BORDERED) !== -1)
-//        return {'class': K.BORDERED_TAB_CLASS};
-//
-//    if(this.type === K.NT_WIN_ELVISH) return {'class': 'green'};
-//    else if(this.type === K.IT_TAB) return {'class': 'blue'};
-//    else return {'class': 'red'};
-//} //flavor_callback
-
-//////////////////////////////////////////////////////////////////////////
-// Chrome window/tab callbacks //
+////////////////////////////////////////////////////////////////////////// }}}1
+// Chrome window/tab callbacks // {{{1
 
 function winOnCreated(win)
 {
@@ -1880,8 +1873,8 @@ function tabOnReplaced(addedTabId, removedTabId)
                 removedTabId);
 } //tabOnReplaced
 
-//////////////////////////////////////////////////////////////////////////
-// DOM event handlers //
+////////////////////////////////////////////////////////////////////////// }}}1
+// DOM event handlers // {{{1
 
 /// ID of a timer to save the new window size after a resize event
 var resize_save_timer_id;
@@ -1939,8 +1932,8 @@ function timedResizeDetector()
     setTimeout(timedResizeDetector, K.RESIZE_DETECTOR_INTERVAL_MS);
 } //timedResizeDetector
 
-//////////////////////////////////////////////////////////////////////////
-// Hamburger menu //
+////////////////////////////////////////////////////////////////////////// }}}1
+// Hamburger menu // {{{1
 
 /// Open a new window with the TabFern homepage.
 function hamAboutWindow()
@@ -2169,7 +2162,7 @@ function getHamburgerMenuItems(node, _unused_proxyfunc, e)
                 // Test of sub-submenus --- jstree doesn't seem to correctly
                 // constrain them to the viewport.
                 //test: { label: 'test', submenu:
-                //  { foo: {label:'foo'},bar:{label:'bar'},bat:{label:'bat'}}},
+                //  { foo: {label:'foo'},bar:{label:'bar'},bat:{label:'bat'} }},
                 numItem90: {
                     label: '9-0',
                     title: 'Sort descending by window name, numeric, case-insensitive',
@@ -2193,8 +2186,8 @@ function getHamburgerMenuItems(node, _unused_proxyfunc, e)
     return items;
 } //getHamburgerMenuItems()
 
-//////////////////////////////////////////////////////////////////////////
-// Context menu for the main tree
+////////////////////////////////////////////////////////////////////////// }}}1
+// Context menu for the main tree // {{{1
 
 function getMainContextMenuItems(node, _unused_proxyfunc, e)
 {
@@ -2306,8 +2299,8 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
 
 } //getMainContextMenuItems
 
-//////////////////////////////////////////////////////////////////////////
-// Drag-and-drop support //
+////////////////////////////////////////////////////////////////////////// }}}1
+// Drag-and-drop support // {{{1
 
 /// Determine whether a node or set of nodes can be dragged.
 /// @param {array} nodes The full jstree node record(s) being dragged
@@ -2653,8 +2646,8 @@ var treeCheckCallback = (function(){
 
 })(); //treeCheckCallback
 
-//////////////////////////////////////////////////////////////////////////
-// What's New //
+////////////////////////////////////////////////////////////////////////// }}}1
+// What's New // {{{1
 
 /// Check whether to show a "what's new" notification.
 /// Sets ShowWhatIsNew, used by getHamburgerMenuItems().
@@ -2697,8 +2690,8 @@ function checkWhatIsNew(selector)
     });
 } //checkWhatIsNew
 
-//////////////////////////////////////////////////////////////////////////
-// Chrome message listener //
+////////////////////////////////////////////////////////////////////////// }}}1
+// Chrome message listener // {{{1
 
 function messageListener(request, sender, sendResponse)
 {
@@ -2759,20 +2752,81 @@ function messageListener(request, sender, sendResponse)
 
 } //messageListener
 
-//////////////////////////////////////////////////////////////////////////
-// Startup / shutdown //
+////////////////////////////////////////////////////////////////////////// }}}1
+// Startup / shutdown // {{{1
 
-function basicInit(done)
+let custom_bg_color = false;
+
+/// Initialization that happens before the full DOM is loaded
+function preLoadInit()
 {
-    log.info('TabFern tree.js initializing view - ' + TABFERN_VERSION);
-
     if(getBoolSetting(CFG_HIDE_HORIZONTAL_SCROLLBARS)) {
         document.querySelector('html').classList += ' tf--feature--hide-horizontal-scrollbars';
     }
 
+    if(getBoolSetting(CFG_SKINNY_SCROLLBARS)) {
+        document.querySelector('html').classList += ' skinny-scrollbar';
+    }
+
+    let url = chrome.runtime.getURL(
+                `/assets/jstree-3.3.4/themes/${getThemeName()}/style.css`);
+    let before = document.getElementById('last-stylesheet');
+    loadCSS(document, url, before);
+
+    let body = document.querySelector('body');
+    if(body) {
+        body.classList += ` jstree-${getThemeName()}`;
+    }
+
+    // Apply custom background, if any
+    BG: if(haveSetting(CFGS_BACKGROUND)) {
+        let bg = getStringSetting(CFGS_BACKGROUND, '').trim();
+
+        if(bg.length < 2) break BG;     // no valid color is one character
+
+        if(Modules['common/validation'].isValidColor(bg)) {
+            custom_bg_color = bg;
+            break BG;
+        }
+
+        // not a color --- try to parse it as a URL
+        try {
+            let url = new URL(bg);
+            if(url.protocol === "file:" ||
+                    //url.protocol === "http:" ||
+                    // For now, disallow http so we don't have to worry
+                    // about HTTP-hijacking attacks.  I don't know of any
+                    // attack vectors in CSS background images off-hand,
+                    // but that doesn't mean there aren't any :) .
+                    url.protocol === "https:" ||
+                    url.protocol === "data:" ||
+                    url.protocol === "chrome-extension:") {
+                custom_bg_color = `url("${url.href}")`;
+            }
+            break BG;
+        } catch(e) {
+            // do nothing
+        }
+    } //endif have a background setting
+
+    if(custom_bg_color) {
+        $('body').css('background', custom_bg_color);
+    }
+
+} //preLoadInit
+
+/// Beginning of the onload initialization.
+function basicInit(done)
+{
+    log.info('TabFern tree.js initializing view - ' + TABFERN_VERSION);
+
     Hamburger = Modules.hamburger('#hamburger-menu', getHamburgerMenuItems
             , K.CONTEXT_MENU_MOUSEOUT_TIMEOUT_MS
             );
+
+    if(custom_bg_color) {
+        $('#hamburger-menu').css('background','transparent');
+    }
 
     checkWhatIsNew('#hamburger-menu');
 
@@ -3103,7 +3157,7 @@ let dependencies = [
 
     // Modules of TabFern itself
     'view/const', 'view/item_details', 'view/sorts', 'view/item_tree',
-    'view/item',
+    'view/item', 'common/validation'
 ];
 
 /// Make short names in Modules for some modules.  shortname => longname
@@ -3130,6 +3184,8 @@ function main(...args)
     // Timer to display the warning message if initialization doesn't complete
     // quickly enough.
     window.setTimeout(initIncompleteWarning, K.INIT_TIME_ALLOWED_MS);
+
+    preLoadInit();
 
     // Main events
     window.addEventListener('unload', shutdownTree, { 'once': true });
@@ -3166,6 +3222,7 @@ function main(...args)
 } // main()
 
 require(dependencies, main);
+// }}}1
 
 // ###########################################################################
 
@@ -3176,4 +3233,4 @@ require(dependencies, main);
 // can get T.treeobj from $(selector).data('jstree')
 // can get element from T.treeobj.element
 
-// vi: set ts=4 sts=4 sw=4 et ai fo-=o fo-=r: //
+// vi: set ts=4 sts=4 sw=4 et ai fo-=ro foldmethod=marker: //

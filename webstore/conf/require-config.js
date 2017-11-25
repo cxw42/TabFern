@@ -13,6 +13,7 @@ var require = {
         // Aliases for parts of the application (relative to baseUrl)
         'local': '../src',
         'view': '../src/view',
+        'common': '../src/common',
     },
     async: {
         useHash: true   // #callback=x rather than ?callback=x since Chrome

@@ -58,10 +58,9 @@
 
                 row = (new Element("tr")).inject(group.content);
 
-                (new Element("td", {
-                    "class": "setting group-name",
-                    "text": params.group
-                })).inject(row);
+                var group_parms = { "class": "setting group-name" };
+                group_parms[params.group_html ? 'html' : 'text'] = params.group;
+                (new Element("td", group_parms)).inject(row);
 
                 content = (new Element("td", {
                     "class": "setting group-content"

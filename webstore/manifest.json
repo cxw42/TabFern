@@ -1,8 +1,8 @@
 {
   "name": "TabFern tab manager and backup tool",
   "short_name": "TabFern",
-  "version": "0.1.12.1337",
-  "version_name": "0.1.12 ALPHA - YMMV",
+  "version": "0.1.13.1337",
+  "version_name": "0.1.13 ALPHA - YMMV",
   "offline_enabled": true,
   "manifest_version": 2,
   "minimum_chrome_version": "54",
@@ -31,6 +31,7 @@
     "default_title": "TabFern"
   },
   "permissions": [
+    "file://*/*",
     "chrome://favicon/",
     "tabs",
     "storage",

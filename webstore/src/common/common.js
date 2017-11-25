@@ -11,7 +11,7 @@ console.log('TabFern common.js loading');
 
 /// The TabFern extension friendly version number.  Displayed in the
 /// title bar of the popup window, so lowercase (no shouting!).
-const TABFERN_VERSION='0.1.12 alpha \u26a0'
+const TABFERN_VERSION='0.1.13 alpha \u26a0'
     // When you change this, also update:
     //  - manifest.json: both the version and version_name
     //  - package.json
@@ -39,16 +39,24 @@ const MSG_EDIT_TAB_NOTE = 'editTabNote';
 //////////////////////////////////////////////////////////////////////////
 // Names of settings, and their defaults //
 
+// Booleans
 const CFG_ENB_CONTEXT_MENU = 'ContextMenu.Enabled';
 const CFG_RESTORE_ON_LAST_DELETED = 'open-tree-on-restore-last-deleted';
 const CFG_JUMP_WITH_SORT_OPEN_TOP = 'jump-to-top-when-sort-open-to-top';
 const CFG_COLLAPSE_ON_STARTUP = 'collapse-trees-on-startup';
 const CFG_OPEN_TOP_ON_STARTUP = 'open-to-top-on-startup';
 const CFG_HIDE_HORIZONTAL_SCROLLBARS = 'hide-horizontal-scrollbars';
+const CFG_SKINNY_SCROLLBARS = 'skinny-scrollbars';
 const CFG_NEW_WINS_AT_TOP = 'open-new-windows-at-top';
 const CFG_SHOW_TREE_LINES = 'show-tree-lines';
 const CFG_CONFIRM_DEL_OF_SAVED = 'confirm-del-of-saved-wins';
 const CFG_CONFIRM_DEL_OF_UNSAVED = 'confirm-del-of-unsaved-wins';
+
+// Strings
+const CFGS_BACKGROUND = 'window-background';
+
+// Other
+const CFGS_THEME_NAME = 'theme-name';
 
 const CFG_DEFAULTS = {
     __proto__: null,
@@ -58,16 +66,41 @@ const CFG_DEFAULTS = {
     [CFG_COLLAPSE_ON_STARTUP]: true,
     [CFG_OPEN_TOP_ON_STARTUP]: false,
     [CFG_HIDE_HORIZONTAL_SCROLLBARS]: true,
+    [CFG_SKINNY_SCROLLBARS]: false,
     [CFG_NEW_WINS_AT_TOP]: false,
     [CFG_SHOW_TREE_LINES]: false,
     [CFG_CONFIRM_DEL_OF_SAVED]: true,
     [CFG_CONFIRM_DEL_OF_UNSAVED]: false,
+    [CFGS_THEME_NAME]: 'default-dark',
 };
 
 //////////////////////////////////////////////////////////////////////////
 // Setting-related functions //
 
 const SETTING_PREFIX = 'store.settings.';
+
+/// Get the string value of a setting, if it is a string.
+function getStringSetting(setting_name, default_value = undefined)
+{
+    if(typeof default_value === 'undefined' && setting_name in CFG_DEFAULTS) {
+        default_value = CFG_DEFAULTS[setting_name];
+    }
+
+    let locStorageValue = localStorage.getItem(SETTING_PREFIX + setting_name);
+
+    if ( locStorageValue !== null ) {   // key exists
+        // Get the value, which is stored as JSON
+        try {
+            let val = JSON.parse(locStorageValue);
+            if(typeof val === 'string') return val;
+        } catch(e) {
+            // do nothing
+        }
+    }
+
+    // If we get here, we didn't have a value, or didn't have a string.
+    return String(default_value);
+} //getStringSetting
 
 /// Get a boolean setting from options_custom, which uses HTML5 localStorage.
 function getBoolSetting(setting_name, default_value = undefined)
@@ -117,6 +150,14 @@ function setSettingIfNonexistent(setting_name, setting_value)
     if(!haveSetting(setting_name)) setSetting(setting_name, setting_value);
 }
 
+/// Custom getter for theme names.  This enforces known themes.
+function getThemeName()
+{
+    let theme = getStringSetting(CFGS_THEME_NAME);
+    if( theme === 'default' || theme === 'default-dark') return theme;
+    else return CFG_DEFAULTS[CFGS_THEME_NAME];
+} //getThemeName
+
 //////////////////////////////////////////////////////////////////////////
 // DOM-related functions //
 
@@ -155,6 +196,25 @@ function callbackOnLoad(callback)
         window.setTimeout(callback, 0);    //always async
     }
 } //callbackOnLoad
+
+/// Add a CSS file to the specified document.
+/// Modified from http://requirejs.org/docs/faq-advanced.html#css
+/// @param doc {DOM Document}
+/// @param url {String}
+/// @param before {DOM Node} Optional --- if provided, the new sheet
+/// will be inserted before #before.
+function loadCSS(doc, url, before) {
+    let link = doc.createElement("link");
+    link.type = "text/css";
+    link.rel = "stylesheet";
+    link.href = url;
+    let head = document.getElementsByTagName("head")[0];
+    if(before) {
+        head.insertBefore(link, before);
+    } else {
+        head.appendChild(link);
+    }
+} //loadCSS
 
 //////////////////////////////////////////////////////////////////////////
 // Miscellaneous functions //

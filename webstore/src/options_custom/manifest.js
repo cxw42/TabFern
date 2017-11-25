@@ -2,15 +2,18 @@
 // TODO move the names into constants in common.js
 // Note: the tabs and groups are created in the order they
 // first appear in the manifest.
-// {{{2
 (function(root){
     // Shortcuts for frequently-used items
     function icon(cls) { return `<i class="${cls}"></i>`; }
     function issue(num) { return `(<a href="https://github.com/cxw42/TabFern/issues/${num|0}">#${num|0}</a>)`; }
+    function brplain(date_str){return `<br/><span class="plain">${date_str}</span>`;}
+
     let ham = icon('fa fa-bars');
     let gt = icon('fa fa-lg fa-caret-right');
+    let settings = `${ham} ${gt} Settings ${gt}`;
     let refresh_message = " (refresh the TabFern window after you change this to make the change take effect)"
 
+// Settings {{{2
     // Assign the settings
     root.manifest = {
         "name": "Settings - ver. "+TABFERN_VERSION+' - TabFern',
@@ -108,10 +111,17 @@
             // Appearance
             {
                 "tab": i18n.get("Appearance"),
-                "group": i18n.get("Functions"),
+                "group": i18n.get("Scrollbars"),
                 "name": CFG_HIDE_HORIZONTAL_SCROLLBARS,
                 "type": "checkbox",
                 "label": i18n.get('Hide horizontal scrollbar' + refresh_message),
+            },
+            {
+                "tab": i18n.get("Appearance"),
+                "group": i18n.get("Scrollbars"),
+                "name": CFG_SKINNY_SCROLLBARS,
+                "type": "checkbox",
+                "label": i18n.get('Skinny scrollbars' + refresh_message),
             },
             // Maybe add some theming options here?
             {
@@ -120,6 +130,39 @@
                 "name": CFG_SHOW_TREE_LINES,
                 "type": "checkbox",
                 "label": i18n.get('Show connecting lines between nodes' + refresh_message),
+            },
+            {
+                "tab": i18n.get("Appearance"),
+                "group": i18n.get("Theme"),
+                "name": CFGS_THEME_NAME,
+                "type": "popupButton",
+                "label": i18n.get('Theme'),
+                'options': [
+                    { value: 'default-dark', text: 'Dark' },
+                    { value: 'default', text: 'Light' },
+                ],
+            },
+            {
+                "tab": i18n.get("Appearance"),
+                "group": i18n.get("Theme"),
+                "name": CFGS_BACKGROUND,
+                "type": "text",
+                "label": i18n.get('Background color or image'),
+            },
+            {
+                "tab": i18n.get("Appearance"),
+                "group": i18n.get("Theme"),
+                "type": "description",
+                "text":
+`${refresh_message}<br/>
+The background can be specified as a CSS color name, rgb(r,g,b), hsl(h,s,l),
+or a URL (data, https, chrome-extension, or file).
+To use images from your local disk (file):
+<ul>
+<li>Check the box for "Allow access to file URLs" in chrome://extensions</li>
+<li>Open the image you want in Chrome and copy the address out of the address
+bar (it will start with "file://")</li>
+<li>Paste the "file://..." URL into the box above.</li>`
             },
 
             // Features
@@ -183,12 +226,35 @@
                 "type": "button",
                 "text": "X or + or don't show when these are dynamic"
             },
-// }}}2
 
+// }}}2
             // Changelog                                          {{{1
             {
                 "tab": i18n.get("What's new?"),
-                "group": "Version 0.1.12",
+                "group": "Version 0.1.13",
+                "type": "description",
+                "text":
+`<ul>
+<li>The delete-confirmation dialog now takes keyboard shortcuts (y, n, c),
+and provides an option to not ask again.  You can always re-enable
+confirmation dialogs from ${settings} Behaviour.
+${issue(85)}</li>
+<li>You can now specify a custom color or background for the TabFern window.
+Go to ${settings} Appearance ${gt} Theme, and put a
+<a href="https://developer.mozilla.org/en-US/docs/Web/CSS/color_value">CSS color</a> or an image URL in the "Background color or image" box.
+${issue(86)}</li>
+<li>Going along with the custom backgrounds, you can also select a light
+theme (dark text, light backgrounds) from
+${settings} Appearance ${gt} Theme.  ${issue(89)}
+<li>You can use skinny scrollbars to make more text visible in the TabFern
+window.  Go to ${settings} Appearance ${gt} Scrollbars, and check "Skinny
+scrollbars."  ${issue(68)}
+</ul>`
+            },
+            {
+                "tab": i18n.get("What's new?"),
+                "group": `Version 0.1.12${brplain('2017-11-05')}`,
+                'group_html':true,
                 "type": "description",
                 "text":
 `<ul><li class="gold-star">TabFern now has more than 60 users!  Thank you for
@@ -216,7 +282,8 @@ ${issue(78)}</li>
             },
             {
                 "tab": i18n.get("What's new?"),
-                "group": "Version 0.1.11",
+                "group": `Version 0.1.11${brplain('2017-10-19')}`,
+                'group_html':true,
                 "type": "description",
                 "text":
 `
@@ -248,7 +315,8 @@ if you run across them.  Thanks for considering this request!
 
             {
                 "tab": i18n.get("What's new?"),
-                "group": "Version 0.1.10",
+                "group": `Version 0.1.10${brplain('2017-09-26')}`,
+                'group_html':true,
                 "type": "description",
                 "text":
 `
@@ -269,7 +337,8 @@ locally-stored PDFs, and this helps me find them more quickly.</li>
             },
             {
                 "tab": i18n.get("What's new?"),
-                "group": "Versions 0.1.8 and 0.1.9",
+                "group": `Versions 0.1.8 and 0.1.9${brplain('2017-09-22')}`,
+                'group_html':true,
                 "type": "description",
                 "text":
 `<ul>
@@ -291,7 +360,8 @@ ready yet.)  ${issue(36)}</li>
             },
             {
                 "tab": i18n.get("What's new?"),
-                "group": "Version 0.1.7",
+                "group": `Version 0.1.7${brplain('2017-09-18')}`,
+                'group_html':true,
                 "type": "description",
                 "text":
     '<ul>' +
@@ -306,7 +376,8 @@ ready yet.)  ${issue(36)}</li>
             },
             {
                 "tab": i18n.get("What's new?"),
-                "group": "Version 0.1.6",
+                "group": `Version 0.1.6${brplain('2017-09-10')}`,
+                'group_html':true,
                 "type": "description",
                 "text":
     '<ul>' +
@@ -318,7 +389,8 @@ ready yet.)  ${issue(36)}</li>
             },
             {
                 "tab": i18n.get("What's new?"),
-                "group": "Version 0.1.5",
+                "group": `Version 0.1.5${brplain('2017-09-07')}`,
+                'group_html':true,
                 "type": "description",
                 "text": "You can now right-click on a saved window and choose "+
                     '"Forget" to leave the window as open, but not save it '+
@@ -327,7 +399,8 @@ ready yet.)  ${issue(36)}</li>
             },
             {
                 "tab": i18n.get("What's new?"),
-                "group": "Version 0.1.4",
+                "group": `Version 0.1.4${brplain('2017-09-06')}`,
+                'group_html':true,
                 "type": "description",
                 "text":
 `Added context menus ${issue(6)},
@@ -336,7 +409,8 @@ and Expand All/Collapse All.`
             },
             {
                 "tab": i18n.get("What's new?"),
-                "group": "Version 0.1.2",
+                "group": `Version 0.1.2${brplain('2017-09-02')}`,
+                'group_html':true,
                 "type": "description",
                 "text": "First version released to the Chrome Web Store"
             }                                                     // }}}1

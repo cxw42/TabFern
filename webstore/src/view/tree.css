@@ -1,7 +1,6 @@
 /* tree.css: CSS for tree.html */
 
-/* //////////////////////////////////////////////////////////////////// */
-/* Local styles */
+/* --- Local styles ----------------------------------------------- {{{1 -- */
 
 .clear {
     clear: both;
@@ -25,8 +24,21 @@
 
 /* Any browser window or tab that is currently open (as opposed to closed
  * and saved) */
+/*
 .tf-visible-window a, .tf-window.tfs-open > a, .tf-tab.tfs-open > a {
-    color: #fff !important;    /* because it's a dark theme */
+    color: #fff !important;    */ /* because it's a dark theme */
+/*
+}
+*/
+
+/* Color for open items, in a light theme */
+.jstree-default .tfs-open a {
+    color: #000;
+}
+
+/* Color for open items, in a dark theme */
+.jstree-default-dark .tfs-open a {
+    color: #fff;
 }
 
 .tf-action-button {
@@ -45,7 +57,13 @@ li.ephemeral-recovered, .tfs-recovered {
     background: darkslategray !important;
 }
 
-.tfs-top-bordered {
+/* divider color, light theme */
+.jstree-default .tfs-top-bordered {
+    border-top: 1px solid #00b;
+}
+
+/* divider color, dark theme */
+.jstree-default-dark .tfs-top-bordered {
     border-top: 1px solid #ffa;
 }
 
@@ -71,7 +89,8 @@ li.ephemeral-recovered, .tfs-recovered {
     border-top: 1px solid #f44;
 }
 
-/* Notification icon ------------------------------------------------------ */
+/* }}}1 */
+/* --- Notification icon ------------------------------------------ {{{1 -- */
 
 /* Need the parents of notification icons to have position other than static.
  * Thanks to https://stackoverflow.com/a/9404641/2877364 by
@@ -94,7 +113,8 @@ li.ephemeral-recovered, .tfs-recovered {
     top:-25%;
 }
 
-/* Action buttons and Z-order --------------------------------------------- */
+/* }}}1 */
+/* --- Action buttons and Z-order --------------------------------- {{{1 -- */
 
 /* Z order of items within a node - make sure the action group is on top */
 .jstree-node {
@@ -150,7 +170,7 @@ div.jstree-wholerow-hovered > .tf-action-group {
 }
 
 .tf-action-group > i:hover {
-    background-color: #555;     /* solid, but otherwise matches wholerow */
+        /* Note: background-color set solid below */
         /* Solid => makes it easier to see what you're about to click on
          * when there's a long title under the buttons.  Thanks to
          * https://stackoverflow.com/a/29630813/2877364 by
@@ -158,6 +178,16 @@ div.jstree-wholerow-hovered > .tf-action-group {
     border: 1px solid #707070;  /* just a bit of an affordance */
     border-radius: 2px;
     /* TODO transition 0.15s? */
+}
+
+/* Background color of a hovered icon, light theme */
+.jstree-default .tf-action-group > i:hover {
+    background-color: #e7f4f9;  /* matches wholerow */
+}
+
+/* Background color of a hovered icon, dark theme */
+.jstree-default-dark .tf-action-group > i:hover {
+    background-color: #555;     /* matches wholerow */
 }
 
 /*.tf-action-group {*/  /* matches .jstree-animated, plus visibility */
@@ -196,11 +226,12 @@ div.jstree-wholerow-hovered > .tf-action-group {
 
 /* No animations on the wholerow since I haven't figured out how to sync them
  * with the action buttons.  This is more snappy, anyway. */
-.jstree-default-dark .jstree-wholerow {
+.jstree-wholerow {
     transition: unset;
 }
 
-/* --- Main (hamburger) menu and related ---------------------------------- */
+/* }}}1 */
+/* --- Main (hamburger) menu and related -------------------------- {{{1 -- */
 
 #hamburger-menu {
     position: fixed;
@@ -246,9 +277,8 @@ div.jstree-wholerow-hovered > .tf-action-group {
     margin-bottom: 30px;    /* empirical, based on the hamburger menu's box */
 }
 
-/* ////////////////////////////////////////////////////////////////////// */
-/* The modal dialog */
-
+/* }}}1 */
+/* --- Modal dialog ----------------------------------------------- {{{1 -- */
 /* This needs attention from a front-end designer :) */
 
 /* Position the dialog consistently in our use case */
@@ -263,7 +293,7 @@ div.jstree-wholerow-hovered > .tf-action-group {
 
 .modal {
     /* Darken the shadow a bit */
-    background: rgba(0, 0, 0, .80);
+    background: rgba(0, 0, 0, .70);
 }
 
 /* Clean up the look of the dialog just a bit */
@@ -276,12 +306,51 @@ div.jstree-wholerow-hovered > .tf-action-group {
     margin: 0px 3px;
 }
 
+/*
 .modal-footer .button-container {
     float: right;
 }
+*/
 
-/* ////////////////////////////////////////////////////////////////////// */
-/* Tweak up jstree */
+.modal-content .accel {
+    text-decoration: underline;
+}
+
+/* The grid */
+
+.modal-content {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    grid-gap: 0.5em;
+}
+
+.modal-content .col-3 {
+    grid-column: span 3;
+}
+
+.modal-content .col-0p5 {
+    grid-column: span 1;
+}
+
+.modal-content .col-1 {
+    grid-column: span 3;
+}
+
+.modal-content .end-align {
+    align-self: end;
+}
+
+.modal-content .col-5 {
+    grid-column: span 10;
+}
+
+.modal-content .full-row {
+    grid-row: span 1;
+    grid-column: span 12;
+}
+
+/* }}}1 */
+/* --- Tweak up jstree -------------------------------------------- {{{1 -- */
 
 /* shrink large favicons to fit, if necessary */
 .jstree-children .jstree-children .jstree-anchor .jstree-icon {
@@ -307,13 +376,22 @@ ul.jstree-contextmenu i {
     z-index: 1;
 }
 
-/* A bit more space between rows, for easier reading */
-#maintree.jstree-default-dark-small .jstree-anchor {
+/* A bit more space between rows, for easier reading.  TODO make this
+ * orthogonal to the theme. */
+#maintree.jstree-default-dark-small .jstree-anchor,
+#maintree.jstree-default-small .jstree-anchor {
     line-height: 19px;
     height: 19px;
 }
 
-/* //////////////////////////////////////////////////////////////////// */
+/* The tree itself has no background, so that background images applied to
+ * the body can show through. */
+#maintree {
+    background: transparent;
+}
+
+/* }}}1 */
+/* --- Debug ------------------------------------------------------ {{{1 -- */
 /* Debug.  These come last, so they override any equally-specific styles
  * earlier in the file. */
 
@@ -329,5 +407,6 @@ ul.jstree-contextmenu i {
     color: #88f !important;
 }
 
+/* }}}1 */
 
-/* vi: set ts=4 sts=4 sw=4 et ai: */
+/* vi: set ts=4 sts=4 sw=4 et ai foldmethod=marker: */

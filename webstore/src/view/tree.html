@@ -9,11 +9,15 @@
 
     <!-- Stylesheets ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
 
-    <link href="/assets/jstree-3.3.4/themes/default-dark/style.css" rel="stylesheet" type="text/css" />
+    <!--link href="/assets/jstree-3.3.4/themes/default-dark/style.css" rel="stylesheet" type="text/css" />-->
     <link href="/assets/fontawesome/css/font-awesome.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" type="text/css" media="all" href="/assets/css/rmodal-no-bootstrap.css" />
     <link rel="stylesheet" type="text/css" media="all" href="/assets/css/icons.css" />
-    <link rel="stylesheet" type="text/css" media="all" href="tree.css" /><!-- this one should always be the last stylesheet listed -->
+    <link rel="stylesheet" type="text/css" media="all" href="/assets/css/custom-scrollbars.css" /><!-- TODO load dynamically only if needed? -->
+
+    <link rel="stylesheet" type="text/css" media="all" href="tree.css"
+        id="last-stylesheet" />
+        <!-- this one should always be the last stylesheet listed -->
 
     <!-- Scripts, except for those loaded by require.js ~~~~~~~~~~~~~~~~~~~ -->
     <script src="../common/common.js" type="text/javascript"></script>  <!-- not requirejs -->
@@ -23,8 +27,8 @@
 
 </head>
 
-<body class="jstree-default-dark">
-<!-- jstree-default-dark to set background, text colors -->
+<body><!--<body class="jstree-default-dark">-->
+<!-- jstree-default-dark was to set background, text colors.  Now done in JS. -->
 
     <div id="tabfern-container">
 
@@ -43,35 +47,39 @@
              have to here. -->
         <div id="confirm-dialog" class="modal">
             <div class="modal-dialog">
-                <div class="modal-content">
-                    <form class="form-horizontal" method="get">
-                        <div class="modal-header">
-                            <strong id="confirm-dialog-question">Are you sure?</strong>
-                        </div>
+                <form class="form-horizontal" method="get">
+                    <div class="modal-content">
+                        <strong id="confirm-dialog-question" class="full-row">
+                            Are you sure?
+                        </strong>
 
-                        <!--
-                        <div class="modal-body">
-                            <div class="form-group">
-                                <label for="dummyText" class="control-label col-xs-4">Dummy text</label>
-                                <div class="input-group col-xs-7">
-                                    <input type="text" name="dummyText" id="dummyText" class="form-control" />
-                                </div>
-                            </div>
-                        </div>
-                        -->
-
-                        <div class="modal-footer">
-                            <div class="button-container"><!-- this floats right -->
-                                <!-- note: don't use <button type=submit>, which
-                                    reloads the page. -->
-                                <button data-which="yes" class="btn btn-primary" type="button">Yes</button>
-                                <button data-which="no" class="btn" type="button">No</button>
-                                <button data-which="cancel" class="btn btn-default" type="button">Cancel</button>
-                            </div>
-                        </div>
-                        <div class="clear" />
-                    </form>
-                </div>
+                        <input type="checkbox" name="notAgain"
+                            id="notAgain"
+                            class="form-control col-0p5" />
+                        <label for="notAgain"
+                            class="control-label col-xs-4 col-5">
+                            Don't ask again
+                            (<abbr title="You can change this in Settings | Behaviour">note</abbr>)
+                        </label>
+                        <!-- note: don't use <button type=submit>, which
+                            reloads the page. -->
+                        <div class="col-3">&nbsp;</div>
+                        <button data-which="yes"
+                            class="btn btn-primary col-1"
+                            type="button" accesskey="y">
+                            <span class="accel">Y</span>es
+                        </button>
+                        <button data-which="no" class="btn col-1"
+                            type="button" accesskey="n">
+                            <span class="accel">N</span>o
+                        </button>
+                        <button data-which="cancel"
+                            class="btn btn-default col-1" type="button"
+                            accesskey="c">
+                            <span class="accel">C</span>ancel
+                        </button>
+                    </div><!-- .modal-content -->
+                </form>
             </div>
         </div><!-- #confirm-dialog -->
 
