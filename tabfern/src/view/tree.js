@@ -91,7 +91,7 @@ var Bypasser;
 function local_init()
 {
     log = Modules.loglevel;
-    log.setDefaultLevel(log.levels.DEBUG);  // TODO set to WARN for production
+    log.setDefaultLevel(log.levels.WARN);
 
     Esc = Modules.justhtmlescape;
     K = Modules['view/const'];
