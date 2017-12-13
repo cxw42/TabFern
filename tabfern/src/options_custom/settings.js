@@ -1,7 +1,22 @@
 /// An object to hold the settings for later programmatic access
 let settingsobj;
 
+function createPicker($$)
+{
+    let label = $$('#scrollbar-color-picker-label');
+    console.log(label);
+    $$(label).spectrum();
+    let newlabel =
+        $$('<span>').text(i18n.get('Skinny-scrollbar color: '))
+        .addClass('setting label');
+    $$(label).before(newlabel);
+
+    // TODO set up to save the color to CFGS_SCROLLBAR_COLOR on change.
+} //createPicker
+
 window.addEvent("domready", function () {
+    let $$ = jQuery;    // since $ is mootools
+
     // Option 1: Use the manifest:
     new FancySettings.initWithManifest(function (settings) {
         settingsobj = settings;
@@ -9,6 +24,11 @@ window.addEvent("domready", function () {
         //    alert("You clicked me!");
         //});
 
+        // ----------------------------
+        // Create the color-picker for the skinny scrollbars
+        createPicker($$);
+
+        // ----------------------------
         // open tab specified in a query parm, if known.
         // See https://stackoverflow.com/a/12151322/2877364
         // Use location.hash instead of location.search since Chrome doesn't

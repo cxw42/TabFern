@@ -54,6 +54,7 @@ const CFG_CONFIRM_DEL_OF_UNSAVED = 'confirm-del-of-unsaved-wins';
 
 // Strings
 const CFGS_BACKGROUND = 'window-background';
+const CFGS_SCROLLBAR_COLOR = 'skinny-scrollbar-color';
 
 // Other
 const CFGS_THEME_NAME = 'theme-name';

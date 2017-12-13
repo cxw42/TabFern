@@ -123,6 +123,16 @@
                 "type": "checkbox",
                 "label": i18n.get('Skinny scrollbars' + refresh_message),
             },
+            {
+                "tab": i18n.get("Appearance"),
+                "group": i18n.get("Scrollbars"),
+                "id": 'scrollbar-color-picker-label',
+                //"name": '',     // Don't save - settings.js handles that
+                "type": "text",
+                //"text": i18n.get('Skinny-scrollbar color: '),
+                    // placeholder - settings.js adds the actual control
+                    // after this.
+            },
             // Maybe add some theming options here?
             {
                 "tab": i18n.get("Appearance"),
