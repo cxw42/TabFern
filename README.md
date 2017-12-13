@@ -70,7 +70,7 @@ affiliated with Vladyslav or his (excellent!) work.
 
 # Legal
 
-Copyright (c) 2017 Chris White, Jasmine Hegman.  CC-BY-SA 4.0 International
+Copyright (c) 2017 Chris White, Jasmine Hegman.  CC-BY-SA 4.0 International.
 See [LICENSE.md](LICENSE.md) for details, which are controlling in case of any
 difference between that file and this section.
 

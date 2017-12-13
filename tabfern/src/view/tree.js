@@ -490,7 +490,7 @@ function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el,
 
         let dlg;    ///< The rmodal instance
         let after_close = ASQ();    ///< processing after dlg closes
-        let cbk = after_close.errfcb();
+        let cbk = after_close.errfcb();     // pause the sequence
 
         // Modified from the rmodal sample at https://rmodal.js.org/
         $('#confirm-dialog-question').text(
@@ -507,7 +507,7 @@ function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el,
                 },
 
                 afterClose: function() {
-                    console.log('closed');
+                    //console.log('closed');
                     cbk(null, {reason: dlg.reason, notAgain: dlg.notAgain});
                         // *** Run the sequence
                 },

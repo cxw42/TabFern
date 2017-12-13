@@ -231,7 +231,17 @@ bar (it will start with "file://")</li>
             // Changelog                                          {{{1
             {
                 "tab": i18n.get("What's new?"),
-                "group": "Version 0.1.13",
+                "group": `Version 0.1.14${brplain('201x-xx-xx')}`,
+                'group_html':true,
+                "type": "description",
+                "text":
+`<ul>
+</ul>`,
+            },
+            {
+                "tab": i18n.get("What's new?"),
+                "group": `Version 0.1.13${brplain('2017-12-12')}`,
+                'group_html':true,
                 "type": "description",
                 "text":
 `<ul>
