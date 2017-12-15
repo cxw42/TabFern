@@ -73,6 +73,7 @@ const CFG_DEFAULTS = {
     [CFG_CONFIRM_DEL_OF_SAVED]: true,
     [CFG_CONFIRM_DEL_OF_UNSAVED]: false,
     [CFGS_THEME_NAME]: 'default-dark',
+    [CFGS_SCROLLBAR_COLOR]: '',     // none by default
 };
 
 //////////////////////////////////////////////////////////////////////////

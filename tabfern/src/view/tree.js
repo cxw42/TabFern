@@ -2768,6 +2768,28 @@ function preLoadInit()
         document.querySelector('html').classList += ' skinny-scrollbar';
     }
 
+    //Custom skinny-scrollbar color
+    CSSC: if(getBoolSetting(CFG_SKINNY_SCROLLBARS) && document.styleSheets) {
+        let color = getStringSetting(CFGS_SCROLLBAR_COLOR);
+        color = Modules.tinycolor(color);
+        if(!color.isValid()) {
+            log.error({'Invalid custom color for skinny scrollbars':
+                                                color.getOriginalInput()});
+            break CSSC;
+        }
+
+        //log.info({'Custom scrollbar color': color.toString()});
+        let ss = document.styleSheets[document.styleSheets.length-1];
+        for(let state of ['', ':hover', ':active']) {
+            let newrule = 'html.skinny-scrollbar::-webkit-scrollbar-thumb' +
+                            `${state} { background: ${color.toRgbString()}; }`;
+            ss.insertRule(newrule);
+            // html.foo:: is more specific than the default .foo::, so the
+            // override works and we don't have to remove the existing rule.
+            // Note: color.toRgbString() for formatting consistency.
+        }
+    }
+
     let url = chrome.runtime.getURL(
                 `/assets/jstree-3.3.4/themes/${getThemeName()}/style.css`);
     let before = document.getElementById('last-stylesheet');
@@ -3150,6 +3172,7 @@ let dependencies = [
     'loglevel', 'hamburger', 'bypasser', 'multidex', 'justhtmlescape',
     'signals', 'local/fileops/export', 'local/fileops/import',
     'asynquence-contrib', 'asq-helpers', 'rmodal',
+    'tinycolor',
 
     // Modules for keyboard-shortcut handling.  Not really TabFern-specific,
     // but not yet disentangled fully.

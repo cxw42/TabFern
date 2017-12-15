@@ -114,14 +114,14 @@
                 "group": i18n.get("Scrollbars"),
                 "name": CFG_HIDE_HORIZONTAL_SCROLLBARS,
                 "type": "checkbox",
-                "label": i18n.get('Hide horizontal scrollbar' + refresh_message),
+                "label": i18n.get('Hide horizontal scrollbar'),
             },
             {
                 "tab": i18n.get("Appearance"),
                 "group": i18n.get("Scrollbars"),
                 "name": CFG_SKINNY_SCROLLBARS,
                 "type": "checkbox",
-                "label": i18n.get('Skinny scrollbars' + refresh_message),
+                "label": i18n.get('Skinny scrollbars'),
             },
             {
                 "tab": i18n.get("Appearance"),
@@ -132,6 +132,12 @@
                 //"text": i18n.get('Skinny-scrollbar color: '),
                     // placeholder - settings.js adds the actual control
                     // after this.
+            },
+            {
+                "tab": i18n.get("Appearance"),
+                "group": i18n.get("Scrollbars"),
+                "type": "description",
+                "text": i18n.get("Refresh the TabFern window to apply changes to these options."),
             },
             // Maybe add some theming options here?
             {

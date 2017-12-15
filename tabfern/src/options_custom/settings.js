@@ -3,15 +3,35 @@ let settingsobj;
 
 function createPicker($$)
 {
-    let label = $$('#scrollbar-color-picker-label');
-    console.log(label);
-    $$(label).spectrum();
-    let newlabel =
-        $$('<span>').text(i18n.get('Skinny-scrollbar color: '))
-        .addClass('setting label');
-    $$(label).before(newlabel);
+    let picker = $$('#scrollbar-color-picker-label');
 
-    // TODO set up to save the color to CFGS_SCROLLBAR_COLOR on change.
+    // Replace the manifest entry with the color picker
+    $$(picker).spectrum({
+        showInput: true,
+        allowEmpty:true,
+        showInitial: true,
+        color: getStringSetting(CFGS_SCROLLBAR_COLOR),
+    });
+
+    // Add the text that would otherwise have gone in the manifest
+    let newlabel = $$('<span>').text(i18n.get(
+            'Skinny-scrollbar color ("X" for the default): '))
+        .addClass('setting label');
+    $$(picker).before(newlabel);
+
+    // Handle updates
+    $$(picker).on('change.spectrum', (e, newcolor)=>{
+        let colorstring;
+        if(!newcolor || !newcolor.toString) {
+            console.log('New color: default');
+            colorstring = CFG_DEFAULTS[CFGS_SCROLLBAR_COLOR];
+        } else {
+            console.log({'New color': newcolor.toString()});
+            colorstring = String(newcolor.toString());
+        }
+
+        setSetting(CFGS_SCROLLBAR_COLOR, colorstring);
+    });
 } //createPicker
 
 window.addEvent("domready", function () {
