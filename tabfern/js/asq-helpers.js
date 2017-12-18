@@ -72,7 +72,38 @@
         let chrcbk = module.CCgo(seq);
         do_right_now(chrcbk);
         return seq;
-    } //ASQ.NOW()
+    } //ASQ.NowCC()
+
+    /// Take action on this tick, and kick off a sequence based on a Chrome
+    /// callback, as if called with ASQ.try.
+    /// @param do_right_now {function} Called as do_right_now(chrome_cbk).
+    ///                                 Should cause chrome_cbk to be invoked
+    ///                                 when the sequence should proceed.
+    /// @return A sequence to chain off.
+    module.NowCCTry = function(do_right_now) {
+        // Inner sequence that provides the Chrome callback and the
+        // try/catch functionality
+        let inner_seq = ASQ();
+        let inner_chrcbk = module.CCgo(inner_seq);
+
+        // Outer sequence that we will return
+        let outer_seq = ASQ().duplicate();  //paused
+
+        // When inner_seq finishes, run outer_seq.  There must be a
+        // better way to do this, but I don't know what it is.  You can't
+        // put a .then() after a .or(), as far as I know.
+        inner_seq.val((...args)=>{
+            outer_seq.unpause(...args);
+        })
+        .or((failure)=>{    // like ASQ().try()
+            outer_seq.unpause( { 'catch': failure } );
+        });
+
+        // Kick it off
+        do_right_now(inner_chrcbk);
+
+        return outer_seq;
+    } //ASQ.NowCCTry()
 
     /// Check for an asynquence-contrib try() error return
     module.is_asq_try_err = function(o)

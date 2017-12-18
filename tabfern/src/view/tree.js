@@ -645,6 +645,33 @@ function actionEditBullet(node_id, node, unused_action_id, unused_action_el)
     saveTree();
 } //actionEditBullet
 
+/// Delete a tab's entry in the tree.
+/// @param node_id {string} the ID of the node to delete
+/// @param node the node to delete
+/// @param evt {Event} (optional) If truthy, the event that triggered the action
+/// @param is_internal {Boolean} (optional) If truthy, this is an internal
+///                              action, so don't prompt for confirmation.
+function actionDeleteTab(node_id, node, unused_action_id, unused_action_el,
+                            evt, is_internal)
+{
+    let tab_val = D.tabs.by_node_id(node_id);
+    if(!tab_val || !tab_val.tab_id) return;
+
+    // TODO RESUME HERE
+//    ASQH.NowCCTry((cc)=>{
+//        chrome.tabs.remove(tab_val.tab_id, cc)
+//    })
+//    .then((done_or_err)=>{
+//        // Check if the tab still exists.  If it had a beforeunload and
+//        // the user hit "Stay", it will still be there.
+//        // Even if there is a beforeunload popup, it appears that
+//        // chrome.runtime.lastError does not show any error.  Therefore,
+//        // we cannot rely on the error state to tell us whether the tab
+//        // is actually closed.
+//    });
+
+} //actionDeleteTab
+
 ////////////////////////////////////////////////////////////////////////// }}}1
 // Tree-node creation // {{{1
 
