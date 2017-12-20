@@ -92,6 +92,8 @@
         // When inner_seq finishes, run outer_seq.  There must be a
         // better way to do this, but I don't know what it is.  You can't
         // put a .then() after a .or(), as far as I know.
+        // ... Actually, maybe there's not a better way.  asq-contrib.try()
+        // also uses an inner sequence.
         inner_seq.val((...args)=>{
             outer_seq.unpause(...args);
         })

@@ -252,6 +252,11 @@ bar (it will start with "file://")</li>
                 "type": "description",
                 "text":
 `<ul>
+<li class="gold-star">TabFern now has more than 100 users!  Wow!
+You folks are fantastic!</li>
+<li>You can change the color of the narrow scrollbar to something other
+than yellow: ${settings} Appearance ${gt} Scrollbars ${gt} Skinny-scrollbar color.
+${issue(97)}</li>
 </ul>`,
             },
             {
