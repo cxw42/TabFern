@@ -213,14 +213,20 @@ div.jstree-wholerow-hovered > .tf-action-group {
     z-index: 5;
 }
 
-/* The buttons are in order Rename, Close, Delete.  Add some space to the right
+/* Windows:
+ * The buttons are in order Rename, Close, Delete.  Add some space to the right
  * of Close to move the "delete" button farther from the others.
- * Use padding-right on Close rather than margin-left on Delete so there isn't
- * a gap between buttons.  If there is such a gap, clicking it hits the node.
+ * Tabs:
+ * The buttons are Edit, Delete.  Add space to the right of Edit.
+ *
+ * Use padding-right on Close/Edit rather than margin-left on Delete so there
+ * isn't a gap between buttons.  If there is such a gap, clicking it hits the
+ * node.
  * TODO replace this with an invisible, narrow action button that just calls
  * select_node().
  */
-.tf-action-group .fff-picture-delete {
+.tf-window > div > .tf-action-group .fff-picture-delete,
+.tf-tab > div > .tf-action-group  .fff-pencil {
     padding-right: 0.5em;
 }
 

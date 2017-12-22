@@ -651,23 +651,57 @@ function actionEditBullet(node_id, node, unused_action_id, unused_action_el)
 /// @param evt {Event} (optional) If truthy, the event that triggered the action
 /// @param is_internal {Boolean} (optional) If truthy, this is an internal
 ///                              action, so don't prompt for confirmation.
+///                              ** Not yet used. **
 function actionDeleteTab(node_id, node, unused_action_id, unused_action_el,
-                            evt, is_internal)
+                            evt, is_internal_unimplemented)
 {
     let tab_val = D.tabs.by_node_id(node_id);
-    if(!tab_val || !tab_val.tab_id) return;
+    if(!tab_val) return;
+    if(tab_val.tab_id !== K.NONE) {     // Remove open tabs
+        chrome.tabs.remove(tab_val.tab_id, K.ignore_chrome_error);
+    } else {                            // Remove closed tabs
+        // TODO implement this
+    }
 
-    // TODO RESUME HERE
-//    ASQH.NowCCTry((cc)=>{
+    // TODO? implement if necessary.  At the moment, it doesn't appear
+    // that I need this.
+//        // We had a click --- hover the node that is now under the mouse.
+//        // That is the node that was the next-sibling node before.
+//        // This fixes a bug in which clicking the delete button removes the row,
+//        // and the row that had been below moves up, but the wholerow hover and the
+//        // action buttons don't appear for that row.
+//        //
+//        // TODO update this when adding full hierarchy (#34).
+//
+//        let next_node = T.treeobj.get_next_dom(node, true);
+//        if(evt && evt.type === 'click' && next_node) {
+//            T.treeobj.hover_node(next_node);
+//        }
+
+
+    // If it actually disappears, let tabOnRemoved() handle it.
+
+//    let seq = ASQH.NowCCTry((cc)=>{
 //        chrome.tabs.remove(tab_val.tab_id, cc)
-//    })
-//    .then((done_or_err)=>{
+//    });
+//
+//    seq.try((done, maybe_err)=>{
+//        if(ASQH.is_asq_try_err(maybe_err)) { return done(); }
+//            // If the tab-removal failed, just bail.
+//
 //        // Check if the tab still exists.  If it had a beforeunload and
 //        // the user hit "Stay", it will still be there.
 //        // Even if there is a beforeunload popup, it appears that
 //        // chrome.runtime.lastError does not show any error.  Therefore,
 //        // we cannot rely on the error state to tell us whether the tab
 //        // is actually closed.
+//        chrome.tabs.get(tab_val.tab_id, ASQH.CC(done));
+//            // We hope this will fail; if so, the tab is gone.
+//
+//        seq.val( (info_or_err) => {
+//            if(!ASQH.is_asq_try_err(maybe_err)) return;
+//                // If the tab is still there, don't remove it from the tree
+//        });
 //    });
 
 } //actionDeleteTab
@@ -693,6 +727,16 @@ function addTabNodeActions(win_node_id)
         callback: actionEditBullet,
         dataset: { action: 'editBullet' }
     });
+
+    T.treeobj.add_action(win_node_id, {
+        id: 'deleteTab',
+        class: 'fff-cross ' + K.ACTION_BUTTON_WIN_CLASS,
+        text: '&nbsp;',
+        grouped: true,
+        callback: actionDeleteTab,
+        dataset: { action: 'deleteTab' }
+    });
+
 } //addTabNodeActions
 
 /// Create a tree node for an open tab.
@@ -1127,17 +1171,25 @@ function treeOnSelect(_evt_unused, evt_data)
             log.info({'Actually, button press':elem, action, evt_data});
 
             switch(action) {
+                // Windows
                 case 'renameWindow':
                     actionRenameWindow(node.id, node, null, null); break;
                 case 'closeWindow':
                     actionCloseWindowAndSave(node.id, node, null, null); break;
                 case 'deleteWindow':
-                    actionDeleteWindow(node.id, node, null, null, evt_data.event);
-                        // Pass the event so actionDeleteWindow will treat it as
-                        // a click and refresh the hover state.
+                    actionDeleteWindow(node.id,node, null,null, evt_data.event);
+                        // Pass the event so actionDeleteWindow will treat it
+                        // as a click and refresh the hover state.
                     break;
+
+                // Tabs
                 case 'editBullet':
                     actionEditBullet(node.id, node, null, null); break;
+                case 'deleteTab':
+                    actionDeleteTab(node.id, node, null, null, evt_data.event);
+                        // as deleteWindow, above.
+                    break;
+
                 default: break;     //no-op if unknown
             }
 
@@ -1829,7 +1881,7 @@ function tabOnRemoved(tabid, removeinfo)
 
         // See if it's a tab we have already marked as removed.  If so,
         // whichever code marked it is responsible, and we're off the hook.
-        if(!tab_val || !tab_val.tab_id) return;
+        if(!tab_val || tab_val.tab_id === K.NONE) return;
 
         D.tabs.remove_value(tab_val);
             // So any events that are triggered won't try to look for a
