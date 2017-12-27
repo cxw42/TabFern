@@ -13,11 +13,16 @@ function loadView()
     chrome.windows.create(
         { 'url': chrome.runtime.getURL('src/view/main.html'),
           'type': 'popup',
-          'focused': true
+          //'focused': true
+            // Note: `focused` is not supported on Firefox, but
+            // focused=true is usually the effect.
+            // https://bugzilla.mozilla.org/show_bug.cgi?id=1253129
+            // However, Firefox does support windows.update with focused.
         },
         function(win) {
             viewWindowID = win.id;
             console.log('TabFern new View ID: ' + viewWindowID.toString());
+            chrome.windows.update(win.id, {focused:true}, ignore_chrome_error);
         });
 } //loadView()
 
@@ -26,13 +31,15 @@ function loadView()
 
 /// Move the TabFern window to #reference_win.  This helps if the
 /// TabFern window winds up off-screen.
+/// This is called as a Chrome callback.
 function moveTabFernViewToWindow(reference_cwin)
 {
     function clip(x, lo, hi) { if(hi<lo) hi=lo; return Math.min(hi, Math.max(lo, x)); }
 
-    if(typeof(chrome.runtime.lastError) === 'undefined') {
+    if(!isLastError()) {
         if(!viewWindowID) return;
         chrome.windows.get(viewWindowID, function(view_cwin) {
+            // TODO handle Chrome error
             let updates = {left: reference_cwin.left+16,
                             top: reference_cwin.top+16,
                             state: 'normal',    // not minimized or maximized
@@ -42,7 +49,9 @@ function moveTabFernViewToWindow(reference_cwin)
             updates.width = clip(view_cwin.width, 200, reference_cwin.width-32);
             updates.height = clip(view_cwin.height, 100, reference_cwin.height-32);
 
-            chrome.windows.update(viewWindowID, updates);
+            chrome.windows.update(viewWindowID, updates
+                // TODO handle Chrome error
+                );
         });
     }
 } //moveTabFernViewToWindow()
@@ -103,7 +112,7 @@ function editNoteOnClick(info, tab)
         // This callback is only for debugging --- all the action happens in
         // src/view/tree.js, the receiver.
         function(resp){
-            if(typeof chrome.runtime.lastError !== 'undefined') {
+            if(isLastError()) {
                 console.log('Couldn\'t send edit-note to ' + tab.id + ': ' +
                     chrome.runtime.lastError);
             } else {
@@ -125,16 +134,18 @@ function messageListener(request, sender, sendResponse)
 {
     console.log({'bg got message':request,from:sender});
     if(!request || !request.msg) {
+        console.log('bg   Bad request');
         return;
     }
 
     // For now, only accept messages from our extension
     if(!sender.id || sender.id !== chrome.runtime.id) {
+        console.log(`bg   Bad id ${sender.id} (ours ${chrome.runtime.id})`);
         return;
     }
 
     if(request.msg === MSG_GET_VIEW_WIN_ID && !request.response) {
-        //console.log('Responding with window ID ' + viewWindowID.toString());
+        console.log('Responding with window ID ' + viewWindowID.toString());
         sendResponse({msg: request.msg, response: true, id: viewWindowID});
     }
 } //messageListener

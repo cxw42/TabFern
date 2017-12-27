@@ -264,12 +264,13 @@ function saveTree(save_ephemeral_windows = true, cbk = undefined)
         // storage automatically does JSON.stringify
     chrome.storage.local.set(to_save,
         function() {
-            if(typeof(chrome.runtime.lastError) === 'undefined') {
+            if(!isLastError()) {
                 if(typeof cbk === 'function') {
                     cbk(null, to_save[K.STORAGE_KEY]);
                 }
                 return;     // Saved OK
             }
+            //else there was an error
             let msg = "TabFern: couldn't save: " +
                             chrome.runtime.lastError.toString();
             log.error(msg);
@@ -373,7 +374,7 @@ function actionCloseWindowButDoNotSave(node_id, node, unused_action_id, unused_a
         win_val.keep = K.WIN_KEEP;
             // has to be before winOnRemoved fires.  TODO cleanup -
             // maybe add an `is_closing` flag to `win_val`?
-        chrome.windows.remove(win.id, K.ignore_chrome_error);
+        chrome.windows.remove(win.id, ignore_chrome_error);
         // Don't try to close an already-closed window.
         // Ignore exceptions - when we are called from winOnRemoved,
         // the window is already gone, so the remove() throws.
@@ -485,6 +486,9 @@ function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el,
         doDeletion();
 
     } else {    // Confirmation required
+
+        // TODO refactor this into a generalized confirmation function
+        // that returns an ASQ().
 
         //log.info('Setting up dialog seq');
 
@@ -658,7 +662,7 @@ function actionDeleteTab(node_id, node, unused_action_id, unused_action_el,
     let tab_val = D.tabs.by_node_id(node_id);
     if(!tab_val) return;
     if(tab_val.tab_id !== K.NONE) {     // Remove open tabs
-        chrome.tabs.remove(tab_val.tab_id, K.ignore_chrome_error);
+        chrome.tabs.remove(tab_val.tab_id, ignore_chrome_error);
     } else {                            // Remove closed tabs
         // TODO implement this
     }
@@ -1030,7 +1034,7 @@ function loadSavedWindowsIntoTree(next_action) {
     chrome.storage.local.get(K.STORAGE_KEY, function(items) {
 
         READIT:
-        if(typeof(chrome.runtime.lastError) !== 'undefined') {
+        if(isLastError()) {
             //Chrome couldn't load the data
             log.error("Chrome couldn't load save data: " + chrome.runtime.lastError +
                     "\nHowever, if you didn't have any save data, this isn't " +
@@ -1049,8 +1053,8 @@ function loadSavedWindowsIntoTree(next_action) {
                 // set the init-specific variable.
             }
         } else {
-            // Brand-new installs seem to fall here: lastError===undefined,
-            // but items=={}.  Don't treat this as an error.
+            // Brand-new installs seem to fall here: lastError is undefined,
+            // but items is {}.  Don't treat this as an error.
             was_loading_error = false;
         }
 
@@ -1066,7 +1070,7 @@ function loadSavedWindowsIntoTree(next_action) {
 function DBG_printSaveData()
 {
     chrome.storage.local.get(K.STORAGE_KEY, function(items) {
-        if(typeof(chrome.runtime.lastError) !== 'undefined') {
+        if(isLastError()) {
             console.log(chrome.runtime.lastError);
         } else {
             let parsed = items[K.STORAGE_KEY];
@@ -1103,7 +1107,7 @@ function flagOnlyCurrentTab(win)
 // Chrome callback version of flagOnlyCurrentTab()
 function flagOnlyCurrentTabCC(win)
 {
-    if(typeof chrome.runtime.lastError === 'undefined') {
+    if(!isLastError()) {
         flagOnlyCurrentTab(win);
     } else {
         log.error(chrome.runtime.lastError);
@@ -1219,7 +1223,7 @@ function treeOnSelect(_evt_unused, evt_data)
         chrome.tabs.highlight({
             windowId: node_val.win_id,
             tabs: [node_val.index]     // Jump to the clicked-on tab
-        }, K.ignore_chrome_error);
+        }, ignore_chrome_error);
         //log.info('flagging treeonselect' + node.id);
         T.treeobj.flag_node(node);
         win_id = node_val.win_id;
@@ -1341,7 +1345,7 @@ function treeOnSelect(_evt_unused, evt_data)
                             } //foreach extra tab
 
                             log.warn('Pruning ' + to_prune);
-                            chrome.tabs.remove(to_prune, K.ignore_chrome_error);
+                            chrome.tabs.remove(to_prune, ignore_chrome_error);
                         } //endif we have extra tabs
 
                         // if a tab was clicked on, activate that particular tab
@@ -1349,7 +1353,7 @@ function treeOnSelect(_evt_unused, evt_data)
                             chrome.tabs.highlight({
                                 windowId: node_val.win_id,
                                 tabs: [node_val.index]
-                            }, K.ignore_chrome_error);
+                            }, ignore_chrome_error);
                         }
 
                         // Set the highlights in the tree appropriately
@@ -1385,9 +1389,9 @@ function treeOnSelect(_evt_unused, evt_data)
 // this is a test - trying for a bit of speed by calling windows.update
 // in the current tick
 //        chrome.windows.get(win_id, function(win) {
-//            if(typeof(chrome.runtime.lastError) !== 'undefined') return;
+//            if(isLastError()) return;
             log.debug({'About to activate':win_id});
-            chrome.windows.update(win_id,{focused:true}, K.ignore_chrome_error);
+            chrome.windows.update(win_id,{focused:true}, ignore_chrome_error);
             // winOnFocusedChange will set the flag on the newly-focused window
 //        });
     }
@@ -1795,7 +1799,7 @@ function tabOnUpdated(tabid, changeinfo, ctab)
     // changed is in the active window, update the flags for
     // that window.
     chrome.windows.getLastFocused(function(win){
-        if(typeof(chrome.runtime.lastError) === 'undefined') {
+        if(!isLastError()) {
             if(ctab.windowId === win.id) {
                 winOnFocusChanged(win.id, true);
             }
@@ -1861,6 +1865,7 @@ function tabOnRemoved(tabid, removeinfo)
     // If the window is closing, do not remove the tab records.
     // The cleanup will be handled by winOnRemoved().
     if(removeinfo.isWindowClosing) return;
+        // TODO also mark this as non-recovered, maybe?
 
     let window_node_id = D.windows.by_win_id(removeinfo.windowId, 'node_id');
     if(!window_node_id) return;
@@ -2036,7 +2041,7 @@ function hamSettings()
 
         let to_save = {};
         to_save[K.LASTVER_KEY] = TABFERN_VERSION;
-        chrome.storage.local.set(to_save, K.ignore_chrome_error);
+        chrome.storage.local.set(to_save, ignore_chrome_error);
     }
 } //hamSettings()
 
@@ -2456,7 +2461,7 @@ var treeCheckCallback = (function(){
             ASQ().val(()=>{
                 chrome.tabs.move(val.tab_id,
                     {windowId: parent_val.win_id, index: data.position}
-                    , K.ignore_chrome_error);
+                    , ignore_chrome_error);
             });
 
         } else {
@@ -2738,7 +2743,7 @@ function checkWhatIsNew(selector)
         let first_installation = true;      // ditto
 
         // Check whether the user has seen the notification
-        if(typeof(chrome.runtime.lastError) === 'undefined') {
+        if(!isLastError()) {
             let lastver = items[K.LASTVER_KEY];
             if( (lastver !== null) && (typeof lastver === 'string') ) {
                 first_installation = false;
@@ -2760,7 +2765,7 @@ function checkWhatIsNew(selector)
             chrome.storage.local.set(
                 { [K.LASTVER_KEY]: 'installed, but no version viewed yet' },
                 function() {
-                    K.ignore_chrome_error();
+                    ignore_chrome_error();
                     K.openWindowForURL('https://cxw42.github.io/TabFern/#usage');
                 }
             );
@@ -3179,7 +3184,7 @@ function moveWinToLastPositionIfAny(done, items_or_err)
                     , 'height': Math.max(+parsed.height || 600, 200)
                 };
             last_saved_size = $.extend({}, size_data);
-            chrome.windows.update(my_winid, size_data, K.ignore_chrome_error);
+            chrome.windows.update(my_winid, size_data, ignore_chrome_error);
         }
     } //endif no error
 

@@ -7,6 +7,40 @@
 console.log('TabFern common.js loading');
 
 //////////////////////////////////////////////////////////////////////////
+// Test for Firefox //
+// Not sure if I need this, but I'm playing it safe for now.  Firefox returns
+// null rather than undefined in chrome.runtime.lastError when there is
+// no error.  This is to test for null in Firefox without changing my
+// Chrome code.  Hopefully in the future I can test for null/undefined
+// in either browser, and get rid of this block.
+
+(function(win){
+    let isLastError_chrome =
+        ()=>{return (typeof(chrome.runtime.lastError) !== 'undefined');};
+    let isLastError_firefox =
+        ()=>{return (chrome.runtime.lastError !== null);};
+
+    if(typeof browser !== 'undefined' && browser.runtime &&
+                                            browser.runtime.getBrowserInfo) {
+        browser.runtime.getBrowserInfo().then(
+            (info)=>{   // fullfillment
+                if(info.name === 'Firefox') {
+                    win.isLastError = isLastError_firefox;
+                } else {
+                    win.isLastError = isLastError_chrome;
+                }
+            },
+
+            ()=>{   //rejection --- assume Chrome by default
+                win.isLastError = isLastError_chrome;
+            }
+        );
+    } else {    // Chrome
+        win.isLastError = isLastError_chrome;
+    }
+})(window);
+
+//////////////////////////////////////////////////////////////////////////
 // General constants //
 
 /// The TabFern extension friendly version number.  Displayed in the
@@ -51,6 +85,8 @@ const CFG_NEW_WINS_AT_TOP = 'open-new-windows-at-top';
 const CFG_SHOW_TREE_LINES = 'show-tree-lines';
 const CFG_CONFIRM_DEL_OF_SAVED = 'confirm-del-of-saved-wins';
 const CFG_CONFIRM_DEL_OF_UNSAVED = 'confirm-del-of-unsaved-wins';
+const CFG_CONFIRM_DEL_OF_SAVED_TABS = 'confirm-del-of-saved-tabs';
+const CFG_CONFIRM_DEL_OF_UNSAVED_TABS = 'confirm-del-of-unsaved-tabs';
 
 // Strings
 const CFGS_BACKGROUND = 'window-background';
@@ -72,6 +108,8 @@ const CFG_DEFAULTS = {
     [CFG_SHOW_TREE_LINES]: false,
     [CFG_CONFIRM_DEL_OF_SAVED]: true,
     [CFG_CONFIRM_DEL_OF_UNSAVED]: false,
+    [CFG_CONFIRM_DEL_OF_SAVED_TABS]: true,
+    [CFG_CONFIRM_DEL_OF_UNSAVED_TABS]: false,
     [CFGS_THEME_NAME]: 'default-dark',
     [CFGS_SCROLLBAR_COLOR]: '',     // none by default
 };
@@ -220,6 +258,10 @@ function loadCSS(doc, url, before) {
 
 //////////////////////////////////////////////////////////////////////////
 // Miscellaneous functions //
+
+/// Ignore a Chrome callback error, and suppress Chrome's
+/// `runtime.lastError` diagnostic.  Use this as a Chrome callback.
+function ignore_chrome_error() { void chrome.runtime.lastError; }
 
 /// Deep-compare two objects for memberwise equality.  However, if either
 /// object contains a pointer to the other, this will return false rather
