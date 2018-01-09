@@ -20,6 +20,7 @@ TO_BUNDLE= \
 	   tabfern/js/rmodal.js \
 	   tabfern/js/tinycolor.js \
 	   tabfern/js/keypress.js \
+	   tabfern/js/hamburger.js 
 
 DEST_BUNDLE = tabfern/src/view/generated_bundle.js
 

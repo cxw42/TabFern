@@ -46,11 +46,11 @@
         this.loader.click();    // popup the file selector
     }; //getFileAsString()
 
-    /// Make a new exporter.
+    /// Make a new importer.
     /// @param {DOM Document}   doc         The document the importer runs in.
     /// @param {String}         filetype    Optional string of the filetypes
     ///                                     to list in the Open dialog.
-    /// @return                 the new exporter object, or null.
+    /// @return                 the new importer object, or null.
     function ctor(doc, accept)
     {
         if(doc==null) return null;      // TODO better error reporting

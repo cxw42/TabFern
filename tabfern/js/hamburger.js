@@ -4,7 +4,7 @@
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD
-        define(['jquery', 'loglevel', 'jstree'], factory);
+        define('hamburger',['jquery', 'loglevel', 'jstree'], factory);
     } else if (typeof exports === 'object') {
         // Node, CommonJS-like
         module.exports = factory(require('jquery'), require('loglevel'), require('jstree'));

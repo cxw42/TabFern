@@ -34,7 +34,8 @@ var require = {
             'asq-helpers',
             'rmodal',
             'tinycolor',
-            'keypress'
+            'keypress',
+            'hamburger'
         ]
     },
     async: {
