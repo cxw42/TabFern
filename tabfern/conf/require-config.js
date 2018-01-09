@@ -16,16 +16,18 @@ var require = {
         'common': '../src/common',
     },
     bundles: {
-        // NOTE: keep this in sync with the list in the Makefile
-        'view/generated_bundle': [
+        // NOTE: keep these lists in sync with the lists in the Makefile
+        'view/bundle_common': [
             'jquery',
+            'loglevel',
+        ],
+        'view/bundle_tree': [
             'jstree',
             'jstree-actions',
             'jstree-flagnode',
             'jstree-because',
             'jstree-multitype',
             'jstree-redraw-event',
-            'loglevel',
             'multidex',
             'justhtmlescape',
             'signals',
@@ -35,7 +37,9 @@ var require = {
             'rmodal',
             'tinycolor',
             'keypress',
-            'hamburger'
+            'hamburger',
+            'import-file',
+            'export-file'
         ]
     },
     async: {

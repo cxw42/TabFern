@@ -1,16 +1,21 @@
 # Makefile for tabfern, by cxw
 
-# A hand-made bundle for use in the src/view tree.
-# NOTE: keep this in sync with the list in conf/require-config.js
-TO_BUNDLE= \
+# Handmade bundles.
+# NOTE: keep these in sync with the lists in conf/require-config.js
+# For src/view/main and src/view/tree
+TO_BUNDLE_1 = \
 	   tabfern/js/jquery.js \
+	   tabfern/js/loglevel.js
+DEST_BUNDLE_1 = tabfern/src/view/bundle_common.js
+
+# For src/view/tree
+TO_BUNDLE_2= \
 	   tabfern/js/jstree.js \
 	   tabfern/js/jstree-actions.js \
 	   tabfern/js/jstree-flagnode.js \
 	   tabfern/js/jstree-because.js \
 	   tabfern/js/jstree-multitype.js \
 	   tabfern/js/jstree-redraw-event.js \
-	   tabfern/js/loglevel.js \
 	   tabfern/js/multidex.js \
 	   tabfern/js/justhtmlescape.js \
 	   tabfern/js/signals.js \
@@ -20,16 +25,25 @@ TO_BUNDLE= \
 	   tabfern/js/rmodal.js \
 	   tabfern/js/tinycolor.js \
 	   tabfern/js/keypress.js \
-	   tabfern/js/hamburger.js 
+	   tabfern/js/hamburger.js \
+	   tabfern/js/import-file.js \
+	   tabfern/js/export-file.js
 
-DEST_BUNDLE = tabfern/src/view/generated_bundle.js
+DEST_BUNDLE_2 = tabfern/src/view/bundle_tree.js
 
-all: $(DEST_BUNDLE)
+.PHONY: all bundle clean
+
+all: bundle
 	./check-webstore.sh
 
-bundle: $(DEST_BUNDLE)
+bundle: $(DEST_BUNDLE_1) $(DEST_BUNDLE_2)
 
-$(DEST_BUNDLE): $(TO_BUNDLE)
-	cat $^ > $@
+$(DEST_BUNDLE_1): $(TO_BUNDLE_1)
+	./bundle.sh $@ $^
 
+$(DEST_BUNDLE_2): $(TO_BUNDLE_2)
+	./bundle.sh $@ $^
+
+clean:
+	-rm $(DEST_BUNDLE_1) $(DEST_BUNDLE_2)
 

@@ -1033,6 +1033,7 @@ var loadSavedWindowsFromData = (function(){
     ///     - bordered:<truthy> (default false) to mark windows with borders
     function loadSaveDataV1(data) {
         if(!data.tree) return false;
+        //log.info({'loadSaveDataV1':data});
         let numwins=0;
         for(let win_data_v1 of data.tree) {
             createNodeForClosedWindow(win_data_v1);

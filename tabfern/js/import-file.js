@@ -1,11 +1,11 @@
-/// import.js: Retrieve a JSON-serializable object from a user-specified
+/// import-file.js: Retrieve a JSON-serializable object from a user-specified
 /// local file.  Requires HTML5 File API.
 /// Copyright (c) 2017 Chris White.  CC-BY 4.0 International.
 
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD
-        define(factory);
+        define('import-file',factory);
     } else if (typeof exports === 'object') {
         // Node, CommonJS-like
         module.exports = factory();
