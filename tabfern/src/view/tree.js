@@ -186,8 +186,10 @@ function unflagAllWindows() {
 // UI Controls // {{{1
 
 /// Show a confirmation dialog with Yes/No/Cancel, and Do not ask again.
+/// @param message_html {String} the HTML message to show.  The caller is
+/// responsible for sanitizing the message.
 /// @return An ASQ instance that will run once the dialog closes
-function showConfirmationModalDialog(message) {
+function showConfirmationModalDialog(message_html) {
     //log.info('Setting up dialog seq');
 
     let dlg;                    ///< The rmodal instance
@@ -198,7 +200,7 @@ function showConfirmationModalDialog(message) {
     let cleanup_cbk = cleanup.errfcb();  // pause the sequence
 
     // Modified from the rmodal sample at https://rmodal.js.org/
-    $('#confirm-dialog-question').text(message);
+    $('#confirm-dialog-question').html(message_html);
 
     dlg = new (Modules['rmodal'])(
         document.getElementById('confirm-dialog'),
@@ -665,11 +667,63 @@ function actionDeleteTab(node_id, node, unused_action_id, unused_action_el,
 {
     let tab_val = D.tabs.by_node_id(node_id);
     if(!tab_val) return;
-    if(tab_val.tab_id !== K.NONE) {     // Remove open tabs
-        chrome.tabs.remove(tab_val.tab_id, ignore_chrome_error);
-    } else {                            // Remove closed tabs
-        // TODO implement this
+    let tab_node = T.treeobj.get_node(node_id);
+    if(!tab_node) return;
+
+    function doDeletion() {
+        if(tab_val.tab_id !== K.NONE) {     // Remove open tabs
+            chrome.tabs.remove(tab_val.tab_id, ignore_chrome_error);
+            //tabOnDeleted will do the rest
+        } else {                            // Remove closed tabs
+            D.tabs.remove_value(tab_val);
+                // So any events that are triggered won't try to look for a
+                // nonexistent tab.
+            T.treeobj.delete_node(tab_node);
+            saveTree();
+                // Save manually because we don't have a handler for
+                // treeOnDelete.
+        }
+    } //doDeletion()
+
+    // Prompt for confirmation, if necessary
+    let is_keep, is_nokeep;
+    {
+        let parent_val = D.windows.by_node_id(tab_node.parent);
+        if(!parent_val) return;     // don't delete tabs without parents
+        is_keep = (parent_val.keep === K.WIN_KEEP);
+        is_nokeep = (parent_val.keep === K.WIN_NOKEEP);
     }
+
+    if( //is_internal_unimplemented ||
+        (is_keep && !getBoolSetting(CFG_CONFIRM_DEL_OF_SAVED_TABS)) ||
+        (is_nokeep && !getBoolSetting(CFG_CONFIRM_DEL_OF_UNSAVED_TABS))
+    ) { // No confirmation required - just do it
+        doDeletion();
+
+    } else {    // Confirmation required
+        showConfirmationModalDialog(
+            'Delete tab "' + I.get_html_label(tab_val) + '"?'
+        )
+
+        // Processing after the dialog closes
+        .val((result)=>{
+            if(!result) return;     // no-op if we didn't get an answer
+
+            // Handle "don't ask again", but cancel is always nop.
+            if(result.reason !== 'cancel' && result.notAgain) {
+                /// The configuration key to clear
+                let conf_key = is_keep ?
+                    CFG_CONFIRM_DEL_OF_SAVED_TABS :
+                    CFG_CONFIRM_DEL_OF_UNSAVED_TABS;
+                setSetting(conf_key, false);
+            }
+
+            if(result.reason === 'yes') {
+                doDeletion();
+            }
+        }); //end post-dialog processing
+
+    } //endif confirmation required
 
     // TODO? implement if necessary.  At the moment, it doesn't appear
     // that I need this.
