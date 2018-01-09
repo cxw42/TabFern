@@ -5,7 +5,7 @@
 
     if (typeof define === 'function' && define.amd) {
         // AMD
-        define(imports, factory);
+        define('asq-helpers',imports, factory);
     } else if (typeof exports === 'object') {
         // Node, CommonJS-like
         let requirements = [];
@@ -29,6 +29,42 @@
     /// The module we are creating
     let module = {};
 
+    // Test for Firefox //
+    // Not sure if I need this, but I'm playing it safe for now.  Firefox puts
+    // null rather than undefined in chrome.runtime.lastError when there is
+    // no error.  This is to test for null in Firefox without changing my
+    // Chrome code.  Hopefully in the future I can test for null/undefined
+    // in either browser, and get rid of this block.
+    // This duplicates code in TabFern's src/common/common.js, but I am
+    // including it here to avoid a circular dependency.
+    // src/common/common.js relies on this file, but not the other way around.
+
+    (function(mod){
+        let isLastError_chrome =
+            ()=>{return (typeof(chrome.runtime.lastError) !== 'undefined');};
+        let isLastError_firefox =
+            ()=>{return (chrome.runtime.lastError !== null);};
+
+        if(typeof browser !== 'undefined' && browser.runtime &&
+                                                browser.runtime.getBrowserInfo) {
+            browser.runtime.getBrowserInfo().then(
+                (info)=>{   // fullfillment
+                    if(info.name === 'Firefox') {
+                        mod.isLastError = isLastError_firefox;
+                    } else {
+                        mod.isLastError = isLastError_chrome;
+                    }
+                },
+
+                ()=>{   //rejection --- assume Chrome by default
+                    mod.isLastError = isLastError_chrome;
+                }
+            );
+        } else {    // Chrome
+            mod.isLastError = isLastError_chrome;
+        }
+    })(module);
+
     /// Chrome Callback: make a Chrome extension API callback that
     /// wraps the done() callback of an asynquence step.  This is for use within
     /// an ASQ().then(...).
@@ -38,7 +74,7 @@
 
         return (done)=>{
             return function cbk() {
-                if(typeof(chrome.runtime.lastError) !== 'undefined') {
+                if(module.isLastError()) {
                     done.fail(chrome.runtime.lastError);
                 } else {
                     //done.apply(ø,...args);
@@ -72,7 +108,40 @@
         let chrcbk = module.CCgo(seq);
         do_right_now(chrcbk);
         return seq;
-    } //ASQ.NOW()
+    } //ASQ.NowCC()
+
+    /// Take action on this tick, and kick off a sequence based on a Chrome
+    /// callback, as if called with ASQ.try.
+    /// @param do_right_now {function} Called as do_right_now(chrome_cbk).
+    ///                                 Should cause chrome_cbk to be invoked
+    ///                                 when the sequence should proceed.
+    /// @return A sequence to chain off.
+    module.NowCCTry = function(do_right_now) {
+        // Inner sequence that provides the Chrome callback and the
+        // try/catch functionality
+        let inner_seq = ASQ();
+        let inner_chrcbk = module.CCgo(inner_seq);
+
+        // Outer sequence that we will return
+        let outer_seq = ASQ().duplicate();  //paused
+
+        // When inner_seq finishes, run outer_seq.  There must be a
+        // better way to do this, but I don't know what it is.  You can't
+        // put a .then() after a .or(), as far as I know.
+        // ... Actually, maybe there's not a better way.  asq-contrib.try()
+        // also uses an inner sequence.
+        inner_seq.val((...args)=>{
+            outer_seq.unpause(...args);
+        })
+        .or((failure)=>{    // like ASQ().try()
+            outer_seq.unpause( { 'catch': failure } );
+        });
+
+        // Kick it off
+        do_right_now(inner_chrcbk);
+
+        return outer_seq;
+    } //ASQ.NowCCTry()
 
     /// Check for an asynquence-contrib try() error return
     module.is_asq_try_err = function(o)

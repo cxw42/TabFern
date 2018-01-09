@@ -85,10 +85,6 @@
         NST_TOP_BORDER:     'top-bordered', // Present on tabs that have a top border
     };
 
-    /// Ignore a Chrome callback error, and suppress Chrome's
-    /// `runtime.lastError` diagnostic.
-    module.ignore_chrome_error = function() { void chrome.runtime.lastError; }
-
     /// Make a callback function that will forward to #fn on a later tick.
     /// @param fn {function} the function to call
     module.nextTickRunner = function(fn) {

@@ -1,11 +1,11 @@
-/// import.js: Retrieve a JSON-serializable object from a user-specified
+/// import-file.js: Retrieve a JSON-serializable object from a user-specified
 /// local file.  Requires HTML5 File API.
 /// Copyright (c) 2017 Chris White.  CC-BY 4.0 International.
 
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD
-        define(factory);
+        define('import-file',factory);
     } else if (typeof exports === 'object') {
         // Node, CommonJS-like
         module.exports = factory();
@@ -46,11 +46,11 @@
         this.loader.click();    // popup the file selector
     }; //getFileAsString()
 
-    /// Make a new exporter.
+    /// Make a new importer.
     /// @param {DOM Document}   doc         The document the importer runs in.
     /// @param {String}         filetype    Optional string of the filetypes
     ///                                     to list in the Open dialog.
-    /// @return                 the new exporter object, or null.
+    /// @return                 the new importer object, or null.
     function ctor(doc, accept)
     {
         if(doc==null) return null;      // TODO better error reporting

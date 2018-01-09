@@ -183,6 +183,101 @@ function unflagAllWindows() {
 };
 
 ////////////////////////////////////////////////////////////////////////// }}}1
+// UI Controls // {{{1
+
+/// Show a confirmation dialog with Yes/No/Cancel, and Do not ask again.
+/// @param message_html {String} the HTML message to show.  The caller is
+/// responsible for sanitizing the message.
+/// @return An ASQ instance that will run once the dialog closes
+function showConfirmationModalDialog(message_html) {
+    //log.info('Setting up dialog seq');
+
+    let dlg;                    ///< The rmodal instance
+    let retval = ASQ();         ///< caller's processing after dlg closes
+    let cleanup = ASQ();        ///< our internal cleanup after dlg closes
+
+    let cbk = retval.errfcb();  // pause the sequence
+    let cleanup_cbk = cleanup.errfcb();  // pause the sequence
+
+    // Modified from the rmodal sample at https://rmodal.js.org/
+    $('#confirm-dialog-question').html(message_html);
+
+    dlg = new (Modules['rmodal'])(
+        document.getElementById('confirm-dialog'),
+        {
+            closeTimeout: 0,
+
+            afterOpen: function() {
+                $('#confirm-dialog .btn-primary').focus();
+                //console.log('opened');
+            },
+
+            afterClose: function() {
+                //console.log('closed');
+                cleanup_cbk(null);  // Run the cleanup
+                cbk(null, {reason: dlg.reason, notAgain: dlg.notAgain});
+                    // In parallel, let the caller's processing run
+            },
+        }
+    );
+
+    dlg.reason = null;      // to store which button is pressed
+    dlg.notAgain = false;   // to store the "not again" checkbox
+
+    // Add the button listeners, to avoid inline scripts
+    $('#confirm-dialog button').on('click.TFrmodal', function(){
+        dlg.reason = this.dataset.which;
+        dlg.close();
+    });
+
+    // The "don't ask again" checkbox
+    let notAgain = $('#cbNotAgain');
+    notAgain[0].checked = false;
+    notAgain.on('change.TFrmodal', function(){
+        dlg.notAgain = this.checked;
+    });
+
+    // Add the keyboard listener
+    $(document).on('keydown.TFrmodal', function(ev) {
+        //log.info({'keydown during dlg':ev});
+
+        let key = (ev && typeof ev.key === 'string') ?
+                    ev.key.toLowerCase(): null;
+
+        // Send the events on the next cycle.  Not sure if this is required.
+        if(key === 'y') {
+            ASQ().val(()=>{$("#confirm-dialog .btn[data-which='yes']").click();});
+        } else if(key === 'n') {
+            ASQ().val(()=>{$("#confirm-dialog .btn[data-which='no']").click();});
+        } else if(key === 'c') {
+            ASQ().val(()=>{$("#confirm-dialog .btn[data-which='cancel']").click();});
+        } else {
+            dlg.keydown(ev);
+        }
+
+    }); //keydown
+
+    // Cleanup code
+    cleanup.val(()=>{
+        //log.info('Tearing down dialog seq');
+
+        try {
+            //document.removeEventListener('keydown', kbd_listener, false);
+            $(document).off('keydown.TFrmodal');
+            notAgain.off('change.TFrmodal');
+            $('#confirm-dialog .modal-footer button').off('click.TFrmodal');
+        } catch(e) {
+            log.info({'dialog cleanup exception': e});
+        }
+    }); //end cleanup code
+
+    // On the next cycle, open the dialog.
+    ASQ().val(()=>{ dlg.open(); });
+
+    return retval;
+} // showConfirmationModalDialog()
+
+////////////////////////////////////////////////////////////////////////// }}}1
 // Saving // {{{1
 
 /// Wrap up the save data with a magic header and the current version number
@@ -264,12 +359,13 @@ function saveTree(save_ephemeral_windows = true, cbk = undefined)
         // storage automatically does JSON.stringify
     chrome.storage.local.set(to_save,
         function() {
-            if(typeof(chrome.runtime.lastError) === 'undefined') {
+            if(!isLastError()) {
                 if(typeof cbk === 'function') {
                     cbk(null, to_save[K.STORAGE_KEY]);
                 }
                 return;     // Saved OK
             }
+            //else there was an error
             let msg = "TabFern: couldn't save: " +
                             chrome.runtime.lastError.toString();
             log.error(msg);
@@ -373,7 +469,7 @@ function actionCloseWindowButDoNotSave(node_id, node, unused_action_id, unused_a
         win_val.keep = K.WIN_KEEP;
             // has to be before winOnRemoved fires.  TODO cleanup -
             // maybe add an `is_closing` flag to `win_val`?
-        chrome.windows.remove(win.id, K.ignore_chrome_error);
+        chrome.windows.remove(win.id, ignore_chrome_error);
         // Don't try to close an already-closed window.
         // Ignore exceptions - when we are called from winOnRemoved,
         // the window is already gone, so the remove() throws.
@@ -486,81 +582,17 @@ function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el,
 
     } else {    // Confirmation required
 
-        //log.info('Setting up dialog seq');
-
-        let dlg;    ///< The rmodal instance
-        let after_close = ASQ();    ///< processing after dlg closes
-        let cbk = after_close.errfcb();
-
-        // Modified from the rmodal sample at https://rmodal.js.org/
-        $('#confirm-dialog-question').text(
-                'Delete window "' + I.get_win_raw_text(win_val) + '"?'
-        );
-        dlg = new (Modules['rmodal'])(
-            document.getElementById('confirm-dialog'),
-            {
-                closeTimeout: 0,
-
-                afterOpen: function() {
-                    $('#confirm-dialog .btn-primary').focus();
-                    //console.log('opened');
-                },
-
-                afterClose: function() {
-                    console.log('closed');
-                    cbk(null, {reason: dlg.reason, notAgain: dlg.notAgain});
-                        // *** Run the sequence
-                },
-            }
-        );
-
-        dlg.reason = null;      // to store which button is pressed
-        dlg.notAgain = false;   // to store the "not again" checkbox
-
-        // Add the button listeners, to avoid inline scripts
-        $('#confirm-dialog button').on('click.TFrmodal', function(){
-            dlg.reason = this.dataset.which;
-            dlg.close();
-        });
-
-        // The "don't ask again" checkbox
-        let notAgain = $('#confirm-dialog #notAgain');
-        notAgain[0].checked = false;
-        notAgain.on('change.TFrmodal', function(){
-            dlg.notAgain = this.checked;
-        });
-
-        // Add the keyboard listener
-        $(document).on('keydown.TFrmodal', function(ev) {
-            //log.info({'keydown during dlg':ev});
-
-            let key = (ev && typeof ev.key === 'string') ?
-                        ev.key.toLowerCase(): null;
-
-            // Send the events on the next cycle.  Not sure if this is required.
-            if(key === 'y') {
-                ASQ().val(()=>{$("#confirm-dialog .btn[data-which='yes']").click();});
-            } else if(key === 'n') {
-                ASQ().val(()=>{$("#confirm-dialog .btn[data-which='no']").click();});
-            } else if(key === 'c') {
-                ASQ().val(()=>{$("#confirm-dialog .btn[data-which='cancel']").click();});
-            } else {
-                dlg.keydown(ev);
-            }
-
-        });
+        showConfirmationModalDialog(
+            'Delete window "' + I.get_win_raw_text(win_val) + '"?'
+        )
 
         // Processing after the dialog closes
-
-        after_close.try((done, reason)=>{       // try() so the handler below will
-                                        // always be called.
-            //log.info({'Dialog closed; reason':reason});
-            if(!reason) {
-                done({'catch': 'No reason provided by the dialog'});
-            }
+        .val((result)=>{
+            //log.info({'Dialog closed; reason':result});
+            if(!result) return;     // no-op if we didn't get an answer
 
             // Handle "don't ask again", but cancel is always nop.
-            if(reason.reason !== 'cancel' && reason.notAgain) {
+            if(result.reason !== 'cancel' && result.notAgain) {
                 /// The configuration key to clear
                 let conf_key = (win_val.keep === K.WIN_KEEP) ?
                     CFG_CONFIRM_DEL_OF_SAVED :
@@ -569,32 +601,10 @@ function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el,
                 setSetting(conf_key, false);
             }
 
-            if(reason.reason === 'yes') {
+            if(result.reason === 'yes') {
                 doDeletion();
             }
-
-            done();
-        });
-
-        // Teardown.  This always runs because the preceding step is a try().
-        after_close.then((done, maybe_err)=>{
-            //log.info('Tearing down dialog seq');
-
-            //document.removeEventListener('keydown', kbd_listener, false);
-            $(document).off('keydown.TFrmodal');
-            notAgain.off('change.TFrmodal');
-            $('#confirm-dialog .modal-footer button').off('click.TFrmodal');
-
-            // If there were any errors in the previous step, report them.
-            if(maybe_err && typeof maybe_err === 'object' && maybe_err.catch) {
-                done.fail(maybe_err.catch);
-            } else {
-                done();
-            }
-        });
-
-        // Show the dialog
-        dlg.open();
+        }); //end post-dialog processing
 
     } //endif confirmation required
 } //actionDeleteWindow
@@ -645,6 +655,119 @@ function actionEditBullet(node_id, node, unused_action_id, unused_action_el)
     saveTree();
 } //actionEditBullet
 
+/// Delete a tab's entry in the tree.
+/// @param node_id {string} the ID of the node to delete
+/// @param node the node to delete
+/// @param evt {Event} (optional) If truthy, the event that triggered the action
+/// @param is_internal {Boolean} (optional) If truthy, this is an internal
+///                              action, so don't prompt for confirmation.
+///                              ** Not yet used. **
+function actionDeleteTab(node_id, node, unused_action_id, unused_action_el,
+                            evt, is_internal_unimplemented)
+{
+    let tab_val = D.tabs.by_node_id(node_id);
+    if(!tab_val) return;
+    let tab_node = T.treeobj.get_node(node_id);
+    if(!tab_node) return;
+
+    function doDeletion() {
+        if(tab_val.tab_id !== K.NONE) {     // Remove open tabs
+            chrome.tabs.remove(tab_val.tab_id, ignore_chrome_error);
+            //tabOnDeleted will do the rest
+        } else {                            // Remove closed tabs
+            D.tabs.remove_value(tab_val);
+                // So any events that are triggered won't try to look for a
+                // nonexistent tab.
+            T.treeobj.delete_node(tab_node);
+            saveTree();
+                // Save manually because we don't have a handler for
+                // treeOnDelete.
+        }
+    } //doDeletion()
+
+    // Prompt for confirmation, if necessary
+    let is_keep, is_nokeep;
+    {
+        let parent_val = D.windows.by_node_id(tab_node.parent);
+        if(!parent_val) return;     // don't delete tabs without parents
+        is_keep = (parent_val.keep === K.WIN_KEEP);
+        is_nokeep = (parent_val.keep === K.WIN_NOKEEP);
+    }
+
+    if( //is_internal_unimplemented ||
+        (is_keep && !getBoolSetting(CFG_CONFIRM_DEL_OF_SAVED_TABS)) ||
+        (is_nokeep && !getBoolSetting(CFG_CONFIRM_DEL_OF_UNSAVED_TABS))
+    ) { // No confirmation required - just do it
+        doDeletion();
+
+    } else {    // Confirmation required
+        showConfirmationModalDialog(
+            'Delete tab "' + I.get_html_label(tab_val) + '"?'
+        )
+
+        // Processing after the dialog closes
+        .val((result)=>{
+            if(!result) return;     // no-op if we didn't get an answer
+
+            // Handle "don't ask again", but cancel is always nop.
+            if(result.reason !== 'cancel' && result.notAgain) {
+                /// The configuration key to clear
+                let conf_key = is_keep ?
+                    CFG_CONFIRM_DEL_OF_SAVED_TABS :
+                    CFG_CONFIRM_DEL_OF_UNSAVED_TABS;
+                setSetting(conf_key, false);
+            }
+
+            if(result.reason === 'yes') {
+                doDeletion();
+            }
+        }); //end post-dialog processing
+
+    } //endif confirmation required
+
+    // TODO? implement if necessary.  At the moment, it doesn't appear
+    // that I need this.
+//        // We had a click --- hover the node that is now under the mouse.
+//        // That is the node that was the next-sibling node before.
+//        // This fixes a bug in which clicking the delete button removes the row,
+//        // and the row that had been below moves up, but the wholerow hover and the
+//        // action buttons don't appear for that row.
+//        //
+//        // TODO update this when adding full hierarchy (#34).
+//
+//        let next_node = T.treeobj.get_next_dom(node, true);
+//        if(evt && evt.type === 'click' && next_node) {
+//            T.treeobj.hover_node(next_node);
+//        }
+
+
+    // If it actually disappears, let tabOnRemoved() handle it.
+
+//    let seq = ASQH.NowCCTry((cc)=>{
+//        chrome.tabs.remove(tab_val.tab_id, cc)
+//    });
+//
+//    seq.try((done, maybe_err)=>{
+//        if(ASQH.is_asq_try_err(maybe_err)) { return done(); }
+//            // If the tab-removal failed, just bail.
+//
+//        // Check if the tab still exists.  If it had a beforeunload and
+//        // the user hit "Stay", it will still be there.
+//        // Even if there is a beforeunload popup, it appears that
+//        // chrome.runtime.lastError does not show any error.  Therefore,
+//        // we cannot rely on the error state to tell us whether the tab
+//        // is actually closed.
+//        chrome.tabs.get(tab_val.tab_id, ASQH.CC(done));
+//            // We hope this will fail; if so, the tab is gone.
+//
+//        seq.val( (info_or_err) => {
+//            if(!ASQH.is_asq_try_err(maybe_err)) return;
+//                // If the tab is still there, don't remove it from the tree
+//        });
+//    });
+
+} //actionDeleteTab
+
 ////////////////////////////////////////////////////////////////////////// }}}1
 // Tree-node creation // {{{1
 
@@ -666,6 +789,16 @@ function addTabNodeActions(win_node_id)
         callback: actionEditBullet,
         dataset: { action: 'editBullet' }
     });
+
+    T.treeobj.add_action(win_node_id, {
+        id: 'deleteTab',
+        class: 'fff-cross ' + K.ACTION_BUTTON_WIN_CLASS,
+        text: '&nbsp;',
+        grouped: true,
+        callback: actionDeleteTab,
+        dataset: { action: 'deleteTab' }
+    });
+
 } //addTabNodeActions
 
 /// Create a tree node for an open tab.
@@ -900,6 +1033,7 @@ var loadSavedWindowsFromData = (function(){
     ///     - bordered:<truthy> (default false) to mark windows with borders
     function loadSaveDataV1(data) {
         if(!data.tree) return false;
+        //log.info({'loadSaveDataV1':data});
         let numwins=0;
         for(let win_data_v1 of data.tree) {
             createNodeForClosedWindow(win_data_v1);
@@ -959,7 +1093,7 @@ function loadSavedWindowsIntoTree(next_action) {
     chrome.storage.local.get(K.STORAGE_KEY, function(items) {
 
         READIT:
-        if(typeof(chrome.runtime.lastError) !== 'undefined') {
+        if(isLastError()) {
             //Chrome couldn't load the data
             log.error("Chrome couldn't load save data: " + chrome.runtime.lastError +
                     "\nHowever, if you didn't have any save data, this isn't " +
@@ -978,8 +1112,8 @@ function loadSavedWindowsIntoTree(next_action) {
                 // set the init-specific variable.
             }
         } else {
-            // Brand-new installs seem to fall here: lastError===undefined,
-            // but items=={}.  Don't treat this as an error.
+            // Brand-new installs seem to fall here: lastError is undefined,
+            // but items is {}.  Don't treat this as an error.
             was_loading_error = false;
         }
 
@@ -995,7 +1129,7 @@ function loadSavedWindowsIntoTree(next_action) {
 function DBG_printSaveData()
 {
     chrome.storage.local.get(K.STORAGE_KEY, function(items) {
-        if(typeof(chrome.runtime.lastError) !== 'undefined') {
+        if(isLastError()) {
             console.log(chrome.runtime.lastError);
         } else {
             let parsed = items[K.STORAGE_KEY];
@@ -1032,7 +1166,7 @@ function flagOnlyCurrentTab(win)
 // Chrome callback version of flagOnlyCurrentTab()
 function flagOnlyCurrentTabCC(win)
 {
-    if(typeof chrome.runtime.lastError === 'undefined') {
+    if(!isLastError()) {
         flagOnlyCurrentTab(win);
     } else {
         log.error(chrome.runtime.lastError);
@@ -1100,17 +1234,25 @@ function treeOnSelect(_evt_unused, evt_data)
             log.info({'Actually, button press':elem, action, evt_data});
 
             switch(action) {
+                // Windows
                 case 'renameWindow':
                     actionRenameWindow(node.id, node, null, null); break;
                 case 'closeWindow':
                     actionCloseWindowAndSave(node.id, node, null, null); break;
                 case 'deleteWindow':
-                    actionDeleteWindow(node.id, node, null, null, evt_data.event);
-                        // Pass the event so actionDeleteWindow will treat it as
-                        // a click and refresh the hover state.
+                    actionDeleteWindow(node.id,node, null,null, evt_data.event);
+                        // Pass the event so actionDeleteWindow will treat it
+                        // as a click and refresh the hover state.
                     break;
+
+                // Tabs
                 case 'editBullet':
                     actionEditBullet(node.id, node, null, null); break;
+                case 'deleteTab':
+                    actionDeleteTab(node.id, node, null, null, evt_data.event);
+                        // as deleteWindow, above.
+                    break;
+
                 default: break;     //no-op if unknown
             }
 
@@ -1140,7 +1282,7 @@ function treeOnSelect(_evt_unused, evt_data)
         chrome.tabs.highlight({
             windowId: node_val.win_id,
             tabs: [node_val.index]     // Jump to the clicked-on tab
-        }, K.ignore_chrome_error);
+        }, ignore_chrome_error);
         //log.info('flagging treeonselect' + node.id);
         T.treeobj.flag_node(node);
         win_id = node_val.win_id;
@@ -1262,7 +1404,7 @@ function treeOnSelect(_evt_unused, evt_data)
                             } //foreach extra tab
 
                             log.warn('Pruning ' + to_prune);
-                            chrome.tabs.remove(to_prune, K.ignore_chrome_error);
+                            chrome.tabs.remove(to_prune, ignore_chrome_error);
                         } //endif we have extra tabs
 
                         // if a tab was clicked on, activate that particular tab
@@ -1270,7 +1412,7 @@ function treeOnSelect(_evt_unused, evt_data)
                             chrome.tabs.highlight({
                                 windowId: node_val.win_id,
                                 tabs: [node_val.index]
-                            }, K.ignore_chrome_error);
+                            }, ignore_chrome_error);
                         }
 
                         // Set the highlights in the tree appropriately
@@ -1306,9 +1448,9 @@ function treeOnSelect(_evt_unused, evt_data)
 // this is a test - trying for a bit of speed by calling windows.update
 // in the current tick
 //        chrome.windows.get(win_id, function(win) {
-//            if(typeof(chrome.runtime.lastError) !== 'undefined') return;
+//            if(isLastError()) return;
             log.debug({'About to activate':win_id});
-            chrome.windows.update(win_id,{focused:true}, K.ignore_chrome_error);
+            chrome.windows.update(win_id,{focused:true}, ignore_chrome_error);
             // winOnFocusedChange will set the flag on the newly-focused window
 //        });
     }
@@ -1716,7 +1858,7 @@ function tabOnUpdated(tabid, changeinfo, ctab)
     // changed is in the active window, update the flags for
     // that window.
     chrome.windows.getLastFocused(function(win){
-        if(typeof(chrome.runtime.lastError) === 'undefined') {
+        if(!isLastError()) {
             if(ctab.windowId === win.id) {
                 winOnFocusChanged(win.id, true);
             }
@@ -1782,6 +1924,7 @@ function tabOnRemoved(tabid, removeinfo)
     // If the window is closing, do not remove the tab records.
     // The cleanup will be handled by winOnRemoved().
     if(removeinfo.isWindowClosing) return;
+        // TODO also mark this as non-recovered, maybe?
 
     let window_node_id = D.windows.by_win_id(removeinfo.windowId, 'node_id');
     if(!window_node_id) return;
@@ -1802,7 +1945,7 @@ function tabOnRemoved(tabid, removeinfo)
 
         // See if it's a tab we have already marked as removed.  If so,
         // whichever code marked it is responsible, and we're off the hook.
-        if(!tab_val || !tab_val.tab_id) return;
+        if(!tab_val || tab_val.tab_id === K.NONE) return;
 
         D.tabs.remove_value(tab_val);
             // So any events that are triggered won't try to look for a
@@ -1957,7 +2100,7 @@ function hamSettings()
 
         let to_save = {};
         to_save[K.LASTVER_KEY] = TABFERN_VERSION;
-        chrome.storage.local.set(to_save, K.ignore_chrome_error);
+        chrome.storage.local.set(to_save, ignore_chrome_error);
     }
 } //hamSettings()
 
@@ -2377,7 +2520,7 @@ var treeCheckCallback = (function(){
             ASQ().val(()=>{
                 chrome.tabs.move(val.tab_id,
                     {windowId: parent_val.win_id, index: data.position}
-                    , K.ignore_chrome_error);
+                    , ignore_chrome_error);
             });
 
         } else {
@@ -2659,7 +2802,7 @@ function checkWhatIsNew(selector)
         let first_installation = true;      // ditto
 
         // Check whether the user has seen the notification
-        if(typeof(chrome.runtime.lastError) === 'undefined') {
+        if(!isLastError()) {
             let lastver = items[K.LASTVER_KEY];
             if( (lastver !== null) && (typeof lastver === 'string') ) {
                 first_installation = false;
@@ -2681,7 +2824,7 @@ function checkWhatIsNew(selector)
             chrome.storage.local.set(
                 { [K.LASTVER_KEY]: 'installed, but no version viewed yet' },
                 function() {
-                    K.ignore_chrome_error();
+                    ignore_chrome_error();
                     K.openWindowForURL('https://cxw42.github.io/TabFern/#usage');
                 }
             );
@@ -2766,6 +2909,28 @@ function preLoadInit()
 
     if(getBoolSetting(CFG_SKINNY_SCROLLBARS)) {
         document.querySelector('html').classList += ' skinny-scrollbar';
+    }
+
+    //Custom skinny-scrollbar color
+    CSSC: if(getBoolSetting(CFG_SKINNY_SCROLLBARS) && document.styleSheets) {
+        let color = getStringSetting(CFGS_SCROLLBAR_COLOR);
+        color = Modules.tinycolor(color);
+        if(!color.isValid()) {
+            log.error({'Invalid custom color for skinny scrollbars':
+                                                color.getOriginalInput()});
+            break CSSC;
+        }
+
+        //log.info({'Custom scrollbar color': color.toString()});
+        let ss = document.styleSheets[document.styleSheets.length-1];
+        for(let state of ['', ':hover', ':active']) {
+            let newrule = 'html.skinny-scrollbar::-webkit-scrollbar-thumb' +
+                            `${state} { background: ${color.toRgbString()}; }`;
+            ss.insertRule(newrule);
+            // html.foo:: is more specific than the default .foo::, so the
+            // override works and we don't have to remove the existing rule.
+            // Note: color.toRgbString() for formatting consistency.
+        }
     }
 
     let url = chrome.runtime.getURL(
@@ -3078,7 +3243,7 @@ function moveWinToLastPositionIfAny(done, items_or_err)
                     , 'height': Math.max(+parsed.height || 600, 200)
                 };
             last_saved_size = $.extend({}, size_data);
-            chrome.windows.update(my_winid, size_data, K.ignore_chrome_error);
+            chrome.windows.update(my_winid, size_data, ignore_chrome_error);
         }
     } //endif no error
 
@@ -3148,8 +3313,9 @@ let dependencies = [
     'jquery', 'jstree', 'jstree-actions', 'jstree-flagnode',
     'jstree-because',
     'loglevel', 'hamburger', 'bypasser', 'multidex', 'justhtmlescape',
-    'signals', 'local/fileops/export', 'local/fileops/import',
+    'signals', 'export-file', 'import-file',
     'asynquence-contrib', 'asq-helpers', 'rmodal',
+    'tinycolor',
 
     // Modules for keyboard-shortcut handling.  Not really TabFern-specific,
     // but not yet disentangled fully.
@@ -3162,8 +3328,8 @@ let dependencies = [
 
 /// Make short names in Modules for some modules.  shortname => longname
 let module_shortnames = {
-    exporter: 'local/fileops/export',
-    importer: 'local/fileops/import',
+    exporter: 'export-file',
+    importer: 'import-file',
     default_shortcuts: 'shortcuts_keybindings_default',
 };
 

@@ -1,11 +1,11 @@
-/// export.js: Save a JSON-serializable object to a local file.
+/// export-file.js: Save a JSON-serializable object to a local file.
 /// Requires HTML5 File API (for Blob).
 /// Copyright (c) 2017 Chris White.  CC-BY 4.0 International.
 
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD
-        define(factory);
+        define('export-file',factory);
     } else if (typeof exports === 'object') {
         // Node, CommonJS-like
         module.exports = factory();

@@ -1,3 +1,6 @@
+// Begin bundled file ///////////////////////////////////////////////////
+// tabfern/js/jstree.js
+
 /*globals jQuery, define, module, exports, require, window, document, postMessage */
 (function (factory) {
 	"use strict";
@@ -8455,3 +8458,8387 @@
 	}
 
 }));
+// Begin bundled file ///////////////////////////////////////////////////
+// tabfern/js/jstree-actions.js
+
+(function (factory) {
+	"use strict";
+	if (typeof define === 'function' && define.amd) {
+		define('jstree-actions',['jquery', 'jstree'], factory);
+	}
+	else if(typeof module !== 'undefined' && module.exports) {
+		module.exports = factory(require('jquery'), require('jstree'));
+	}
+	else {
+		factory(jQuery, jQuery.jstree);
+	}
+}(function ($, _jstree_unused, undefined) {
+	"use strict";
+
+	if($.jstree.plugins.actions) { return; }
+
+	/**
+	 * stores all defaults for the actions plugin
+	 * @name $.jstree.defaults.actions
+	 * @plugin actions
+	 */
+	$.jstree.defaults.actions = {
+		/**
+		 * How event propagation should be controlled after a click
+		 * on an action button.
+		 *
+		 * - Set to `stop` to call `stopPropagation` after the callback
+		 * - Set to `immediate` to call `stopImmediatePropagation`
+		 *   after the callback
+		 * - Any other value (e.g., the default of `normal` will not
+		 *   change the propagation.
+		 *
+		 * @name $.jstree.defaults.actions.propagation
+		 * @plugin actions
+		 */
+		propagation: 'normal'
+	};
+
+	$.jstree.plugins.actions = function (options, parent) {
+
+		this._actions = {};			// indexed by node id
+		this._group_parms = {};		// The parameters of the group divs, indexed by node id.
+
+		/** Make a group to hold grouped actions.  Call this before calling add_action()
+		 * with grouped: true.
+		 * @param node_id  <- the ID of the pertinent node
+		 * @param opts     <- a structure with option fields.
+		 * @return the new group div's jquery object, or null
+		 *
+		 * possible opts are:
+		 * selector <- a selector that would specify where to insert the action. Note that this is a plain JavaScript selector and not a jQuery one.
+		 * 				If selector is missing or falsy, the <li> of the item itself is used.
+		 * child    <- (bool) optional - if true, insert the action as a child of the element matching <selector>
+		 * after    <- (bool) insert the action after (true, default) or before (false) the element matching the <selector> key.  Ignored if <child> is true.
+		 * class    <- class(es) to apply to the new div
+		 * text     <- text to put in the new div
+		 */
+		this.make_group = function (node_id, opts) {
+			var after = (typeof opts.after == 'undefined') ? true : opts.after;
+			if (typeof opts.selector == 'undefined') return null;	// TODO report error?
+
+			// Note: when this is called, the DOM object may not yet exist.
+
+			// Regularize and stash the parms
+			var parms = this._group_parms[node_id] = Object.assign({}, opts);
+			parms.class = parms.class || '';
+			parms.text = parms.text || '';
+			parms.selector = parms.selector || null;
+				// any falsy value => null, for regularity and to permit
+				// distinguishing undefined from null should you need to.
+		}
+
+		/** Add a DOM element based on the selector, child, and after options.
+		 * @param node_el {DOM Element} The root element of the node, generally <li>.
+		 * 								Must have non-null `parentNode`.
+		 * @param to_add_el {DOM Element} The element to add
+		 * @param opts {object} Where to add the element.  Has optional selector,
+		 * 						optional child, and optional after, as described
+		 * 						with reference to this._make_group().
+		 */
+		this._add_dom_element = function(node_el, to_add_el, opts) {
+			var place;
+			if(opts.selector) {
+				place = node_el.querySelector(opts.selector);
+			} else {
+				place = node_el;
+			}
+
+			if (opts.child) {
+				place.appendChild(to_add_el);
+			} else if (opts.after) {
+				place.parentNode.insertBefore(to_add_el, place.nextSibling);
+			} else { //before
+				place.parentNode.insertBefore(to_add_el, place);
+			}
+		};
+
+		/** Create the group div for a node.  Returns the DOM object, or null.
+		 * Uses the provided node_el because this.get_node(node_id, true)
+		 * doesn't always succeed during redraw.
+		 * @param node_id {string} The node
+		 * @param node_el {DOM element} The current element for this node.
+		 */
+		this._create_group_for = function (node_id, node_el) {
+			if(!(node_id in this._group_parms)) return null;	// TODO report error?
+
+			var opts = this._group_parms[node_id];
+			var group_el = document.createElement("div");
+			group_el.className = opts.class;
+			group_el.textContent = opts.text;
+
+			this._add_dom_element(node_el, group_el, opts);
+
+			return group_el;
+		};
+
+		/** Add an action to a node or node(s).
+		 * @param node_id Can be a single node id or an array of node ids.
+		 * @param action An object representing the action that should be added to <node>.
+		 *
+		 * The <node id> is the "id" key of each element of the "core.data" array.
+		 * A special value "all" is allowed, in which case the action will be added to all nodes.
+		 *
+		 * The action object can contain the following keys:
+		 * id       <- string An ID which identifies the action. The same ID can be shared across different nodes
+		 * text     <- string The action's text
+		 * class    <- string (a string containing all the classes you want to add to the action (space separated)
+		 * event    <- string The event on which the trigger will be called
+		 * callback <- function that will be called when the action is clicked
+		 * dataset  <- optional object of key-value pairs that will be added as
+		 *             data-* attributes of the action's element.  The values
+		 *             must be strings or support toString().
+		 *
+		 * The action object can contain one of two types of location information:
+		 * 1. grouped  <- (default false) if true, put this action in a div.  Call make_group() first to set up this div.  Actions are appended as children of the div.
+		 * 2.  If grouped is not true, the following can be used:
+		 * 		selector <- a selector that would specify where to insert the action. Note that this is a plain JavaScript selector and not a jQuery one.
+		 * 				If selector is missing or falsy, the <li> of the item itself is used.
+		 * 		child    <- (bool) optional - if true, insert the action as a child of the element matching <selector>
+		 * 		after    <- (bool) insert the action after (true, default) or before (false) the element matching the <selector> key.  Ignored if <child> is true.
+		 *
+		 * NOTES: Please keep in mind that:
+		 * - the id's are strictly compared (===)
+		 * - the selector has access to all children on nodes with leafs/children, so most probably you'd want to use :first or similar
+		 */
+		this.add_action = function (node_id, action) {
+			var self = this;
+			node_id = typeof node_id === 'object' ? node_id : [node_id];
+
+			for (var i = 0; i < node_id.length; i++) {
+				var _node_id = node_id[i];
+				var actions = self._actions[_node_id] = self._actions[_node_id] || [];
+
+				var should_redraw = false;
+
+				if (!self._has_action(_node_id, action.id)) {
+					if(action.grouped && !(_node_id in this._group_parms)) {
+						continue;	// TODO report error?
+					}
+
+					var the_action = Object.assign({}, action);	//our own copy
+					the_action.selector = the_action.selector || null;
+					actions.push(the_action);
+					should_redraw = true;
+				}
+
+				if(should_redraw) this.redraw_node(_node_id);
+
+			}
+		};
+
+		/**
+		 * @param node_id Can be a single node id or an array of node ids
+		 * @param action_id The ID of the action to be removed
+		 *
+		 * The <node id> is the "id" key of each element of the "core.data" array.
+		 * A special value "all" is allowed, in which case the action_id will be removed from all nodes.
+		 *
+		 * The action_id is the unique identifier for each action.
+		 * A special value "all" is allowed, in which case all the actions of node_id will be removed.
+		 */
+		this.remove_action = function (node_id, action_id) {
+			var self = this;
+			var node_ids = typeof node_id === 'object' ? node_id :
+				node_id === "all" ? Object.keys(this._actions).concat('all') :
+					[node_id];
+
+			for (var i = 0; i < node_ids.length; i++) {
+				node_id = node_ids[i];
+				var actions = self._actions[node_id] || [];
+				var new_actions = [];
+
+				for (var j = 0; j < actions.length; j++) {
+					var action = actions[j];
+					if(action.id !== action_id && action_id !== "all") {
+						new_actions.push(action);
+					}
+				}
+				var ids = actions.map(function(x) { return x.id; });
+				var new_ids = new_actions.map(function(x) { return x.id; });
+				if (ids.length != new_ids.length || ids.filter(function(n) { return new_ids.indexOf(n) === -1; }).length) {
+					self._actions[node_id] = new_actions;
+					this.redraw_node(node_id);
+				}
+			}
+		};
+
+		/**
+		 * Create the element for an action button.
+		 * @param node_id {string} The node's ID
+		 * @param action_id {string} The action's ID
+		 */
+		this._create_action = function (node_id, action_id) {
+			var self = this;
+			var action = this._get_action(node_id, action_id);
+			if (action === null) return null;
+
+			var action_el = document.createElement("i");
+			action_el.className = action.class;
+			action_el.textContent = action.text;
+
+			// Set up element data-* values, if any
+			if( action_el.dataset && action.dataset &&
+				(typeof action.dataset === 'object') &&
+				(action.dataset !== null)
+			) {
+				for(var key in action.dataset) {
+					action_el.dataset[key] = '' + action.dataset[key];
+				}
+			}
+
+			$(action_el).click(function(event) {
+				var node = self.get_node(action_el);
+				action.callback(node_id, node,
+					action_id, action_el, event);
+
+				if(self.settings.actions.propagation==='stop') {
+					event.stopPropagation();
+				} else if(self.settings.actions.propagation === 'immediate') {
+					event.stopImmediatePropagation();
+				}
+			});
+
+			return {
+				"action": action,
+				"action_el": action_el
+			};
+		};
+
+		/**
+		 * Find an action of a node.
+		 * @param node_id {string} The node's ID, or "all"
+		 * @param action_id {string} The action's ID
+		 * @return The action's data, or `null` if the action wasn't found.
+		 */
+		this._get_action = function (node_id, action_id) {
+			var actions = this._actions[node_id] || [];
+			var v = null;
+			for (var i = 0; i < actions.length; i++) {
+				var action = actions[i];
+				if (action.id === action_id) {
+					//TODO: fill empty fields with default values?
+					v = action;
+				}
+			}
+			return v;
+		};
+
+		/**
+		 * Add the given action to the DOM.
+		 * @param node_el {DOM element} The node
+		 * @param action The action's data record, including the
+		 * 					already-created DOM element of the action button
+		 */
+		this._set_action = function (node_el, action) {
+			if (action === null) return;
+
+			this._add_dom_element(node_el, action.action_el, action.action);
+		};
+
+		this._has_action = function (node_id, action_id) {
+			var found = false;
+			var actions = this._actions;
+
+			if (actions.hasOwnProperty(node_id)) {
+				for (var i = 0; i < actions[node_id].length; i++) {
+					if (actions[node_id][i].id === action_id) found = true;
+				}
+			}
+
+			if (this._actions.hasOwnProperty('all')) {
+				for (i = 0; i < actions['all'].length; i++) {
+					if (actions['all'][i].id === action_id) found = true;
+				}
+			}
+
+			return found;
+		};
+
+		/**
+		 * @param obj The node to redraw
+		 */
+		this.redraw_node = function (obj, deep, callback, force_draw) {
+			var self = this;
+			var node_id = typeof obj === "object" ? obj.id : obj;
+			var node_el = parent.redraw_node.call(this, obj, deep, callback, force_draw);
+			if (node_el) {
+				//Check if we have any specific actions for this node
+				var actions = this._actions[node_id] || [];
+				var actions_all = this._actions["all"] || [];
+
+				// Create the group if necessary
+				var group_el;
+				for (var i = 0; i < actions.length; i++) {
+					if(actions[i].grouped) {
+						group_el = this._create_group_for(node_id, node_el);
+						break;
+					}
+				}
+
+				for (var i = 0; (!group_el) && (i < actions_all.length); i++) {
+					if(actions_all[i].grouped) {
+						group_el = this._create_group_for(node_id, node_el);
+						break;
+					}
+				}
+
+				// Populate the actions
+				for (var i = 0; i < actions.length; i++) {
+					if(actions[i].grouped && !group_el) {
+						//console.log('** Skipping action of node ' + node_id);
+						//console.log(actions[i]);
+						continue;
+					}
+					var _action = self._create_action(node_id, actions[i].id);
+
+					if(actions[i].grouped) {
+						group_el.appendChild(_action.action_el);
+					} else {	// not grouped
+						self._set_action(node_el, _action);
+					}
+				}
+
+				// Populate the "all" actions
+				for (i = 0; i < actions_all.length; i++) {
+					if(actions[i].grouped && !group_el) {
+						//console.log('** Skipping "all" action at node ' + node_id);
+						//console.log(actions[i]);
+						continue;
+					}
+					_action = self._create_action("all", actions_all[i].id);
+
+					if(actions_all[i].grouped) {
+						group_el.appendChild(_action.action_el);
+					} else {	// not grouped
+						self._set_action(node_el, _action);
+					}
+				}
+
+			} //endif node_el
+			return node_el;
+		};
+
+	}
+
+}));
+// Begin bundled file ///////////////////////////////////////////////////
+// tabfern/js/jstree-flagnode.js
+
+/**
+ * ### Flagnode plugin
+ *
+ * Adds to jsTree the ability to highlight nodes, independently of what's
+ * selected.
+ *
+ * If loaded after the `types` plugin, can also flag by type.
+ *
+ * Modified from jstree.search.js.
+ */
+/*globals jQuery, define, exports, require, document */
+(function (factory) {
+	"use strict";
+	if (typeof define === 'function' && define.amd) {
+		define('jstree-flagnode',['jquery','jstree'], factory);
+	}
+	else if(typeof exports === 'object') {
+		factory(require('jquery'), require('jstree'));
+	}
+	else {
+		factory(jQuery, jQuery.jstree);
+	}
+}(function ($, _jstree_unused, undefined) {
+	"use strict";
+
+	if($.jstree.plugins.flagnode) { return; }
+
+	/**
+	 * stores all defaults for the flagnode plugin
+	 * @name $.jstree.defaults.flagnode
+	 * @plugin flagnode
+	 */
+	$.jstree.defaults.flagnode = {
+		/**
+		 * The class to be applied to matches
+		 */
+		css_class : 'jstree-flagnode'
+	};
+
+	$.jstree.plugins.flagnode = function (options, parent) {
+		this._data.flagnode.flagged_nodes={};	//map node IDs to true.
+			// It's a hash so we can add and delete in O(1).
+
+		/// Helper to convert [$(), $(), $()] to $(a,b,c)
+		/// From https://stackoverflow.com/a/6867350/2877364 by
+		/// https://stackoverflow.com/users/331508/brock-adams
+		function arrjq_to_jqarr(arr) {
+			return $(arr).map(function(){ return this.toArray(); } );
+		};
+
+		/**
+		 * Helper to set the flag state on a node
+		 * @param {jQuery} jq_node The jQuery node(s) to adjust, if any
+		 * @param {Boolean} should_flag Whether to set or clear the flag
+		 */
+		this._setflagstate = function(jq_node, should_flag)
+		{
+			let self = this;
+			let cls = this.settings.flagnode.css_class;
+
+			if(Array.isArray(jq_node)) {
+				jq_node = arrjq_to_jqarr(jq_node);
+			}
+
+			if(should_flag) {
+				jq_node.children('.jstree-anchor').addClass(cls);
+				jq_node.each(function(unused,elem){
+					self._data.flagnode.flagged_nodes[elem.id] = true;
+				});
+			} else {
+				jq_node.children('.jstree-anchor').removeClass(cls);
+				jq_node.each(function(unused,elem){
+					delete self._data.flagnode.flagged_nodes[elem.id];
+				});
+			}
+		} //_setflagstate()
+
+		/**
+		 * flag or unflag a given node
+		 * @name flag_node(obj [, should_flag])
+		 * @param {mixed} obj the node to flag, or an array of nodes to flag
+		 * @param {Boolean} should_flag (default true) if true, flag the node; if false, unflag.
+		 * @param {Boolean} suppress_event If true, don't trigger an event
+		 * @plugin flagnode
+		 * @trigger flagnode.jstree
+		 */
+		this.flag_node = function (obj, should_flag, suppress_event) {
+			if(should_flag==null) should_flag = true;		//undefined or null => set it
+			if(!Array.isArray(obj)) {
+				obj = [obj];
+			}
+
+			// Flag the nodes
+			let to_flag = [];
+			for(var obj_idx in obj) {
+				var the_obj = obj[obj_idx];
+				var the_node = this.get_node(the_obj, true);
+				if(the_node === false) continue;
+				to_flag.push(the_node);
+			} //foreach node
+			this._setflagstate(to_flag, should_flag);
+
+			/**
+			 * triggered after flagging
+			 * @event
+			 * @name flagnode.jstree
+			 * @param {Array} flagged IDs of the flagged nodes
+			 * @plugin flagnode
+			 */
+			if(!suppress_event) {
+				this.trigger('flagnode',
+						{ flagged :
+							Object.keys(this._data.flagnode.flagged_nodes)}
+				);
+			}
+		}; //flag()
+
+		/**
+		 * clear all flags
+		 * @name clear_flags()
+		 * @param {Boolean} suppress_event If true, don't trigger an event
+		 * @plugin flagnode
+		 * @trigger clear_flagnode.jstree
+		 */
+		this.clear_flags = function (suppress_event) {
+			var cls = this.settings.flagnode.css_class;
+			this.element.find('.jstree-anchor.'+cls).removeClass(cls);
+			this._data.flagnode.flagged_nodes = {};
+			/**
+			 * triggered after flags are cleared
+			 * @event
+			 * @name clear_flagnode.jstree
+			 * @plugin flagnode
+			 */
+			if(!suppress_event) {
+				this.trigger('clear_flagnode', {flagged:[]});
+			}
+		};
+
+		/// Redraw.
+		/// @param {DOM object} obj The node being redrawn
+		/// @return the object, if the parent was able to redraw it.
+		this.redraw_node = function(obj, deep, callback, force_render) {
+			obj = parent.redraw_node.apply(this, arguments);
+			if(obj) {
+				if(obj.id in this._data.flagnode.flagged_nodes) {
+					this._setflagstate($(obj), true);
+				}
+			}
+			return obj;
+		}; //redraw_node
+
+		// === Type support ===
+
+		// If the "types" plugin isn't loaded, don't create the functions that require it
+		if($.jstree.plugins.types && (this instanceof $.jstree.plugins.types)) {
+
+			/**
+			 * clear flags on all nodes of a specific type
+			 * @name clear_flags_by_type()
+			 * @param {mixed} type The type of node (other types won't be affected).
+			 *						Pass an array for multiple types.
+			 * @param except_parent_node_id If present, only clear nodes that are
+			 * 						are not children of #except_parent_node_id.
+			 * 						TODO refactor this into a general clear
+			 * 						function that will take an object of criteria.
+			 * @param {Boolean} suppress_event If true, don't trigger an event
+			 * @plugin flagnode
+			 * @trigger clear_flagnode.jstree
+			 */
+			this.clear_flags_by_type = function(type, except_parent_node_id,
+												suppress_event) {
+				if(!Array.isArray(type)) type = [type];
+
+				// Collect the nodes
+				let nodes_to_clear = [];
+				for(let node_id in this._data.flagnode.flagged_nodes) {
+					let jstree_node = this.get_node(node_id);
+
+					if(!type.includes(jstree_node.type)) continue;
+					if(except_parent_node_id &&
+							jstree_node.parent === except_parent_node_id) continue;
+
+					nodes_to_clear.push(this.get_node(node_id,true));
+				}
+				this._setflagstate(nodes_to_clear, false);
+
+				if(!suppress_event) {
+					this.trigger('clear_flagnode',
+						{ 	flagged: Object.keys(this._data.flagnode.flagged_nodes),
+							cleared_except_parent_node_id: except_parent_node_id,
+							cleared_type: type,
+						}
+					);
+				}
+			}; //clear_flags_by_type
+		} //endif "types" plugin loaded
+
+		// If the "multitype" plugin isn't loaded, don't create the functions that require it
+		if($.jstree.plugins.multitype && (this instanceof $.jstree.plugins.multitype)) {
+
+			/**
+			 * clear flags on all nodes having a specific multitype
+			 * @name clear_flags_by_type()
+			 * @param {mixed} type The type of node (other types won't be affected).
+			 *						Pass an array for multiple types; only nodes
+			 *						having all those types will be affected.
+			 * @param except_parent_node_id If present, only clear nodes that are
+			 * 						are not children of #except_parent_node_id.
+			 * 						TODO refactor this into a general clear
+			 * 						function that will take an object of criteria.
+			 * @param {Boolean} suppress_event If true, don't trigger an event
+			 * @plugin flagnode
+			 * @trigger clear_flagnode.jstree
+			 */
+			this.clear_flags_by_multitype = function(type, except_parent_node_id,
+												suppress_event) {
+				if(!Array.isArray(type)) type = [type];
+
+				// Collect the nodes
+				let nodes_to_clear = [];
+				NODE: for(let node_id in this._data.flagnode.flagged_nodes) {
+					let jstree_node = this.get_node(node_id);
+
+					for(let ty of type) {	// check each multitype
+						if(!this.has_multitype(jstree_node, ty)) continue NODE;
+					}
+
+					if(except_parent_node_id &&
+							jstree_node.parent === except_parent_node_id) continue;
+
+					nodes_to_clear.push(this.get_node(node_id,true));
+				}
+
+				this._setflagstate(nodes_to_clear, false);
+
+				if(!suppress_event) {
+					this.trigger('clear_flagnode',
+						{ 	flagged: Object.keys(this._data.flagnode.flagged_nodes),
+							cleared_except_parent_node_id: except_parent_node_id,
+							cleared_type: type,
+						}
+					);
+				}
+			}; //clear_flags_by_type
+		} //endif "multitype" plugin loaded
+
+	}; //flagnode plugin
+
+}));
+// vi: set ts=4 sw=4: //
+// Begin bundled file ///////////////////////////////////////////////////
+// tabfern/js/jstree-because.js
+
+/**
+ * ### Because plugin
+ *
+ * This plugin adds more information to any event. The new data is
+ * specified by a call to `because()` wrapping the actual call.  For example:
+ *
+ *     because({answer:42}, 'move_node', 'j2_1', 'j2_2');
+ *
+ * will cause the `move_node.jstree` triggered by the `move_node` call to
+ * include `reason:{answer:42}` in the event data.  The reason can be anything
+ * except `undefined`.
+ */
+/*globals jQuery, define, exports, require, document */
+(function (factory) {
+	"use strict";
+	if (typeof define === 'function' && define.amd) {
+		define('jstree-because',['jquery','jstree'], factory);
+	}
+	else if(typeof exports === 'object') {
+		factory(require('jquery'), require('jstree'));
+	}
+	else {
+		factory(jQuery, jQuery.jstree);
+	}
+}(function ($, _jstree_unused, undefined) {
+	"use strict";
+
+	if($.jstree.plugins.because) { return; }
+
+	$.jstree.plugins.because = function (options, parent) {
+		this._data.because = {reason: undefined};
+
+		/// Call a jstree function, with the provided reason available
+		this.because = function(reason, function_name, ...args) {
+			this._data.because.reason = reason;
+			this[function_name](...args);
+			this._data.because.reason = undefined;
+		}; //because
+
+		/// Incorporate the reason (if any) into an event
+		this.trigger = function (ev, data) {
+			if(!data) data = {};
+
+			if(this._data.because.reason !== undefined) {	// Inject the reason
+				data.reason = this._data.because.reason;
+			}
+
+			parent.trigger.call(this, ev, data);
+		}; //trigger()
+
+		/// Accessor for the check callback or other functions that may be
+		/// called during a because() call.
+		this.reason = function() {
+			return this._data.because.reason;
+		}; //reason()
+	};
+}));
+
+// vi: set ts=4 sw=4 ai: //
+// Begin bundled file ///////////////////////////////////////////////////
+// tabfern/js/jstree-multitype.js
+
+/**
+ * ### Multitype plugin
+ *
+ * Makes it possible to add predefined types for groups of nodes,
+ * which make it possible to easily control nesting rules and icon
+ * for each group.
+ * Each node can have multiple types at once.
+ *
+ * Modified by cxw42 from jstree.types.js by vakata.
+ */
+/*globals jQuery, define, exports, require */
+(function (factory) {
+	"use strict";
+	if (typeof define === 'function' && define.amd) {
+		define('jstree-multitype',['jquery','jstree'], factory);
+	}
+	else if(typeof exports === 'object') {
+		factory(require('jquery'), require('jstree'));
+	}
+	else {
+		factory(jQuery, jQuery.jstree);
+	}
+}(function ($, jstree, undefined) {
+	"use strict";
+
+	if($.jstree.plugins.multitype) { return; }
+
+	/**
+	 * An object storing all types as key-value pairs.
+	 *
+	 *	types: {
+	 *			custom_icon: { icon: 'my-own-icon' },
+	 *			some_attrs: { li_attr: 'my-li', a_attr: 'my-a' },
+	 *			custom_color: { li_attr: 'style-blue' },
+	 *	}
+	 *
+	 * The key is the multitype name and the value is
+	 * an object that could contain following keys (all optional).
+	 *
+	 * Each node can have any number of multitypes.  In case of conflicts,
+	 * e.g., of icon, later multitypes control.
+	 *
+//	 * * `max_children` the maximum number of immediate children this node
+//	 * 		multitype can have. Do not specify or set to `-1` for unlimited.
+//	 * * `max_depth` the maximum number of nesting this node multitype can
+//	 * 		have. A value of `1` would mean that the node can have children,
+//	 * 		but no grandchildren. Do not specify or set to `-1` for unlimited.
+//	 * * `valid_children` an array of node multitype strings, that nodes
+//	 * 		of this multitype can have as children. Do not specify or set
+//	 * 		to `-1` for no limits.
+	 * * `icon` a string - can be a path to an icon or a className, if
+	 * 		using an image that is in the current directory use a `./`
+	 * 		prefix, otherwise it will be detected as a class. Omit to use the
+	 * 		default icon from your theme.
+	 * * `li_attr` an object of values which will be used to add HTML
+	 * 		attributes on the resulting LI DOM node (merged with the node's
+	 * 		own data)
+	 * * `a_attr` an object of values which will be used to add HTML attributes
+	 *		on the resulting A DOM node (merged with the node's own data)
+	 *
+	 * There are no predefined or default multitypes
+	 *
+	 * @name $.jstree.defaults.multitype
+	 * @plugin multitype
+	 */
+	$.jstree.defaults.multitype = { };
+
+	$.jstree.plugins.multitype = function (options, parent) {
+
+// I don't think we need this since we don't have defaults
+//		this.init = function (el, options) {
+//			var i, j;
+//			if(options && options.multitype && options.multitype['default']) {
+//				for(i in options.types) {
+//					if(i !== "default" && i !== $.jstree.root && options.multitype.hasOwnProperty(i)) {
+//						for(j in options.multitype['default']) {
+//							if(options.multitype['default'].hasOwnProperty(j) && options.multitype[i][j] === undefined) {
+//								options.multitype[i][j] = options.multitype['default'][j];
+//							}
+//						}
+//					}
+//				}
+//			}
+//			parent.init.call(this, el, options);
+//			this._model.data[$.jstree.root].multitype = $.jstree.root;
+//		};
+
+// I don't think we need this since we don't have the '#' type
+//		this.refresh = function (skip_loading, forget_state) {
+//			parent.refresh.call(this, skip_loading, forget_state);
+//			this._model.data[$.jstree.root].multitype = $.jstree.root;
+//		};
+
+		this.bind = function () {
+			this.element
+				.on('model.jstree', $.proxy(function (e, data) {
+						var m = this._model.data,
+							dpc = data.nodes,	///< aray of node IDs
+							t = this.settings.multitype,
+							i, j;	//, c = 'default',
+						var k;
+						var cs;		///< array of classes to add, one for each type set
+						var typeset_idx;
+
+						NODE: for(i = 0, j = dpc.length; i < j; i++) {
+
+							m[dpc[i]].multitype = [];
+
+							// `original` holds the node's state when it was first loaded,
+							// e.g., as provided as the `data` to the jstree() call.
+							if(m[dpc[i]].original && m[dpc[i]].original.multitype) {
+								// && t[m[dpc[i]].original.multitype]
+								//c = m[dpc[i]].original.multitype;
+								cs = m[dpc[i]].original.multitype;
+							}
+
+							// Not sure what this is --- maybe backwards compatibility?
+							if(m[dpc[i]].data && m[dpc[i]].data.jstree && m[dpc[i]].data.jstree.multitype) {
+							 //	&& t[m[dpc[i]].data.jstree.multitype]
+								//c = m[dpc[i]].data.jstree.multitype;
+								cs = m[dpc[i]].data.jstree.multitype;
+							}
+
+							if(!cs) cs = [];		//default: no types
+							else if(!$.isArray(cs)) cs = [cs];
+
+							// Make sure each multitype is known
+							for(let ty of cs) {
+								if(!t[ty]) continue NODE;
+							}
+
+							m[dpc[i]].multitype = cs;	//c;
+
+							// Apply each type in order
+							for(var cidx=0; cidx < cs.length; ++cidx) {
+								var c = cs[cidx];
+
+								if(t[c].icon !== undefined) {
+									m[dpc[i]].icon = t[c].icon;		// Later icon assignments override earlier
+								}
+
+								if(t[c].li_attr !== undefined && typeof t[c].li_attr === 'object') {
+									for (k in t[c].li_attr) {
+										if (t[c].li_attr.hasOwnProperty(k)) {
+											if (k === 'id') {
+												continue;
+											}
+											else if (k === 'class') {
+												m[dpc[i]].li_attr['class'] = t[c].li_attr['class'] + ' ' + m[dpc[i]].li_attr['class'];
+											}
+											else {	//later assignments override earlier
+												m[dpc[i]].li_attr[k] = t[c].li_attr[k];
+											}
+										}
+									}
+								} //endif t[c] has li_attr
+
+								if(t[c].a_attr !== undefined && typeof t[c].a_attr === 'object') {
+									for (k in t[c].a_attr) {
+										if (t[c].a_attr.hasOwnProperty(k)) {
+											if (k === 'id') {
+												continue;
+											}
+											else if (k === 'class') {
+												m[dpc[i]].a_attr['class'] = t[c].a_attr['class'] + ' ' + m[dpc[i]].a_attr['class'];
+											}
+											else {	//later assignments override earlier
+												m[dpc[i]].a_attr[k] = t[c].a_attr[k];
+											}
+										}
+									}
+								} //endif t[c] has a_attr
+
+							} //cidx
+
+						} //foreach node
+						//m[$.jstree.root].multitype = $.jstree.root;
+					}, this));
+			parent.bind.call(this);
+		};
+
+		this.get_json = function (obj, options, flat) {
+			var i, j,
+				m = this._model.data,
+				opt = options ? $.extend(true, {}, options, {no_id:false}) : {},
+				tmp = parent.get_json.call(this, obj, opt, flat);
+			if(tmp === false) { return false; }
+			if($.isArray(tmp)) {
+				for(i = 0, j = tmp.length; i < j; i++) {
+					tmp[i].multitype = tmp[i].id && m[tmp[i].id] && m[tmp[i].id].multitype ? m[tmp[i].id].multitype : "default";
+					if(options && options.no_id) {
+						delete tmp[i].id;
+						if(tmp[i].li_attr && tmp[i].li_attr.id) {
+							delete tmp[i].li_attr.id;
+						}
+						if(tmp[i].a_attr && tmp[i].a_attr.id) {
+							delete tmp[i].a_attr.id;
+						}
+					}
+				}
+			}
+			else {
+				tmp.multitype = tmp.id && m[tmp.id] && m[tmp.id].multitype ? m[tmp.id].multitype : "default";
+				if(options && options.no_id) {
+					tmp = this._delete_ids(tmp);
+				}
+			}
+			return tmp;
+		};
+
+		this._delete_ids = function (tmp) {
+			if($.isArray(tmp)) {
+				for(var i = 0, j = tmp.length; i < j; i++) {
+					tmp[i] = this._delete_ids(tmp[i]);
+				}
+				return tmp;
+			}
+			delete tmp.id;
+			if(tmp.li_attr && tmp.li_attr.id) {
+				delete tmp.li_attr.id;
+			}
+			if(tmp.a_attr && tmp.a_attr.id) {
+				delete tmp.a_attr.id;
+			}
+			if(tmp.children && $.isArray(tmp.children)) {
+				tmp.children = this._delete_ids(tmp.children);
+			}
+			return tmp;
+		};
+
+// Leave this out for now
+//		this.check = function (chk, obj, par, pos, more) {
+//			if(parent.check.call(this, chk, obj, par, pos, more) === false) { return false; }
+//			obj = obj && obj.id ? obj : this.get_node(obj);
+//			par = par && par.id ? par : this.get_node(par);
+//			var m = obj && obj.id ? (more && more.origin ? more.origin : $.jstree.reference(obj.id)) : null, tmp, d, i, j;
+//			m = m && m._model && m._model.data ? m._model.data : null;
+//			switch(chk) {
+//				case "create_node":
+//				case "move_node":
+//				case "copy_node":
+//					if(chk !== 'move_node' || $.inArray(obj.id, par.children) === -1) {
+//						tmp = this.get_rules(par);
+//						if(tmp.max_children !== undefined && tmp.max_children !== -1 && tmp.max_children === par.children.length) {
+//							this._data.core.last_error = { 'error' : 'check', 'plugin' : 'multitype', 'id' : 'types_01', 'reason' : 'max_children prevents function: ' + chk, 'data' : JSON.stringify({ 'chk' : chk, 'pos' : pos, 'obj' : obj && obj.id ? obj.id : false, 'par' : par && par.id ? par.id : false }) };
+//							return false;
+//						}
+//						if(tmp.valid_children !== undefined && tmp.valid_children !== -1 && $.inArray((obj.multitype || 'default'), tmp.valid_children) === -1) {
+//							this._data.core.last_error = { 'error' : 'check', 'plugin' : 'multitype', 'id' : 'types_02', 'reason' : 'valid_children prevents function: ' + chk, 'data' : JSON.stringify({ 'chk' : chk, 'pos' : pos, 'obj' : obj && obj.id ? obj.id : false, 'par' : par && par.id ? par.id : false }) };
+//							return false;
+//						}
+//						if(m && obj.children_d && obj.parents) {
+//							d = 0;
+//							for(i = 0, j = obj.children_d.length; i < j; i++) {
+//								d = Math.max(d, m[obj.children_d[i]].parents.length);
+//							}
+//							d = d - obj.parents.length + 1;
+//						}
+//						if(d <= 0 || d === undefined) { d = 1; }
+//						do {
+//							if(tmp.max_depth !== undefined && tmp.max_depth !== -1 && tmp.max_depth < d) {
+//								this._data.core.last_error = { 'error' : 'check', 'plugin' : 'multitype', 'id' : 'types_03', 'reason' : 'max_depth prevents function: ' + chk, 'data' : JSON.stringify({ 'chk' : chk, 'pos' : pos, 'obj' : obj && obj.id ? obj.id : false, 'par' : par && par.id ? par.id : false }) };
+//								return false;
+//							}
+//							par = this.get_node(par.parent);
+//							tmp = this.get_rules(par);
+//							d++;
+//						} while(par);
+//					}
+//					break;
+//			}
+//			return true;
+//		};
+
+//		/**
+//		 * used to retrieve the multitype settings object for a node
+//		 * @name get_rules(obj)
+//		 * @param {mixed} obj the node to find the rules for
+//		 * @return {Object}
+//		 * @plugin multitype
+//		 */
+//		this.get_mt_rules = function (obj) {
+//			obj = this.get_node(obj);
+//			if(!obj) { return false; }
+//			var tmp = this.get_multitype(obj, true);
+////			if(tmp.max_depth === undefined) { tmp.max_depth = -1; }
+////			if(tmp.max_children === undefined) { tmp.max_children = -1; }
+////			if(tmp.valid_children === undefined) { tmp.valid_children = -1; }
+//			return tmp;
+//		};
+
+		/**
+		 * used to retrieve the multitype string or settings object for a node
+		 * @name get_multitype(obj [, rules])
+		 * @param {mixed} obj the node to find the rules for
+		 * @return {array}
+		 * @plugin multitype
+		 */
+		this.get_multitype = function (obj) {
+			obj = this.get_node(obj);
+			return (!obj) ? false : obj.multitype;
+		};
+
+		/**
+		 * add a multitype to a node, at the end of the list.  This means
+		 * the new type's icon will replace those specified by other types.
+		 * @name set_multitype(obj, multitype)
+		 * @param {mixed} obj the node to change
+		 * @param {String} multitype the new multitype
+		 * @plugin multitype
+		 */
+		this.add_multitype = function (obj, new_multitype) {
+			var m = this._model.data, t, t1, t2, old_icon, k, d, a;
+			if(typeof new_multitype !== 'string') return false;
+
+			if($.isArray(obj)) {
+				obj = obj.slice();
+				for(t1 = 0, t2 = obj.length; t1 < t2; t1++) {
+					this.add_multitype(obj[t1], new_multitype);
+				}
+				return true;
+			}
+
+			t = this.settings.multitype;
+			obj = this.get_node(obj);
+			//if(!t[multitype] || !obj) { return false; }
+			if(!obj) { return false; }
+			let tyidx = obj.multitype.indexOf(new_multitype);
+			if(tyidx !== -1) return true;
+				// Already there - don't add it again
+
+			d = this.get_node(obj, true);
+
+			if (d && d.length) {
+				a = d.children('.jstree-anchor');
+			}
+
+			obj.multitype.push(new_multitype);
+
+			// Set the icon
+			if(t[new_multitype].icon !== undefined) {
+				this.set_icon(obj, t[new_multitype].icon);
+			} //endif this multitype was controlling the icon
+
+			// add new props
+			if(t[new_multitype].li_attr !== undefined && typeof t[new_multitype].li_attr === 'object') {
+				for (k in t[new_multitype].li_attr) {
+					if (t[new_multitype].li_attr.hasOwnProperty(k)) {
+						if (k === 'id') {
+							continue;
+						}
+						else if (m[obj.id].li_attr[k] === undefined) {
+							m[obj.id].li_attr[k] = t[new_multitype].li_attr[k];
+							if (d) {
+								if (k === 'class') {
+									d.addClass(t[new_multitype].li_attr[k]);
+								}
+								else {
+									d.attr(k, t[new_multitype].li_attr[k]);
+								}
+							}
+						}
+						else if (k === 'class') {
+							m[obj.id].li_attr['class'] = t[new_multitype].li_attr[k] + ' ' + m[obj.id].li_attr['class'];
+							if (d) { d.addClass(t[new_multitype].li_attr[k]); }
+						}
+					}
+				}
+			} //endif new_multitype specifies li_attr
+
+			if(t[new_multitype].a_attr !== undefined && typeof t[new_multitype].a_attr === 'object') {
+				for (k in t[new_multitype].a_attr) {
+					if (t[new_multitype].a_attr.hasOwnProperty(k)) {
+						if (k === 'id') {
+							continue;
+						}
+						else if (m[obj.id].a_attr[k] === undefined) {
+							m[obj.id].a_attr[k] = t[new_multitype].a_attr[k];
+							if (a) {
+								if (k === 'class') {
+									a.addClass(t[new_multitype].a_attr[k]);
+								}
+								else {
+									a.attr(k, t[new_multitype].a_attr[k]);
+								}
+							}
+						}
+						else if (k === 'href' && m[obj.id].a_attr[k] === '#') {
+							m[obj.id].a_attr['href'] = t[new_multitype].a_attr['href'];
+							if (a) { a.attr('href', t[new_multitype].a_attr['href']); }
+						}
+						else if (k === 'class') {
+							m[obj.id].a_attr['class'] = t[new_multitype].a_attr['class'] + ' ' + m[obj.id].a_attr['class'];
+							if (a) { a.addClass(t[new_multitype].a_attr[k]); }
+						}
+					}
+				}
+			} //endif new_multitype specifies a_attr
+
+			return true;
+		}; //add_multitype()
+
+		/**
+		 * remove a multitype from a node
+		 * @name set_multitype(obj, multitype)
+		 * @param {mixed} obj the node to change
+		 * @param {String} multitype the new multitype
+		 * @plugin multitype
+		 */
+		this.del_multitype = function (obj, which_multitype) {
+			var m = this._model.data, t, t1, t2, old_icon, k, d, a;
+			if(typeof which_multitype !== 'string') return false;
+
+			if($.isArray(obj)) {
+				obj = obj.slice();
+				for(t1 = 0, t2 = obj.length; t1 < t2; t1++) {
+					this.del_multitype(obj[t1], which_multitype);
+				}
+				return true;
+			}
+
+			t = this.settings.multitype;
+			obj = this.get_node(obj);
+			//if(!t[multitype] || !obj) { return false; }
+			if(!obj) { return false; }
+			let tyidx = obj.multitype.indexOf(which_multitype);
+			if(tyidx === -1) return true;
+				// Already gone - don't remove it again
+
+			obj.multitype.splice(tyidx,1);	// Remove it from the node
+
+			d = this.get_node(obj, true);
+			if (d && d.length) {
+				a = d.children('.jstree-anchor');
+			}
+
+			// If this multitype was controlling the icon, clear it and
+			// take any other icon specified.
+			old_icon = this.get_icon(obj);
+			if(t[which_multitype].icon !== undefined && old_icon === t[which_multitype].icon) {
+				let new_icon = true;
+				// Loop down, since later multitypes control
+				for(let idx=obj.multitype.length-1; idx>=0 ; --idx) {
+					if(t[obj.multitype[idx]].icon !== undefined) {
+						new_icon = t[obj.multitype[idx]].icon;
+						break;
+					}
+				}
+				this.set_icon(obj, new_icon);
+			} //endif this multitype was controlling the icon
+
+			// remove old multitype props
+			if(t[which_multitype] && t[which_multitype].li_attr !== undefined && typeof t[which_multitype].li_attr === 'object') {
+				for (k in t[which_multitype].li_attr) {
+					if (t[which_multitype].li_attr.hasOwnProperty(k)) {
+
+						if (k === 'id') {
+							continue;
+						}
+						else if (k === 'class') {
+							// TODO? handle each class listed in the string separately?
+							m[obj.id].li_attr['class'] = (m[obj.id].li_attr['class'] || '').replace(t[which_multitype].li_attr[k], '');
+							if (d) { d.removeClass(t[which_multitype].li_attr[k]); }
+						}
+						else if (m[obj.id].li_attr[k] === t[which_multitype].li_attr[k]) {
+							delete m[obj.id].li_attr[k];
+							if (d) { d.removeAttr(k); }
+
+							// Iterate down the remaining types to find a new value for this attribute
+							for(let idx=obj.multitype.length-1; idx>=0 ; --idx) {
+								let ty = t[obj.multitype[idx]];
+								if(ty && ty.li_attr && ty.li_attr[k] !== undefined) {
+									m[obj.id].li_attr[k] = t[obj.multitype[idx]].li_attr[k];
+									if(d) { d.attr(k, t[obj.multitype[idx]].li_attr[k]); }
+									break;
+								}
+							}
+
+						}
+
+					}
+				}
+			} //endif type has li_attr
+
+			if(t[which_multitype] && t[which_multitype].a_attr !== undefined && typeof t[which_multitype].a_attr === 'object') {
+				for (k in t[which_multitype].a_attr) {
+					if (t[which_multitype].a_attr.hasOwnProperty(k)) {
+						if (k === 'id') {
+							continue;
+						}
+						else if (k === 'class') {
+							m[obj.id].a_attr['class'] = (m[obj.id].a_attr['class'] || '').replace(t[which_multitype].a_attr[k], '');
+							if (a) { a.removeClass(t[which_multitype].a_attr[k]); }
+						}
+						else if (m[obj.id].a_attr[k] === t[which_multitype].a_attr[k]) {
+							if (k === 'href') {
+								m[obj.id].a_attr[k] = '#';
+								if (a) { a.attr('href', '#'); }
+							}
+							else {
+								delete m[obj.id].a_attr[k];
+								if (a) { a.removeAttr(k); }
+							}
+
+							// Iterate down the remaining types to find a new value for this attribute
+							for(let idx=obj.multitype.length-1; idx>=0 ; --idx) {
+								let ty = t[obj.multitype[idx]];
+								if(ty && ty.a_attr && ty.a_attr[k] !== undefined) {
+									m[obj.id].a_attr[k] = t[obj.multitype[idx]].a_attr[k];
+									if(a) { a.attr(k, t[obj.multitype[idx]].a_attr[k]); }
+									break;
+								}
+							}
+
+						}
+					}
+				}
+			} //endif type has a_attr
+
+			return true;
+		}; //del_multitype()
+
+		/**
+		 * check whether a node has a multitype
+		 * @name has_multitype(obj, multitype)
+		 * @param {mixed} obj the node
+		 * @param {String} multitype the multitype
+		 * @return {Boolean} true/false, or null if unknown or error
+		 * @plugin multitype
+		 */
+		this.has_multitype = function (obj, multitype) {
+			if(typeof multitype !== 'string') return null;
+			obj = this.get_node(obj);
+			if(!obj) { return null; }
+			return (obj.multitype.indexOf(multitype) !== -1);
+		}; //has_multitype()
+
+		/**
+		 * set the node icon for a node (override)
+		 * @name set_icon(obj, icon)
+		 * @param {mixed} obj
+		 * @param {String} icon the new icon - can be a path to an icon or a className, if using an image that is in the current directory use a `./` prefix, otherwise it will be detected as a class
+		 */
+		this.set_icon = function (obj, icon) {
+
+			if($.isArray(obj)) {
+				obj = obj.slice();
+				for(t1 = 0, t2 = obj.length; t1 < t2; t1++) {
+					this.set_icon(obj[t1], icon);
+				}
+				return true;
+			}
+
+			obj = this.get_node(obj);
+			if(!obj || obj.id === $.jstree.root) { return false; }
+
+			let new_icon = (icon === true || icon === null || icon === undefined ||
+                        icon === '') ? true : icon;
+
+      if(new_icon === true) { // default icon --- see if one from a multitype should take effect
+			  let t = this.settings.multitype;
+
+				// Loop down, since later multitypes control
+				for(let idx=obj.multitype.length-1; idx>=0 ; --idx) {
+					if(t[obj.multitype[idx]].icon !== undefined) {
+						new_icon = t[obj.multitype[idx]].icon;
+						break;
+					}
+				}
+      }
+
+      return parent.set_icon.call(this,obj,new_icon);
+    }; //set_icon()
+
+	};
+}));
+// vi: set ts=2 sw=2: //
+// Begin bundled file ///////////////////////////////////////////////////
+// tabfern/js/jstree-redraw-event.js
+
+/**
+ * ### Redraw-event plugin
+ *
+ * This plugin triggers a "redraw_event" event on redraw.  List it last
+ * in the plugin chain, and you will reliably get an event every time
+ * a node is redrawn.
+ * The event gets an {obj} parameter listing the object that was just redrawn.
+ */
+/*globals jQuery, define, exports, require, document */
+(function (factory) {
+	"use strict";
+	if (typeof define === 'function' && define.amd) {
+		define('jstree-redraw-event',['jquery','jstree'], factory);
+	}
+	else if(typeof exports === 'object') {
+		factory(require('jquery'), require('jstree'));
+	}
+	else {
+		factory(jQuery, jQuery.jstree);
+	}
+}(function ($, _jstree_unused, undefined) {
+	"use strict";
+
+	if($.jstree.plugins.redraw_event) { return; }
+
+	$.jstree.plugins.redraw_event = function (options, parent) {
+		//this._data.redraw_event = {reason: undefined};
+
+		/// Redraw.
+		/// @param {DOM object} obj The node being redrawn
+		/// @return the object, if the parent was able to redraw it.
+		this.redraw_node = function(obj, deep, callback, force_render) {
+			obj = parent.redraw_node.apply(this, arguments);
+			this.trigger('redraw_event', {obj: obj});
+			return obj;
+		}; //redraw_node
+
+	};
+}));
+
+// vi: set ts=4 sw=4 ai: //
+// Begin bundled file ///////////////////////////////////////////////////
+// tabfern/js/multidex.js
+
+/// Multidex: Tiny key-value store supporting fast access by multiple keys.
+/// Copyright (c) 2017 Chris White.  CC-BY 4.0 International.
+
+// The multidex holds uniform values, each of which is a POD having the same
+// fields as all other values.  Fields can be keys or other fields.  Each
+// key field is indexed.  For example:
+//
+//     let store = Multidex(['key1','key2'],['other1','other2']);
+//     store.add({key1: 42, key2: 'foo', other1: "Don't Panic"});
+//          // returns the new POD
+//     store.by_key1(42);       // <-- returns the POD we just added
+//     store.by_key2('foo');    // <-- ditto
+//     store.by_key1(42,'other1')   // <-- "Don't Panic" --- a shorthand
+//     let foo = store.by_key1(42);
+//     foo.key1 === 42;     // true
+//     foo.key2 === 'foo'   // true
+//     foo.other1 === "Don't Panic"     // true
+//
+//     store.remove_value(foo);     // Have to remove by value, not by key.
+//     store.by_key1(42);   // <-- undefined, since we removed _foo_.
+//
+// Caution: If you change the indices in a value, the by_* accessors will
+// no longer work as they should.  Instead, use change_key():
+//
+//     store.change_key(foo, 'key1', 84);
+//     store.by_key1(84)    // foo
+//
+// You can give values a type tag, accessible as <val>.ty, by passing a
+// string as the first parameter of Multidex.
+
+(function (root, factory) {
+    if (typeof define === 'function' && define.amd) {
+        // AMD
+        define('multidex',factory);
+    } else if (typeof exports === 'object') {
+        // Node, CommonJS-like
+        module.exports = factory();
+    } else {
+        // Browser globals (root is window)
+        root.Multidex = factory();
+    }
+}(this, function () {
+
+    // Prefixes for field names
+    const IDX = '_idx_';
+    const ACC = 'by_';      // accessor
+
+    // Key to hold a value's "name," i.e., unique id
+    const VNAME = Symbol('value_name');
+
+    // Current value name
+    let Value_name = 1;     // always truthy (unless you wrap around)
+
+    // Cache for prototypes, one per set of key names.
+    let Protos = {};
+
+    // --- General helpers ---
+
+    // Give a value a meaningful toString so we can use it as a hash key.
+    function value_toString()
+    {
+        if(VNAME in this) {
+            return this[VNAME];                 // Normal case
+        } else {
+            console.log('No value_name!');
+            console.log(this);
+            return JSON.stringify(this);        // Fallback
+        }
+    } //value_toString
+
+    /// Make a plain-old-data hash with the given keys.  Each key initially
+    /// has the value null.
+    function make_value(field_names, ty_string)
+    {
+        let retval = Object.create(null);
+
+        // Name the value
+        retval[VNAME] = Value_name.toString();
+        ++Value_name;
+
+        // TODO? move toString and ty to a prototype?
+
+        // toString so it can be used as a hash key
+        Object.defineProperty(retval, 'toString', {
+            configurable: false
+          , enumerable: false
+          , value: value_toString
+          , writable: false
+        });
+
+        // Object type
+        Object.defineProperty(retval, 'ty',  {
+            configurable: false,
+            enumerable: true,
+            value: ty_string || '',
+            writable: false,
+        });
+
+        // Data fields
+        for(let key_name of field_names) {
+            Object.defineProperty(retval, key_name,  {
+                configurable: false
+              , enumerable: true
+              , value: null
+              , writable: true
+            });
+        }
+
+        return Object.seal(retval);     // No new keys can be added.
+    } //make_value
+
+    /// Make a new multidex and return it.
+    /// @param type_string {optional string} If provide, a value to put in
+    ///                     the `ty` field of values.
+    /// @param key_names {string, or array of string} Names of key field(s)
+    ///                     in a value
+    /// @param other_names {optional string or array of string}
+    ///                     Names of non-key fields in a value.
+    /// TODO permit the caller to specify functions to be added to the
+    /// value prototype.
+    /// @return The new multidex, or null on failure.
+    function ctor()     //([type string, ]key_names [, other_names])
+    {
+        let ty_string;
+        let key_names;
+        let other_names;
+
+        // Unpack the arguments
+        let arg0_is_string = arguments.length >= 1 && typeof arguments[0] === 'string';
+        switch(arguments.length) {
+            case 1:
+                if(!arg0_is_string) key_names = arguments[0];
+                other_names = [];
+                break;
+
+            case 2:
+                if(arg0_is_string) {
+                    ty_string = arguments[0];
+                    key_names = arguments[1];
+                    other_names = [];
+                } else {
+                    key_names = arguments[0];
+                    other_names = arguments[1];
+                }
+                break;
+
+            case 3:
+                ty_string = arguments[0];
+                key_names = arguments[1];
+                other_names = arguments[2];
+                break;
+
+            default:
+                break
+        }
+
+        // Check the arguments
+        if(typeof key_names === 'string') key_names = [key_names];
+        if(typeof other_names === 'string') other_names = [other_names];
+
+        if(!Array.isArray(key_names)) return null;   //TODO better error reporting
+        if(!Array.isArray(other_names)) return null;   //TODO better error reporting
+        let all_names = key_names.concat(other_names);
+        if(!ty_string) ty_string = '';  //regularize
+
+        // Instance functions
+
+        let proto_key = JSON.stringify({ty: ty_string, names: all_names});
+        if(!(proto_key in Protos)) {    // Need to make the instance functions
+
+            /// Make a new value for storage.  Does not add the value
+            /// to the multidex.
+            function new_value() { return make_value(all_names, ty_string); }
+
+            /// Copy the fields of an existing value.  Does not add the new
+            /// value to the multidex.
+            function clone_value(other)
+            {
+                let retval = this.new_value();
+                for(let key_name of all_names) {
+                    retval[key_name] = other[key_name];
+                }
+                return retval;
+            }  //clone_value
+
+            /// Remove a value from the multidex.
+            function remove_value(val)
+            {
+                if(!(val in this.all_values)) return;
+                delete this.all_values[val];
+                for(let key_name of key_names) {    // Remove from indices
+                    delete this[IDX+key_name][val[key_name]];
+                }
+            } //remove_value
+
+            /// Add a value created with new_value or clone_value to the
+            /// multidex.  Overwrites index entries for any key fields.
+            /// @return The new value
+            function add_value(val)
+            {
+                this.remove_value(val);  // just in case
+                this.all_values[val] = val;
+                for(let key_name of key_names) {    // Add to indices
+                    this[IDX+key_name][val[key_name]] = val;
+                }
+                return val;
+            } //add_value
+
+            /// Create a new value using the given data and add the new
+            /// value to the multidex.
+            /// @return The new value
+            function add(new_data)
+            {
+                let val = this.new_value();
+                for(let field_name of all_names) {
+                    if(field_name in new_data)
+                        val[field_name] = new_data[field_name];
+                }
+                return this.add_value(val);
+            } //add
+
+            /// Change a key in a value, and update the indices
+            /// @return The value, for chaining
+            function change_key(val, key_name, new_value)
+            {
+                if(!(val in this.all_values)) return;
+                delete this[IDX+key_name][val[key_name]];   // rm old index
+                val[key_name] = new_value;                  // mutate val
+                this[IDX+key_name][new_value] = val;        // add new index
+                return val;
+            } //change_key
+
+            // The prototype
+            let this_proto = {
+                new_value,
+                clone_value,
+                remove_value,
+                add_value,
+                add,
+                change_key,
+                ty: ty_string
+            }; //this_proto
+
+            // by_* accessors for the keys.
+            //  - With one argument, returns the value if the key is in the
+            //      pertinent index, else returns undefined.
+            //  - With two arguments, returns the value if the key is in the
+            //      pertinent index and the field named in the second argument
+            //      exists in the value, else undefined.
+            for(let key_name of key_names) {
+                this_proto[ACC + key_name] =
+                    (function(key_val, field_name=null) {
+                        let idx = this[IDX+key_name];
+                        if(!(key_val in idx)) {
+                            return undefined;
+                        }
+                        let val = idx[key_val];
+
+                        if( (field_name===null) ||
+                            (typeof field_name === 'undefined') ) {
+                            return val;
+                        } else if(field_name in val) {
+                            return val[field_name];
+                        } else {
+                            return undefined;
+                        }
+                    });
+            }
+
+            Protos[proto_key] = Object.seal(this_proto);
+
+        } //endif needed to create proto
+
+        // Create the instance data
+        let retval = Object.create(Protos[proto_key]);
+
+        retval.all_values={};   // Map from values to themselves.
+
+        // Create indices
+        for(let key_name of key_names) {
+            retval[IDX + key_name] = {};
+        }
+
+        return Object.seal(retval);  // the new multidex
+
+    } //ctor
+
+    return ctor;
+}));
+
+// Module-loader template thanks to
+// http://davidbcalhoun.com/2014/what-is-amd-commonjs-and-umd/
+// Thanks for information about `this` to Kyle Simpson,
+// https://github.com/getify/You-Dont-Know-JS/blob/master/this%20%26%20object%20prototypes/ch2.md
+
+// vi: set ts=4 sts=4 sw=4 et ai fo-=o: //
+// Begin bundled file ///////////////////////////////////////////////////
+// tabfern/js/justhtmlescape.js
+
+/// justhtmlescape: An HTML-escaping function.
+/// However, see  the cautions in http://wonko.com/post/html-escaping .
+/// Adapted from https://github.com/janl/mustache.js/blob/master/mustache.js
+/// MIT license --- see end of file
+
+// Defines HTMLEscaper, which has escape(text) and unescape(text) functions.
+
+(function (root, factory) {
+    if (typeof define === 'function' && define.amd) {
+        // AMD
+        define('justhtmlescape',factory);
+    } else if (typeof exports === 'object') {
+        // Node, CommonJS-like
+        module.exports = factory();
+    } else {
+        // Browser globals (root is window)
+        root.HTMLEscaper = factory();
+    }
+}(this, function () {
+
+    let entityMap, reverseEntityMap={};
+
+    // Entity map listing the ones from http://wonko.com/post/html-escaping .
+    // Even these may not be appropriate for all contexts.
+    // Thanks to https://dev.w3.org/html5/html-author/charref
+    entityMap = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&apos;',
+        '`': '&grave;',
+        ' ': '&#x20;',
+        '!': '&excl;',
+        '@': '&commat;',
+        '$': '&dollar;',
+        '%': '&percnt;',
+        '(': '&lpar;',
+        ')': '&rpar;',
+        '=': '&equals;',
+        '+': '&plus;',
+        '{': '&lbrace;',
+        '}': '&rbrace;',
+        '[': '&lbrack;',
+        ']': '&rbrack;',
+        '/': '&sol;',
+        };
+
+    for(let key in entityMap) {
+        reverseEntityMap[entityMap[key]] = key;
+    }
+
+    let reverseRegex;
+    {   // Make the reverse-entity regex
+        let reverseRegexPattern = '(';
+        for(let key in reverseEntityMap) {
+            reverseRegexPattern += key + '|';
+        }
+        // Change the trailing bar to an rparen.
+        reverseRegexPattern = reverseRegexPattern.replace(/.$/,')');
+        reverseRegex = new RegExp(reverseRegexPattern, 'g');
+    }
+
+    function escapeHTML(str) {
+        return String(str).replace(/[&<>"'` !@$%()=+{}\[\]\/]/g,
+            function fromEntityMap (s) {
+                return entityMap[s];
+            }
+        );
+    } //escapeHTML
+
+    function unescapeHTML(str) {
+        return String(str).replace(reverseRegex,
+            function fromReverseEntityMap(s) {
+                return reverseEntityMap[s];
+            }
+        );
+    }
+
+    return Object.seal({ 'escape': escapeHTML, 'unescape': unescapeHTML });
+}));
+
+// Module-loader template thanks to
+// http://davidbcalhoun.com/2014/what-is-amd-commonjs-and-umd/
+
+// License:
+// The MIT License
+//
+// Copyright (c) 2009 Chris Wanstrath (Ruby)
+// Copyright (c) 2010-2014 Jan Lehnardt (JavaScript)
+// Copyright (c) 2010-2015 The mustache.js community
+// Updates copyright (c) 2017 Chris White.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy of
+// this software and associated documentation files (the "Software"), to deal in
+// the Software without restriction, including without limitation the rights to
+// use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+// of the Software, and to permit persons to whom the Software is furnished to do
+// so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+// DEALINGS IN THE SOFTWARE.
+
+// vi: set ts=4 sts=4 sw=4 et ai fo-=o: //
+// Begin bundled file ///////////////////////////////////////////////////
+// tabfern/js/signals.js
+
+/*jslint onevar:true, undef:true, newcap:true, regexp:true, bitwise:true, maxerr:50, indent:4, white:false, nomen:false, plusplus:false */
+/*global define:false, require:false, exports:false, module:false, signals:false */
+
+/** @license
+ * JS Signals <http://millermedeiros.github.com/js-signals/>
+ * Released under the MIT license
+ * Author: Miller Medeiros
+ * Version: 1.0.0 - Build: 268 (2012/11/29 05:48 PM)
+ */
+
+(function(global){
+
+    // SignalBinding -------------------------------------------------
+    //================================================================
+
+    /**
+     * Object that represents a binding between a Signal and a listener function.
+     * <br />- <strong>This is an internal constructor and shouldn't be called by regular users.</strong>
+     * <br />- inspired by Joa Ebert AS3 SignalBinding and Robert Penner's Slot classes.
+     * @author Miller Medeiros
+     * @constructor
+     * @internal
+     * @name SignalBinding
+     * @param {Signal} signal Reference to Signal object that listener is currently bound to.
+     * @param {Function} listener Handler function bound to the signal.
+     * @param {boolean} isOnce If binding should be executed just once.
+     * @param {Object} [listenerContext] Context on which listener will be executed (object that should represent the `this` variable inside listener function).
+     * @param {Number} [priority] The priority level of the event listener. (default = 0).
+     */
+    function SignalBinding(signal, listener, isOnce, listenerContext, priority) {
+
+        /**
+         * Handler function bound to the signal.
+         * @type Function
+         * @private
+         */
+        this._listener = listener;
+
+        /**
+         * If binding should be executed just once.
+         * @type boolean
+         * @private
+         */
+        this._isOnce = isOnce;
+
+        /**
+         * Context on which listener will be executed (object that should represent the `this` variable inside listener function).
+         * @memberOf SignalBinding.prototype
+         * @name context
+         * @type Object|undefined|null
+         */
+        this.context = listenerContext;
+
+        /**
+         * Reference to Signal object that listener is currently bound to.
+         * @type Signal
+         * @private
+         */
+        this._signal = signal;
+
+        /**
+         * Listener priority
+         * @type Number
+         * @private
+         */
+        this._priority = priority || 0;
+    }
+
+    SignalBinding.prototype = {
+
+        /**
+         * If binding is active and should be executed.
+         * @type boolean
+         */
+        active : true,
+
+        /**
+         * Default parameters passed to listener during `Signal.dispatch` and `SignalBinding.execute`. (curried parameters)
+         * @type Array|null
+         */
+        params : null,
+
+        /**
+         * Call listener passing arbitrary parameters.
+         * <p>If binding was added using `Signal.addOnce()` it will be automatically removed from signal dispatch queue, this method is used internally for the signal dispatch.</p>
+         * @param {Array} [paramsArr] Array of parameters that should be passed to the listener
+         * @return {*} Value returned by the listener.
+         */
+        execute : function (paramsArr) {
+            var handlerReturn, params;
+            if (this.active && !!this._listener) {
+                params = this.params? this.params.concat(paramsArr) : paramsArr;
+                handlerReturn = this._listener.apply(this.context, params);
+                if (this._isOnce) {
+                    this.detach();
+                }
+            }
+            return handlerReturn;
+        },
+
+        /**
+         * Detach binding from signal.
+         * - alias to: mySignal.remove(myBinding.getListener());
+         * @return {Function|null} Handler function bound to the signal or `null` if binding was previously detached.
+         */
+        detach : function () {
+            return this.isBound()? this._signal.remove(this._listener, this.context) : null;
+        },
+
+        /**
+         * @return {Boolean} `true` if binding is still bound to the signal and have a listener.
+         */
+        isBound : function () {
+            return (!!this._signal && !!this._listener);
+        },
+
+        /**
+         * @return {boolean} If SignalBinding will only be executed once.
+         */
+        isOnce : function () {
+            return this._isOnce;
+        },
+
+        /**
+         * @return {Function} Handler function bound to the signal.
+         */
+        getListener : function () {
+            return this._listener;
+        },
+
+        /**
+         * @return {Signal} Signal that listener is currently bound to.
+         */
+        getSignal : function () {
+            return this._signal;
+        },
+
+        /**
+         * Delete instance properties
+         * @private
+         */
+        _destroy : function () {
+            delete this._signal;
+            delete this._listener;
+            delete this.context;
+        },
+
+        /**
+         * @return {string} String representation of the object.
+         */
+        toString : function () {
+            return '[SignalBinding isOnce:' + this._isOnce +', isBound:'+ this.isBound() +', active:' + this.active + ']';
+        }
+
+    };
+
+
+/*global SignalBinding:false*/
+
+    // Signal --------------------------------------------------------
+    //================================================================
+
+    function validateListener(listener, fnName) {
+        if (typeof listener !== 'function') {
+            throw new Error( 'listener is a required param of {fn}() and should be a Function.'.replace('{fn}', fnName) );
+        }
+    }
+
+    /**
+     * Custom event broadcaster
+     * <br />- inspired by Robert Penner's AS3 Signals.
+     * @name Signal
+     * @author Miller Medeiros
+     * @constructor
+     */
+    function Signal() {
+        /**
+         * @type Array.<SignalBinding>
+         * @private
+         */
+        this._bindings = [];
+        this._prevParams = null;
+
+        // enforce dispatch to aways work on same context (#47)
+        var self = this;
+        this.dispatch = function(){
+            Signal.prototype.dispatch.apply(self, arguments);
+        };
+    }
+
+    Signal.prototype = {
+
+        /**
+         * Signals Version Number
+         * @type String
+         * @const
+         */
+        VERSION : '1.0.0',
+
+        /**
+         * If Signal should keep record of previously dispatched parameters and
+         * automatically execute listener during `add()`/`addOnce()` if Signal was
+         * already dispatched before.
+         * @type boolean
+         */
+        memorize : false,
+
+        /**
+         * @type boolean
+         * @private
+         */
+        _shouldPropagate : true,
+
+        /**
+         * If Signal is active and should broadcast events.
+         * <p><strong>IMPORTANT:</strong> Setting this property during a dispatch will only affect the next dispatch, if you want to stop the propagation of a signal use `halt()` instead.</p>
+         * @type boolean
+         */
+        active : true,
+
+        /**
+         * @param {Function} listener
+         * @param {boolean} isOnce
+         * @param {Object} [listenerContext]
+         * @param {Number} [priority]
+         * @return {SignalBinding}
+         * @private
+         */
+        _registerListener : function (listener, isOnce, listenerContext, priority) {
+
+            var prevIndex = this._indexOfListener(listener, listenerContext),
+                binding;
+
+            if (prevIndex !== -1) {
+                binding = this._bindings[prevIndex];
+                if (binding.isOnce() !== isOnce) {
+                    throw new Error('You cannot add'+ (isOnce? '' : 'Once') +'() then add'+ (!isOnce? '' : 'Once') +'() the same listener without removing the relationship first.');
+                }
+            } else {
+                binding = new SignalBinding(this, listener, isOnce, listenerContext, priority);
+                this._addBinding(binding);
+            }
+
+            if(this.memorize && this._prevParams){
+                binding.execute(this._prevParams);
+            }
+
+            return binding;
+        },
+
+        /**
+         * @param {SignalBinding} binding
+         * @private
+         */
+        _addBinding : function (binding) {
+            //simplified insertion sort
+            var n = this._bindings.length;
+            do { --n; } while (this._bindings[n] && binding._priority <= this._bindings[n]._priority);
+            this._bindings.splice(n + 1, 0, binding);
+        },
+
+        /**
+         * @param {Function} listener
+         * @return {number}
+         * @private
+         */
+        _indexOfListener : function (listener, context) {
+            var n = this._bindings.length,
+                cur;
+            while (n--) {
+                cur = this._bindings[n];
+                if (cur._listener === listener && cur.context === context) {
+                    return n;
+                }
+            }
+            return -1;
+        },
+
+        /**
+         * Check if listener was attached to Signal.
+         * @param {Function} listener
+         * @param {Object} [context]
+         * @return {boolean} if Signal has the specified listener.
+         */
+        has : function (listener, context) {
+            return this._indexOfListener(listener, context) !== -1;
+        },
+
+        /**
+         * Add a listener to the signal.
+         * @param {Function} listener Signal handler function.
+         * @param {Object} [listenerContext] Context on which listener will be executed (object that should represent the `this` variable inside listener function).
+         * @param {Number} [priority] The priority level of the event listener. Listeners with higher priority will be executed before listeners with lower priority. Listeners with same priority level will be executed at the same order as they were added. (default = 0)
+         * @return {SignalBinding} An Object representing the binding between the Signal and listener.
+         */
+        add : function (listener, listenerContext, priority) {
+            validateListener(listener, 'add');
+            return this._registerListener(listener, false, listenerContext, priority);
+        },
+
+        /**
+         * Add listener to the signal that should be removed after first execution (will be executed only once).
+         * @param {Function} listener Signal handler function.
+         * @param {Object} [listenerContext] Context on which listener will be executed (object that should represent the `this` variable inside listener function).
+         * @param {Number} [priority] The priority level of the event listener. Listeners with higher priority will be executed before listeners with lower priority. Listeners with same priority level will be executed at the same order as they were added. (default = 0)
+         * @return {SignalBinding} An Object representing the binding between the Signal and listener.
+         */
+        addOnce : function (listener, listenerContext, priority) {
+            validateListener(listener, 'addOnce');
+            return this._registerListener(listener, true, listenerContext, priority);
+        },
+
+        /**
+         * Remove a single listener from the dispatch queue.
+         * @param {Function} listener Handler function that should be removed.
+         * @param {Object} [context] Execution context (since you can add the same handler multiple times if executing in a different context).
+         * @return {Function} Listener handler function.
+         */
+        remove : function (listener, context) {
+            validateListener(listener, 'remove');
+
+            var i = this._indexOfListener(listener, context);
+            if (i !== -1) {
+                this._bindings[i]._destroy(); //no reason to a SignalBinding exist if it isn't attached to a signal
+                this._bindings.splice(i, 1);
+            }
+            return listener;
+        },
+
+        /**
+         * Remove all listeners from the Signal.
+         */
+        removeAll : function () {
+            var n = this._bindings.length;
+            while (n--) {
+                this._bindings[n]._destroy();
+            }
+            this._bindings.length = 0;
+        },
+
+        /**
+         * @return {number} Number of listeners attached to the Signal.
+         */
+        getNumListeners : function () {
+            return this._bindings.length;
+        },
+
+        /**
+         * Stop propagation of the event, blocking the dispatch to next listeners on the queue.
+         * <p><strong>IMPORTANT:</strong> should be called only during signal dispatch, calling it before/after dispatch won't affect signal broadcast.</p>
+         * @see Signal.prototype.disable
+         */
+        halt : function () {
+            this._shouldPropagate = false;
+        },
+
+        /**
+         * Dispatch/Broadcast Signal to all listeners added to the queue.
+         * @param {...*} [params] Parameters that should be passed to each handler.
+         */
+        dispatch : function (params) {
+            if (! this.active) {
+                return;
+            }
+
+            var paramsArr = Array.prototype.slice.call(arguments),
+                n = this._bindings.length,
+                bindings;
+
+            if (this.memorize) {
+                this._prevParams = paramsArr;
+            }
+
+            if (! n) {
+                //should come after memorize
+                return;
+            }
+
+            bindings = this._bindings.slice(); //clone array in case add/remove items during dispatch
+            this._shouldPropagate = true; //in case `halt` was called before dispatch or during the previous dispatch.
+
+            //execute all callbacks until end of the list or until a callback returns `false` or stops propagation
+            //reverse loop since listeners with higher priority will be added at the end of the list
+            do { n--; } while (bindings[n] && this._shouldPropagate && bindings[n].execute(paramsArr) !== false);
+        },
+
+        /**
+         * Forget memorized arguments.
+         * @see Signal.memorize
+         */
+        forget : function(){
+            this._prevParams = null;
+        },
+
+        /**
+         * Remove all bindings from signal and destroy any reference to external objects (destroy Signal object).
+         * <p><strong>IMPORTANT:</strong> calling any method on the signal instance after calling dispose will throw errors.</p>
+         */
+        dispose : function () {
+            this.removeAll();
+            delete this._bindings;
+            delete this._prevParams;
+        },
+
+        /**
+         * @return {string} String representation of the object.
+         */
+        toString : function () {
+            return '[Signal active:'+ this.active +' numListeners:'+ this.getNumListeners() +']';
+        }
+
+    };
+
+
+    // Namespace -----------------------------------------------------
+    //================================================================
+
+    /**
+     * Signals namespace
+     * @namespace
+     * @name signals
+     */
+    var signals = Signal;
+
+    /**
+     * Custom event broadcaster
+     * @see Signal
+     */
+    // alias for backwards compatibility (see #gh-44)
+    signals.Signal = Signal;
+
+
+
+    //exports to multiple environments
+    if(typeof define === 'function' && define.amd){ //AMD
+        define('signals',function () { return signals; });
+    } else if (typeof module !== 'undefined' && module.exports){ //node
+        module.exports = signals;
+    } else { //browser
+        //use string because of Google closure compiler ADVANCED_MODE
+        /*jslint sub:true */
+        global['signals'] = signals;
+    }
+
+}(this));
+// Begin bundled file ///////////////////////////////////////////////////
+// tabfern/js/asynquence.js
+
+/*! asynquence
+    v0.10.0 (c) Kyle Simpson
+    MIT License: http://getify.mit-license.org
+*/
+
+(function UMD(name,context,definition){
+	if (typeof define === "function" && define.amd) { define('asynquence',definition); }
+	else if (typeof module !== "undefined" && module.exports) { module.exports = definition(); }
+	else { context[name] = definition(name,context); }
+})("ASQ",this,function DEF(name,context){
+	"use strict";
+
+	var cycle, scheduling_queue,
+		timer = (typeof setImmediate !== "undefined") ?
+			function $$timer(fn) { return setImmediate(fn); } :
+			setTimeout
+	;
+
+	// Note: using a queue instead of array for efficiency
+	function Queue() {
+		var first, last, item;
+
+		function Item(fn) {
+			this.fn = fn;
+			this.next = void 0;
+		}
+
+		return {
+			add: function $$add(fn) {
+				item = new Item(fn);
+				if (last) {
+					last.next = item;
+				}
+				else {
+					first = item;
+				}
+				last = item;
+				item = void 0;
+			},
+			drain: function $$drain() {
+				var f = first;
+				first = last = cycle = null;
+
+				while (f) {
+					f.fn();
+					f = f.next;
+				}
+			}
+		};
+	}
+
+	scheduling_queue = Queue();
+
+	function schedule(fn) {
+		scheduling_queue.add(fn);
+		if (!cycle) {
+			cycle = timer(scheduling_queue.drain);
+		}
+	}
+
+	function tapSequence(def) {
+		// temporary `trigger` which, if called before being replaced
+		// above, creates replacement proxy sequence with the
+		// success/error message(s) pre-injected
+		function trigger() {
+			def.seq = createSequence.apply(ø,arguments).defer();
+		}
+
+		// fail trigger
+		trigger.fail = function $$trigger$fail() {
+			var args = ARRAY_SLICE.call(arguments);
+			def.seq = createSequence(function $$create$sequence(done){
+				done.fail.apply(ø,args);
+			})
+			.defer();
+		};
+
+		// listen for signals from the sequence
+		def.seq
+		// note: cannot use `seq.pipe(trigger)` because we
+		// need to be able to update the shared closure
+		// to change `trigger`
+		.val(function $$val(){
+			trigger.apply(ø,arguments);
+			return ASQmessages.apply(ø,arguments);
+		})
+		.or(function $$or(){
+			trigger.fail.apply(ø,arguments);
+		});
+
+		// make a sequence to act as a proxy to the original
+		// sequence
+		def.seq = createSequence(function $$create$sequence(done){
+			// replace the temporary trigger (created below)
+			// with this proxy's trigger
+			trigger = done;
+		})
+		.defer();
+	}
+
+	function createSequence() {
+
+		function scheduleSequenceTick() {
+			if (seq_aborted) {
+				sequenceTick();
+			}
+			else if (!seq_tick) {
+				seq_tick = schedule(sequenceTick);
+			}
+		}
+
+		function throwSequenceErrors() {
+			throw (sequence_errors.length === 1 ? sequence_errors[0] : sequence_errors);
+		}
+
+		function sequenceTick() {
+			var fn, args;
+
+			seq_tick = null;
+			// remove the temporary `unpause()` hook, if any
+			delete sequence_api.unpause;
+
+			if (seq_aborted) {
+				clearTimeout(seq_tick);
+				seq_tick = null;
+				then_queue.length = or_queue.length = sequence_messages.length = sequence_errors.length = 0;
+			}
+			else if (seq_error) {
+				if (or_queue.length === 0 && !error_reported) {
+					error_reported = true;
+					throwSequenceErrors();
+				}
+
+				while (or_queue.length) {
+					error_reported = true;
+					fn = or_queue.shift();
+					try {
+						fn.apply(ø,sequence_errors);
+					}
+					catch (err) {
+						if (isMessageWrapper(err)) {
+							sequence_errors = sequence_errors.concat(err);
+						}
+						else {
+							sequence_errors.push(err);
+							if (err.stack) { sequence_errors.push(err.stack); }
+						}
+						if (or_queue.length === 0) {
+							throwSequenceErrors();
+						}
+					}
+				}
+			}
+			else if (then_ready && then_queue.length > 0) {
+				then_ready = false;
+				fn = then_queue.shift();
+				args = sequence_messages.slice();
+				sequence_messages.length = 0;
+				args.unshift(createStepCompletion());
+
+				try {
+					fn.apply(ø,args);
+				}
+				catch (err) {
+					if (isMessageWrapper(err)) {
+						sequence_errors = sequence_errors.concat(err);
+					}
+					else {
+						sequence_errors.push(err);
+					}
+					seq_error = true;
+					scheduleSequenceTick();
+				}
+			}
+		}
+
+		function createStepCompletion() {
+
+			function done() {
+				// ignore this call?
+				if (seq_error || seq_aborted || then_ready || step_completed) {
+					return;
+				}
+
+				step_completed = true;
+				then_ready = true;
+				sequence_messages.push.apply(sequence_messages,arguments);
+				sequence_errors.length = 0;
+
+				scheduleSequenceTick();
+			}
+
+			done.fail = function $$step$fail(){
+				// ignore this call?
+				if (seq_error || seq_aborted || then_ready || step_completed) {
+					return;
+				}
+
+				seq_error = true;
+				sequence_messages.length = 0;
+				sequence_errors.push.apply(sequence_errors,arguments);
+
+				scheduleSequenceTick();
+			};
+
+			done.abort = function $$step$abort(){
+				if (seq_error || seq_aborted) {
+					return;
+				}
+
+				then_ready = false;
+				seq_aborted = true;
+				sequence_messages.length = sequence_errors.length = 0;
+
+				scheduleSequenceTick();
+			};
+
+			// handles "error-first" (aka "node-style") callbacks
+			done.errfcb = function $$step$errfcb(err){
+				if (err) {
+					done.fail(err);
+				}
+				else {
+					done.apply(ø,ARRAY_SLICE.call(arguments,1));
+				}
+			};
+
+			var step_completed = false;
+
+			return done;
+		}
+
+		function createGate(stepCompletion,segments,seqMessages) {
+
+			function resetGate() {
+				clearTimeout(gate_tick);
+				gate_tick = segment_completion =
+					segment_messages = segment_error_message = null;
+			}
+
+			function scheduleGateTick() {
+				if (gate_aborted) {
+					return gateTick();
+				}
+
+				if (!gate_tick) {
+					gate_tick = schedule(gateTick);
+				}
+			}
+
+			function gateTick() {
+				if (seq_error || seq_aborted || gate_completed) {
+					return;
+				}
+
+				var msgs = [];
+
+				gate_tick = null;
+
+				if (gate_error) {
+					stepCompletion.fail.apply(ø,segment_error_message);
+
+					resetGate();
+				}
+				else if (gate_aborted) {
+					stepCompletion.abort();
+
+					resetGate();
+				}
+				else if (checkGate()) {
+					gate_completed = true;
+
+					// collect all the messages from the gate segments
+					segment_completion
+					.forEach(function $$each(sc,i){
+						msgs.push(segment_messages["s" + i]);
+					});
+
+					stepCompletion.apply(ø,msgs);
+
+					resetGate();
+				}
+			}
+
+			function checkGate() {
+				if (segment_completion.length === 0) {
+					return;
+				}
+
+				var fulfilled = true;
+
+				segment_completion.some(function $$some(segcom){
+					if (segcom === null) {
+						fulfilled = false;
+						return true; // break
+					}
+				});
+
+				return fulfilled;
+			}
+
+			function createSegmentCompletion() {
+
+				function done() {
+					// ignore this call?
+					if (seq_error || seq_aborted || gate_error ||
+						gate_aborted || gate_completed ||
+						segment_completion[segment_completion_idx]
+					) {
+						return;
+					}
+
+					// put gate-segment messages into `messages`-branded
+					// container
+					var args = ASQmessages.apply(ø,arguments);
+
+					segment_messages["s" + segment_completion_idx] =
+						args.length > 1 ? args : args[0];
+					segment_completion[segment_completion_idx] = true;
+
+					scheduleGateTick();
+				}
+
+				var segment_completion_idx = segment_completion.length;
+
+				done.fail = function $$segment$fail(){
+					// ignore this call?
+					if (seq_error || seq_aborted || gate_error ||
+						gate_aborted || gate_completed ||
+						segment_completion[segment_completion_idx]
+					) {
+						return;
+					}
+
+					gate_error = true;
+					segment_error_message = ARRAY_SLICE.call(arguments);
+
+					scheduleGateTick();
+				};
+
+				done.abort = function $$segment$abort(){
+					if (seq_error || seq_aborted || gate_error ||
+						gate_aborted || gate_completed
+					) {
+						return;
+					}
+
+					gate_aborted = true;
+
+					// abort() is an immediate/synchronous action
+					gateTick();
+				};
+
+				// handles "error-first" (aka "node-style") callbacks
+				done.errfcb = function $$segment$errfcb(err){
+					if (err) {
+						done.fail(err);
+					}
+					else {
+						done.apply(ø,ARRAY_SLICE.call(arguments,1));
+					}
+				};
+
+				// placeholder for when a gate-segment completes
+				segment_completion[segment_completion_idx] = null;
+
+				return done;
+			}
+
+			var gate_error = false,
+				gate_aborted = false,
+				gate_completed = false,
+
+				args,
+				err_msg,
+
+				segment_completion = [],
+				segment_messages = {},
+				segment_error_message,
+
+				gate_tick
+			;
+
+			segments.some(function $$some(seg){
+				if (gate_error || gate_aborted) {
+					return true; // break
+				}
+
+				args = seqMessages.slice();
+				args.unshift(createSegmentCompletion());
+				try {
+					seg.apply(ø,args);
+				}
+				catch (err) {
+					err_msg = err;
+					gate_error = true;
+					return true; // break
+				}
+			});
+
+			if (err_msg) {
+				if (isMessageWrapper(err_msg)) {
+					stepCompletion.fail.apply(ø,err_msg);
+				}
+				else {
+					stepCompletion.fail(err_msg);
+				}
+			}
+		}
+
+		function then() {
+			if (seq_error || seq_aborted ||	arguments.length === 0) {
+				return sequence_api;
+			}
+
+			wrapArgs(arguments,thenWrapper)
+			.forEach(function $$each(v){
+				if (isSequence(v)) {
+					seq(v);
+				}
+				else {
+					then_queue.push(v);
+				}
+			});
+
+			scheduleSequenceTick();
+
+			return sequence_api;
+		}
+
+		function or() {
+			if (seq_aborted || arguments.length === 0) {
+				return sequence_api;
+			}
+
+			or_queue.push.apply(or_queue,arguments);
+
+			scheduleSequenceTick();
+
+			return sequence_api;
+		}
+
+		function gate() {
+			if (seq_error || seq_aborted || arguments.length === 0) {
+				return sequence_api;
+			}
+
+			var fns = ARRAY_SLICE.call(arguments)
+			// map any sequences to gate segments
+			.map(function $$map(v){
+				var def;
+
+				// is `v` a sequence or iterable-sequence?
+				if (isSequence(v)) {
+					def = { seq: v };
+					tapSequence(def);
+					return function $$segment(done) {
+						def.seq.pipe(done);
+					};
+				}
+				else return v;
+			});
+
+			then(function $$then(done){
+				var args = ARRAY_SLICE.call(arguments,1);
+				createGate(done,fns,args);
+			});
+
+			return sequence_api;
+		}
+
+		function pipe() {
+			if (seq_aborted || arguments.length === 0) {
+				return sequence_api;
+			}
+
+			ARRAY_SLICE.call(arguments)
+			.forEach(function $$each(trigger){
+				then(function $$then(done){
+					trigger.apply(ø,ARRAY_SLICE.call(arguments,1));
+					done();
+				})
+				.or(trigger.fail);
+			});
+
+			return sequence_api;
+		}
+
+		function seq() {
+			if (seq_error || seq_aborted || arguments.length === 0) {
+				return sequence_api;
+			}
+
+			ARRAY_SLICE.call(arguments)
+			.forEach(function $$each(v){
+				var def = { seq: v };
+
+				// is `fn` a sequence or iterable-sequence?
+				if (isSequence(v)) {
+					tapSequence(def);
+				}
+
+				then(function $$then(done){
+					var _v = def.seq;
+					// check if this argument is not already a sequence?
+					// if not, assume a function to invoke that will return
+					// a sequence.
+					if (!isSequence(_v)) {
+						_v = def.seq.apply(ø,ARRAY_SLICE.call(arguments,1));
+					}
+					// pipe the provided sequence into our current sequence
+					_v.pipe(done);
+				});
+			});
+
+			return sequence_api;
+		}
+
+		function val() {
+			if (seq_error || seq_aborted || arguments.length === 0) {
+				return sequence_api;
+			}
+
+			ARRAY_SLICE.call(
+				wrapArgs(arguments,valWrapper)
+			)
+			.forEach(function $$each(fn){
+				then(function $$then(done){
+					var msgs = fn.apply(ø,ARRAY_SLICE.call(arguments,1));
+					if (!isMessageWrapper(msgs)) {
+						msgs = ASQmessages(msgs);
+					}
+					done.apply(ø,msgs);
+				});
+			});
+
+			return sequence_api;
+		}
+
+		function promise() {
+			function wrap(fn) {
+				return function $$fn(){
+					fn.apply(ø,isMessageWrapper(arguments[0]) ? arguments[0] : arguments);
+				};
+			}
+
+			if (seq_error || seq_aborted || arguments.length === 0) {
+				return sequence_api;
+			}
+
+			ARRAY_SLICE.call(arguments)
+			.forEach(function $$each(pr){
+				then(function $$then(done){
+					var _pr = pr;
+					// check if this argument is a non-thenable function, and
+					// if so, assume we shold invoke it to return a promise
+					// NOTE: `then` duck-typing of promises is stupid.
+					if (typeof pr === "function" && typeof pr.then !== "function") {
+						_pr = pr.apply(ø,ARRAY_SLICE.call(arguments,1));
+					}
+					// now, hook up the promise to the sequence
+					_pr.then(
+						wrap(done),
+						wrap(done.fail)
+					);
+				});
+			});
+
+			return sequence_api;
+		}
+
+		function fork() {
+			var trigger;
+
+			// listen for success at this point in the sequence
+			val(function $$val(){
+				if (trigger) {
+					trigger.apply(ø,arguments);
+				}
+				else {
+					trigger = createSequence.apply(ø,arguments).defer();
+				}
+				return ASQmessages.apply(ø,arguments);
+			});
+			// listen for error at this point in the sequence
+			or(function $$or(){
+				if (trigger) {
+					trigger.fail.apply(ø,arguments);
+				}
+				else {
+					var args = ARRAY_SLICE.call(arguments);
+					trigger = createSequence().then(function $$then(done){
+						done.fail.apply(ø,args);
+					})
+					.defer();
+				}
+			});
+
+			// create the forked sequence which will receive
+			// the success/error stream from the main sequence
+			return createSequence()
+			.then(function $$then(done){
+				if (!trigger) {
+					trigger = done;
+				}
+				else {
+					trigger.pipe(done);
+				}
+			})
+			.defer();
+		}
+
+		function abort() {
+			if (seq_error) {
+				return sequence_api;
+			}
+
+			seq_aborted = true;
+
+			sequenceTick();
+
+			return sequence_api;
+		}
+
+		function duplicate() {
+			var sq;
+
+			template = {
+				then_queue: then_queue.slice(),
+				or_queue: or_queue.slice()
+			};
+			sq = createSequence();
+			template = null;
+
+			return sq;
+		}
+
+		function unpause() {
+			sequence_messages.push.apply(sequence_messages,arguments);
+			if (seq_tick === true) seq_tick = null;
+			scheduleSequenceTick();
+		}
+
+		// opt-out of global error reporting for this sequence
+		function defer() {
+			or_queue.push(function ignored(){});
+			return sequence_api;
+		}
+
+		function internals(name,value) {
+			var set = (arguments.length > 1);
+			switch (name) {
+				case "seq_error":
+					if (set) { seq_error = value; }
+					else { return seq_error; }
+					break;
+				case "seq_aborted":
+					if (set) { seq_aborted = value; }
+					else { return seq_aborted; }
+					break;
+				case "then_ready":
+					if (set) { then_ready = value; }
+					else { return then_ready; }
+					break;
+				case "then_queue":
+					return then_queue;
+				case "or_queue":
+					return or_queue;
+				case "sequence_messages":
+					return sequence_messages;
+				case "sequence_errors":
+					return sequence_errors;
+			}
+		}
+
+		function includeExtensions() {
+			Object.keys(extensions)
+			.forEach(function $$each(name){
+				sequence_api[name] = sequence_api[name] ||
+					extensions[name](sequence_api,internals);
+			});
+		}
+
+		var seq_error = false,
+			error_reported = false,
+			seq_aborted = false,
+			then_ready = true,
+
+			then_queue = [],
+			or_queue = [],
+
+			sequence_messages = [],
+			sequence_errors = [],
+
+			seq_tick,
+
+			// brand the sequence API so we can detect ASQ instances
+			sequence_api = brandIt({
+				then: then,
+				or: or,
+				// alias of `or(..)` to `onerror(..)`
+				onerror: or,
+				gate: gate,
+				// alias of `gate(..)` to `all(..)` for symmetry
+				// with native ES6 promises
+				all: gate,
+				pipe: pipe,
+				seq: seq,
+				val: val,
+				promise: promise,
+				fork: fork,
+				abort: abort,
+				duplicate: duplicate,
+				defer: defer
+			})
+		;
+
+		// include any extensions
+		includeExtensions();
+
+		// templating the sequence setup?
+		if (template) {
+			then_queue = template.then_queue.slice();
+			or_queue = template.or_queue.slice();
+
+			// templating a sequence starts it out paused
+			// add temporary `unpause()` API hook
+			sequence_api.unpause = unpause;
+			seq_tick = true;
+		}
+
+		// treat ASQ() constructor parameters as having been
+		// passed to `then()`
+		sequence_api.then.apply(ø,arguments);
+
+		return sequence_api;
+	}
+
+
+	// ***********************************************
+	// Object branding utilities
+	// ***********************************************
+	function brandIt(obj) {
+		return Object.defineProperty(obj,brand,{
+			enumerable: false,
+			value: true
+		});
+	}
+
+	function checkBranding(val) {
+		return !!(val != null && typeof val === "object" && val[brand]);
+	}
+
+
+	// ***********************************************
+	// Value messages utilities
+	// ***********************************************
+	// wrapper helpers
+	function valWrapper(numArgs) {
+		// `numArgs` indicates how many pre-bound arguments
+		// will be sent in.
+		return ASQmessages.apply(ø,
+			// pass along only the pre-bound arguments
+			ARRAY_SLICE.call(arguments).slice(1,numArgs+1)
+		);
+	}
+
+	function thenWrapper(numArgs) {
+		// Because of bind() partial-application, will
+		// receive pre-bound arguments before the `done()`,
+		// rather than it being first as usual.
+		// `numArgs` indicates how many pre-bound arguments
+		// will be sent in.
+		arguments[numArgs+1] // the `done()`
+		.apply(ø,
+			// pass along only the pre-bound arguments
+			ARRAY_SLICE.call(arguments).slice(1,numArgs+1)
+		);
+	}
+
+	function wrapArgs(args,wrapper) {
+		var i, j;
+		args = ARRAY_SLICE.call(args);
+		for (i=0; i<args.length; i++) {
+			if (isMessageWrapper(args[i])) {
+				args[i] = wrapper.bind.apply(wrapper,
+					// partial-application of arguments
+					[/*this=*/null,/*numArgs=*/args[i].length]
+					.concat(
+						// pre-bound arguments
+						args[i]
+					)
+				);
+			}
+			else if (typeof args[i] !== "function" &&
+				(
+					wrapper === valWrapper ||
+					!isSequence(args[i])
+				)
+			) {
+				for (j=i+1; j<args.length; j++) {
+					if (typeof args[j] === "function" ||
+						checkBranding(args[j])
+					) {
+						break;
+					}
+				}
+				args.splice(
+					/*start=*/i,
+					/*howMany=*/j-i,
+					/*replace=*/wrapper.bind.apply(wrapper,
+						// partial-application of arguments
+						[/*this=*/null,/*numArgs=*/(j-i)]
+						.concat(
+							// pre-bound arguments
+							args.slice(i,j)
+						)
+					)
+				);
+			}
+		}
+		return args;
+	}
+
+
+	var extensions = {}, template,
+		old_public_api = (context || {})[name],
+		ARRAY_SLICE = [].slice,
+		brand = "__ASQ__", ø = Object.create(null),
+		ASQmessages, isSequence, isMessageWrapper
+	;
+
+	// ***********************************************
+	// Setup the public API
+	// ***********************************************
+	createSequence.failed = function $$public$failed() {
+		var args = ASQmessages.apply(ø,arguments);
+		return createSequence(function $$failed(){ throw args; }).defer();
+	};
+
+	createSequence.extend = function $$public$extend(name,build) {
+		extensions[name] = build;
+
+		return createSequence;
+	};
+
+	createSequence.messages = ASQmessages = function $$public$messages() {
+		var ret = ARRAY_SLICE.call(arguments);
+		// brand the message wrapper so we can detect
+		return brandIt(ret);
+	};
+
+	createSequence.isSequence = isSequence = function $$public$isSequence(val) {
+		return checkBranding(val) && !Array.isArray(val);
+	};
+
+	createSequence.isMessageWrapper = isMessageWrapper = function $$public$isMessageWrapper(val) {
+		return checkBranding(val) && Array.isArray(val);
+	};
+
+	createSequence.unpause = function $$public$unpause(sq) {
+		if (sq.unpause) sq.unpause();
+		return sq;
+	};
+
+	createSequence.noConflict = function $$public$noConflict() {
+		if (context) {
+			context[name] = old_public_api;
+		}
+		return createSequence;
+	};
+
+	// create a clone of the *asynquence* API
+	// Note: does *not* include any registered extensions
+	createSequence.clone = function $$public$clone() {
+		return DEF(name,context);
+	};
+
+	// private utility exports: only for internal/plugin use!
+	createSequence.__schedule = schedule;
+	createSequence.__tapSequence = tapSequence;
+
+	return createSequence;
+});
+// Begin bundled file ///////////////////////////////////////////////////
+// tabfern/js/asynquence-contrib.js
+
+/*! asynquence-contrib
+    v0.28.0 (c) Kyle Simpson
+    MIT License: http://getify.mit-license.org
+*/
+
+(function UMD(dependency,definition){
+	if (typeof module !== "undefined" && module.exports) {
+		// make dependency injection wrapper first
+		module.exports = function $$inject$dependency(dep) {
+			// only try to `require(..)` if dependency is a string module path
+			if (typeof dep == "string") {
+				try { dep = require(dep); }
+				catch (err) {
+					// dependency not yet fulfilled, so just return
+					// dependency injection wrapper again
+					return $$inject$dependency;
+				}
+			}
+			return definition(dep);
+		};
+
+		// if possible, immediately try to resolve wrapper
+		// (with peer dependency)
+		if (typeof dependency == "string") {
+			module.exports = module.exports( require("path").join("..",dependency) );
+		}
+	}
+	else if (typeof define == "function" && define.amd) { define('asynquence-contrib',[dependency],definition); }
+	else { definition(dependency); }
+})(this.ASQ || "asynquence",function DEF(ASQ){
+	"use strict";
+
+	var ARRAY_SLICE = Array.prototype.slice,
+		ø = Object.create(null),
+		brand = "__ASQ__",
+		schedule = ASQ.__schedule,
+		tapSequence = ASQ.__tapSequence
+	;
+
+	function wrapGate(api,fns,success,failure,reset) {
+		fns = fns.map(function $$map(v,idx){
+			var def;
+			// tap any directly-provided sequences immediately
+			if (ASQ.isSequence(v)) {
+				def = { seq: v };
+				tapSequence(def);
+				return function $$fn(next) {
+					def.seq.val(function $$val(){
+						success(next,idx,ARRAY_SLICE.call(arguments));
+					})
+					.or(function $$or(){
+						failure(next,idx,ARRAY_SLICE.call(arguments));
+					});
+				};
+			}
+			else {
+				return function $$fn(next) {
+					var args = ARRAY_SLICE.call(arguments);
+					args[0] = function $$next() {
+						success(next,idx,ARRAY_SLICE.call(arguments));
+					};
+					args[0].fail = function $$fail() {
+						failure(next,idx,ARRAY_SLICE.call(arguments));
+					};
+					args[0].abort = function $$abort() {
+						reset();
+					};
+					args[0].errfcb = function $$errfcb(err) {
+						if (err) {
+							failure(next,idx,[err]);
+						}
+						else {
+							success(next,idx,ARRAY_SLICE.call(arguments,1));
+						}
+					};
+
+					v.apply(ø,args);
+				};
+			}
+		});
+
+		api.then(function $$then(){
+			var args = ARRAY_SLICE.call(arguments);
+
+			fns.forEach(function $$each(fn){
+				fn.apply(ø,args);
+			});
+		});
+	}
+
+	function isPromise(v) {
+		var val_type = typeof v;
+
+		return (
+			v !== null &&
+			(
+				val_type == "object" ||
+				val_type == "function"
+			) &&
+			!ASQ.isSequence(v) &&
+			// NOTE: `then` duck-typing of promises is stupid
+			typeof v.then == "function"
+		);
+	}
+
+// "after"
+ASQ.extend("after",function $$extend(api,internals){
+	return function $$after(num) {
+		var orig_args = arguments.length > 1 ?
+			ARRAY_SLICE.call(arguments,1) :
+			void 0
+		;
+		num = +num || 0;
+
+		api.then(function $$then(done){
+			var args = orig_args || ARRAY_SLICE.call(arguments,1);
+
+			setTimeout(function $$set$timeout(){
+				done.apply(ø,args);
+			},num);
+		});
+
+		return api;
+	};
+});
+
+ASQ.after = function $$after() {
+	return ASQ().after.apply(ø,arguments);
+};
+// "any"
+ASQ.extend("any",function $$extend(api,internals){
+	return function $$any() {
+		if (internals("seq_error") || internals("seq_aborted") ||
+			arguments.length === 0
+		) {
+			return api;
+		}
+
+		var fns = ARRAY_SLICE.call(arguments);
+
+		api.then(function $$then(done){
+			function reset() {
+				finished = true;
+				error_messages.length = 0;
+				success_messages.length = 0;
+			}
+
+			function complete(trigger) {
+				if (success_messages.length > 0) {
+					// any successful segment's message(s) sent
+					// to main sequence to proceed as success
+					success_messages.length = fns.length;
+					trigger.apply(ø,success_messages);
+				}
+				else {
+					// send errors into main sequence
+					error_messages.length = fns.length;
+					trigger.fail.apply(ø,error_messages);
+				}
+
+				reset();
+			}
+
+			function success(trigger,idx,args) {
+				if (!finished) {
+					completed++;
+					success_messages[idx] =
+						args.length > 1 ?
+						ASQ.messages.apply(ø,args) :
+						args[0]
+					;
+
+					// all segments complete?
+					if (completed === fns.length) {
+						finished = true;
+
+						complete(trigger);
+					}
+				}
+			}
+
+			function failure(trigger,idx,args) {
+				if (!finished &&
+					!(idx in error_messages)
+				) {
+					completed++;
+					error_messages[idx] =
+						args.length > 1 ?
+						ASQ.messages.apply(ø,args) :
+						args[0]
+					;
+				}
+
+				// all segments complete?
+				if (!finished &&
+					completed === fns.length
+				) {
+					finished = true;
+
+					complete(trigger);
+				}
+			}
+
+			var completed = 0, error_messages = [], finished = false,
+				success_messages = [],
+				sq = ASQ.apply(ø,ARRAY_SLICE.call(arguments,1))
+			;
+
+			wrapGate(sq,fns,success,failure,reset);
+
+			sq.pipe(done);
+		});
+
+		return api;
+	};
+});
+// "errfcb"
+ASQ.extend("errfcb",function $$extend(api,internals){
+	return function $$errfcb() {
+		// create a fake sequence to extract the callbacks
+		var sq = {
+			val: function $$then(cb){ sq.val_cb = cb; return sq; },
+			or: function $$or(cb){ sq.or_cb = cb; return sq; }
+		};
+
+		// trick `seq(..)`s checks for a sequence
+		sq[brand] = true;
+
+		// immediately register our fake sequence on the
+		// main sequence
+		api.seq(sq);
+
+		// provide the "error-first" callback
+		return function $$errorfirst$callback(err) {
+			if (err) {
+				sq.or_cb(err);
+			}
+			else {
+				sq.val_cb.apply(ø,ARRAY_SLICE.call(arguments,1));
+			}
+		};
+	};
+});
+// "failAfter"
+ASQ.extend("failAfter",function $$extend(api,internals){
+	return function $$failAfter(num) {
+		var args = arguments.length > 1 ?
+			ARRAY_SLICE.call(arguments,1) :
+			void 0
+		;
+		num = +num || 0;
+
+		api.then(function $$then(done){
+			setTimeout(function $$set$timeout(){
+				done.fail.apply(ø,args);
+			},num);
+		});
+
+		return api;
+	};
+});
+
+ASQ.failAfter = function $$fail$after() {
+	return ASQ().failAfter.apply(ø,arguments);
+};
+// "first"
+ASQ.extend("first",function $$extend(api,internals){
+	return function $$first() {
+		if (internals("seq_error") || internals("seq_aborted") ||
+			arguments.length === 0
+		) {
+			return api;
+		}
+
+		var fns = ARRAY_SLICE.call(arguments);
+
+		api.then(function $$then(done){
+			function reset() {
+				error_messages.length = 0;
+			}
+
+			function success(trigger,idx,args) {
+				if (!finished) {
+					finished = true;
+
+					// first successful segment triggers
+					// main sequence to proceed as success
+					trigger(
+						args.length > 1 ?
+						ASQ.messages.apply(ø,args) :
+						args[0]
+					);
+
+					reset();
+				}
+			}
+
+			function failure(trigger,idx,args) {
+				if (!finished &&
+					!(idx in error_messages)
+				) {
+					completed++;
+					error_messages[idx] =
+						args.length > 1 ?
+						ASQ.messages.apply(ø,args) :
+						args[0]
+					;
+
+					// all segments complete without success?
+					if (completed === fns.length) {
+						finished = true;
+
+						// send errors into main sequence
+						error_messages.length = fns.length;
+						trigger.fail.apply(ø,error_messages);
+
+						reset();
+					}
+				}
+			}
+
+			var completed = 0, error_messages = [], finished = false,
+				sq = ASQ.apply(ø,ARRAY_SLICE.call(arguments,1))
+			;
+
+			wrapGate(sq,fns,success,failure,reset);
+
+			sq.pipe(done);
+		});
+
+		return api;
+	};
+});
+// "go-style CSP"
+"use strict";
+
+(function IIFE() {
+
+	// filter out already-resolved queue entries
+	function filterResolved(queue) {
+		return queue.filter(function $$filter(entry) {
+			return !entry.resolved;
+		});
+	}
+
+	function closeQueue(queue, finalValue) {
+		queue.forEach(function $$each(iter) {
+			if (!iter.resolved) {
+				iter.next();
+				iter.next(finalValue);
+			}
+		});
+		queue.length = 0;
+	}
+
+	function channel(bufSize) {
+		var ch = {
+			close: function $$close() {
+				ch.closed = true;
+				closeQueue(ch.put_queue, false);
+				closeQueue(ch.take_queue, ASQ.csp.CLOSED);
+			},
+			closed: false,
+			messages: [],
+			put_queue: [],
+			take_queue: [],
+			buffer_size: +bufSize || 0
+		};
+		return ch;
+	}
+
+	function unblock(iter) {
+		if (iter && !iter.resolved) {
+			iter.next(iter.next().value);
+		}
+	}
+
+	function put(channel, value) {
+		var ret;
+
+		if (channel.closed) {
+			return false;
+		}
+
+		// remove already-resolved entries
+		channel.put_queue = filterResolved(channel.put_queue);
+		channel.take_queue = filterResolved(channel.take_queue);
+
+		// immediate put?
+		if (channel.messages.length < channel.buffer_size) {
+			channel.messages.push(value);
+			unblock(channel.take_queue.shift());
+			return true;
+		}
+		// queued put
+		else {
+				channel.put_queue.push(
+				// make a notifiable iterable for 'put' blocking
+				ASQ.iterable().then(function $$then() {
+					if (!channel.closed) {
+						channel.messages.push(value);
+						return true;
+					} else {
+						return false;
+					}
+				}));
+
+				// wrap a sequence/promise around the iterable
+				ret = ASQ(channel.put_queue[channel.put_queue.length - 1]);
+
+				// take waiting on this queued put?
+				if (channel.take_queue.length > 0) {
+					unblock(channel.put_queue.shift());
+					unblock(channel.take_queue.shift());
+				}
+
+				return ret;
+			}
+	}
+
+	function putAsync(channel, value, cb) {
+		var ret = ASQ(put(channel, value));
+
+		if (cb && typeof cb == "function") {
+			ret.val(cb);
+		} else {
+			return ret;
+		}
+	}
+
+	function take(channel) {
+		var ret;
+
+		try {
+			ret = takem(channel);
+		} catch (err) {
+			ret = err;
+		}
+
+		if (ASQ.isSequence(ret)) {
+			ret.pCatch(function $$pcatch(err) {
+				return err;
+			});
+		}
+
+		return ret;
+	}
+
+	function takeAsync(channel, cb) {
+		var ret = ASQ(take(channel));
+
+		if (cb && typeof cb == "function") {
+			ret.val(cb);
+		} else {
+			return ret;
+		}
+	}
+
+	function takem(channel) {
+		var msg;
+
+		if (channel.closed) {
+			return ASQ.csp.CLOSED;
+		}
+
+		// remove already-resolved entries
+		channel.put_queue = filterResolved(channel.put_queue);
+		channel.take_queue = filterResolved(channel.take_queue);
+
+		// immediate take?
+		if (channel.messages.length > 0) {
+			msg = channel.messages.shift();
+			unblock(channel.put_queue.shift());
+			if (msg instanceof Error) {
+				throw msg;
+			}
+			return msg;
+		}
+		// queued take
+		else {
+				channel.take_queue.push(
+				// make a notifiable iterable for 'take' blocking
+				ASQ.iterable().then(function $$then() {
+					if (!channel.closed) {
+						var v = channel.messages.shift();
+						if (v instanceof Error) {
+							throw v;
+						}
+						return v;
+					} else {
+						return ASQ.csp.CLOSED;
+					}
+				}));
+
+				// wrap a sequence/promise around the iterable
+				msg = ASQ(channel.take_queue[channel.take_queue.length - 1]);
+
+				// put waiting on this take?
+				if (channel.put_queue.length > 0) {
+					unblock(channel.put_queue.shift());
+					unblock(channel.take_queue.shift());
+				}
+
+				return msg;
+			}
+	}
+
+	function takemAsync(channel, cb) {
+		var ret = ASQ(takem(channel));
+
+		if (cb && typeof cb == "function") {
+			ret.pThen(cb, cb);
+		} else {
+			return ret.val(function $$val(v) {
+				if (v instanceof Error) {
+					throw v;
+				}
+				return v;
+			});
+		}
+	}
+
+	function alts(actions) {
+		var closed,
+		    open,
+		    handlers,
+		    i,
+		    isq,
+		    ret,
+		    resolved = false;
+
+		// used `alts(..)` incorrectly?
+		if (!Array.isArray(actions) || actions.length == 0) {
+			throw Error("Invalid usage");
+		}
+
+		closed = [];
+		open = [];
+		handlers = [];
+
+		// separate actions by open/closed channel status
+		actions.forEach(function $$each(action) {
+			var channel = Array.isArray(action) ? action[0] : action;
+
+			// remove already-resolved entries
+			channel.put_queue = filterResolved(channel.put_queue);
+			channel.take_queue = filterResolved(channel.take_queue);
+
+			if (channel.closed) {
+				closed.push(channel);
+			} else {
+				open.push(action);
+			}
+		});
+
+		// if no channels are still open, we're done
+		if (open.length == 0) {
+			return { value: ASQ.csp.CLOSED, channel: closed };
+		}
+
+		// can any channel action be executed immediately?
+		for (i = 0; i < open.length; i++) {
+			// put action
+			if (Array.isArray(open[i])) {
+				// immediate put?
+				if (open[i][0].messages.length < open[i][0].buffer_size) {
+					return { value: put(open[i][0], open[i][1]), channel: open[i][0] };
+				}
+			}
+			// immediate take?
+			else if (open[i].messages.length > 0) {
+					return { value: take(open[i]), channel: open[i] };
+				}
+		}
+
+		isq = ASQ.iterable();
+		var ret = ASQ(isq);
+
+		// setup channel action handlers
+		for (i = 0; i < open.length; i++) {
+			(function iteration(action, channel, value) {
+				// put action?
+				if (Array.isArray(action)) {
+					channel = action[0];
+					value = action[1];
+
+					// define put handler
+					handlers.push(ASQ.iterable().then(function $$then() {
+						resolved = true;
+
+						// mark all handlers across this `alts(..)` as resolved now
+						handlers = handlers.filter(function $$filter(handler) {
+							return !(handler.resolved = true);
+						});
+
+						// channel still open?
+						if (!channel.closed) {
+							channel.messages.push(value);
+							isq.next({ value: true, channel: channel });
+						}
+						// channel already closed?
+						else {
+								isq.next({ value: false, channel: channel });
+							}
+					}));
+
+					// queue up put handler
+					channel.put_queue.push(handlers[handlers.length - 1]);
+
+					// take waiting on this queued put?
+					if (channel.take_queue.length > 0) {
+						schedule(function handleUnblocking() {
+							if (!resolved) {
+								unblock(channel.put_queue.shift());
+								unblock(channel.take_queue.shift());
+							}
+						}, 0);
+					}
+				}
+				// take action?
+				else {
+						channel = action;
+
+						// define take handler
+						handlers.push(ASQ.iterable().then(function $$then() {
+							resolved = true;
+
+							// mark all handlers across this `alts(..)` as resolved now
+							handlers = handlers.filter(function $$filter(handler) {
+								return !(handler.resolved = true);
+							});
+
+							// channel still open?
+							if (!channel.closed) {
+								isq.next({ value: channel.messages.shift(), channel: channel });
+							}
+							// channel already closed?
+							else {
+									isq.next({ value: ASQ.csp.CLOSED, channel: channel });
+								}
+						}));
+
+						// queue up take handler
+						channel.take_queue.push(handlers[handlers.length - 1]);
+
+						// put waiting on this queued take?
+						if (channel.put_queue.length > 0) {
+							schedule(function handleUnblocking() {
+								if (!resolved) {
+									unblock(channel.put_queue.shift());
+									unblock(channel.take_queue.shift());
+								}
+							});
+						}
+					}
+			})(open[i]);
+		}
+
+		return ret;
+	}
+
+	function altsAsync(chans, cb) {
+		var ret = ASQ(alts(chans));
+
+		if (cb && typeof cb == "function") {
+			ret.pThen(cb, cb);
+		} else {
+			return ret;
+		}
+	}
+
+	function timeout(delay) {
+		var ch = channel();
+		setTimeout(ch.close, delay);
+		return ch;
+	}
+
+	function go(gen, args) {
+		// goroutine arguments passed?
+		if (arguments.length > 1) {
+			if (!args || !Array.isArray(args)) {
+				args = [args];
+			}
+		} else {
+			args = [];
+		}
+
+		return regeneratorRuntime.mark(function $$go(token) {
+			var unblock, ret, msg, err, type, done, it;
+			return regeneratorRuntime.wrap(function $$go$(context$3$0) {
+				while (1) switch (context$3$0.prev = context$3$0.next) {
+					case 0:
+						unblock = function unblock() {
+							token.unblock_count++;
+
+							if (token.block && !token.block.marked) {
+								token.block.marked = true;
+								token.block.next();
+							}
+						};
+
+						done = false;
+
+						// keep track of how many requests for unblocking
+						// have occurred
+						token.unblock_count = token.unblock_count || 0;
+
+						// keep track of how many goroutines are running
+						// so we can infer when we're done go'ing
+						token.go_count = (token.go_count || 0) + 1;
+
+						// need to initialize a set of goroutines?
+						if (token.go_count === 1) {
+							// create a default channel for these goroutines
+							token.channel = channel();
+							token.channel.messages = token.messages;
+							token.channel.go = function $$go() {
+								// add the goroutine (called with any args) to
+								// the handling queue
+								token.add(go.apply(ø, arguments));
+								// unblock the goroutine handling for this
+								// new goroutine
+								unblock();
+							};
+							// starting out with initial channel messages?
+							if (token.channel.messages.length > 0) {
+								// fake back-pressure blocking for each
+								token.channel.put_queue = token.channel.messages.map(function $$map() {
+									// make a notifiable iterable for 'put' blocking
+									return ASQ.iterable().then(function $$then() {
+										unblock(token.channel.take_queue.shift());
+										return !token.channel.closed;
+									});
+								});
+							}
+						}
+
+						// initialize the generator
+						it = gen.apply(ø, [token.channel].concat(args));
+
+						(function iterate() {
+
+							function next() {
+								// keep going with next step in goroutine?
+								if (!done) {
+									iterate();
+								}
+								// unblock overall goroutine handling to
+								// continue with other goroutines
+								else {
+										unblock();
+									}
+							}
+
+							// has a resumption value been achieved yet?
+							if (!ret) {
+								// try to resume the goroutine
+								try {
+									// resume with injected exception?
+									if (err) {
+										ret = it["throw"](err);
+										err = null;
+									}
+									// resume normally
+									else {
+											ret = it.next(msg);
+										}
+								}
+								// resumption failed, so bail
+								catch (e) {
+									done = true;
+									err = e;
+									msg = null;
+									unblock();
+									return;
+								}
+
+								// keep track of the result of the resumption
+								done = ret.done;
+								ret = ret.value;
+								type = typeof ret;
+
+								// if this goroutine is complete, unblock the
+								// overall goroutine handling
+								if (done) {
+									unblock();
+								}
+
+								// received a thenable/promise back?
+								if (isPromise(ret)) {
+									ret = ASQ().promise(ret);
+								}
+
+								// wait for the value?
+								if (ASQ.isSequence(ret)) {
+									ret.val(function $$val() {
+										ret = null;
+										msg = arguments.length > 1 ? ASQ.messages.apply(ø, arguments) : arguments[0];
+										next();
+									}).or(function $$or() {
+										ret = null;
+										msg = arguments.length > 1 ? ASQ.messages.apply(ø, arguments) : arguments[0];
+										if (msg instanceof Error) {
+											err = msg;
+											msg = null;
+										}
+										next();
+									});
+								}
+								// immediate value, prepare it to go right back in
+								else {
+										msg = ret;
+										ret = null;
+										next();
+									}
+							}
+						})();
+
+						// keep this goroutine alive until completion
+
+					case 7:
+						if (done) {
+							context$3$0.next = 17;
+							break;
+						}
+
+						context$3$0.next = 10;
+						return token;
+
+					case 10:
+						if (!(!done && !token.block && token.unblock_count === 0)) {
+							context$3$0.next = 14;
+							break;
+						}
+
+						context$3$0.next = 13;
+						return token.block = ASQ.iterable();
+
+					case 13:
+
+						token.block = false;
+
+					case 14:
+
+						if (token.unblock_count > 0) token.unblock_count--;
+						context$3$0.next = 7;
+						break;
+
+					case 17:
+
+						// this goroutine is done now
+						token.go_count--;
+
+						// all goroutines done?
+						if (token.go_count === 0) {
+							// any lingering blocking need to be cleaned up?
+							unblock();
+
+							// capture any untaken messages
+							msg = ASQ.messages.apply(ø, token.messages);
+
+							// need to implicitly force-close channel?
+							if (token.channel && !token.channel.closed) {
+								token.channel.closed = true;
+								token.channel.put_queue.length = token.channel.take_queue.length = 0;
+								token.channel.close = token.channel.go = token.channel.messages = null;
+							}
+							token.channel = null;
+						}
+
+						// make sure leftover error or message are
+						// passed along
+
+						if (!err) {
+							context$3$0.next = 23;
+							break;
+						}
+
+						throw err;
+
+					case 23:
+						if (!(token.go_count === 0)) {
+							context$3$0.next = 27;
+							break;
+						}
+
+						return context$3$0.abrupt("return", msg);
+
+					case 27:
+						return context$3$0.abrupt("return", token);
+
+					case 28:
+					case "end":
+						return context$3$0.stop();
+				}
+			}, $$go, this);
+		});
+	}
+
+	ASQ.csp = {
+		chan: channel,
+		put: put,
+		putAsync: putAsync,
+		take: take,
+		takeAsync: takeAsync,
+		takem: takem,
+		takemAsync: takemAsync,
+		alts: alts,
+		altsAsync: altsAsync,
+		timeout: timeout,
+		go: go,
+		CLOSED: {}
+	};
+})();
+
+// unblock the overall goroutine handling
+
+// transfer control to another goroutine
+
+// need to block overall goroutine handling
+// while idle?
+
+// wait here while idle// "ASQ.iterable()"
+"use strict";
+
+(function IIFE() {
+	var template;
+
+	ASQ.iterable = function $$iterable() {
+		function throwSequenceErrors() {
+			throw sequence_errors.length === 1 ? sequence_errors[0] : sequence_errors;
+		}
+
+		function notifyErrors() {
+			var fn;
+
+			seq_tick = null;
+
+			if (seq_error) {
+				if (or_queue.length === 0 && !error_reported) {
+					error_reported = true;
+					throwSequenceErrors();
+				}
+
+				while (or_queue.length > 0) {
+					error_reported = true;
+					fn = or_queue.shift();
+					try {
+						fn.apply(ø, sequence_errors);
+					} catch (err) {
+						if (checkBranding(err)) {
+							sequence_errors = sequence_errors.concat(err);
+						} else {
+							sequence_errors.push(err);
+						}
+						if (or_queue.length === 0) {
+							throwSequenceErrors();
+						}
+					}
+				}
+			}
+		}
+
+		function val() {
+			if (seq_error || seq_aborted || arguments.length === 0) {
+				return sequence_api;
+			}
+
+			var args = ARRAY_SLICE.call(arguments).map(function mapper(arg) {
+				if (typeof arg != "function") return function $$val() {
+					return arg;
+				};else return arg;
+			});
+
+			val_queue.push.apply(val_queue, args);
+
+			return sequence_api;
+		}
+
+		function or() {
+			if (seq_aborted || arguments.length === 0) {
+				return sequence_api;
+			}
+
+			or_queue.push.apply(or_queue, arguments);
+
+			if (!seq_tick) {
+				seq_tick = schedule(notifyErrors);
+			}
+
+			return sequence_api;
+		}
+
+		function pipe() {
+			if (seq_aborted || arguments.length === 0) {
+				return sequence_api;
+			}
+
+			ARRAY_SLICE.call(arguments).forEach(function $$each(fn) {
+				val(fn).or(fn.fail);
+			});
+
+			return sequence_api;
+		}
+
+		function next() {
+			if (seq_error || seq_aborted || val_queue.length === 0) {
+				if (val_queue.length > 0) {
+					$throw$("Sequence cannot be iterated");
+				}
+				return { done: true };
+			}
+
+			try {
+				return { value: val_queue.shift().apply(ø, arguments) };
+			} catch (err) {
+				if (ASQ.isMessageWrapper(err)) {
+					$throw$.apply(ø, err);
+				} else {
+					$throw$(err);
+				}
+
+				return {};
+			}
+		}
+
+		function $throw$() {
+			if (seq_error || seq_aborted) {
+				return sequence_api;
+			}
+
+			sequence_errors.push.apply(sequence_errors, arguments);
+			seq_error = true;
+			if (!seq_tick) {
+				seq_tick = schedule(notifyErrors);
+			}
+
+			return sequence_api;
+		}
+
+		function $return$(val) {
+			if (seq_error || seq_aborted) {
+				val = void 0;
+			}
+
+			abort();
+
+			return { done: true, value: val };
+		}
+
+		function abort() {
+			if (seq_error || seq_aborted) {
+				return;
+			}
+
+			seq_aborted = true;
+
+			clearTimeout(seq_tick);
+			seq_tick = null;
+			val_queue.length = or_queue.length = sequence_errors.length = 0;
+		}
+
+		function duplicate() {
+			var isq;
+
+			template = {
+				val_queue: val_queue.slice(),
+				or_queue: or_queue.slice()
+			};
+			isq = ASQ.iterable();
+			template = null;
+
+			return isq;
+		}
+
+		// opt-out of global error reporting for this sequence
+		function defer() {
+			or_queue.push(function $$ignored() {});
+			return sequence_api;
+		}
+
+		// ***********************************************
+		// Object branding utilities
+		// ***********************************************
+		function brandIt(obj) {
+			Object.defineProperty(obj, brand, {
+				enumerable: false,
+				value: true
+			});
+
+			return obj;
+		}
+
+		var sequence_api,
+		    seq_error = false,
+		    error_reported = false,
+		    seq_aborted = false,
+		    seq_tick,
+		    val_queue = [],
+		    or_queue = [],
+		    sequence_errors = [];
+
+		// ***********************************************
+		// Setup the ASQ.iterable() public API
+		// ***********************************************
+		sequence_api = brandIt({
+			val: val,
+			then: val,
+			or: or,
+			pipe: pipe,
+			next: next,
+			"throw": $throw$,
+			"return": $return$,
+			abort: abort,
+			duplicate: duplicate,
+			defer: defer
+		});
+
+		// useful for ES6 `for..of` loops,
+		// add `@@iterator` to simply hand back
+		// our iterable sequence itself!
+		sequence_api[typeof Symbol == "function" && Symbol.iterator || "@@iterator"] = function $$iter() {
+			return sequence_api;
+		};
+
+		// templating the iterable-sequence setup?
+		if (template) {
+			val_queue = template.val_queue.slice(0);
+			or_queue = template.or_queue.slice(0);
+		}
+
+		// treat ASQ.iterable() constructor parameters as having been
+		// passed to `val()`
+		sequence_api.val.apply(ø, arguments);
+
+		return sequence_api;
+	};
+})();// "last"
+ASQ.extend("last",function $$extend(api,internals){
+	return function $$last() {
+		if (internals("seq_error") || internals("seq_aborted") ||
+			arguments.length === 0
+		) {
+			return api;
+		}
+
+		var fns = ARRAY_SLICE.call(arguments);
+
+		api.then(function $$then(done){
+			function reset() {
+				finished = true;
+				error_messages.length = 0;
+				success_messages = null;
+			}
+
+			function complete(trigger) {
+				if (success_messages != null) {
+					// last successful segment's message(s) sent
+					// to main sequence to proceed as success
+					trigger(
+						success_messages.length > 1 ?
+						ASQ.messages.apply(ø,success_messages) :
+						success_messages[0]
+					);
+				}
+				else {
+					// send errors into main sequence
+					error_messages.length = fns.length;
+					trigger.fail.apply(ø,error_messages);
+				}
+
+				reset();
+			}
+
+			function success(trigger,idx,args) {
+				if (!finished) {
+					completed++;
+					success_messages = args;
+
+					// all segments complete?
+					if (completed === fns.length) {
+						finished = true;
+
+						complete(trigger);
+					}
+				}
+			}
+
+			function failure(trigger,idx,args) {
+				if (!finished &&
+					!(idx in error_messages)
+				) {
+					completed++;
+					error_messages[idx] =
+						args.length > 1 ?
+						ASQ.messages.apply(ø,args) :
+						args[0]
+					;
+				}
+
+				// all segments complete?
+				if (!finished &&
+					completed === fns.length
+				) {
+					finished = true;
+
+					complete(trigger);
+				}
+			}
+
+			var completed = 0, error_messages = [], finished = false,
+				sq = ASQ.apply(ø,ARRAY_SLICE.call(arguments,1)),
+				success_messages
+			;
+
+			wrapGate(sq,fns,success,failure,reset);
+
+			sq.pipe(done);
+		});
+
+		return api;
+	};
+});
+// "map"
+ASQ.extend("map",function $$extend(api,internals){
+	return function $$map(pArr,pEach) {
+		if (internals("seq_error") || internals("seq_aborted")) {
+			return api;
+		}
+
+		api.seq(function $$seq(){
+			var tmp, args = ARRAY_SLICE.call(arguments),
+				arr = pArr, each = pEach;
+
+			// if missing `map(..)` args, use value-messages (if any)
+			if (!each) each = args.shift();
+			if (!arr) arr = args.shift();
+
+			// if arg types in reverse order (each,arr), swap
+			if (typeof arr === "function" && Array.isArray(each)) {
+				tmp = arr;
+				arr = each;
+				each = tmp;
+			}
+
+			return ASQ.apply(ø,args)
+			.gate.apply(ø,arr.map(function $$map(item){
+				return function $$segment(){
+					each.apply(ø,[item].concat(ARRAY_SLICE.call(arguments)));
+				};
+			}));
+		})
+		.val(function $$val(){
+			// collect all gate segment output into one value-message
+			// Note: return a normal array here, not a message wrapper!
+			return ARRAY_SLICE.call(arguments);
+		});
+
+		return api;
+	};
+});
+// "none"
+ASQ.extend("none",function $$extend(api,internals){
+	return function $$none() {
+		if (internals("seq_error") || internals("seq_aborted") ||
+			arguments.length === 0
+		) {
+			return api;
+		}
+
+		var fns = ARRAY_SLICE.call(arguments);
+
+		api.then(function $$then(done){
+			function reset() {
+				finished = true;
+				error_messages.length = 0;
+				success_messages.length = 0;
+			}
+
+			function complete(trigger) {
+				if (success_messages.length > 0) {
+					// any successful segment's message(s) sent
+					// to main sequence to proceed as **error**
+					success_messages.length = fns.length;
+					trigger.fail.apply(ø,success_messages);
+				}
+				else {
+					// send errors as **success** to main sequence
+					error_messages.length = fns.length;
+					trigger.apply(ø,error_messages);
+				}
+
+				reset();
+			}
+
+			function success(trigger,idx,args) {
+				if (!finished) {
+					completed++;
+					success_messages[idx] =
+						args.length > 1 ?
+						ASQ.messages.apply(ø,args) :
+						args[0]
+					;
+
+					// all segments complete?
+					if (completed === fns.length) {
+						finished = true;
+
+						complete(trigger);
+					}
+				}
+			}
+
+			function failure(trigger,idx,args) {
+				if (!finished &&
+					!(idx in error_messages)
+				) {
+					completed++;
+					error_messages[idx] =
+						args.length > 1 ?
+						ASQ.messages.apply(ø,args) :
+						args[0]
+					;
+				}
+
+				// all segments complete?
+				if (!finished &&
+					completed === fns.length
+				) {
+					finished = true;
+
+					complete(trigger);
+				}
+			}
+
+			var completed = 0, error_messages = [], finished = false,
+				sq = ASQ.apply(ø,ARRAY_SLICE.call(arguments,1)),
+				success_messages = []
+			;
+
+			wrapGate(sq,fns,success,failure,reset);
+
+			sq.pipe(done);
+		});
+
+		return api;
+	};
+});
+// "pThen"
+ASQ.extend("pThen",function $$extend(api,internals){
+	return function $$pthen(success,failure) {
+		if (internals("seq_aborted")) {
+			return api;
+		}
+
+		var ignore_success_handler = false, ignore_failure_handler = false;
+
+		if (typeof success === "function") {
+			api.then(function $$then(done){
+				if (!ignore_success_handler) {
+					var ret, msgs = ASQ.messages.apply(ø,arguments);
+					msgs.shift();
+
+					if (msgs.length === 1) {
+						msgs = msgs[0];
+					}
+
+					ignore_failure_handler = true;
+
+					try {
+						ret = success(msgs);
+					}
+					catch (err) {
+						if (!ASQ.isMessageWrapper(err)) {
+							err = [err];
+						}
+						done.fail.apply(ø,err);
+						return;
+					}
+
+					// returned a sequence?
+					if (ASQ.isSequence(ret)) {
+						ret.pipe(done);
+					}
+					// returned a message wrapper?
+					else if (ASQ.isMessageWrapper(ret)) {
+						done.apply(ø,ret);
+					}
+					// returned a promise/thenable?
+					else if (isPromise(ret)) {
+						ret.then(done,done.fail);
+					}
+					// just a normal value to pass along
+					else {
+						done(ret);
+					}
+				}
+				else {
+					done.apply(ø,ARRAY_SLICE.call(arguments,1));
+				}
+			});
+		}
+		if (typeof failure === "function") {
+			api.or(function $$or(){
+				if (!ignore_failure_handler) {
+					var ret, msgs = ASQ.messages.apply(ø,arguments), smgs,
+						or_queue = ARRAY_SLICE.call(internals("or_queue"))
+					;
+
+					if (msgs.length === 1) {
+						msgs = msgs[0];
+					}
+
+					ignore_success_handler = true;
+
+					// NOTE: if this call throws, that'll automatically
+					// be handled by core as we'd want it to be
+					ret = failure(msgs);
+
+					// if we get this far:
+					// first, inject return value (if any) as
+					// next step's sequence messages
+					smgs = internals("sequence_messages");
+					smgs.length = 0;
+					if (typeof ret !== "undefined") {
+						if (!ASQ.isMessageWrapper(ret)) {
+							ret = [ret];
+						}
+						smgs.push.apply(smgs,ret);
+					}
+
+					// reset internal error state, because we've exclusively
+					// handled any errors up to this point of the sequence
+					internals("sequence_errors").length = 0;
+					internals("seq_error",false);
+					internals("then_ready",true);
+
+					// temporarily empty the or-queue
+					internals("or_queue").length = 0;
+
+					// make sure to schedule success-procession on the chain
+					api.val(function $$val(){
+						// pass thru messages
+						return ASQ.messages.apply(ø,arguments);
+					});
+
+					// at next cycle, reinstate the or-queue (if any)
+					if (or_queue.length > 0) {
+						schedule(function $$schedule(){
+							api.or.apply(ø,or_queue);
+						});
+					}
+				}
+			});
+		}
+		return api;
+	};
+});
+
+// "pCatch"
+ASQ.extend("pCatch",function $$extend(api,internals){
+	return function $$pcatch(failure) {
+		if (internals("seq_aborted")) {
+			return api;
+		}
+
+		api.pThen(void 0,failure);
+
+		return api;
+	};
+});
+// "race"
+ASQ.extend("race",function $$extend(api,internals){
+	return function $$race() {
+		if (internals("seq_error") || internals("seq_aborted") ||
+			arguments.length === 0
+		) {
+			return api;
+		}
+
+		var fns = ARRAY_SLICE.call(arguments)
+		.map(function $$map(v){
+			var def;
+			// tap any directly-provided sequences immediately
+			if (ASQ.isSequence(v)) {
+				def = { seq: v };
+				tapSequence(def);
+				return function $$fn(done) {
+					def.seq.pipe(done);
+				};
+			}
+			else return v;
+		});
+
+		api.then(function $$then(done){
+			var args = ARRAY_SLICE.call(arguments);
+
+			fns.forEach(function $$each(fn){
+				fn.apply(ø,args);
+			});
+		});
+
+		return api;
+	};
+});
+// "react" (reactive sequences)
+(function IIFE(){
+
+	var extensions = {};
+
+	ASQ.react = function $$react(reactor) {
+		function next() {
+			if (!paused) {
+				if (template) {
+					var sq = template.duplicate();
+					sq.unpause.apply(ø,arguments);
+					return sq;
+				}
+				return ASQ(function $$asq(){ throw "Disabled Sequence"; });
+			}
+		}
+
+		function registerTeardown(fn) {
+			if (template && typeof fn === "function") {
+				teardowns.push(fn);
+			}
+		}
+
+		var template = ASQ().duplicate(),
+			teardowns = [], paused = false
+		;
+
+		// add reactive sequence kill switch
+		template.stop = function $$stop() {
+			if (template) {
+				template = null;
+				teardowns.forEach(Function.call,Function.call);
+				teardowns.length = 0;
+			}
+		};
+
+		template.pause = function $$pause() {
+			if (!paused && template) {
+				paused = true;
+				teardowns.forEach(Function.call,Function.call);
+				teardowns.length = 0;
+			}
+		};
+
+		template.resume = function $$resume() {
+			if (paused && template) {
+				paused = false;
+				reactor.call(template,next,registerTeardown);
+			}
+		};
+
+		template.push = next;
+
+		next.onStream = function $$onStream() {
+			ARRAY_SLICE.call(arguments)
+			.forEach(function $$each(stream){
+				stream.on("data",next);
+				stream.on("error",next);
+			});
+		};
+
+		next.unStream = function $$unStream() {
+			ARRAY_SLICE.call(arguments)
+			.forEach(function $$each(stream){
+				stream.removeListener("data",next);
+				stream.removeListener("error",next);
+			});
+		};
+
+		Object.keys(extensions)
+		.forEach(function $$each(name){
+			template[name] = template[name] || extensions[name](template);
+		});
+
+		// blacklist (remove from reactive sequences)
+		["pipe","fork","errfcb","pThen","pCatch","toPromise"]
+		.forEach(function $$each(name){
+			delete template[name];
+		});
+
+		// make sure `reactor(..)` is called async
+		ASQ.__schedule(function $$schedule(){
+			reactor.call(template,next,registerTeardown);
+		});
+
+		return template;
+	};
+
+	ASQ.react.extend = function $$extend(name,build) {
+		extensions[name] = build;
+
+		return ASQ.react;
+	};
+
+})();
+// "react" helpers
+(function IIFE(){
+
+	var Ar = ASQ.react;
+
+	Ar.of = function $$react$of() {
+		function reactor(next) {
+			if (!started) {
+				started = true;
+				if (args.length > 0) {
+					args.shift().val(function val(){
+						next.apply(ø,arguments);
+						if (args.length > 0) {
+							args.shift().val(val);
+						}
+					});
+				}
+			}
+		}
+
+		var started, args = ARRAY_SLICE.call(arguments)
+			.map(function wrapper(arg){
+				if (!ASQ.isSequence(arg)) arg = ASQ(arg);
+				return arg;
+			});
+
+		return Ar(reactor);
+	};
+
+	Ar.all = Ar.zip = makeReactOperator(/*buffer=*/true);
+	Ar.allLatest = makeReactOperator(/*buffer=false*/);
+	Ar.latest = Ar.combineLatest = makeReactOperator(/*buffer=*/false,/*keep=*/true);
+
+	Ar.any = Ar.merge = function $$react$any(){
+		function reactor(next,registerTeardown){
+			function processSequence(def){
+				function trigger(){
+					var args = ASQ.messages.apply(ø,arguments);
+					// still observing sequence-streams?
+					if (seqs && seqs.length > 0) {
+						// fire off reactive sequence instance
+						next.apply(ø,args);
+					}
+					// keep sequence going
+					return args;
+				}
+
+				// sequence-stream event listener
+				def.seq.val(trigger);
+			}
+
+			// observe all sequence-streams
+			seqs.forEach(processSequence);
+
+			// listen for stop() of reactive sequence
+			registerTeardown(function $$teardown(){
+				seqs = null;
+			});
+		}
+
+		// observe all sequence-streams
+		var seqs = tapSequences.apply(null,arguments);
+
+		if (seqs.length == 0) return;
+
+		return Ar(reactor);
+	};
+
+	Ar.distinct = function $$react$distinct(seq){
+		return Ar.filter(seq,makeDistinctFilterer(/*keepAll=*/true));
+	};
+
+	Ar.distinctConsecutive = Ar.distinctUntilChanged = function $$react$distinct$consecutive(seq) {
+		return Ar.filter(seq,makeDistinctFilterer(/*keepAll=*/false));
+	};
+
+	Ar.filter = function $$react$filter(seq,filterer){
+		function reactor(next,registerTeardown) {
+			function trigger(){
+				var messages = ASQ.messages.apply(ø,arguments);
+
+				if (filterer && filterer.apply(ø,messages)) {
+					// fire off reactive sequence instance
+					next.apply(ø,messages);
+				}
+
+				// keep sequence going
+				return messages;
+			}
+
+			// sequence-stream event listener
+			def.seq.val(trigger);
+
+			// listen for stop() of reactive sequence
+			registerTeardown(function $$teardown(){
+				def = filterer = null;
+			});
+		}
+
+		// observe sequence-stream
+		var def = tapSequences(seq)[0];
+
+		if (!def) return;
+
+		return Ar(reactor);
+	};
+
+	Ar.fromObservable = function $$react$from$observable(obsv){
+		function reactor(next,registerTeardown){
+			// process buffer (if any)
+			buffer.forEach(next);
+			buffer.length = 0;
+
+			// start non-buffered notifications?
+			if (!buffer.complete) {
+				notify = next;
+			}
+
+			registerTeardown(function $$teardown(){
+				obsv.dispose();
+			});
+		}
+
+		function notify(v) {
+			buffer.push(v);
+		}
+
+		var buffer = [];
+
+		obsv.subscribe(
+			function $$on$next(v){
+				notify(v);
+			},
+			function $$on$error(){},
+			function $$on$complete(){
+				buffer.complete = true;
+				obsv.dispose();
+			}
+		);
+
+		return Ar(reactor);
+	};
+
+	ASQ.extend("toObservable",function $$extend(api,internals){
+		return function $$to$observable(){
+			function init(observer) {
+				function define(pair){
+					function listen(){
+						var args = ASQ.messages.apply(ø,arguments);
+						observer[pair[1]].apply(observer,
+							args.length == 1 ? [args[0]] : args
+						);
+						return args;
+					}
+
+					api[pair[0]](listen);
+				}
+
+				[["val","onNext"],["or","onError"]]
+				.forEach(define);
+			}
+
+			return Rx.Observable.create(init);
+		};
+	});
+
+	function tapSequences() {
+		function tapSequence(seq) {
+			// temporary `trigger` which, if called before being replaced
+			// below, creates replacement proxy sequence with the
+			// event message(s) re-fired
+			function trigger() {
+				var args = ARRAY_SLICE.call(arguments);
+				def.seq = Ar(function $$react(next){
+					next.apply(ø,args);
+				});
+			}
+
+			if (ASQ.isSequence(seq)) {
+				var def = { seq: seq };
+
+				// listen for events from the sequence-stream
+				seq.val(function $$val(){
+					trigger.apply(ø,arguments);
+					return ASQ.messages.apply(ø,arguments);
+				});
+
+				// make a reactive sequence to act as a proxy to the original
+				// sequence
+				def.seq = Ar(function $$react(next){
+					// replace the temporary trigger (created above)
+					// with this proxy's trigger
+					trigger = next;
+				});
+
+				return def;
+			}
+		}
+
+		return ARRAY_SLICE.call(arguments)
+			.map(tapSequence)
+			.filter(Boolean);
+	}
+
+	function makeReactOperator(buffer,keep) {
+		return function $$react$operator(){
+			function reactor(next,registerTeardown){
+				function processSequence(def) {
+					// sequence-stream event listener
+					function trigger() {
+						var args = ASQ.messages.apply(ø,arguments);
+						// still observing sequence-streams?
+						if (seqs && seqs.length > 0) {
+							// store event message(s), if any
+							seq_events[seq_id] =
+								(buffer ? seq_events[seq_id] : []).concat(
+									args.length > 0 ? (args.length > 1 ? [args] : args[0]) : undefined
+								);
+
+							// collect event message(s) across the
+							// sequence-stream sources
+							var messages = seq_events.reduce(function reducer(msgs,eventList,idx){
+									if (eventList.length > 0) msgs.push(eventList[0]);
+									return msgs;
+								},[]);
+
+							// did all sequence-streams get an event?
+							if (messages.length == seq_events.length) {
+								if (messages.length == 1) messages = messages[0];
+
+								// fire off reactive sequence instance
+								next.apply(ø,messages);
+
+								// discard stored event message(s)?
+								if (!keep) {
+									seq_events.forEach(function $$each(eventList){
+										eventList.shift();
+									});
+								}
+							}
+						}
+						// keep sequence going
+						return args;
+					}
+
+					var seq_id = seq_events.length;
+					seq_events.push([]);
+					def.seq.val(trigger);
+				}
+
+				// process all sequence-streams
+				seqs.forEach(processSequence);
+
+				// listen for stop() of reactive sequence
+				registerTeardown(function $$teardown(){
+					seqs = seq_events = null;
+				});
+			}
+
+			var seq_events = [],
+				// observe all sequence-streams
+				seqs = tapSequences.apply(null,arguments)
+			;
+
+			if (seqs.length == 0) return;
+
+			return Ar(reactor);
+		};
+	}
+
+	function makeDistinctFilterer(keepAll) {
+		function filterer() {
+			function isDuplicate(msgSet) {
+				return (
+					msgSet.length == message_set.length &&
+					msgSet.every(function $$every(val,idx){
+						return val === message_set[idx];
+					})
+				);
+			}
+
+			var message_set = ASQ.messages.apply(ø,arguments);
+
+			// any messages in message-set to check against?
+			if (message_set.length > 0) {
+				// duplicate message-set?
+				if (msg_sets.some(isDuplicate)) {
+					return false;
+				}
+
+				// remember all message-sets for future distinct checking?
+				if (keepAll) {
+					msg_sets.push(message_set);
+				}
+				// only keep the last message-set for distinct-consecutive
+				// checking
+				else {
+					msg_sets[0] = message_set;
+				}
+			}
+
+			// allow distinct non-duplicate value through
+			return true;
+		}
+
+		var msg_sets = [];
+
+		return filterer;
+	}
+
+})();
+// "runner"
+ASQ.extend("runner",function $$extend(api,internals){
+
+	return function $$runner() {
+		if (internals("seq_error") || internals("seq_aborted") ||
+			arguments.length === 0
+		) {
+			return api;
+		}
+
+		var args = ARRAY_SLICE.call(arguments);
+
+		api
+		.then(function $$then(mainDone){
+
+			function wrap(v) {
+				// function? expected to produce an iterator
+				// (like a generator) or a promise
+				if (typeof v === "function") {
+					// call function passing in the control token
+					// note: neutralize `this` in call to prevent
+					// unexpected behavior
+					v = v.call(ø,token);
+
+					// promise returned (ie, from async function)?
+					if (isPromise(v)) {
+						// wrap it in iterable sequence
+						v = ASQ.iterable(v);
+					}
+				}
+				// an iterable sequence? duplicate it (in case of multiple runs)
+				else if (ASQ.isSequence(v) && "next" in v) {
+					v = v.duplicate();
+				}
+				// wrap anything else in iterable sequence
+				else {
+					v = ASQ.iterable(v);
+				}
+
+				// a sequence to tap for errors?
+				if (ASQ.isSequence(v)) {
+					// listen for any sequence failures
+					v.or(function $$or(){
+						// signal iteration-error
+						mainDone.fail.apply(ø,arguments);
+					});
+				}
+
+				return v;
+			}
+
+			function addWrapped() {
+				iterators.push.apply(
+					iterators,
+					ARRAY_SLICE.call(arguments).map(wrap)
+				);
+			}
+
+			function iterateOrQuit(iterFn,now) {
+				// still have some co-routine runs to process?
+				if (iterators.length > 0) {
+					if (now) iterFn();
+					else schedule(iterFn);
+				}
+				// all done!
+				else {
+					// previous value message?
+					if (typeof next_val !== "undefined") {
+						// not a message wrapper array?
+						if (!ASQ.isMessageWrapper(next_val)) {
+							// wrap value for the subsequent `apply(..)`
+							next_val = [next_val];
+						}
+					}
+					else {
+						// nothing to affirmatively pass along
+						next_val = [];
+					}
+
+					// signal done with all co-routine runs
+					mainDone.apply(ø,next_val);
+				}
+			}
+
+			var iterators = args,
+				token = {
+					messages: ARRAY_SLICE.call(arguments,1),
+					add: addWrapped
+				},
+				iter, iter_action, ret, next_val = token
+			;
+
+			// map co-routines to round-robin list of iterators
+			iterators = iterators.map(wrap);
+
+			// async iteration of round-robin list
+			(function iterate(throwNext){
+				iter_action = throwNext ? "throw" : "next";
+
+				// get next co-routine in list
+				iter = iterators.shift();
+
+				// process the iteration
+				try {
+					// multiple messages to send to an iterable
+					// sequence?
+					if (ASQ.isMessageWrapper(next_val) &&
+						ASQ.isSequence(iter)
+					) {
+						ret = iter[iter_action].apply(iter,next_val);
+					}
+					else {
+						ret = iter[iter_action](next_val);
+					}
+				}
+				catch (err) {
+					return mainDone.fail(err);
+				}
+
+				// bail on run in aborted sequence
+				if (internals("seq_aborted")) return;
+
+				// was the control token yielded?
+				if (ret.value === token) {
+					// round-robin: put co-routine back into the list
+					// at the end where it was so it can be processed
+					// again on next loop-iteration
+					if (!ret.done) {
+						iterators.push(iter);
+					}
+					next_val = token;
+					iterateOrQuit(iterate,/*now=*/false);
+				}
+				else {
+					// not a recognized ASQ instance returned?
+					if (!ASQ.isSequence(ret.value)) {
+						// received a thenable/promise back?
+						if (isPromise(ret.value)) {
+							// wrap in a sequence
+							ret.value = ASQ().promise(ret.value);
+						}
+						// thunk yielded?
+						else if (typeof ret.value === "function") {
+							// wrap thunk call in a sequence
+							var fn = ret.value;
+							ret.value = ASQ(function $$ASQ(done){
+								fn(done.errfcb);
+							});
+						}
+						// message wrapper returned?
+						else if (ASQ.isMessageWrapper(ret.value)) {
+							// wrap message(s) in a sequence
+							ret.value = ASQ.apply(ø,
+								// don't let `apply(..)` discard an empty message
+								// wrapper! instead, pass it along as its own value
+								// itself.
+								ret.value.length > 0 ? ret.value : ASQ.messages(undefined)
+							);
+						}
+						// non-undefined value returned?
+						else if (typeof ret.value !== "undefined") {
+							// wrap the value in a sequence
+							ret.value = ASQ(ret.value);
+						}
+						else {
+							// make an empty sequence
+							ret.value = ASQ();
+						}
+					}
+
+					ret.value
+					.val(function $$val(){
+						// bail on run in aborted sequence
+						if (internals("seq_aborted")) return;
+
+						if (arguments.length > 0) {
+							// save any return messages for input
+							// to next iteration
+							next_val = arguments.length > 1 ?
+								ASQ.messages.apply(ø,arguments) :
+								arguments[0]
+							;
+						}
+
+						// still more to iterate?
+						if (!ret.done) {
+							// was the control token passed along?
+							if (next_val === token) {
+								// round-robin: put co-routine back into the list
+								// at the end, so that the the next iterator can be
+								// processed on next loop-iteration
+								iterators.push(iter);
+							}
+							else {
+								// put co-routine back in where it just
+								// was so it can be processed again on
+								// next loop-iteration
+								iterators.unshift(iter);
+							}
+						}
+
+						iterateOrQuit(iterate,/*now=*/true);
+					})
+					.or(function $$or(){
+						// bail on run in aborted sequence
+						if (internals("seq_aborted")) return;
+
+						if (!ret.done) {
+							// put co-routine back in where it just
+							// was so it can be processed again on
+							// next loop-iteration
+							iterators.unshift(iter);
+
+							next_val = arguments.length > 1 ?
+								ASQ.messages.apply(ø,arguments) :
+								arguments[0];
+
+							iterate(/*throwNext=*/true);
+						}
+						else {
+							// if an error is left over but iteration now
+							// complete, pass out to the main sequence
+							mainDone.fail.apply(ø,arguments);
+						}
+					});
+				}
+			})();
+		});
+
+		return api;
+	};
+});
+// "toPromise"
+ASQ.extend("toPromise",function $$extend(api,internals){
+	return function $$to$promise() {
+		return new Promise(function $$executor(resolve,reject){
+			api
+			.val(function $$val(){
+				var args = ARRAY_SLICE.call(arguments);
+				resolve.call(ø,args.length > 1 ? args : args[0]);
+				return ASQ.messages.apply(ø,args);
+			})
+			.or(function $$or(){
+				var args = ARRAY_SLICE.call(arguments);
+				reject.call(ø,args.length > 1 ? args : args[0]);
+			});
+		});
+	};
+});
+// "try"
+ASQ.extend("try",function $$extend(api,internals){
+	return function $$try() {
+		if (internals("seq_error") || internals("seq_aborted") ||
+			arguments.length === 0
+		) {
+			return api;
+		}
+
+		var fns = ARRAY_SLICE.call(arguments)
+		.map(function $$map(fn){
+			return function $$then(mainDone) {
+				var main_args = ARRAY_SLICE.call(arguments),
+					sq = ASQ.apply(ø,main_args.slice(1))
+				;
+
+				sq
+				.then(function $$inner$then(){
+					fn.apply(ø,arguments);
+				})
+				.val(function $$val(){
+					mainDone.apply(ø,arguments);
+				})
+				.or(function $$inner$or(){
+					var msgs = ASQ.messages.apply(ø,arguments);
+					// failed, so map error(s) as `catch`
+					mainDone({
+						"catch": msgs.length > 1 ? msgs : msgs[0]
+					});
+				});
+			};
+		});
+
+		api.then.apply(ø,fns);
+
+		return api;
+	};
+});
+// "until"
+ASQ.extend("until",function $$extend(api,internals){
+	return function $$until() {
+		if (internals("seq_error") || internals("seq_aborted") ||
+			arguments.length === 0
+		) {
+			return api;
+		}
+
+		var fns = ARRAY_SLICE.call(arguments)
+		.map(function $$map(fn){
+			return function $$then(mainDone) {
+				var main_args = ARRAY_SLICE.call(arguments),
+					sq = ASQ.apply(ø,main_args.slice(1))
+				;
+
+				sq
+				.then(function $$inner$then(){
+					var args = ARRAY_SLICE.call(arguments);
+					args[0]["break"] = function $$break(){
+						mainDone.fail.apply(ø,arguments);
+						sq.abort();
+					};
+
+					fn.apply(ø,args);
+				})
+				.val(function $$val(){
+					mainDone.apply(ø,arguments);
+				})
+				.or(function $$inner$or(){
+					// failed, retry
+					$$then.apply(ø,main_args);
+				});
+			};
+		});
+
+		api.then.apply(ø,fns);
+
+		return api;
+	};
+});
+// "waterfall"
+ASQ.extend("waterfall",function $$extend(api,internals){
+	return function $$waterfall() {
+		if (internals("seq_error") || internals("seq_aborted") ||
+			arguments.length === 0
+		) {
+			return api;
+		}
+
+		var fns = ARRAY_SLICE.call(arguments);
+
+		api.then(function $$then(done){
+			var msgs = ASQ.messages(),
+				sq = ASQ.apply(ø,ARRAY_SLICE.call(arguments,1))
+			;
+
+			fns.forEach(function $$each(fn){
+				sq.then(fn)
+				.val(function $$val(){
+					var args = ASQ.messages.apply(ø,arguments);
+					msgs.push(args.length > 1 ? args : args[0]);
+					return msgs;
+				});
+			});
+
+			sq.pipe(done);
+		});
+
+		return api;
+	};
+});
+// "wrap"
+"use strict";
+
+ASQ.wrap = function $$wrap(fn, opts) {
+	function checkThis(t, o) {
+		return !t || typeof window != "undefined" && t === window || typeof global != "undefined" && t === global ? o : t;
+	}
+
+	function paramSpread(gen) {
+		return regeneratorRuntime.mark(function paramSpread(token) {
+			return regeneratorRuntime.wrap(function paramSpread$(context$3$0) {
+				while (1) switch (context$3$0.prev = context$3$0.next) {
+					case 0:
+						return context$3$0.delegateYield(gen.apply(this, token.messages), "t0", 1);
+
+					case 1:
+					case "end":
+						return context$3$0.stop();
+				}
+			}, paramSpread, this);
+		});
+	}
+
+	var errfcb, params_first, act, this_obj, spread_gen_params;
+
+	opts = opts && typeof opts == "object" ? opts : {};
+
+	if (opts.errfcb && opts.splitcb || opts.errfcb && opts.simplecb || opts.splitcb && opts.simplecb || "errfcb" in opts && !opts.errfcb && !opts.splitcb && !opts.simplecb || opts.params_first && opts.params_last || opts.spread && !opts.gen) {
+		throw Error("Invalid options");
+	}
+
+	// initialize default flags
+	this_obj = opts["this"] && typeof opts["this"] == "object" ? opts["this"] : ø;
+	errfcb = opts.errfcb || !(opts.splitcb || opts.simplecb);
+	params_first = !!opts.params_first || !opts.params_last && !("params_first" in opts || opts.params_first) || "params_last" in opts && !opts.params_first && !opts.params_last;
+	// spread (default: true)
+	spread_gen_params = !!opts.spread || !("spread" in opts);
+
+	if (params_first) {
+		act = "push";
+	} else {
+		act = "unshift";
+	}
+
+	if (opts.gen) {
+		if (spread_gen_params) {
+			fn = paramSpread(fn);
+		}
+		return function $$wrapped$gen() {
+			return ASQ(ASQ.messages.apply(ø, arguments)).runner(fn);
+		};
+	}
+	if (errfcb) {
+		return function $$wrapped$errfcb() {
+			var args = ARRAY_SLICE.call(arguments),
+			    _this = checkThis(this, this_obj);
+
+			return ASQ(function $$asq(done) {
+				args[act](done.errfcb);
+				fn.apply(_this, args);
+			});
+		};
+	}
+	if (opts.splitcb) {
+		return function $$wrapped$splitcb() {
+			var args = ARRAY_SLICE.call(arguments),
+			    _this = checkThis(this, this_obj);
+
+			return ASQ(function $$asq(done) {
+				args[act](done, done.fail);
+				fn.apply(_this, args);
+			});
+		};
+	}
+	if (opts.simplecb) {
+		return function $$wrapped$simplecb() {
+			var args = ARRAY_SLICE.call(arguments),
+			    _this = checkThis(this, this_obj);
+
+			return ASQ(function $$asq(done) {
+				args[act](done);
+				fn.apply(_this, args);
+			});
+		};
+	}
+};
+
+	// just return `ASQ` itself for convenience sake
+	return ASQ;
+});
+// Begin bundled file ///////////////////////////////////////////////////
+// tabfern/js/asq-helpers.js
+
+// asq-helpers.js: Helpers for asynquence and Chrome callbacks.
+
+(function (root, factory) {
+    let imports=['asynquence-contrib'];
+
+    if (typeof define === 'function' && define.amd) {
+        // AMD
+        define('asq-helpers',imports, factory);
+    } else if (typeof exports === 'object') {
+        // Node, CommonJS-like
+        let requirements = [];
+        for(let modulename of imports) {
+            requirements.push(require(modulename));
+        }
+        module.exports = factory(...requirements);
+    } else {
+        // Browser globals (root is `window`)
+        let requirements = [];
+        for(let modulename of imports) {
+            requirements.push(root[modulename]);
+        }
+        root.ASQH = factory(...requirements);
+    }
+}(this, function (ASQ) {
+    "use strict";
+
+    function loginfo(...args) { log_orig.info('TabFern template.js: ', ...args); }; //TODO
+
+    /// The module we are creating
+    let module = {};
+
+    // Test for Firefox //
+    // Not sure if I need this, but I'm playing it safe for now.  Firefox puts
+    // null rather than undefined in chrome.runtime.lastError when there is
+    // no error.  This is to test for null in Firefox without changing my
+    // Chrome code.  Hopefully in the future I can test for null/undefined
+    // in either browser, and get rid of this block.
+    // This duplicates code in TabFern's src/common/common.js, but I am
+    // including it here to avoid a circular dependency.
+    // src/common/common.js relies on this file, but not the other way around.
+
+    (function(mod){
+        let isLastError_chrome =
+            ()=>{return (typeof(chrome.runtime.lastError) !== 'undefined');};
+        let isLastError_firefox =
+            ()=>{return (chrome.runtime.lastError !== null);};
+
+        if(typeof browser !== 'undefined' && browser.runtime &&
+                                                browser.runtime.getBrowserInfo) {
+            browser.runtime.getBrowserInfo().then(
+                (info)=>{   // fullfillment
+                    if(info.name === 'Firefox') {
+                        mod.isLastError = isLastError_firefox;
+                    } else {
+                        mod.isLastError = isLastError_chrome;
+                    }
+                },
+
+                ()=>{   //rejection --- assume Chrome by default
+                    mod.isLastError = isLastError_chrome;
+                }
+            );
+        } else {    // Chrome
+            mod.isLastError = isLastError_chrome;
+        }
+    })(module);
+
+    /// Chrome Callback: make a Chrome extension API callback that
+    /// wraps the done() callback of an asynquence step.  This is for use within
+    /// an ASQ().then(...).
+    module.CC = (function(){
+        /// A special-purpose empty object, per getify
+        const ø = Object.create(null);
+
+        return (done)=>{
+            return function cbk() {
+                if(module.isLastError()) {
+                    done.fail(chrome.runtime.lastError);
+                } else {
+                    //done.apply(ø,...args);
+                        // for some reason done() doesn't get the args
+                        // provided to cbk(...args)
+                    done.apply(ø,[].slice.call(arguments));
+                }
+            }
+        }
+    })(); //CC()
+
+    /// Chrome callback to kick off a sequence, rather than within a sequence.
+    /// @param  seq     An asynquence instance
+    /// @return A Chrome callback that will resume the sequence.
+    /// @post   The provided #seq will pause at whatever was the end of the chain
+    ///         when this was called.  It will stay there until the returned
+    ///         callback is invoked.
+    module.CCgo = function(seq) {
+        let cbk = seq.errfcb();
+        return function inner(...args) { cbk(chrome.runtime.lastError, ...args); }
+    } //CCgo()
+
+    /// Take action on this tick, and kick off a sequence based on a Chrome
+    /// callback.
+    /// @param do_right_now {function} Called as do_right_now(chrome_cbk).
+    ///                                 Should cause chrome_cbk to be invoked
+    ///                                 when the sequence should proceed.
+    /// @return A sequence to chain off.
+    module.NowCC = function(do_right_now) {
+        let seq = ASQ();
+        let chrcbk = module.CCgo(seq);
+        do_right_now(chrcbk);
+        return seq;
+    } //ASQ.NowCC()
+
+    /// Take action on this tick, and kick off a sequence based on a Chrome
+    /// callback, as if called with ASQ.try.
+    /// @param do_right_now {function} Called as do_right_now(chrome_cbk).
+    ///                                 Should cause chrome_cbk to be invoked
+    ///                                 when the sequence should proceed.
+    /// @return A sequence to chain off.
+    module.NowCCTry = function(do_right_now) {
+        // Inner sequence that provides the Chrome callback and the
+        // try/catch functionality
+        let inner_seq = ASQ();
+        let inner_chrcbk = module.CCgo(inner_seq);
+
+        // Outer sequence that we will return
+        let outer_seq = ASQ().duplicate();  //paused
+
+        // When inner_seq finishes, run outer_seq.  There must be a
+        // better way to do this, but I don't know what it is.  You can't
+        // put a .then() after a .or(), as far as I know.
+        // ... Actually, maybe there's not a better way.  asq-contrib.try()
+        // also uses an inner sequence.
+        inner_seq.val((...args)=>{
+            outer_seq.unpause(...args);
+        })
+        .or((failure)=>{    // like ASQ().try()
+            outer_seq.unpause( { 'catch': failure } );
+        });
+
+        // Kick it off
+        do_right_now(inner_chrcbk);
+
+        return outer_seq;
+    } //ASQ.NowCCTry()
+
+    /// Check for an asynquence-contrib try() error return
+    module.is_asq_try_err = function(o)
+    {
+        return  (typeof o === 'object' && o &&
+                 typeof o.catch !== 'undefined');
+    } //is_asq_try_err
+
+    return module;
+}));
+
+// vi: set ts=4 sts=4 sw=4 et ai fo-=o: //
+// Begin bundled file ///////////////////////////////////////////////////
+// tabfern/js/rmodal.js
+
+//rmodal.js
+(function (global, factory) {
+    typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
+    typeof define === 'function' && define.amd ? define('rmodal',factory) :
+    (global.RModal = factory());
+}(this, (function () { 'use strict';
+
+var is = function (obj, type) { return Object.prototype.toString.call(obj).toLowerCase() === ("[object " + type + "]"); };
+
+var addClass = function (el, cls) {
+    var arr = el.className
+    .split(/\s+/)
+    .filter(function (c) { return !!c && c == cls; });
+
+    if (!arr.length) {
+        el.className += " " + cls;
+    }
+};
+
+var removeClass = function (el, cls) {
+    el.className = el.className
+    .split(/\s+/)
+    .filter(function (c) { return !!c && c != cls; })
+    .join(' ');
+};
+
+var RModal = function RModal(el, opts) {
+    var this$1 = this;
+
+    this.opened = false;
+
+    this.opts = {
+        bodyClass: 'modal-open'
+        , dialogClass: 'modal-dialog'
+        , dialogOpenClass: 'bounceInDown'
+        , dialogCloseClass: 'bounceOutUp'
+
+        , focus: true
+        , focusElements: [
+            'a[href]', 'area[href]', 'input:not([disabled]):not([type=hidden])'
+            , 'button:not([disabled])', 'select:not([disabled])'
+            , 'textarea:not([disabled])', 'iframe', 'object', 'embed'
+            , '*[tabindex]', '*[contenteditable]'
+        ]
+
+        , escapeClose: true
+        , content: null
+        , closeTimeout: 500
+    };
+
+    Object.keys(opts || {})
+    .forEach(function (key) {
+        /* istanbul ignore else */
+        if (opts[key] !== undefined) {
+            this$1.opts[key] = opts[key];
+        }
+    });
+
+    this.overlay = el;
+    this.dialog = el.querySelector(("." + (this.opts.dialogClass)));
+
+    if (this.opts.content) {
+        this.content(this.opts.content);
+    }
+};
+
+RModal.prototype.open = function open (content) {
+        var this$1 = this;
+
+    this.content(content);
+
+    if (!is(this.opts.beforeOpen, 'function')) {
+        return this._doOpen();
+    }
+
+    this.opts.beforeOpen(function () {
+        this$1._doOpen();
+    });
+};
+
+RModal.prototype._doOpen = function _doOpen () {
+    addClass(document.body, this.opts.bodyClass);
+
+    removeClass(this.dialog, this.opts.dialogCloseClass);
+    addClass(this.dialog, this.opts.dialogOpenClass);
+
+    this.overlay.style.display = 'block';
+
+    if (this.opts.focus) {
+        this.focusOutElement = document.activeElement;
+        this.focus();
+    }
+
+    if (is(this.opts.afterOpen, 'function')) {
+        this.opts.afterOpen();
+    }
+    this.opened = true;
+};
+
+RModal.prototype.close = function close () {
+        var this$1 = this;
+
+    if (!is(this.opts.beforeClose, 'function')) {
+        return this._doClose();
+    }
+
+    this.opts.beforeClose(function () {
+        this$1._doClose();
+    });
+};
+
+RModal.prototype._doClose = function _doClose () {
+        var this$1 = this;
+
+    removeClass(this.dialog, this.opts.dialogOpenClass);
+    addClass(this.dialog, this.opts.dialogCloseClass);
+
+    removeClass(document.body, this.opts.bodyClass);
+
+    if (this.opts.focus) {
+        this.focus(this.focusOutElement);
+    }
+
+    if (is(this.opts.afterClose, 'function')) {
+        this.opts.afterClose();
+    }
+
+    this.opened = false;
+    setTimeout(function () {
+        this$1.overlay.style.display = 'none';
+    }, this.opts.closeTimeout);
+};
+
+RModal.prototype.content = function content (html) {
+    if (html === undefined) {
+        return this.dialog.innerHTML;
+    }
+
+    this.dialog.innerHTML = html;
+};
+
+RModal.prototype.elements = function elements (selector, fallback) {
+    fallback = fallback || window.navigator.appVersion.indexOf('MSIE 9.0') > -1;
+    selector = is(selector, 'array') ? selector.join(',') : selector;
+
+    return [].filter.call(
+        this.dialog.querySelectorAll(selector)
+        , function (element) {
+            if (fallback) {
+                var style = window.getComputedStyle(element);
+                return style.display !== 'none' && style.visibility !== 'hidden';
+            }
+
+            return element.offsetParent !== null;
+        }
+    );
+};
+
+RModal.prototype.focus = function focus (el) {
+    el = el || this.elements(this.opts.focusElements)[0] || this.dialog.firstChild;
+
+    if (el && is(el.focus, 'function')) {
+        el.focus();
+    }
+};
+
+RModal.prototype.keydown = function keydown (ev) {
+    if (this.opts.escapeClose && ev.which == 27) {
+        this.close();
+    }
+
+    function stopEvent() {
+        ev.preventDefault();
+        ev.stopPropagation();
+    }
+
+    if (this.opened && ev.which == 9 && this.dialog.contains(ev.target)) {
+        var elements = this.elements(this.opts.focusElements)
+            , first = elements[0]
+            , last = elements[elements.length - 1];
+
+        if (first == last) {
+            stopEvent();
+        }
+        else if (ev.target == first && ev.shiftKey) {
+            stopEvent();
+            last.focus();
+        }
+        else if (ev.target == last && !ev.shiftKey) {
+            stopEvent();
+            first.focus();
+        }
+    }
+};
+
+RModal.prototype.version = '1.0.28';
+RModal.version = '1.0.28';
+
+return RModal;
+
+})));
+// Begin bundled file ///////////////////////////////////////////////////
+// tabfern/js/tinycolor.js
+
+// TinyColor v1.4.1
+// https://github.com/bgrins/TinyColor
+// Brian Grinstead, MIT License
+
+(function(Math) {
+
+var trimLeft = /^\s+/,
+    trimRight = /\s+$/,
+    tinyCounter = 0,
+    mathRound = Math.round,
+    mathMin = Math.min,
+    mathMax = Math.max,
+    mathRandom = Math.random;
+
+function tinycolor (color, opts) {
+
+    color = (color) ? color : '';
+    opts = opts || { };
+
+    // If input is already a tinycolor, return itself
+    if (color instanceof tinycolor) {
+       return color;
+    }
+    // If we are called as a function, call using new instead
+    if (!(this instanceof tinycolor)) {
+        return new tinycolor(color, opts);
+    }
+
+    var rgb = inputToRGB(color);
+    this._originalInput = color,
+    this._r = rgb.r,
+    this._g = rgb.g,
+    this._b = rgb.b,
+    this._a = rgb.a,
+    this._roundA = mathRound(100*this._a) / 100,
+    this._format = opts.format || rgb.format;
+    this._gradientType = opts.gradientType;
+
+    // Don't let the range of [0,255] come back in [0,1].
+    // Potentially lose a little bit of precision here, but will fix issues where
+    // .5 gets interpreted as half of the total, instead of half of 1
+    // If it was supposed to be 128, this was already taken care of by `inputToRgb`
+    if (this._r < 1) { this._r = mathRound(this._r); }
+    if (this._g < 1) { this._g = mathRound(this._g); }
+    if (this._b < 1) { this._b = mathRound(this._b); }
+
+    this._ok = rgb.ok;
+    this._tc_id = tinyCounter++;
+}
+
+tinycolor.prototype = {
+    isDark: function() {
+        return this.getBrightness() < 128;
+    },
+    isLight: function() {
+        return !this.isDark();
+    },
+    isValid: function() {
+        return this._ok;
+    },
+    getOriginalInput: function() {
+      return this._originalInput;
+    },
+    getFormat: function() {
+        return this._format;
+    },
+    getAlpha: function() {
+        return this._a;
+    },
+    getBrightness: function() {
+        //http://www.w3.org/TR/AERT#color-contrast
+        var rgb = this.toRgb();
+        return (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000;
+    },
+    getLuminance: function() {
+        //http://www.w3.org/TR/2008/REC-WCAG20-20081211/#relativeluminancedef
+        var rgb = this.toRgb();
+        var RsRGB, GsRGB, BsRGB, R, G, B;
+        RsRGB = rgb.r/255;
+        GsRGB = rgb.g/255;
+        BsRGB = rgb.b/255;
+
+        if (RsRGB <= 0.03928) {R = RsRGB / 12.92;} else {R = Math.pow(((RsRGB + 0.055) / 1.055), 2.4);}
+        if (GsRGB <= 0.03928) {G = GsRGB / 12.92;} else {G = Math.pow(((GsRGB + 0.055) / 1.055), 2.4);}
+        if (BsRGB <= 0.03928) {B = BsRGB / 12.92;} else {B = Math.pow(((BsRGB + 0.055) / 1.055), 2.4);}
+        return (0.2126 * R) + (0.7152 * G) + (0.0722 * B);
+    },
+    setAlpha: function(value) {
+        this._a = boundAlpha(value);
+        this._roundA = mathRound(100*this._a) / 100;
+        return this;
+    },
+    toHsv: function() {
+        var hsv = rgbToHsv(this._r, this._g, this._b);
+        return { h: hsv.h * 360, s: hsv.s, v: hsv.v, a: this._a };
+    },
+    toHsvString: function() {
+        var hsv = rgbToHsv(this._r, this._g, this._b);
+        var h = mathRound(hsv.h * 360), s = mathRound(hsv.s * 100), v = mathRound(hsv.v * 100);
+        return (this._a == 1) ?
+          "hsv("  + h + ", " + s + "%, " + v + "%)" :
+          "hsva(" + h + ", " + s + "%, " + v + "%, "+ this._roundA + ")";
+    },
+    toHsl: function() {
+        var hsl = rgbToHsl(this._r, this._g, this._b);
+        return { h: hsl.h * 360, s: hsl.s, l: hsl.l, a: this._a };
+    },
+    toHslString: function() {
+        var hsl = rgbToHsl(this._r, this._g, this._b);
+        var h = mathRound(hsl.h * 360), s = mathRound(hsl.s * 100), l = mathRound(hsl.l * 100);
+        return (this._a == 1) ?
+          "hsl("  + h + ", " + s + "%, " + l + "%)" :
+          "hsla(" + h + ", " + s + "%, " + l + "%, "+ this._roundA + ")";
+    },
+    toHex: function(allow3Char) {
+        return rgbToHex(this._r, this._g, this._b, allow3Char);
+    },
+    toHexString: function(allow3Char) {
+        return '#' + this.toHex(allow3Char);
+    },
+    toHex8: function(allow4Char) {
+        return rgbaToHex(this._r, this._g, this._b, this._a, allow4Char);
+    },
+    toHex8String: function(allow4Char) {
+        return '#' + this.toHex8(allow4Char);
+    },
+    toRgb: function() {
+        return { r: mathRound(this._r), g: mathRound(this._g), b: mathRound(this._b), a: this._a };
+    },
+    toRgbString: function() {
+        return (this._a == 1) ?
+          "rgb("  + mathRound(this._r) + ", " + mathRound(this._g) + ", " + mathRound(this._b) + ")" :
+          "rgba(" + mathRound(this._r) + ", " + mathRound(this._g) + ", " + mathRound(this._b) + ", " + this._roundA + ")";
+    },
+    toPercentageRgb: function() {
+        return { r: mathRound(bound01(this._r, 255) * 100) + "%", g: mathRound(bound01(this._g, 255) * 100) + "%", b: mathRound(bound01(this._b, 255) * 100) + "%", a: this._a };
+    },
+    toPercentageRgbString: function() {
+        return (this._a == 1) ?
+          "rgb("  + mathRound(bound01(this._r, 255) * 100) + "%, " + mathRound(bound01(this._g, 255) * 100) + "%, " + mathRound(bound01(this._b, 255) * 100) + "%)" :
+          "rgba(" + mathRound(bound01(this._r, 255) * 100) + "%, " + mathRound(bound01(this._g, 255) * 100) + "%, " + mathRound(bound01(this._b, 255) * 100) + "%, " + this._roundA + ")";
+    },
+    toName: function() {
+        if (this._a === 0) {
+            return "transparent";
+        }
+
+        if (this._a < 1) {
+            return false;
+        }
+
+        return hexNames[rgbToHex(this._r, this._g, this._b, true)] || false;
+    },
+    toFilter: function(secondColor) {
+        var hex8String = '#' + rgbaToArgbHex(this._r, this._g, this._b, this._a);
+        var secondHex8String = hex8String;
+        var gradientType = this._gradientType ? "GradientType = 1, " : "";
+
+        if (secondColor) {
+            var s = tinycolor(secondColor);
+            secondHex8String = '#' + rgbaToArgbHex(s._r, s._g, s._b, s._a);
+        }
+
+        return "progid:DXImageTransform.Microsoft.gradient("+gradientType+"startColorstr="+hex8String+",endColorstr="+secondHex8String+")";
+    },
+    toString: function(format) {
+        var formatSet = !!format;
+        format = format || this._format;
+
+        var formattedString = false;
+        var hasAlpha = this._a < 1 && this._a >= 0;
+        var needsAlphaFormat = !formatSet && hasAlpha && (format === "hex" || format === "hex6" || format === "hex3" || format === "hex4" || format === "hex8" || format === "name");
+
+        if (needsAlphaFormat) {
+            // Special case for "transparent", all other non-alpha formats
+            // will return rgba when there is transparency.
+            if (format === "name" && this._a === 0) {
+                return this.toName();
+            }
+            return this.toRgbString();
+        }
+        if (format === "rgb") {
+            formattedString = this.toRgbString();
+        }
+        if (format === "prgb") {
+            formattedString = this.toPercentageRgbString();
+        }
+        if (format === "hex" || format === "hex6") {
+            formattedString = this.toHexString();
+        }
+        if (format === "hex3") {
+            formattedString = this.toHexString(true);
+        }
+        if (format === "hex4") {
+            formattedString = this.toHex8String(true);
+        }
+        if (format === "hex8") {
+            formattedString = this.toHex8String();
+        }
+        if (format === "name") {
+            formattedString = this.toName();
+        }
+        if (format === "hsl") {
+            formattedString = this.toHslString();
+        }
+        if (format === "hsv") {
+            formattedString = this.toHsvString();
+        }
+
+        return formattedString || this.toHexString();
+    },
+    clone: function() {
+        return tinycolor(this.toString());
+    },
+
+    _applyModification: function(fn, args) {
+        var color = fn.apply(null, [this].concat([].slice.call(args)));
+        this._r = color._r;
+        this._g = color._g;
+        this._b = color._b;
+        this.setAlpha(color._a);
+        return this;
+    },
+    lighten: function() {
+        return this._applyModification(lighten, arguments);
+    },
+    brighten: function() {
+        return this._applyModification(brighten, arguments);
+    },
+    darken: function() {
+        return this._applyModification(darken, arguments);
+    },
+    desaturate: function() {
+        return this._applyModification(desaturate, arguments);
+    },
+    saturate: function() {
+        return this._applyModification(saturate, arguments);
+    },
+    greyscale: function() {
+        return this._applyModification(greyscale, arguments);
+    },
+    spin: function() {
+        return this._applyModification(spin, arguments);
+    },
+
+    _applyCombination: function(fn, args) {
+        return fn.apply(null, [this].concat([].slice.call(args)));
+    },
+    analogous: function() {
+        return this._applyCombination(analogous, arguments);
+    },
+    complement: function() {
+        return this._applyCombination(complement, arguments);
+    },
+    monochromatic: function() {
+        return this._applyCombination(monochromatic, arguments);
+    },
+    splitcomplement: function() {
+        return this._applyCombination(splitcomplement, arguments);
+    },
+    triad: function() {
+        return this._applyCombination(triad, arguments);
+    },
+    tetrad: function() {
+        return this._applyCombination(tetrad, arguments);
+    }
+};
+
+// If input is an object, force 1 into "1.0" to handle ratios properly
+// String input requires "1.0" as input, so 1 will be treated as 1
+tinycolor.fromRatio = function(color, opts) {
+    if (typeof color == "object") {
+        var newColor = {};
+        for (var i in color) {
+            if (color.hasOwnProperty(i)) {
+                if (i === "a") {
+                    newColor[i] = color[i];
+                }
+                else {
+                    newColor[i] = convertToPercentage(color[i]);
+                }
+            }
+        }
+        color = newColor;
+    }
+
+    return tinycolor(color, opts);
+};
+
+// Given a string or object, convert that input to RGB
+// Possible string inputs:
+//
+//     "red"
+//     "#f00" or "f00"
+//     "#ff0000" or "ff0000"
+//     "#ff000000" or "ff000000"
+//     "rgb 255 0 0" or "rgb (255, 0, 0)"
+//     "rgb 1.0 0 0" or "rgb (1, 0, 0)"
+//     "rgba (255, 0, 0, 1)" or "rgba 255, 0, 0, 1"
+//     "rgba (1.0, 0, 0, 1)" or "rgba 1.0, 0, 0, 1"
+//     "hsl(0, 100%, 50%)" or "hsl 0 100% 50%"
+//     "hsla(0, 100%, 50%, 1)" or "hsla 0 100% 50%, 1"
+//     "hsv(0, 100%, 100%)" or "hsv 0 100% 100%"
+//
+function inputToRGB(color) {
+
+    var rgb = { r: 0, g: 0, b: 0 };
+    var a = 1;
+    var s = null;
+    var v = null;
+    var l = null;
+    var ok = false;
+    var format = false;
+
+    if (typeof color == "string") {
+        color = stringInputToObject(color);
+    }
+
+    if (typeof color == "object") {
+        if (isValidCSSUnit(color.r) && isValidCSSUnit(color.g) && isValidCSSUnit(color.b)) {
+            rgb = rgbToRgb(color.r, color.g, color.b);
+            ok = true;
+            format = String(color.r).substr(-1) === "%" ? "prgb" : "rgb";
+        }
+        else if (isValidCSSUnit(color.h) && isValidCSSUnit(color.s) && isValidCSSUnit(color.v)) {
+            s = convertToPercentage(color.s);
+            v = convertToPercentage(color.v);
+            rgb = hsvToRgb(color.h, s, v);
+            ok = true;
+            format = "hsv";
+        }
+        else if (isValidCSSUnit(color.h) && isValidCSSUnit(color.s) && isValidCSSUnit(color.l)) {
+            s = convertToPercentage(color.s);
+            l = convertToPercentage(color.l);
+            rgb = hslToRgb(color.h, s, l);
+            ok = true;
+            format = "hsl";
+        }
+
+        if (color.hasOwnProperty("a")) {
+            a = color.a;
+        }
+    }
+
+    a = boundAlpha(a);
+
+    return {
+        ok: ok,
+        format: color.format || format,
+        r: mathMin(255, mathMax(rgb.r, 0)),
+        g: mathMin(255, mathMax(rgb.g, 0)),
+        b: mathMin(255, mathMax(rgb.b, 0)),
+        a: a
+    };
+}
+
+
+// Conversion Functions
+// --------------------
+
+// `rgbToHsl`, `rgbToHsv`, `hslToRgb`, `hsvToRgb` modified from:
+// <http://mjijackson.com/2008/02/rgb-to-hsl-and-rgb-to-hsv-color-model-conversion-algorithms-in-javascript>
+
+// `rgbToRgb`
+// Handle bounds / percentage checking to conform to CSS color spec
+// <http://www.w3.org/TR/css3-color/>
+// *Assumes:* r, g, b in [0, 255] or [0, 1]
+// *Returns:* { r, g, b } in [0, 255]
+function rgbToRgb(r, g, b){
+    return {
+        r: bound01(r, 255) * 255,
+        g: bound01(g, 255) * 255,
+        b: bound01(b, 255) * 255
+    };
+}
+
+// `rgbToHsl`
+// Converts an RGB color value to HSL.
+// *Assumes:* r, g, and b are contained in [0, 255] or [0, 1]
+// *Returns:* { h, s, l } in [0,1]
+function rgbToHsl(r, g, b) {
+
+    r = bound01(r, 255);
+    g = bound01(g, 255);
+    b = bound01(b, 255);
+
+    var max = mathMax(r, g, b), min = mathMin(r, g, b);
+    var h, s, l = (max + min) / 2;
+
+    if(max == min) {
+        h = s = 0; // achromatic
+    }
+    else {
+        var d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch(max) {
+            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+            case g: h = (b - r) / d + 2; break;
+            case b: h = (r - g) / d + 4; break;
+        }
+
+        h /= 6;
+    }
+
+    return { h: h, s: s, l: l };
+}
+
+// `hslToRgb`
+// Converts an HSL color value to RGB.
+// *Assumes:* h is contained in [0, 1] or [0, 360] and s and l are contained [0, 1] or [0, 100]
+// *Returns:* { r, g, b } in the set [0, 255]
+function hslToRgb(h, s, l) {
+    var r, g, b;
+
+    h = bound01(h, 360);
+    s = bound01(s, 100);
+    l = bound01(l, 100);
+
+    function hue2rgb(p, q, t) {
+        if(t < 0) t += 1;
+        if(t > 1) t -= 1;
+        if(t < 1/6) return p + (q - p) * 6 * t;
+        if(t < 1/2) return q;
+        if(t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+        return p;
+    }
+
+    if(s === 0) {
+        r = g = b = l; // achromatic
+    }
+    else {
+        var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        var p = 2 * l - q;
+        r = hue2rgb(p, q, h + 1/3);
+        g = hue2rgb(p, q, h);
+        b = hue2rgb(p, q, h - 1/3);
+    }
+
+    return { r: r * 255, g: g * 255, b: b * 255 };
+}
+
+// `rgbToHsv`
+// Converts an RGB color value to HSV
+// *Assumes:* r, g, and b are contained in the set [0, 255] or [0, 1]
+// *Returns:* { h, s, v } in [0,1]
+function rgbToHsv(r, g, b) {
+
+    r = bound01(r, 255);
+    g = bound01(g, 255);
+    b = bound01(b, 255);
+
+    var max = mathMax(r, g, b), min = mathMin(r, g, b);
+    var h, s, v = max;
+
+    var d = max - min;
+    s = max === 0 ? 0 : d / max;
+
+    if(max == min) {
+        h = 0; // achromatic
+    }
+    else {
+        switch(max) {
+            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+            case g: h = (b - r) / d + 2; break;
+            case b: h = (r - g) / d + 4; break;
+        }
+        h /= 6;
+    }
+    return { h: h, s: s, v: v };
+}
+
+// `hsvToRgb`
+// Converts an HSV color value to RGB.
+// *Assumes:* h is contained in [0, 1] or [0, 360] and s and v are contained in [0, 1] or [0, 100]
+// *Returns:* { r, g, b } in the set [0, 255]
+ function hsvToRgb(h, s, v) {
+
+    h = bound01(h, 360) * 6;
+    s = bound01(s, 100);
+    v = bound01(v, 100);
+
+    var i = Math.floor(h),
+        f = h - i,
+        p = v * (1 - s),
+        q = v * (1 - f * s),
+        t = v * (1 - (1 - f) * s),
+        mod = i % 6,
+        r = [v, q, p, p, t, v][mod],
+        g = [t, v, v, q, p, p][mod],
+        b = [p, p, t, v, v, q][mod];
+
+    return { r: r * 255, g: g * 255, b: b * 255 };
+}
+
+// `rgbToHex`
+// Converts an RGB color to hex
+// Assumes r, g, and b are contained in the set [0, 255]
+// Returns a 3 or 6 character hex
+function rgbToHex(r, g, b, allow3Char) {
+
+    var hex = [
+        pad2(mathRound(r).toString(16)),
+        pad2(mathRound(g).toString(16)),
+        pad2(mathRound(b).toString(16))
+    ];
+
+    // Return a 3 character hex if possible
+    if (allow3Char && hex[0].charAt(0) == hex[0].charAt(1) && hex[1].charAt(0) == hex[1].charAt(1) && hex[2].charAt(0) == hex[2].charAt(1)) {
+        return hex[0].charAt(0) + hex[1].charAt(0) + hex[2].charAt(0);
+    }
+
+    return hex.join("");
+}
+
+// `rgbaToHex`
+// Converts an RGBA color plus alpha transparency to hex
+// Assumes r, g, b are contained in the set [0, 255] and
+// a in [0, 1]. Returns a 4 or 8 character rgba hex
+function rgbaToHex(r, g, b, a, allow4Char) {
+
+    var hex = [
+        pad2(mathRound(r).toString(16)),
+        pad2(mathRound(g).toString(16)),
+        pad2(mathRound(b).toString(16)),
+        pad2(convertDecimalToHex(a))
+    ];
+
+    // Return a 4 character hex if possible
+    if (allow4Char && hex[0].charAt(0) == hex[0].charAt(1) && hex[1].charAt(0) == hex[1].charAt(1) && hex[2].charAt(0) == hex[2].charAt(1) && hex[3].charAt(0) == hex[3].charAt(1)) {
+        return hex[0].charAt(0) + hex[1].charAt(0) + hex[2].charAt(0) + hex[3].charAt(0);
+    }
+
+    return hex.join("");
+}
+
+// `rgbaToArgbHex`
+// Converts an RGBA color to an ARGB Hex8 string
+// Rarely used, but required for "toFilter()"
+function rgbaToArgbHex(r, g, b, a) {
+
+    var hex = [
+        pad2(convertDecimalToHex(a)),
+        pad2(mathRound(r).toString(16)),
+        pad2(mathRound(g).toString(16)),
+        pad2(mathRound(b).toString(16))
+    ];
+
+    return hex.join("");
+}
+
+// `equals`
+// Can be called with any tinycolor input
+tinycolor.equals = function (color1, color2) {
+    if (!color1 || !color2) { return false; }
+    return tinycolor(color1).toRgbString() == tinycolor(color2).toRgbString();
+};
+
+tinycolor.random = function() {
+    return tinycolor.fromRatio({
+        r: mathRandom(),
+        g: mathRandom(),
+        b: mathRandom()
+    });
+};
+
+
+// Modification Functions
+// ----------------------
+// Thanks to less.js for some of the basics here
+// <https://github.com/cloudhead/less.js/blob/master/lib/less/functions.js>
+
+function desaturate(color, amount) {
+    amount = (amount === 0) ? 0 : (amount || 10);
+    var hsl = tinycolor(color).toHsl();
+    hsl.s -= amount / 100;
+    hsl.s = clamp01(hsl.s);
+    return tinycolor(hsl);
+}
+
+function saturate(color, amount) {
+    amount = (amount === 0) ? 0 : (amount || 10);
+    var hsl = tinycolor(color).toHsl();
+    hsl.s += amount / 100;
+    hsl.s = clamp01(hsl.s);
+    return tinycolor(hsl);
+}
+
+function greyscale(color) {
+    return tinycolor(color).desaturate(100);
+}
+
+function lighten (color, amount) {
+    amount = (amount === 0) ? 0 : (amount || 10);
+    var hsl = tinycolor(color).toHsl();
+    hsl.l += amount / 100;
+    hsl.l = clamp01(hsl.l);
+    return tinycolor(hsl);
+}
+
+function brighten(color, amount) {
+    amount = (amount === 0) ? 0 : (amount || 10);
+    var rgb = tinycolor(color).toRgb();
+    rgb.r = mathMax(0, mathMin(255, rgb.r - mathRound(255 * - (amount / 100))));
+    rgb.g = mathMax(0, mathMin(255, rgb.g - mathRound(255 * - (amount / 100))));
+    rgb.b = mathMax(0, mathMin(255, rgb.b - mathRound(255 * - (amount / 100))));
+    return tinycolor(rgb);
+}
+
+function darken (color, amount) {
+    amount = (amount === 0) ? 0 : (amount || 10);
+    var hsl = tinycolor(color).toHsl();
+    hsl.l -= amount / 100;
+    hsl.l = clamp01(hsl.l);
+    return tinycolor(hsl);
+}
+
+// Spin takes a positive or negative amount within [-360, 360] indicating the change of hue.
+// Values outside of this range will be wrapped into this range.
+function spin(color, amount) {
+    var hsl = tinycolor(color).toHsl();
+    var hue = (hsl.h + amount) % 360;
+    hsl.h = hue < 0 ? 360 + hue : hue;
+    return tinycolor(hsl);
+}
+
+// Combination Functions
+// ---------------------
+// Thanks to jQuery xColor for some of the ideas behind these
+// <https://github.com/infusion/jQuery-xcolor/blob/master/jquery.xcolor.js>
+
+function complement(color) {
+    var hsl = tinycolor(color).toHsl();
+    hsl.h = (hsl.h + 180) % 360;
+    return tinycolor(hsl);
+}
+
+function triad(color) {
+    var hsl = tinycolor(color).toHsl();
+    var h = hsl.h;
+    return [
+        tinycolor(color),
+        tinycolor({ h: (h + 120) % 360, s: hsl.s, l: hsl.l }),
+        tinycolor({ h: (h + 240) % 360, s: hsl.s, l: hsl.l })
+    ];
+}
+
+function tetrad(color) {
+    var hsl = tinycolor(color).toHsl();
+    var h = hsl.h;
+    return [
+        tinycolor(color),
+        tinycolor({ h: (h + 90) % 360, s: hsl.s, l: hsl.l }),
+        tinycolor({ h: (h + 180) % 360, s: hsl.s, l: hsl.l }),
+        tinycolor({ h: (h + 270) % 360, s: hsl.s, l: hsl.l })
+    ];
+}
+
+function splitcomplement(color) {
+    var hsl = tinycolor(color).toHsl();
+    var h = hsl.h;
+    return [
+        tinycolor(color),
+        tinycolor({ h: (h + 72) % 360, s: hsl.s, l: hsl.l}),
+        tinycolor({ h: (h + 216) % 360, s: hsl.s, l: hsl.l})
+    ];
+}
+
+function analogous(color, results, slices) {
+    results = results || 6;
+    slices = slices || 30;
+
+    var hsl = tinycolor(color).toHsl();
+    var part = 360 / slices;
+    var ret = [tinycolor(color)];
+
+    for (hsl.h = ((hsl.h - (part * results >> 1)) + 720) % 360; --results; ) {
+        hsl.h = (hsl.h + part) % 360;
+        ret.push(tinycolor(hsl));
+    }
+    return ret;
+}
+
+function monochromatic(color, results) {
+    results = results || 6;
+    var hsv = tinycolor(color).toHsv();
+    var h = hsv.h, s = hsv.s, v = hsv.v;
+    var ret = [];
+    var modification = 1 / results;
+
+    while (results--) {
+        ret.push(tinycolor({ h: h, s: s, v: v}));
+        v = (v + modification) % 1;
+    }
+
+    return ret;
+}
+
+// Utility Functions
+// ---------------------
+
+tinycolor.mix = function(color1, color2, amount) {
+    amount = (amount === 0) ? 0 : (amount || 50);
+
+    var rgb1 = tinycolor(color1).toRgb();
+    var rgb2 = tinycolor(color2).toRgb();
+
+    var p = amount / 100;
+
+    var rgba = {
+        r: ((rgb2.r - rgb1.r) * p) + rgb1.r,
+        g: ((rgb2.g - rgb1.g) * p) + rgb1.g,
+        b: ((rgb2.b - rgb1.b) * p) + rgb1.b,
+        a: ((rgb2.a - rgb1.a) * p) + rgb1.a
+    };
+
+    return tinycolor(rgba);
+};
+
+
+// Readability Functions
+// ---------------------
+// <http://www.w3.org/TR/2008/REC-WCAG20-20081211/#contrast-ratiodef (WCAG Version 2)
+
+// `contrast`
+// Analyze the 2 colors and returns the color contrast defined by (WCAG Version 2)
+tinycolor.readability = function(color1, color2) {
+    var c1 = tinycolor(color1);
+    var c2 = tinycolor(color2);
+    return (Math.max(c1.getLuminance(),c2.getLuminance())+0.05) / (Math.min(c1.getLuminance(),c2.getLuminance())+0.05);
+};
+
+// `isReadable`
+// Ensure that foreground and background color combinations meet WCAG2 guidelines.
+// The third argument is an optional Object.
+//      the 'level' property states 'AA' or 'AAA' - if missing or invalid, it defaults to 'AA';
+//      the 'size' property states 'large' or 'small' - if missing or invalid, it defaults to 'small'.
+// If the entire object is absent, isReadable defaults to {level:"AA",size:"small"}.
+
+// *Example*
+//    tinycolor.isReadable("#000", "#111") => false
+//    tinycolor.isReadable("#000", "#111",{level:"AA",size:"large"}) => false
+tinycolor.isReadable = function(color1, color2, wcag2) {
+    var readability = tinycolor.readability(color1, color2);
+    var wcag2Parms, out;
+
+    out = false;
+
+    wcag2Parms = validateWCAG2Parms(wcag2);
+    switch (wcag2Parms.level + wcag2Parms.size) {
+        case "AAsmall":
+        case "AAAlarge":
+            out = readability >= 4.5;
+            break;
+        case "AAlarge":
+            out = readability >= 3;
+            break;
+        case "AAAsmall":
+            out = readability >= 7;
+            break;
+    }
+    return out;
+
+};
+
+// `mostReadable`
+// Given a base color and a list of possible foreground or background
+// colors for that base, returns the most readable color.
+// Optionally returns Black or White if the most readable color is unreadable.
+// *Example*
+//    tinycolor.mostReadable(tinycolor.mostReadable("#123", ["#124", "#125"],{includeFallbackColors:false}).toHexString(); // "#112255"
+//    tinycolor.mostReadable(tinycolor.mostReadable("#123", ["#124", "#125"],{includeFallbackColors:true}).toHexString();  // "#ffffff"
+//    tinycolor.mostReadable("#a8015a", ["#faf3f3"],{includeFallbackColors:true,level:"AAA",size:"large"}).toHexString(); // "#faf3f3"
+//    tinycolor.mostReadable("#a8015a", ["#faf3f3"],{includeFallbackColors:true,level:"AAA",size:"small"}).toHexString(); // "#ffffff"
+tinycolor.mostReadable = function(baseColor, colorList, args) {
+    var bestColor = null;
+    var bestScore = 0;
+    var readability;
+    var includeFallbackColors, level, size ;
+    args = args || {};
+    includeFallbackColors = args.includeFallbackColors ;
+    level = args.level;
+    size = args.size;
+
+    for (var i= 0; i < colorList.length ; i++) {
+        readability = tinycolor.readability(baseColor, colorList[i]);
+        if (readability > bestScore) {
+            bestScore = readability;
+            bestColor = tinycolor(colorList[i]);
+        }
+    }
+
+    if (tinycolor.isReadable(baseColor, bestColor, {"level":level,"size":size}) || !includeFallbackColors) {
+        return bestColor;
+    }
+    else {
+        args.includeFallbackColors=false;
+        return tinycolor.mostReadable(baseColor,["#fff", "#000"],args);
+    }
+};
+
+
+// Big List of Colors
+// ------------------
+// <http://www.w3.org/TR/css3-color/#svg-color>
+var names = tinycolor.names = {
+    aliceblue: "f0f8ff",
+    antiquewhite: "faebd7",
+    aqua: "0ff",
+    aquamarine: "7fffd4",
+    azure: "f0ffff",
+    beige: "f5f5dc",
+    bisque: "ffe4c4",
+    black: "000",
+    blanchedalmond: "ffebcd",
+    blue: "00f",
+    blueviolet: "8a2be2",
+    brown: "a52a2a",
+    burlywood: "deb887",
+    burntsienna: "ea7e5d",
+    cadetblue: "5f9ea0",
+    chartreuse: "7fff00",
+    chocolate: "d2691e",
+    coral: "ff7f50",
+    cornflowerblue: "6495ed",
+    cornsilk: "fff8dc",
+    crimson: "dc143c",
+    cyan: "0ff",
+    darkblue: "00008b",
+    darkcyan: "008b8b",
+    darkgoldenrod: "b8860b",
+    darkgray: "a9a9a9",
+    darkgreen: "006400",
+    darkgrey: "a9a9a9",
+    darkkhaki: "bdb76b",
+    darkmagenta: "8b008b",
+    darkolivegreen: "556b2f",
+    darkorange: "ff8c00",
+    darkorchid: "9932cc",
+    darkred: "8b0000",
+    darksalmon: "e9967a",
+    darkseagreen: "8fbc8f",
+    darkslateblue: "483d8b",
+    darkslategray: "2f4f4f",
+    darkslategrey: "2f4f4f",
+    darkturquoise: "00ced1",
+    darkviolet: "9400d3",
+    deeppink: "ff1493",
+    deepskyblue: "00bfff",
+    dimgray: "696969",
+    dimgrey: "696969",
+    dodgerblue: "1e90ff",
+    firebrick: "b22222",
+    floralwhite: "fffaf0",
+    forestgreen: "228b22",
+    fuchsia: "f0f",
+    gainsboro: "dcdcdc",
+    ghostwhite: "f8f8ff",
+    gold: "ffd700",
+    goldenrod: "daa520",
+    gray: "808080",
+    green: "008000",
+    greenyellow: "adff2f",
+    grey: "808080",
+    honeydew: "f0fff0",
+    hotpink: "ff69b4",
+    indianred: "cd5c5c",
+    indigo: "4b0082",
+    ivory: "fffff0",
+    khaki: "f0e68c",
+    lavender: "e6e6fa",
+    lavenderblush: "fff0f5",
+    lawngreen: "7cfc00",
+    lemonchiffon: "fffacd",
+    lightblue: "add8e6",
+    lightcoral: "f08080",
+    lightcyan: "e0ffff",
+    lightgoldenrodyellow: "fafad2",
+    lightgray: "d3d3d3",
+    lightgreen: "90ee90",
+    lightgrey: "d3d3d3",
+    lightpink: "ffb6c1",
+    lightsalmon: "ffa07a",
+    lightseagreen: "20b2aa",
+    lightskyblue: "87cefa",
+    lightslategray: "789",
+    lightslategrey: "789",
+    lightsteelblue: "b0c4de",
+    lightyellow: "ffffe0",
+    lime: "0f0",
+    limegreen: "32cd32",
+    linen: "faf0e6",
+    magenta: "f0f",
+    maroon: "800000",
+    mediumaquamarine: "66cdaa",
+    mediumblue: "0000cd",
+    mediumorchid: "ba55d3",
+    mediumpurple: "9370db",
+    mediumseagreen: "3cb371",
+    mediumslateblue: "7b68ee",
+    mediumspringgreen: "00fa9a",
+    mediumturquoise: "48d1cc",
+    mediumvioletred: "c71585",
+    midnightblue: "191970",
+    mintcream: "f5fffa",
+    mistyrose: "ffe4e1",
+    moccasin: "ffe4b5",
+    navajowhite: "ffdead",
+    navy: "000080",
+    oldlace: "fdf5e6",
+    olive: "808000",
+    olivedrab: "6b8e23",
+    orange: "ffa500",
+    orangered: "ff4500",
+    orchid: "da70d6",
+    palegoldenrod: "eee8aa",
+    palegreen: "98fb98",
+    paleturquoise: "afeeee",
+    palevioletred: "db7093",
+    papayawhip: "ffefd5",
+    peachpuff: "ffdab9",
+    peru: "cd853f",
+    pink: "ffc0cb",
+    plum: "dda0dd",
+    powderblue: "b0e0e6",
+    purple: "800080",
+    rebeccapurple: "663399",
+    red: "f00",
+    rosybrown: "bc8f8f",
+    royalblue: "4169e1",
+    saddlebrown: "8b4513",
+    salmon: "fa8072",
+    sandybrown: "f4a460",
+    seagreen: "2e8b57",
+    seashell: "fff5ee",
+    sienna: "a0522d",
+    silver: "c0c0c0",
+    skyblue: "87ceeb",
+    slateblue: "6a5acd",
+    slategray: "708090",
+    slategrey: "708090",
+    snow: "fffafa",
+    springgreen: "00ff7f",
+    steelblue: "4682b4",
+    tan: "d2b48c",
+    teal: "008080",
+    thistle: "d8bfd8",
+    tomato: "ff6347",
+    turquoise: "40e0d0",
+    violet: "ee82ee",
+    wheat: "f5deb3",
+    white: "fff",
+    whitesmoke: "f5f5f5",
+    yellow: "ff0",
+    yellowgreen: "9acd32"
+};
+
+// Make it easy to access colors via `hexNames[hex]`
+var hexNames = tinycolor.hexNames = flip(names);
+
+
+// Utilities
+// ---------
+
+// `{ 'name1': 'val1' }` becomes `{ 'val1': 'name1' }`
+function flip(o) {
+    var flipped = { };
+    for (var i in o) {
+        if (o.hasOwnProperty(i)) {
+            flipped[o[i]] = i;
+        }
+    }
+    return flipped;
+}
+
+// Return a valid alpha value [0,1] with all invalid values being set to 1
+function boundAlpha(a) {
+    a = parseFloat(a);
+
+    if (isNaN(a) || a < 0 || a > 1) {
+        a = 1;
+    }
+
+    return a;
+}
+
+// Take input from [0, n] and return it as [0, 1]
+function bound01(n, max) {
+    if (isOnePointZero(n)) { n = "100%"; }
+
+    var processPercent = isPercentage(n);
+    n = mathMin(max, mathMax(0, parseFloat(n)));
+
+    // Automatically convert percentage into number
+    if (processPercent) {
+        n = parseInt(n * max, 10) / 100;
+    }
+
+    // Handle floating point rounding errors
+    if ((Math.abs(n - max) < 0.000001)) {
+        return 1;
+    }
+
+    // Convert into [0, 1] range if it isn't already
+    return (n % max) / parseFloat(max);
+}
+
+// Force a number between 0 and 1
+function clamp01(val) {
+    return mathMin(1, mathMax(0, val));
+}
+
+// Parse a base-16 hex value into a base-10 integer
+function parseIntFromHex(val) {
+    return parseInt(val, 16);
+}
+
+// Need to handle 1.0 as 100%, since once it is a number, there is no difference between it and 1
+// <http://stackoverflow.com/questions/7422072/javascript-how-to-detect-number-as-a-decimal-including-1-0>
+function isOnePointZero(n) {
+    return typeof n == "string" && n.indexOf('.') != -1 && parseFloat(n) === 1;
+}
+
+// Check to see if string passed in is a percentage
+function isPercentage(n) {
+    return typeof n === "string" && n.indexOf('%') != -1;
+}
+
+// Force a hex value to have 2 characters
+function pad2(c) {
+    return c.length == 1 ? '0' + c : '' + c;
+}
+
+// Replace a decimal with it's percentage value
+function convertToPercentage(n) {
+    if (n <= 1) {
+        n = (n * 100) + "%";
+    }
+
+    return n;
+}
+
+// Converts a decimal to a hex value
+function convertDecimalToHex(d) {
+    return Math.round(parseFloat(d) * 255).toString(16);
+}
+// Converts a hex value to a decimal
+function convertHexToDecimal(h) {
+    return (parseIntFromHex(h) / 255);
+}
+
+var matchers = (function() {
+
+    // <http://www.w3.org/TR/css3-values/#integers>
+    var CSS_INTEGER = "[-\\+]?\\d+%?";
+
+    // <http://www.w3.org/TR/css3-values/#number-value>
+    var CSS_NUMBER = "[-\\+]?\\d*\\.\\d+%?";
+
+    // Allow positive/negative integer/number.  Don't capture the either/or, just the entire outcome.
+    var CSS_UNIT = "(?:" + CSS_NUMBER + ")|(?:" + CSS_INTEGER + ")";
+
+    // Actual matching.
+    // Parentheses and commas are optional, but not required.
+    // Whitespace can take the place of commas or opening paren
+    var PERMISSIVE_MATCH3 = "[\\s|\\(]+(" + CSS_UNIT + ")[,|\\s]+(" + CSS_UNIT + ")[,|\\s]+(" + CSS_UNIT + ")\\s*\\)?";
+    var PERMISSIVE_MATCH4 = "[\\s|\\(]+(" + CSS_UNIT + ")[,|\\s]+(" + CSS_UNIT + ")[,|\\s]+(" + CSS_UNIT + ")[,|\\s]+(" + CSS_UNIT + ")\\s*\\)?";
+
+    return {
+        CSS_UNIT: new RegExp(CSS_UNIT),
+        rgb: new RegExp("rgb" + PERMISSIVE_MATCH3),
+        rgba: new RegExp("rgba" + PERMISSIVE_MATCH4),
+        hsl: new RegExp("hsl" + PERMISSIVE_MATCH3),
+        hsla: new RegExp("hsla" + PERMISSIVE_MATCH4),
+        hsv: new RegExp("hsv" + PERMISSIVE_MATCH3),
+        hsva: new RegExp("hsva" + PERMISSIVE_MATCH4),
+        hex3: /^#?([0-9a-fA-F]{1})([0-9a-fA-F]{1})([0-9a-fA-F]{1})$/,
+        hex6: /^#?([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})$/,
+        hex4: /^#?([0-9a-fA-F]{1})([0-9a-fA-F]{1})([0-9a-fA-F]{1})([0-9a-fA-F]{1})$/,
+        hex8: /^#?([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})$/
+    };
+})();
+
+// `isValidCSSUnit`
+// Take in a single string / number and check to see if it looks like a CSS unit
+// (see `matchers` above for definition).
+function isValidCSSUnit(color) {
+    return !!matchers.CSS_UNIT.exec(color);
+}
+
+// `stringInputToObject`
+// Permissive string parsing.  Take in a number of formats, and output an object
+// based on detected format.  Returns `{ r, g, b }` or `{ h, s, l }` or `{ h, s, v}`
+function stringInputToObject(color) {
+
+    color = color.replace(trimLeft,'').replace(trimRight, '').toLowerCase();
+    var named = false;
+    if (names[color]) {
+        color = names[color];
+        named = true;
+    }
+    else if (color == 'transparent') {
+        return { r: 0, g: 0, b: 0, a: 0, format: "name" };
+    }
+
+    // Try to match string input using regular expressions.
+    // Keep most of the number bounding out of this function - don't worry about [0,1] or [0,100] or [0,360]
+    // Just return an object and let the conversion functions handle that.
+    // This way the result will be the same whether the tinycolor is initialized with string or object.
+    var match;
+    if ((match = matchers.rgb.exec(color))) {
+        return { r: match[1], g: match[2], b: match[3] };
+    }
+    if ((match = matchers.rgba.exec(color))) {
+        return { r: match[1], g: match[2], b: match[3], a: match[4] };
+    }
+    if ((match = matchers.hsl.exec(color))) {
+        return { h: match[1], s: match[2], l: match[3] };
+    }
+    if ((match = matchers.hsla.exec(color))) {
+        return { h: match[1], s: match[2], l: match[3], a: match[4] };
+    }
+    if ((match = matchers.hsv.exec(color))) {
+        return { h: match[1], s: match[2], v: match[3] };
+    }
+    if ((match = matchers.hsva.exec(color))) {
+        return { h: match[1], s: match[2], v: match[3], a: match[4] };
+    }
+    if ((match = matchers.hex8.exec(color))) {
+        return {
+            r: parseIntFromHex(match[1]),
+            g: parseIntFromHex(match[2]),
+            b: parseIntFromHex(match[3]),
+            a: convertHexToDecimal(match[4]),
+            format: named ? "name" : "hex8"
+        };
+    }
+    if ((match = matchers.hex6.exec(color))) {
+        return {
+            r: parseIntFromHex(match[1]),
+            g: parseIntFromHex(match[2]),
+            b: parseIntFromHex(match[3]),
+            format: named ? "name" : "hex"
+        };
+    }
+    if ((match = matchers.hex4.exec(color))) {
+        return {
+            r: parseIntFromHex(match[1] + '' + match[1]),
+            g: parseIntFromHex(match[2] + '' + match[2]),
+            b: parseIntFromHex(match[3] + '' + match[3]),
+            a: convertHexToDecimal(match[4] + '' + match[4]),
+            format: named ? "name" : "hex8"
+        };
+    }
+    if ((match = matchers.hex3.exec(color))) {
+        return {
+            r: parseIntFromHex(match[1] + '' + match[1]),
+            g: parseIntFromHex(match[2] + '' + match[2]),
+            b: parseIntFromHex(match[3] + '' + match[3]),
+            format: named ? "name" : "hex"
+        };
+    }
+
+    return false;
+}
+
+function validateWCAG2Parms(parms) {
+    // return valid WCAG2 parms for isReadable.
+    // If input parms are invalid, return {"level":"AA", "size":"small"}
+    var level, size;
+    parms = parms || {"level":"AA", "size":"small"};
+    level = (parms.level || "AA").toUpperCase();
+    size = (parms.size || "small").toLowerCase();
+    if (level !== "AA" && level !== "AAA") {
+        level = "AA";
+    }
+    if (size !== "small" && size !== "large") {
+        size = "small";
+    }
+    return {"level":level, "size":size};
+}
+
+// Node: Export function
+if (typeof module !== "undefined" && module.exports) {
+    module.exports = tinycolor;
+}
+// AMD/requirejs: Define the module
+else if (typeof define === 'function' && define.amd) {
+    define('tinycolor',function () {return tinycolor;});
+}
+// Browser: Expose to window
+else {
+    window.tinycolor = tinycolor;
+}
+
+})(Math);
+// Begin bundled file ///////////////////////////////////////////////////
+// tabfern/js/keypress.js
+
+// keypress.js
+// Generated by CoffeeScript 1.8.0
+
+/*
+Copyright 2014 David Mauro
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+Keypress is a robust keyboard input capturing Javascript utility
+focused on input for games.
+
+version 2.1.3
+ */
+
+
+/*
+Combo options available and their defaults:
+    keys            : []            - An array of the keys pressed together to activate combo.
+    count           : 0             - The number of times a counting combo has been pressed. Reset on release.
+    is_unordered    : false         - Unless this is set to true, the keys can be pressed down in any order.
+    is_counting     : false         - Makes this a counting combo (see documentation).
+    is_exclusive    : false         - This combo will replace other exclusive combos when true.
+    is_solitary     : false         - This combo will only fire if ONLY it's keys are pressed down.
+    is_sequence     : false         - Rather than a key combo, this is an ordered key sequence.
+    prevent_default : false         - Prevent default behavior for all component key keypresses.
+    prevent_repeat  : false         - Prevent the combo from repeating when keydown is held.
+    on_keydown      : null          - A function that is called when the combo is pressed.
+    on_keyup        : null          - A function that is called when the combo is released.
+    on_release      : null          - A function that is called when all keys in the combo are released.
+    this            : undefined     - Defines the scope for your callback functions.
+ */
+
+(function() {
+  var Combo, keypress, _change_keycodes_by_browser, _compare_arrays, _compare_arrays_sorted, _convert_key_to_readable, _convert_to_shifted_key, _decide_meta_key, _factory_defaults, _filter_array, _index_of_in_array, _is_array_in_array, _is_array_in_array_sorted, _key_is_valid, _keycode_alternate_names, _keycode_dictionary, _keycode_shifted_keys, _log_error, _metakey, _modifier_event_mapping, _modifier_keys, _validate_combo,
+    __hasProp = {}.hasOwnProperty,
+    __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
+
+  _factory_defaults = {
+    is_unordered: false,
+    is_counting: false,
+    is_exclusive: false,
+    is_solitary: false,
+    prevent_default: false,
+    prevent_repeat: false
+  };
+
+  _modifier_keys = ["meta", "alt", "option", "ctrl", "shift", "cmd"];
+
+  _metakey = "ctrl";
+
+  keypress = {};
+
+  keypress.debug = false;
+
+  Combo = (function() {
+    function Combo(dictionary) {
+      var property, value;
+      for (property in dictionary) {
+        if (!__hasProp.call(dictionary, property)) continue;
+        value = dictionary[property];
+        if (value !== false) {
+          this[property] = value;
+        }
+      }
+      this.keys = this.keys || [];
+      this.count = this.count || 0;
+    }
+
+    Combo.prototype.allows_key_repeat = function() {
+      return !this.prevent_repeat && typeof this.on_keydown === "function";
+    };
+
+    Combo.prototype.reset = function() {
+      this.count = 0;
+      return this.keyup_fired = null;
+    };
+
+    return Combo;
+
+  })();
+
+  keypress.Listener = (function() {
+    function Listener(element, defaults) {
+      var attach_handler, property, value;
+      if ((typeof jQuery !== "undefined" && jQuery !== null) && element instanceof jQuery) {
+        if (element.length !== 1) {
+          _log_error("Warning: your jQuery selector should have exactly one object.");
+        }
+        element = element[0];
+      }
+      this.should_suppress_event_defaults = false;
+      this.should_force_event_defaults = false;
+      this.sequence_delay = 800;
+      this._registered_combos = [];
+      this._keys_down = [];
+      this._active_combos = [];
+      this._sequence = [];
+      this._sequence_timer = null;
+      this._prevent_capture = false;
+      this._defaults = defaults || {};
+      for (property in _factory_defaults) {
+        if (!__hasProp.call(_factory_defaults, property)) continue;
+        value = _factory_defaults[property];
+        this._defaults[property] = this._defaults[property] || value;
+      }
+      this.element = element || document.body;
+      attach_handler = function(target, event, handler) {
+        if (target.addEventListener) {
+          target.addEventListener(event, handler);
+        } else if (target.attachEvent) {
+          target.attachEvent("on" + event, handler);
+        }
+        return handler;
+      };
+      this.keydown_event = attach_handler(this.element, "keydown", (function(_this) {
+        return function(e) {
+          e = e || window.event;
+          _this._receive_input(e, true);
+          return _this._bug_catcher(e);
+        };
+      })(this));
+      this.keyup_event = attach_handler(this.element, "keyup", (function(_this) {
+        return function(e) {
+          e = e || window.event;
+          return _this._receive_input(e, false);
+        };
+      })(this));
+      this.blur_event = attach_handler(window, "blur", (function(_this) {
+        return function() {
+          var key, _i, _len, _ref;
+          _ref = _this._keys_down;
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            key = _ref[_i];
+            _this._key_up(key, {});
+          }
+          return _this._keys_down = [];
+        };
+      })(this));
+    }
+
+    Listener.prototype.destroy = function() {
+      var remove_handler;
+      remove_handler = function(target, event, handler) {
+        if (target.removeEventListener != null) {
+          return target.removeEventListener(event, handler);
+        } else if (target.removeEvent != null) {
+          return target.removeEvent("on" + event, handler);
+        }
+      };
+      remove_handler(this.element, "keydown", this.keydown_event);
+      remove_handler(this.element, "keyup", this.keyup_event);
+      return remove_handler(window, "blur", this.blur_event);
+    };
+
+    Listener.prototype._bug_catcher = function(e) {
+      var _ref, _ref1;
+      if (_metakey === "cmd" && __indexOf.call(this._keys_down, "cmd") >= 0 && ((_ref = _convert_key_to_readable((_ref1 = e.keyCode) != null ? _ref1 : e.key)) !== "cmd" && _ref !== "shift" && _ref !== "alt" && _ref !== "caps" && _ref !== "tab")) {
+        return this._receive_input(e, false);
+      }
+    };
+
+    Listener.prototype._cmd_bug_check = function(combo_keys) {
+      if (_metakey === "cmd" && __indexOf.call(this._keys_down, "cmd") >= 0 && __indexOf.call(combo_keys, "cmd") < 0) {
+        return false;
+      }
+      return true;
+    };
+
+    Listener.prototype._prevent_default = function(e, should_prevent) {
+      if ((should_prevent || this.should_suppress_event_defaults) && !this.should_force_event_defaults) {
+        if (e.preventDefault) {
+          e.preventDefault();
+        } else {
+          e.returnValue = false;
+        }
+        if (e.stopPropagation) {
+          return e.stopPropagation();
+        }
+      }
+    };
+
+    Listener.prototype._get_active_combos = function(key) {
+      var active_combos, keys_down;
+      active_combos = [];
+      keys_down = _filter_array(this._keys_down, function(down_key) {
+        return down_key !== key;
+      });
+      keys_down.push(key);
+      this._match_combo_arrays(keys_down, (function(_this) {
+        return function(match) {
+          if (_this._cmd_bug_check(match.keys)) {
+            return active_combos.push(match);
+          }
+        };
+      })(this));
+      this._fuzzy_match_combo_arrays(keys_down, (function(_this) {
+        return function(match) {
+          if (__indexOf.call(active_combos, match) >= 0) {
+            return;
+          }
+          if (!(match.is_solitary || !_this._cmd_bug_check(match.keys))) {
+            return active_combos.push(match);
+          }
+        };
+      })(this));
+      return active_combos;
+    };
+
+    Listener.prototype._get_potential_combos = function(key) {
+      var combo, potentials, _i, _len, _ref;
+      potentials = [];
+      _ref = this._registered_combos;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        combo = _ref[_i];
+        if (combo.is_sequence) {
+          continue;
+        }
+        if (__indexOf.call(combo.keys, key) >= 0 && this._cmd_bug_check(combo.keys)) {
+          potentials.push(combo);
+        }
+      }
+      return potentials;
+    };
+
+    Listener.prototype._add_to_active_combos = function(combo) {
+      var active_combo, active_key, active_keys, already_replaced, combo_key, i, should_prepend, should_replace, _i, _j, _k, _len, _len1, _ref, _ref1;
+      should_replace = false;
+      should_prepend = true;
+      already_replaced = false;
+      if (__indexOf.call(this._active_combos, combo) >= 0) {
+        return true;
+      } else if (this._active_combos.length) {
+        for (i = _i = 0, _ref = this._active_combos.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
+          active_combo = this._active_combos[i];
+          if (!(active_combo && active_combo.is_exclusive && combo.is_exclusive)) {
+            continue;
+          }
+          active_keys = active_combo.keys;
+          if (!should_replace) {
+            for (_j = 0, _len = active_keys.length; _j < _len; _j++) {
+              active_key = active_keys[_j];
+              should_replace = true;
+              if (__indexOf.call(combo.keys, active_key) < 0) {
+                should_replace = false;
+                break;
+              }
+            }
+          }
+          if (should_prepend && !should_replace) {
+            _ref1 = combo.keys;
+            for (_k = 0, _len1 = _ref1.length; _k < _len1; _k++) {
+              combo_key = _ref1[_k];
+              should_prepend = false;
+              if (__indexOf.call(active_keys, combo_key) < 0) {
+                should_prepend = true;
+                break;
+              }
+            }
+          }
+          if (should_replace) {
+            if (already_replaced) {
+              active_combo = this._active_combos.splice(i, 1)[0];
+              if (active_combo != null) {
+                active_combo.reset();
+              }
+            } else {
+              active_combo = this._active_combos.splice(i, 1, combo)[0];
+              if (active_combo != null) {
+                active_combo.reset();
+              }
+              already_replaced = true;
+            }
+            should_prepend = false;
+          }
+        }
+      }
+      if (should_prepend) {
+        this._active_combos.unshift(combo);
+      }
+      return should_replace || should_prepend;
+    };
+
+    Listener.prototype._remove_from_active_combos = function(combo) {
+      var active_combo, i, _i, _ref;
+      for (i = _i = 0, _ref = this._active_combos.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
+        active_combo = this._active_combos[i];
+        if (active_combo === combo) {
+          combo = this._active_combos.splice(i, 1)[0];
+          combo.reset();
+          break;
+        }
+      }
+    };
+
+    Listener.prototype._get_possible_sequences = function() {
+      var combo, i, j, match, matches, sequence, _i, _j, _k, _len, _ref, _ref1, _ref2;
+      matches = [];
+      _ref = this._registered_combos;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        combo = _ref[_i];
+        for (j = _j = 1, _ref1 = this._sequence.length; 1 <= _ref1 ? _j <= _ref1 : _j >= _ref1; j = 1 <= _ref1 ? ++_j : --_j) {
+          sequence = this._sequence.slice(-j);
+          if (!combo.is_sequence) {
+            continue;
+          }
+          if (__indexOf.call(combo.keys, "shift") < 0) {
+            sequence = _filter_array(sequence, function(key) {
+              return key !== "shift";
+            });
+            if (!sequence.length) {
+              continue;
+            }
+          }
+          for (i = _k = 0, _ref2 = sequence.length; 0 <= _ref2 ? _k < _ref2 : _k > _ref2; i = 0 <= _ref2 ? ++_k : --_k) {
+            if (combo.keys[i] === sequence[i]) {
+              match = true;
+            } else {
+              match = false;
+              break;
+            }
+          }
+          if (match) {
+            matches.push(combo);
+          }
+        }
+      }
+      return matches;
+    };
+
+    Listener.prototype._add_key_to_sequence = function(key, e) {
+      var combo, sequence_combos, _i, _len;
+      this._sequence.push(key);
+      sequence_combos = this._get_possible_sequences();
+      if (sequence_combos.length) {
+        for (_i = 0, _len = sequence_combos.length; _i < _len; _i++) {
+          combo = sequence_combos[_i];
+          this._prevent_default(e, combo.prevent_default);
+        }
+        if (this._sequence_timer) {
+          clearTimeout(this._sequence_timer);
+        }
+        if (this.sequence_delay > -1) {
+          this._sequence_timer = setTimeout(function() {
+            return this._sequence = [];
+          }, this.sequence_delay);
+        }
+      } else {
+        this._sequence = [];
+      }
+    };
+
+    Listener.prototype._get_sequence = function(key) {
+      var combo, i, j, match, seq_key, sequence, _i, _j, _k, _len, _ref, _ref1, _ref2;
+      _ref = this._registered_combos;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        combo = _ref[_i];
+        if (!combo.is_sequence) {
+          continue;
+        }
+        for (j = _j = 1, _ref1 = this._sequence.length; 1 <= _ref1 ? _j <= _ref1 : _j >= _ref1; j = 1 <= _ref1 ? ++_j : --_j) {
+          sequence = (_filter_array(this._sequence, function(seq_key) {
+            if (__indexOf.call(combo.keys, "shift") >= 0) {
+              return true;
+            }
+            return seq_key !== "shift";
+          })).slice(-j);
+          if (combo.keys.length !== sequence.length) {
+            continue;
+          }
+          for (i = _k = 0, _ref2 = sequence.length; 0 <= _ref2 ? _k < _ref2 : _k > _ref2; i = 0 <= _ref2 ? ++_k : --_k) {
+            seq_key = sequence[i];
+            if (__indexOf.call(combo.keys, "shift") < 0) {
+              if (seq_key === "shift") {
+                continue;
+              }
+            }
+            if (key === "shift" && __indexOf.call(combo.keys, "shift") < 0) {
+              continue;
+            }
+            if (combo.keys[i] === seq_key) {
+              match = true;
+            } else {
+              match = false;
+              break;
+            }
+          }
+        }
+        if (match) {
+          if (combo.is_exclusive) {
+            this._sequence = [];
+          }
+          return combo;
+        }
+      }
+      return false;
+    };
+
+    Listener.prototype._receive_input = function(e, is_keydown) {
+      var key, _ref;
+      if (this._prevent_capture) {
+        if (this._keys_down.length) {
+          this._keys_down = [];
+        }
+        return;
+      }
+      key = _convert_key_to_readable((_ref = e.keyCode) != null ? _ref : e.key);
+      if (!is_keydown && !this._keys_down.length && (key === "alt" || key === _metakey)) {
+        return;
+      }
+      if (!key) {
+        return;
+      }
+      if (is_keydown) {
+        return this._key_down(key, e);
+      } else {
+        return this._key_up(key, e);
+      }
+    };
+
+    Listener.prototype._fire = function(event, combo, key_event, is_autorepeat) {
+      if (typeof combo["on_" + event] === "function") {
+        this._prevent_default(key_event, combo["on_" + event].call(combo["this"], key_event, combo.count, is_autorepeat) !== true);
+      }
+      if (event === "release") {
+        combo.count = 0;
+      }
+      if (event === "keyup") {
+        return combo.keyup_fired = true;
+      }
+    };
+
+    Listener.prototype._match_combo_arrays = function(potential_match, match_handler) {
+      var source_combo, _i, _len, _ref;
+      _ref = this._registered_combos;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        source_combo = _ref[_i];
+        if ((!source_combo.is_unordered && _compare_arrays_sorted(potential_match, source_combo.keys)) || (source_combo.is_unordered && _compare_arrays(potential_match, source_combo.keys))) {
+          match_handler(source_combo);
+        }
+      }
+    };
+
+    Listener.prototype._fuzzy_match_combo_arrays = function(potential_match, match_handler) {
+      var source_combo, _i, _len, _ref;
+      _ref = this._registered_combos;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        source_combo = _ref[_i];
+        if ((!source_combo.is_unordered && _is_array_in_array_sorted(source_combo.keys, potential_match)) || (source_combo.is_unordered && _is_array_in_array(source_combo.keys, potential_match))) {
+          match_handler(source_combo);
+        }
+      }
+    };
+
+    Listener.prototype._keys_remain = function(combo) {
+      var key, keys_remain, _i, _len, _ref;
+      _ref = combo.keys;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        key = _ref[_i];
+        if (__indexOf.call(this._keys_down, key) >= 0) {
+          keys_remain = true;
+          break;
+        }
+      }
+      return keys_remain;
+    };
+
+    Listener.prototype._key_down = function(key, e) {
+      var combo, combos, event_mod, i, mod, potential, potential_combos, sequence_combo, shifted_key, _i, _j, _k, _len, _len1, _ref;
+      shifted_key = _convert_to_shifted_key(key, e);
+      if (shifted_key) {
+        key = shifted_key;
+      }
+      this._add_key_to_sequence(key, e);
+      sequence_combo = this._get_sequence(key);
+      if (sequence_combo) {
+        this._fire("keydown", sequence_combo, e);
+      }
+      for (mod in _modifier_event_mapping) {
+        event_mod = _modifier_event_mapping[mod];
+        if (!e[event_mod]) {
+          continue;
+        }
+        if (mod === key || __indexOf.call(this._keys_down, mod) >= 0) {
+          continue;
+        }
+        this._keys_down.push(mod);
+      }
+      for (mod in _modifier_event_mapping) {
+        event_mod = _modifier_event_mapping[mod];
+        if (mod === key) {
+          continue;
+        }
+        if (__indexOf.call(this._keys_down, mod) >= 0 && !e[event_mod]) {
+          if (mod === "cmd" && _metakey !== "cmd") {
+            continue;
+          }
+          for (i = _i = 0, _ref = this._keys_down.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
+            if (this._keys_down[i] === mod) {
+              this._keys_down.splice(i, 1);
+            }
+          }
+        }
+      }
+      combos = this._get_active_combos(key);
+      potential_combos = this._get_potential_combos(key);
+      for (_j = 0, _len = combos.length; _j < _len; _j++) {
+        combo = combos[_j];
+        this._handle_combo_down(combo, potential_combos, key, e);
+      }
+      if (potential_combos.length) {
+        for (_k = 0, _len1 = potential_combos.length; _k < _len1; _k++) {
+          potential = potential_combos[_k];
+          this._prevent_default(e, potential.prevent_default);
+        }
+      }
+      if (__indexOf.call(this._keys_down, key) < 0) {
+        this._keys_down.push(key);
+      }
+    };
+
+    Listener.prototype._handle_combo_down = function(combo, potential_combos, key, e) {
+      var is_autorepeat, is_other_exclusive, potential_combo, result, _i, _len;
+      if (__indexOf.call(combo.keys, key) < 0) {
+        return false;
+      }
+      this._prevent_default(e, combo && combo.prevent_default);
+      is_autorepeat = false;
+      if (__indexOf.call(this._keys_down, key) >= 0) {
+        is_autorepeat = true;
+        if (!combo.allows_key_repeat()) {
+          return false;
+        }
+      }
+      result = this._add_to_active_combos(combo, key);
+      combo.keyup_fired = false;
+      is_other_exclusive = false;
+      if (combo.is_exclusive) {
+        for (_i = 0, _len = potential_combos.length; _i < _len; _i++) {
+          potential_combo = potential_combos[_i];
+          if (potential_combo.is_exclusive && potential_combo.keys.length > combo.keys.length) {
+            is_other_exclusive = true;
+            break;
+          }
+        }
+      }
+      if (!is_other_exclusive) {
+        if (combo.is_counting && typeof combo.on_keydown === "function") {
+          combo.count += 1;
+        }
+        if (result) {
+          return this._fire("keydown", combo, e, is_autorepeat);
+        }
+      }
+    };
+
+    Listener.prototype._key_up = function(key, e) {
+      var active_combo, active_combos_length, combo, combos, i, sequence_combo, shifted_key, unshifted_key, _i, _j, _k, _l, _len, _len1, _len2, _ref, _ref1, _ref2, _ref3;
+      unshifted_key = key;
+      shifted_key = _convert_to_shifted_key(key, e);
+      if (shifted_key) {
+        key = shifted_key;
+      }
+      shifted_key = _keycode_shifted_keys[unshifted_key];
+      if (e.shiftKey) {
+        if (!(shifted_key && __indexOf.call(this._keys_down, shifted_key) >= 0)) {
+          key = unshifted_key;
+        }
+      } else {
+        if (!(unshifted_key && __indexOf.call(this._keys_down, unshifted_key) >= 0)) {
+          key = shifted_key;
+        }
+      }
+      sequence_combo = this._get_sequence(key);
+      if (sequence_combo) {
+        this._fire("keyup", sequence_combo, e);
+      }
+      if (__indexOf.call(this._keys_down, key) < 0) {
+        return false;
+      }
+      for (i = _i = 0, _ref = this._keys_down.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
+        if ((_ref1 = this._keys_down[i]) === key || _ref1 === shifted_key || _ref1 === unshifted_key) {
+          this._keys_down.splice(i, 1);
+          break;
+        }
+      }
+      active_combos_length = this._active_combos.length;
+      combos = [];
+      _ref2 = this._active_combos;
+      for (_j = 0, _len = _ref2.length; _j < _len; _j++) {
+        active_combo = _ref2[_j];
+        if (__indexOf.call(active_combo.keys, key) >= 0) {
+          combos.push(active_combo);
+        }
+      }
+      for (_k = 0, _len1 = combos.length; _k < _len1; _k++) {
+        combo = combos[_k];
+        this._handle_combo_up(combo, e, key);
+      }
+      if (active_combos_length > 1) {
+        _ref3 = this._active_combos;
+        for (_l = 0, _len2 = _ref3.length; _l < _len2; _l++) {
+          active_combo = _ref3[_l];
+          if (active_combo === void 0 || __indexOf.call(combos, active_combo) >= 0) {
+            continue;
+          }
+          if (!this._keys_remain(active_combo)) {
+            this._remove_from_active_combos(active_combo);
+          }
+        }
+      }
+    };
+
+    Listener.prototype._handle_combo_up = function(combo, e, key) {
+      var keys_down, keys_remaining;
+      this._prevent_default(e, combo && combo.prevent_default);
+      keys_remaining = this._keys_remain(combo);
+      if (!combo.keyup_fired) {
+        keys_down = this._keys_down.slice();
+        keys_down.push(key);
+        if (!combo.is_solitary || _compare_arrays(keys_down, combo.keys)) {
+          this._fire("keyup", combo, e);
+          if (combo.is_counting && typeof combo.on_keyup === "function" && typeof combo.on_keydown !== "function") {
+            combo.count += 1;
+          }
+        }
+      }
+      if (!keys_remaining) {
+        this._fire("release", combo, e);
+        this._remove_from_active_combos(combo);
+      }
+    };
+
+    Listener.prototype.simple_combo = function(keys, callback) {
+      return this.register_combo({
+        keys: keys,
+        on_keydown: callback
+      });
+    };
+
+    Listener.prototype.counting_combo = function(keys, count_callback) {
+      return this.register_combo({
+        keys: keys,
+        is_counting: true,
+        is_unordered: false,
+        on_keydown: count_callback
+      });
+    };
+
+    Listener.prototype.sequence_combo = function(keys, callback) {
+      return this.register_combo({
+        keys: keys,
+        on_keydown: callback,
+        is_sequence: true,
+        is_exclusive: true
+      });
+    };
+
+    Listener.prototype.register_combo = function(combo_dictionary) {
+      var combo, property, value, _ref;
+      if (typeof combo_dictionary["keys"] === "string") {
+        combo_dictionary["keys"] = combo_dictionary["keys"].split(" ");
+      }
+      _ref = this._defaults;
+      for (property in _ref) {
+        if (!__hasProp.call(_ref, property)) continue;
+        value = _ref[property];
+        if (combo_dictionary[property] === void 0) {
+          combo_dictionary[property] = value;
+        }
+      }
+      combo = new Combo(combo_dictionary);
+      if (_validate_combo(combo)) {
+        this._registered_combos.push(combo);
+        return combo;
+      }
+    };
+
+    Listener.prototype.register_many = function(combo_array) {
+      var combo, _i, _len, _results;
+      _results = [];
+      for (_i = 0, _len = combo_array.length; _i < _len; _i++) {
+        combo = combo_array[_i];
+        _results.push(this.register_combo(combo));
+      }
+      return _results;
+    };
+
+    Listener.prototype.unregister_combo = function(keys_or_combo) {
+      var combo, unregister_combo, _i, _len, _ref, _results;
+      if (!keys_or_combo) {
+        return false;
+      }
+      unregister_combo = (function(_this) {
+        return function(combo) {
+          var i, _i, _ref, _results;
+          _results = [];
+          for (i = _i = 0, _ref = _this._registered_combos.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
+            if (combo === _this._registered_combos[i]) {
+              _this._registered_combos.splice(i, 1);
+              break;
+            } else {
+              _results.push(void 0);
+            }
+          }
+          return _results;
+        };
+      })(this);
+      if (keys_or_combo instanceof Combo) {
+        return unregister_combo(keys_or_combo);
+      } else {
+        if (typeof keys_or_combo === "string") {
+          keys_or_combo = keys_or_combo.split(" ");
+        }
+        _ref = this._registered_combos;
+        _results = [];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          combo = _ref[_i];
+          if (combo == null) {
+            continue;
+          }
+          if ((combo.is_unordered && _compare_arrays(keys_or_combo, combo.keys)) || (!combo.is_unordered && _compare_arrays_sorted(keys_or_combo, combo.keys))) {
+            _results.push(unregister_combo(combo));
+          } else {
+            _results.push(void 0);
+          }
+        }
+        return _results;
+      }
+    };
+
+    Listener.prototype.unregister_many = function(combo_array) {
+      var combo, _i, _len, _results;
+      _results = [];
+      for (_i = 0, _len = combo_array.length; _i < _len; _i++) {
+        combo = combo_array[_i];
+        _results.push(this.unregister_combo(combo));
+      }
+      return _results;
+    };
+
+    Listener.prototype.get_registered_combos = function() {
+      return this._registered_combos;
+    };
+
+    Listener.prototype.reset = function() {
+      return this._registered_combos = [];
+    };
+
+    Listener.prototype.listen = function() {
+      return this._prevent_capture = false;
+    };
+
+    Listener.prototype.stop_listening = function() {
+      return this._prevent_capture = true;
+    };
+
+    Listener.prototype.get_meta_key = function() {
+      return _metakey;
+    };
+
+    return Listener;
+
+  })();
+
+  _decide_meta_key = function() {
+    if (navigator.userAgent.indexOf("Mac OS X") !== -1) {
+      _metakey = "cmd";
+    }
+  };
+
+  _change_keycodes_by_browser = function() {
+    if (navigator.userAgent.indexOf("Opera") !== -1) {
+      _keycode_dictionary["17"] = "cmd";
+    }
+  };
+
+  _convert_key_to_readable = function(k) {
+    return _keycode_dictionary[k];
+  };
+
+  _filter_array = function(array, callback) {
+    var element;
+    if (array.filter) {
+      return array.filter(callback);
+    } else {
+      return (function() {
+        var _i, _len, _results;
+        _results = [];
+        for (_i = 0, _len = array.length; _i < _len; _i++) {
+          element = array[_i];
+          if (callback(element)) {
+            _results.push(element);
+          }
+        }
+        return _results;
+      })();
+    }
+  };
+
+  _compare_arrays = function(a1, a2) {
+    var item, _i, _len;
+    if (a1.length !== a2.length) {
+      return false;
+    }
+    for (_i = 0, _len = a1.length; _i < _len; _i++) {
+      item = a1[_i];
+      if (__indexOf.call(a2, item) >= 0) {
+        continue;
+      }
+      return false;
+    }
+    return true;
+  };
+
+  _compare_arrays_sorted = function(a1, a2) {
+    var i, _i, _ref;
+    if (a1.length !== a2.length) {
+      return false;
+    }
+    for (i = _i = 0, _ref = a1.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
+      if (a1[i] !== a2[i]) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  _is_array_in_array = function(a1, a2) {
+    var item, _i, _len;
+    for (_i = 0, _len = a1.length; _i < _len; _i++) {
+      item = a1[_i];
+      if (__indexOf.call(a2, item) < 0) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  _index_of_in_array = Array.prototype.indexOf || function(a, item) {
+    var i, _i, _ref;
+    for (i = _i = 0, _ref = a.length; 0 <= _ref ? _i <= _ref : _i >= _ref; i = 0 <= _ref ? ++_i : --_i) {
+      if (a[i] === item) {
+        return i;
+      }
+    }
+    return -1;
+  };
+
+  _is_array_in_array_sorted = function(a1, a2) {
+    var index, item, prev, _i, _len;
+    prev = 0;
+    for (_i = 0, _len = a1.length; _i < _len; _i++) {
+      item = a1[_i];
+      index = _index_of_in_array.call(a2, item);
+      if (index >= prev) {
+        prev = index;
+      } else {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  _log_error = function() {
+    if (keypress.debug) {
+      return console.log.apply(console, arguments);
+    }
+  };
+
+  _key_is_valid = function(key) {
+    var valid, valid_key, _;
+    valid = false;
+    for (_ in _keycode_dictionary) {
+      valid_key = _keycode_dictionary[_];
+      if (key === valid_key) {
+        valid = true;
+        break;
+      }
+    }
+    if (!valid) {
+      for (_ in _keycode_shifted_keys) {
+        valid_key = _keycode_shifted_keys[_];
+        if (key === valid_key) {
+          valid = true;
+          break;
+        }
+      }
+    }
+    return valid;
+  };
+
+  _validate_combo = function(combo) {
+    var alt_name, i, key, mod_key, non_modifier_keys, property, validated, value, _i, _j, _k, _len, _len1, _ref, _ref1;
+    validated = true;
+    if (!combo.keys.length) {
+      _log_error("You're trying to bind a combo with no keys:", combo);
+    }
+    for (i = _i = 0, _ref = combo.keys.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
+      key = combo.keys[i];
+      alt_name = _keycode_alternate_names[key];
+      if (alt_name) {
+        key = combo.keys[i] = alt_name;
+      }
+      if (key === "meta") {
+        combo.keys.splice(i, 1, _metakey);
+      }
+      if (key === "cmd") {
+        _log_error("Warning: use the \"meta\" key rather than \"cmd\" for Windows compatibility");
+      }
+    }
+    _ref1 = combo.keys;
+    for (_j = 0, _len = _ref1.length; _j < _len; _j++) {
+      key = _ref1[_j];
+      if (!_key_is_valid(key)) {
+        _log_error("Do not recognize the key \"" + key + "\"");
+        validated = false;
+      }
+    }
+    if (__indexOf.call(combo.keys, "meta") >= 0 || __indexOf.call(combo.keys, "cmd") >= 0) {
+      non_modifier_keys = combo.keys.slice();
+      for (_k = 0, _len1 = _modifier_keys.length; _k < _len1; _k++) {
+        mod_key = _modifier_keys[_k];
+        if ((i = _index_of_in_array.call(non_modifier_keys, mod_key)) > -1) {
+          non_modifier_keys.splice(i, 1);
+        }
+      }
+      if (non_modifier_keys.length > 1) {
+        _log_error("META and CMD key combos cannot have more than 1 non-modifier keys", combo, non_modifier_keys);
+        validated = false;
+      }
+    }
+    for (property in combo) {
+      value = combo[property];
+      if (_factory_defaults[property] === "undefined") {
+        _log_error("The property " + property + " is not a valid combo property. Your combo has still been registered.");
+      }
+    }
+    return validated;
+  };
+
+  _convert_to_shifted_key = function(key, e) {
+    var k;
+    if (!e.shiftKey) {
+      return false;
+    }
+    k = _keycode_shifted_keys[key];
+    if (k != null) {
+      return k;
+    }
+    return false;
+  };
+
+  _modifier_event_mapping = {
+    "cmd": "metaKey",
+    "ctrl": "ctrlKey",
+    "shift": "shiftKey",
+    "alt": "altKey"
+  };
+
+  _keycode_alternate_names = {
+    "escape": "esc",
+    "control": "ctrl",
+    "command": "cmd",
+    "break": "pause",
+    "windows": "cmd",
+    "option": "alt",
+    "caps_lock": "caps",
+    "apostrophe": "\'",
+    "semicolon": ";",
+    "tilde": "~",
+    "accent": "`",
+    "scroll_lock": "scroll",
+    "num_lock": "num"
+  };
+
+  _keycode_shifted_keys = {
+    "/": "?",
+    ".": ">",
+    ",": "<",
+    "\'": "\"",
+    ";": ":",
+    "[": "{",
+    "]": "}",
+    "\\": "|",
+    "`": "~",
+    "=": "+",
+    "-": "_",
+    "1": "!",
+    "2": "@",
+    "3": "#",
+    "4": "$",
+    "5": "%",
+    "6": "^",
+    "7": "&",
+    "8": "*",
+    "9": "(",
+    "0": ")"
+  };
+
+  _keycode_dictionary = {
+    0: "\\",
+    8: "backspace",
+    9: "tab",
+    12: "num",
+    13: "enter",
+    16: "shift",
+    17: "ctrl",
+    18: "alt",
+    19: "pause",
+    20: "caps",
+    27: "esc",
+    32: "space",
+    33: "pageup",
+    34: "pagedown",
+    35: "end",
+    36: "home",
+    37: "left",
+    38: "up",
+    39: "right",
+    40: "down",
+    44: "print",
+    45: "insert",
+    46: "delete",
+    48: "0",
+    49: "1",
+    50: "2",
+    51: "3",
+    52: "4",
+    53: "5",
+    54: "6",
+    55: "7",
+    56: "8",
+    57: "9",
+    65: "a",
+    66: "b",
+    67: "c",
+    68: "d",
+    69: "e",
+    70: "f",
+    71: "g",
+    72: "h",
+    73: "i",
+    74: "j",
+    75: "k",
+    76: "l",
+    77: "m",
+    78: "n",
+    79: "o",
+    80: "p",
+    81: "q",
+    82: "r",
+    83: "s",
+    84: "t",
+    85: "u",
+    86: "v",
+    87: "w",
+    88: "x",
+    89: "y",
+    90: "z",
+    91: "cmd",
+    92: "cmd",
+    93: "cmd",
+    96: "num_0",
+    97: "num_1",
+    98: "num_2",
+    99: "num_3",
+    100: "num_4",
+    101: "num_5",
+    102: "num_6",
+    103: "num_7",
+    104: "num_8",
+    105: "num_9",
+    106: "num_multiply",
+    107: "num_add",
+    108: "num_enter",
+    109: "num_subtract",
+    110: "num_decimal",
+    111: "num_divide",
+    112: "f1",
+    113: "f2",
+    114: "f3",
+    115: "f4",
+    116: "f5",
+    117: "f6",
+    118: "f7",
+    119: "f8",
+    120: "f9",
+    121: "f10",
+    122: "f11",
+    123: "f12",
+    124: "print",
+    144: "num",
+    145: "scroll",
+    186: ";",
+    187: "=",
+    188: ",",
+    189: "-",
+    190: ".",
+    191: "/",
+    192: "`",
+    219: "[",
+    220: "\\",
+    221: "]",
+    222: "\'",
+    223: "`",
+    224: "cmd",
+    225: "alt",
+    57392: "ctrl",
+    63289: "num",
+    59: ";",
+    61: "=",
+    173: "-"
+  };
+
+  keypress._keycode_dictionary = _keycode_dictionary;
+
+  keypress._is_array_in_array_sorted = _is_array_in_array_sorted;
+
+  _decide_meta_key();
+
+  _change_keycodes_by_browser();
+
+  if (typeof define === "function" && define.amd) {
+    define('keypress',[], function() {
+      return keypress;
+    });
+  } else if (typeof exports !== "undefined" && exports !== null) {
+    exports.keypress = keypress;
+  } else {
+    window.keypress = keypress;
+  }
+
+}).call(this);
+// Begin bundled file ///////////////////////////////////////////////////
+// tabfern/js/hamburger.js
+
+// hamburger.js: Hamburger menu for jstree.
+// Uses jquery, jstree, loglevel, all of which must be loaded beforehand.
+
+(function (root, factory) {
+    if (typeof define === 'function' && define.amd) {
+        // AMD
+        define('hamburger',['jquery', 'loglevel', 'jstree'], factory);
+    } else if (typeof exports === 'object') {
+        // Node, CommonJS-like
+        module.exports = factory(require('jquery'), require('loglevel'), require('jstree'));
+    } else {
+        // Browser globals (root is window)
+        root.HamburgerMenuMaker = factory(root.jQuery, root.log, root.jQuery.jstree);
+    }
+}(this, function ($, log) {
+
+    /// The prototype for a hamburger-menu object
+    let Proto = {};
+
+    //////////////////////////////////////////////////////////////////////////
+    // EVENTS //
+
+    /// Replace left clicks with right clicks.
+    ///     - There is only one item, so whenever it is selected, deselect it.
+    ///     - Also, make left click trigger a context menu.
+    Proto.hamOnSelect = function(evt, evt_data)
+    {
+        this.treeobj.deselect_all(true);    // `this` is the Hamburger object
+        //console.log(evt_data);
+        if(typeof(evt_data.node) === 'undefined' ||
+            typeof(evt_data.instance) === 'undefined') return;
+
+        // From https://stackoverflow.com/a/26783802/2877364 by
+        // https://stackoverflow.com/users/305189/pierre-de-lespinay
+        setTimeout(function() {
+            evt_data.instance.show_contextmenu(evt_data.node);
+                // because contextmenu.select_node is false, this will not
+                // reselect the node.  If it did, it would trigger an
+                // infinite loop.
+        }, 100);
+    } //Proto.hamOnSelect
+
+    //////////////////////////////////////////////////////////////////////////
+    // INIT //
+
+    /// Create a hamburger menu at the DOM object identified by #selector.
+    /// Menu items should be returned by function #getMenuItems.
+    /// @param selector     Where the menu should go
+    /// @param getMenuItems Callback returning items, or false for none
+    /// @param timeout      Optional: if provided, timeout in ms for menu
+    ///                     to disappear after mouseout.
+    ///                     *** CAUTION *** applies to all contextmenus in
+    ///                                     the document.
+    function ctor(selector, getMenuItems, timeout)
+    {
+        let retval = Object.create(Proto);
+        log.info('TabFern hamburger.js initializing view at ' + selector);
+        let jstreeConfig = {
+            'plugins': ['contextmenu']
+          , 'core': {
+                'animation': false,
+                'multiple': false,          // for now
+                'check_callback': true,     // for now, allow modifications
+                themes: {
+                    'name': 'default-dark'
+                  , 'variant': 'small'
+                  , 'dots': false       // No connecting lines between nodes
+                }
+            }
+          , 'contextmenu': {
+                items: getMenuItems
+              , select_node: false  // required for hamOnSelect to work
+            }
+        };
+
+        // Create the tree
+        $(selector).jstree(jstreeConfig);
+        retval.treeobj = $(selector).jstree(true);
+
+        // Close the tree on mouseout.  Note: this affects all trees
+        // in the document.  Math.abs() for safety.
+        if(timeout) {
+            $.vakata.context.settings.hide_onmouseleave = Math.abs(timeout);
+        }
+
+        // Add the single item
+        retval.tree_node = retval.treeobj.create_node(null,
+                {   text: ''
+                    , 'icon': 'fa fa-bars'
+                    , state: { 'opened': false }
+                });
+
+        $(selector).on('changed.jstree', retval.hamOnSelect.bind(retval));
+
+        return retval;      // Not sealed, to give the caller flexibility.
+    } //ctor
+
+    return ctor;
+
+}));
+
+// Module-loader template thanks to
+// http://davidbcalhoun.com/2014/what-is-amd-commonjs-and-umd/
+
+// vi: set ts=4 sts=4 sw=4 et ai fo-=o fo-=r: //
+// Begin bundled file ///////////////////////////////////////////////////
+// tabfern/js/import-file.js
+
+/// import-file.js: Retrieve a JSON-serializable object from a user-specified
+/// local file.  Requires HTML5 File API.
+/// Copyright (c) 2017 Chris White.  CC-BY 4.0 International.
+
+(function (root, factory) {
+    if (typeof define === 'function' && define.amd) {
+        // AMD
+        define('import-file',factory);
+    } else if (typeof exports === 'object') {
+        // Node, CommonJS-like
+        module.exports = factory();
+    } else {
+        // Browser globals (root is window)
+        root.Fileops = root.Fileops || {};
+        root.Fileops.Importer = factory();
+    }
+}(this, function () {
+
+    /// Prototype for the importer
+    let Proto = {};
+
+    /// Prompt the user for a filename and provide its contents as a string,
+    /// assuming UTF-8 encoding.
+    /// @param {function} cbk   Callback called with (contents, filename)
+    /// Note: I don't know what will happen if the user picks a non-text file.
+    /// Note also there is currently no error reporting, and the callback
+    /// may never be invoked.
+
+    Proto.getFileAsString = function(cbk) {
+        this.loader.addEventListener('change', function(evt){
+            // Note: never fires if the user hits Cancel in the file selector
+            let fileToLoad = evt.target.files[0];
+            if(!fileToLoad) return;
+
+            let filename = evt.target.files[0].name;
+            console.log('Reading file ' + filename);
+            let reader = new FileReader();
+            reader.addEventListener('load', function(fileLoadedEvent) {
+                let textFromFileLoaded = fileLoadedEvent.target.result;
+                cbk(textFromFileLoaded, filename);
+            });
+
+            reader.readAsText(fileToLoad, 'UTF-8');
+        }, { once: true }); //end of onchange
+
+        this.loader.click();    // popup the file selector
+    }; //getFileAsString()
+
+    /// Make a new importer.
+    /// @param {DOM Document}   doc         The document the importer runs in.
+    /// @param {String}         filetype    Optional string of the filetypes
+    ///                                     to list in the Open dialog.
+    /// @return                 the new importer object, or null.
+    function ctor(doc, accept)
+    {
+        if(doc==null) return null;      // TODO better error reporting
+
+        // Create the instance data
+        let retval = Object.create(Proto);
+        retval.doc = doc;
+
+        let loader = retval.loader = doc.createElement('input');
+        // Chrome doesn't seem to require us to add this to the DOM.
+        // Also, we don't set an ID, so multiple importers can be created
+        // for the same document.
+        loader.type = 'file';
+        loader.style.display = 'none';
+        if(accept) loader.accept = accept;
+
+        return Object.seal(retval);  // the new importer
+    } //ctor
+
+    return ctor;
+}));
+
+// Module-loader template thanks to
+// http://davidbcalhoun.com/2014/what-is-amd-commonjs-and-umd/
+// Thanks for information about `this` to Kyle Simpson,
+// https://github.com/getify/You-Dont-Know-JS/blob/master/this%20%26%20object%20prototypes/ch2.md
+/// File I/O modified from
+/// https://www.thewebflash.com/reading-and-creating-text-files-using-the-html5-file-api/
+/// by Hendy Tarnando, https://www.thewebflash.com/author/frosdqy/
+
+// vi: set ts=4 sts=4 sw=4 et ai fo-=o: //
+// Begin bundled file ///////////////////////////////////////////////////
+// tabfern/js/export-file.js
+
+/// export-file.js: Save a JSON-serializable object to a local file.
+/// Requires HTML5 File API (for Blob).
+/// Copyright (c) 2017 Chris White.  CC-BY 4.0 International.
+
+(function (root, factory) {
+    if (typeof define === 'function' && define.amd) {
+        // AMD
+        define('export-file',factory);
+    } else if (typeof exports === 'object') {
+        // Node, CommonJS-like
+        module.exports = factory();
+    } else {
+        // Browser globals (root is window)
+        root.Fileops = root.Fileops || {};
+        root.Fileops.Export = factory();
+    }
+}(this, function ($) {
+
+    /// Save the given text to the given filename.  This is what is returned
+    /// by the module loader.
+    /// @param {Document} doc - the current document
+    /// @param {mixed} contents - a string, or something that can be
+    ///                passed through JSON.stringify()
+    /// @param {string} fileName - the filename to use.  Note that the file
+    ///                 may be saved to a different name, depending on
+    ///                 browser behaviour.
+    function saveText(doc, contents, fileName)
+    {
+        let text_string;
+        if(typeof contents === 'string') {
+            text_string = contents;
+        } else {
+            text_string = JSON.stringify(contents);
+        }
+
+        let textToWrite = text_string.replace(/\r\n|\r|\n/g, '\r\n');
+        let textFileAsBlob = new Blob([textToWrite], { type: 'text/plain' });
+
+        let downloadLink = doc.createElement('a');
+        downloadLink.download = fileName;
+        downloadLink.innerHTML = 'Download File';
+        // Chrome allows the link to be clicked without actually adding it to the DOM.
+        downloadLink.href = window.URL.createObjectURL(textFileAsBlob);
+        downloadLink.click();
+    }; //saveText()
+
+    return saveText;
+}));
+
+// Module-loader template thanks to
+// http://davidbcalhoun.com/2014/what-is-amd-commonjs-and-umd/
+// Thanks for information about `this` to Kyle Simpson,
+// https://github.com/getify/You-Dont-Know-JS/blob/master/this%20%26%20object%20prototypes/ch2.md
+/// File I/O modified from
+/// https://www.thewebflash.com/reading-and-creating-text-files-using-the-html5-file-api/
+/// by Hendy Tarnando, https://www.thewebflash.com/author/frosdqy/
+
+// vi: set ts=4 sts=4 sw=4 et ai fo-=o: //
