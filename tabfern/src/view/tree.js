@@ -3312,7 +3312,7 @@ let dependencies = [
     'jquery', 'jstree', 'jstree-actions', 'jstree-flagnode',
     'jstree-because',
     'loglevel', 'hamburger', 'bypasser', 'multidex', 'justhtmlescape',
-    'signals', 'local/fileops/export', 'local/fileops/import',
+    'signals', 'export-file', 'import-file',
     'asynquence-contrib', 'asq-helpers', 'rmodal',
     'tinycolor',
 
@@ -3327,8 +3327,8 @@ let dependencies = [
 
 /// Make short names in Modules for some modules.  shortname => longname
 let module_shortnames = {
-    exporter: 'local/fileops/export',
-    importer: 'local/fileops/import',
+    exporter: 'export-file',
+    importer: 'import-file',
     default_shortcuts: 'shortcuts_keybindings_default',
 };
 
