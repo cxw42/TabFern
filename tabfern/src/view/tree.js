@@ -183,6 +183,99 @@ function unflagAllWindows() {
 };
 
 ////////////////////////////////////////////////////////////////////////// }}}1
+// UI Controls // {{{1
+
+/// Show a confirmation dialog with Yes/No/Cancel, and Do not ask again.
+/// @return An ASQ instance that will run once the dialog closes
+function showConfirmationModalDialog(message) {
+    //log.info('Setting up dialog seq');
+
+    let dlg;                    ///< The rmodal instance
+    let retval = ASQ();         ///< caller's processing after dlg closes
+    let cleanup = ASQ();        ///< our internal cleanup after dlg closes
+
+    let cbk = retval.errfcb();  // pause the sequence
+    let cleanup_cbk = cleanup.errfcb();  // pause the sequence
+
+    // Modified from the rmodal sample at https://rmodal.js.org/
+    $('#confirm-dialog-question').text(message);
+
+    dlg = new (Modules['rmodal'])(
+        document.getElementById('confirm-dialog'),
+        {
+            closeTimeout: 0,
+
+            afterOpen: function() {
+                $('#confirm-dialog .btn-primary').focus();
+                //console.log('opened');
+            },
+
+            afterClose: function() {
+                //console.log('closed');
+                cleanup_cbk(null);  // Run the cleanup
+                cbk(null, {reason: dlg.reason, notAgain: dlg.notAgain});
+                    // In parallel, let the caller's processing run
+            },
+        }
+    );
+
+    dlg.reason = null;      // to store which button is pressed
+    dlg.notAgain = false;   // to store the "not again" checkbox
+
+    // Add the button listeners, to avoid inline scripts
+    $('#confirm-dialog button').on('click.TFrmodal', function(){
+        dlg.reason = this.dataset.which;
+        dlg.close();
+    });
+
+    // The "don't ask again" checkbox
+    let notAgain = $('#cbNotAgain');
+    notAgain[0].checked = false;
+    notAgain.on('change.TFrmodal', function(){
+        dlg.notAgain = this.checked;
+    });
+
+    // Add the keyboard listener
+    $(document).on('keydown.TFrmodal', function(ev) {
+        //log.info({'keydown during dlg':ev});
+
+        let key = (ev && typeof ev.key === 'string') ?
+                    ev.key.toLowerCase(): null;
+
+        // Send the events on the next cycle.  Not sure if this is required.
+        if(key === 'y') {
+            ASQ().val(()=>{$("#confirm-dialog .btn[data-which='yes']").click();});
+        } else if(key === 'n') {
+            ASQ().val(()=>{$("#confirm-dialog .btn[data-which='no']").click();});
+        } else if(key === 'c') {
+            ASQ().val(()=>{$("#confirm-dialog .btn[data-which='cancel']").click();});
+        } else {
+            dlg.keydown(ev);
+        }
+
+    }); //keydown
+
+    // Cleanup code
+    cleanup.val(()=>{
+        //log.info('Tearing down dialog seq');
+
+        try {
+            //document.removeEventListener('keydown', kbd_listener, false);
+            $(document).off('keydown.TFrmodal');
+            notAgain.off('change.TFrmodal');
+            $('#confirm-dialog .modal-footer button').off('click.TFrmodal');
+        } catch(e) {
+            log.info({'dialog cleanup exception': e});
+        }
+    }); //end cleanup code
+
+    // On the next cycle, open the dialog.
+    ASQ().val(()=>{ dlg.open(); });
+
+    return retval;
+} // showConfirmationModalDialog()
+
+////////////////////////////////////////////////////////////////////////// }}}1
 // Saving // {{{1
 
 /// Wrap up the save data with a magic header and the current version number
@@ -487,84 +580,17 @@ function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el,
 
     } else {    // Confirmation required
 
-        // TODO refactor this into a generalized confirmation function
-        // that returns an ASQ().
-
-        //log.info('Setting up dialog seq');
-
-        let dlg;    ///< The rmodal instance
-        let after_close = ASQ();    ///< processing after dlg closes
-        let cbk = after_close.errfcb();     // pause the sequence
-
-        // Modified from the rmodal sample at https://rmodal.js.org/
-        $('#confirm-dialog-question').text(
-                'Delete window "' + I.get_win_raw_text(win_val) + '"?'
-        );
-        dlg = new (Modules['rmodal'])(
-            document.getElementById('confirm-dialog'),
-            {
-                closeTimeout: 0,
-
-                afterOpen: function() {
-                    $('#confirm-dialog .btn-primary').focus();
-                    //console.log('opened');
-                },
-
-                afterClose: function() {
-                    //console.log('closed');
-                    cbk(null, {reason: dlg.reason, notAgain: dlg.notAgain});
-                        // *** Run the sequence
-                },
-            }
-        );
-
-        dlg.reason = null;      // to store which button is pressed
-        dlg.notAgain = false;   // to store the "not again" checkbox
-
-        // Add the button listeners, to avoid inline scripts
-        $('#confirm-dialog button').on('click.TFrmodal', function(){
-            dlg.reason = this.dataset.which;
-            dlg.close();
-        });
-
-        // The "don't ask again" checkbox
-        let notAgain = $('#confirm-dialog #notAgain');
-        notAgain[0].checked = false;
-        notAgain.on('change.TFrmodal', function(){
-            dlg.notAgain = this.checked;
-        });
-
-        // Add the keyboard listener
-        $(document).on('keydown.TFrmodal', function(ev) {
-            //log.info({'keydown during dlg':ev});
-
-            let key = (ev && typeof ev.key === 'string') ?
-                        ev.key.toLowerCase(): null;
-
-            // Send the events on the next cycle.  Not sure if this is required.
-            if(key === 'y') {
-                ASQ().val(()=>{$("#confirm-dialog .btn[data-which='yes']").click();});
-            } else if(key === 'n') {
-                ASQ().val(()=>{$("#confirm-dialog .btn[data-which='no']").click();});
-            } else if(key === 'c') {
-                ASQ().val(()=>{$("#confirm-dialog .btn[data-which='cancel']").click();});
-            } else {
-                dlg.keydown(ev);
-            }
-
-        });
+        showConfirmationModalDialog(
+            'Delete window "' + I.get_win_raw_text(win_val) + '"?'
+        )
 
         // Processing after the dialog closes
-
-        after_close.try((done, reason)=>{       // try() so the handler below will
-                                        // always be called.
-            //log.info({'Dialog closed; reason':reason});
-            if(!reason) {
-                done({'catch': 'No reason provided by the dialog'});
-            }
+        .val((result)=>{
+            //log.info({'Dialog closed; reason':result});
+            if(!result) return;     // no-op if we didn't get an answer
 
             // Handle "don't ask again", but cancel is always nop.
-            if(reason.reason !== 'cancel' && reason.notAgain) {
+            if(result.reason !== 'cancel' && result.notAgain) {
                 /// The configuration key to clear
                 let conf_key = (win_val.keep === K.WIN_KEEP) ?
                     CFG_CONFIRM_DEL_OF_SAVED :
@@ -573,32 +599,10 @@ function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el,
                 setSetting(conf_key, false);
             }
 
-            if(reason.reason === 'yes') {
+            if(result.reason === 'yes') {
                 doDeletion();
             }
-
-            done();
-        });
-
-        // Teardown.  This always runs because the preceding step is a try().
-        after_close.then((done, maybe_err)=>{
-            //log.info('Tearing down dialog seq');
-
-            //document.removeEventListener('keydown', kbd_listener, false);
-            $(document).off('keydown.TFrmodal');
-            notAgain.off('change.TFrmodal');
-            $('#confirm-dialog .modal-footer button').off('click.TFrmodal');
-
-            // If there were any errors in the previous step, report them.
-            if(maybe_err && typeof maybe_err === 'object' && maybe_err.catch) {
-                done.fail(maybe_err.catch);
-            } else {
-                done();
-            }
-        });
-
-        // Show the dialog
-        dlg.open();
+        }); //end post-dialog processing
 
     } //endif confirmation required
 } //actionDeleteWindow

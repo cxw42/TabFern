@@ -95,17 +95,31 @@
 
             {
                 "tab": i18n.get("Behaviour"),
-                "group": i18n.get("Deletion"),
+                "group": i18n.get("Deleting windows"),
                 "name": CFG_CONFIRM_DEL_OF_SAVED,
                 "type": "checkbox",
                 "label": i18n.get('Prompt for confirmation before deleting <b>saved</b> windows'),
             },
             {
                 "tab": i18n.get("Behaviour"),
-                "group": i18n.get("Deletion"),
+                "group": i18n.get("Deleting windows"),
                 "name": CFG_CONFIRM_DEL_OF_UNSAVED,
                 "type": "checkbox",
                 "label": i18n.get('Prompt for confirmation before deleting <b>unsaved</b> windows'),
+            },
+            {
+                "tab": i18n.get("Behaviour"),
+                "group": i18n.get("Deleting tabs"),
+                "name": CFG_CONFIRM_DEL_OF_SAVED_TABS,
+                "type": "checkbox",
+                "label": i18n.get('Prompt for confirmation before deleting <b>saved</b> tabs'),
+            },
+            {
+                "tab": i18n.get("Behaviour"),
+                "group": i18n.get("Deleting tabs"),
+                "name": CFG_CONFIRM_DEL_OF_UNSAVED_TABS,
+                "type": "checkbox",
+                "label": i18n.get('Prompt for confirmation before deleting <b>unsaved</b> tabs'),
             },
 
             // Appearance

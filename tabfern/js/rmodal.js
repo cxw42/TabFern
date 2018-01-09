@@ -198,4 +198,3 @@ RModal.version = '1.0.28';
 return RModal;
 
 })));
-//# sourceMappingURL=rmodal.js.map
