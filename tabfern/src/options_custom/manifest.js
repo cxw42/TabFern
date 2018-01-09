@@ -112,14 +112,14 @@
                 "group": i18n.get("Deleting tabs"),
                 "name": CFG_CONFIRM_DEL_OF_SAVED_TABS,
                 "type": "checkbox",
-                "label": i18n.get('Prompt for confirmation before deleting <b>saved</b> tabs'),
+                "label": i18n.get('Prompt for confirmation before deleting <b>tabs</b> in <b>saved</b> windows'),
             },
             {
                 "tab": i18n.get("Behaviour"),
                 "group": i18n.get("Deleting tabs"),
                 "name": CFG_CONFIRM_DEL_OF_UNSAVED_TABS,
                 "type": "checkbox",
-                "label": i18n.get('Prompt for confirmation before deleting <b>unsaved</b> tabs'),
+                "label": i18n.get('Prompt for confirmation before deleting <b>tabs</b> in <b>unsaved</b> windows'),
             },
 
             // Appearance
@@ -268,9 +268,14 @@ bar (it will start with "file://")</li>
 `<ul>
 <li class="gold-star">TabFern now has more than 100 users!  Wow!
 You folks are fantastic!</li>
+<li>There is now a red X for each tab that you can use to delete that tab.
+There are also options on ${settings} Behaviour for whether you want to be
+prompted before the tab is deleted.  ${issue(93)}</li>
 <li>You can change the color of the narrow scrollbar to something other
-than yellow: ${settings} Appearance ${gt} Scrollbars ${gt} Skinny-scrollbar color.
+than yellow:
+${settings} Appearance ${gt} Scrollbars ${gt} Skinny-scrollbar color.
 ${issue(97)}</li>
+<li>Load time should be a bit faster!</li>
 </ul>`,
             },
             {

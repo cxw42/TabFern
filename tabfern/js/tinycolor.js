@@ -1185,7 +1185,7 @@ if (typeof module !== "undefined" && module.exports) {
 }
 // AMD/requirejs: Define the module
 else if (typeof define === 'function' && define.amd) {
-    define(function () {return tinycolor;});
+    define('tinycolor',function () {return tinycolor;});
 }
 // Browser: Expose to window
 else {

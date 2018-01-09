@@ -14,7 +14,7 @@
 (function (factory) {
 	"use strict";
 	if (typeof define === 'function' && define.amd) {
-		define(['jquery','jstree'], factory);
+		define('jstree-because',['jquery','jstree'], factory);
 	}
 	else if(typeof exports === 'object') {
 		factory(require('jquery'), require('jstree'));

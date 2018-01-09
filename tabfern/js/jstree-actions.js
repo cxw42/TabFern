@@ -1,7 +1,7 @@
 (function (factory) {
 	"use strict";
 	if (typeof define === 'function' && define.amd) {
-		define(['jquery', 'jstree'], factory);
+		define('jstree-actions',['jquery', 'jstree'], factory);
 	}
 	else if(typeof module !== 'undefined' && module.exports) {
 		module.exports = factory(require('jquery'), require('jstree'));

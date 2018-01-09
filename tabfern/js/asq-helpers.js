@@ -5,7 +5,7 @@
 
     if (typeof define === 'function' && define.amd) {
         // AMD
-        define(imports, factory);
+        define('asq-helpers',imports, factory);
     } else if (typeof exports === 'object') {
         // Node, CommonJS-like
         let requirements = [];
@@ -37,6 +37,7 @@
     // in either browser, and get rid of this block.
     // This duplicates code in TabFern's src/common/common.js, but I am
     // including it here to avoid a circular dependency.
+    // src/common/common.js relies on this file, but not the other way around.
 
     (function(mod){
         let isLastError_chrome =
