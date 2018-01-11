@@ -2817,6 +2817,18 @@ var treeCheckCallback = (function(){
                 scrollPending = true;
             }
 
+            if(scrollPending) {
+                // If the user leaves the item in the same place it was,
+                // we don't get a move_node.  Turn off scrollPending so old
+                // scrollOffsets values don't get stuck.
+                $(document).one('dnd_stop.vakata.jstree',()=>{
+                    scrollPending = false;
+                    //console.log('dnd_stop');
+                });
+                //T.treeobj.element.one('move_node.jstree', // for debug,
+                //    ()=>{console.log('move_node');});     // if you want it
+            }
+
         } //endif this is a non-dnd move
 
         return true;
