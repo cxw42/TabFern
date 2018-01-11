@@ -1484,7 +1484,6 @@ function winOnCreated(win)
     }
 
     createNodeForWindow(win, K.WIN_NOKEEP);
-    //## T.vscroll_function();
     saveTree();     // for now, brute-force save on any change.
 } //winOnCreated
 
@@ -1535,7 +1534,6 @@ function winOnRemoved(win_id)
             // actionDeleteWindow also saves the tree, so we don't need to.
             // true => it's internal, so don't prompt for confirmation.
     }
-    //## T.vscroll_function();
 } //winOnRemoved
 
 /// Update the highlight for the current window.  Note: this does not always
@@ -1804,9 +1802,7 @@ var tabOnCreated = (function(){
 
         updateTabIndexValues(win_node_id);      // This leaves us in a consistent state.
 
-        // Check if we now match a saved window.  If so, merge the two.
-
-        //## T.vscroll_function();
+        // TODO Check if we now match a saved window.  If so, merge the two.
 
         saveTree(true, cbk);
 
@@ -1956,7 +1952,6 @@ function tabOnRemoved(tabid, removeinfo)
     // Refresh the tab.index values for the remaining tabs
     updateTabIndexValues(window_node_id);
 
-    //## T.vscroll_function();
     saveTree();
 } //tabOnRemoved
 
@@ -2479,6 +2474,13 @@ function dndIsDraggable(nodes, evt)
 ///
 var treeCheckCallback = (function(){
 
+    /// Saved scroll position.  If we move, redraw() has been
+    /// called, so the scroll position may have changed.
+    let scrollOffsets;
+
+    /// Whether a scroll is pending.  If so, don't touch scrollOffsets.
+    let scrollPending = false;
+
     /// The move_node callback we will use to remove empty windows
     /// when dragging the last tab out of a window
     function remove_empty_window(evt, data)
@@ -2494,7 +2496,16 @@ var treeCheckCallback = (function(){
         // Don't know if we need to delay until the next tick, but I'm going
         // to just to be on the safe side.  This will give T.treeobj.move_node
         // a chance to finish.
-        ASQ().val(()=>{ T.treeobj.delete_node(data.old_parent); });
+        ASQ().val(()=>{
+            T.treeobj.delete_node(data.old_parent);
+        })
+        .val(()=>{
+            window.scrollTo(...scrollOffsets);
+                // Restore the scroll position, which is lost in the
+                // delete_node call if a full redraw is triggered.
+            //console.log('remove_empty_window',...scrollOffsets);
+            scrollPending = false;
+        });
     } //remove_empty_window
 
     /// Move an open tab within its Chrome window, or from an open window
@@ -2511,16 +2522,17 @@ var treeCheckCallback = (function(){
         let parent_val = D.windows.by_node_id(data.parent);
         if(!parent_val) return;
 
+        let seq;
         if(parent_val.isOpen) {
-            if( parent_val.win_id === K.NONE) return;
+            if(parent_val.win_id === K.NONE) return;
             // Move an open tab from one open window to another.
             // Chrome fires a tabOnMoved after we do this, so we
             // don't have to update the tree here.
             // As above, delay to be on the safe side.
-            ASQ().val(()=>{
+            seq = ASQ().then((done)=>{
                 chrome.tabs.move(val.tab_id,
                     {windowId: parent_val.win_id, index: data.position}
-                    , ignore_chrome_error);
+                    , ASQH.CC(done));
             });
 
         } else {
@@ -2532,7 +2544,7 @@ var treeCheckCallback = (function(){
                 !old_parent_node ) return;
 
             // As above, delay to be on the safe side.
-            let seq = ASQ();
+            seq = ASQ();
             let tab_id = val.tab_id;
 
             // Disconnect the tab first, so tabOnRemoved() doesn't
@@ -2564,6 +2576,13 @@ var treeCheckCallback = (function(){
 
         } //endif open parent window else
 
+        // Restore the scroll position
+        seq.val(()=>{
+            window.scrollTo(...scrollOffsets);
+            //console.log('move_open_tab_in_window',...scrollOffsets);
+            scrollPending = false;
+        });
+
     } //move_open_tab_in_window
 
     /// Add a tab to an open window.
@@ -2583,7 +2602,7 @@ var treeCheckCallback = (function(){
         // Update the index values, so we know which index the
         // tab should have.  The tab node has already been moved, so the
         // index values match what will be the case once the ctab is created.
-        ASQ().then((done)=>{
+        let seq = ASQ().then((done)=>{
             updateTabIndexValues(data.parent, [tab_node_id]);
                 // [tab_node_id]: Treat the new tab as if it were open when
                 // computing index values.
@@ -2601,6 +2620,12 @@ var treeCheckCallback = (function(){
         });
         // The URL and the item will be linked in tabOnCreated, so we're done.
 
+        // But we still need to put the scroll position back where it was.
+        seq.val(()=>{
+            window.scrollTo(...scrollOffsets);
+            //console.log('open_tab_within_window',...scrollOffsets);
+            scrollPending = false;
+        });
     } //open_tab_within_window
 
     // --- The main check callback ---
@@ -2637,6 +2662,12 @@ var treeCheckCallback = (function(){
             new_parent_val = I.get_node_val(new_parent.id);
         }
 
+        // Save the scroll position for use below
+        if(!scrollPending) {
+            scrollOffsets = [window.scrollX, window.scrollY];
+            //console.log('Current scroll',...scrollOffsets);
+        }
+
         // The "can I drop here?" check.
         if(more && more.dnd && operation==='move_node') {
 
@@ -2656,7 +2687,6 @@ var treeCheckCallback = (function(){
                 // Can also drop closed tabs to open windows.
                 // TODO revisit this when we later
                 // permit opening tab-by-tab (#35).
-
 
                 if(moving_val.isOpen) {      // open tab
                     if( !new_parent_val || //!new_parent_val.isOpen ||
@@ -2742,7 +2772,8 @@ var treeCheckCallback = (function(){
                 (new_parent.id !== T.holding_node_id)
             ) {
                 T.treeobj.element.one('move_node.jstree',
-                                            move_open_tab_in_window);
+                        move_open_tab_in_window);
+                scrollPending = true;
             }
 
             // If we are moving a closed tab into an open window, set up
@@ -2752,7 +2783,8 @@ var treeCheckCallback = (function(){
                 new_parent_val.isOpen
             ) {
                 T.treeobj.element.one('move_node.jstree',
-                                            open_tab_within_window);
+                        open_tab_within_window);
+                scrollPending = true;
             }
 
             // If we are moving the last tab out of a window other than the
@@ -2768,7 +2800,21 @@ var treeCheckCallback = (function(){
                 (new_parent.id !== old_parent.id) &&
                 (old_parent.children.length === 1)
             ) {
-                T.treeobj.element.one('move_node.jstree', remove_empty_window);
+                T.treeobj.element.one('move_node.jstree',
+                        remove_empty_window);
+                scrollPending = true;
+            }
+
+            // Restore the scroll position, if no code above will.
+            if(!scrollPending) {
+                T.treeobj.element.one('move_node.jstree',()=>{
+                    // Note: delaying a tick causes visible flicker, in my
+                    // tests.  So don't do that! :)
+                    window.scrollTo(...scrollOffsets);
+                    //console.log('Dedicated handler',...scrollOffsets);
+                    scrollPending = false;
+                });
+                scrollPending = true;
             }
 
         } //endif this is a non-dnd move
