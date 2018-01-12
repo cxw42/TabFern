@@ -133,10 +133,6 @@
         let retval = T.treeobj.rename_node(node_id, module.get_html_label(val));
         // TODO also update the icon?
 
-        //T.vscroll_function();
-            // Not sure why this is necessary, but I saw a vposition glitch
-            // without it.
-
         return retval;
     };
 

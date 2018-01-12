@@ -25,7 +25,7 @@
 			module.exports = module.exports( require("path").join("..",dependency) );
 		}
 	}
-	else if (typeof define == "function" && define.amd) { define([dependency],definition); }
+	else if (typeof define == "function" && define.amd) { define('asynquence-contrib',[dependency],definition); }
 	else { definition(dependency); }
 })(this.ASQ || "asynquence",function DEF(ASQ){
 	"use strict";

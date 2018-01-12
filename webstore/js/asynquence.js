@@ -4,7 +4,7 @@
 */
 
 (function UMD(name,context,definition){
-	if (typeof define === "function" && define.amd) { define(definition); }
+	if (typeof define === "function" && define.amd) { define('asynquence',definition); }
 	else if (typeof module !== "undefined" && module.exports) { module.exports = definition(); }
 	else { context[name] = definition(name,context); }
 })("ASQ",this,function DEF(name,context){

@@ -95,17 +95,31 @@
 
             {
                 "tab": i18n.get("Behaviour"),
-                "group": i18n.get("Deletion"),
+                "group": i18n.get("Deleting windows"),
                 "name": CFG_CONFIRM_DEL_OF_SAVED,
                 "type": "checkbox",
                 "label": i18n.get('Prompt for confirmation before deleting <b>saved</b> windows'),
             },
             {
                 "tab": i18n.get("Behaviour"),
-                "group": i18n.get("Deletion"),
+                "group": i18n.get("Deleting windows"),
                 "name": CFG_CONFIRM_DEL_OF_UNSAVED,
                 "type": "checkbox",
                 "label": i18n.get('Prompt for confirmation before deleting <b>unsaved</b> windows'),
+            },
+            {
+                "tab": i18n.get("Behaviour"),
+                "group": i18n.get("Deleting tabs"),
+                "name": CFG_CONFIRM_DEL_OF_SAVED_TABS,
+                "type": "checkbox",
+                "label": i18n.get('Prompt for confirmation before deleting <b>tabs</b> in <b>saved</b> windows'),
+            },
+            {
+                "tab": i18n.get("Behaviour"),
+                "group": i18n.get("Deleting tabs"),
+                "name": CFG_CONFIRM_DEL_OF_UNSAVED_TABS,
+                "type": "checkbox",
+                "label": i18n.get('Prompt for confirmation before deleting <b>tabs</b> in <b>unsaved</b> windows'),
             },
 
             // Appearance
@@ -114,14 +128,30 @@
                 "group": i18n.get("Scrollbars"),
                 "name": CFG_HIDE_HORIZONTAL_SCROLLBARS,
                 "type": "checkbox",
-                "label": i18n.get('Hide horizontal scrollbar' + refresh_message),
+                "label": i18n.get('Hide horizontal scrollbar'),
             },
             {
                 "tab": i18n.get("Appearance"),
                 "group": i18n.get("Scrollbars"),
                 "name": CFG_SKINNY_SCROLLBARS,
                 "type": "checkbox",
-                "label": i18n.get('Skinny scrollbars' + refresh_message),
+                "label": i18n.get('Skinny scrollbars'),
+            },
+            {
+                "tab": i18n.get("Appearance"),
+                "group": i18n.get("Scrollbars"),
+                "id": 'scrollbar-color-picker-label',
+                //"name": '',     // Don't save - settings.js handles that
+                "type": "text",
+                //"text": i18n.get('Skinny-scrollbar color: '),
+                    // placeholder - settings.js adds the actual control
+                    // after this.
+            },
+            {
+                "tab": i18n.get("Appearance"),
+                "group": i18n.get("Scrollbars"),
+                "type": "description",
+                "text": i18n.get("Refresh the TabFern window to apply changes to these options."),
             },
             // Maybe add some theming options here?
             {
@@ -231,7 +261,27 @@ bar (it will start with "file://")</li>
             // Changelog                                          {{{1
             {
                 "tab": i18n.get("What's new?"),
-                "group": "Version 0.1.13",
+                "group": `Version 0.1.14${brplain('2018-01-12')}`,
+                'group_html':true,
+                "type": "description",
+                "text":
+`<ul>
+<li class="gold-star">TabFern now has more than 100 users!  Wow!
+You folks are fantastic!</li>
+<li>There is now a red X for each tab that you can use to delete that tab.
+There are also options on ${settings} Behaviour for whether you want to be
+prompted before the tab is deleted.  ${issue(93)}</li>
+<li>You can change the color of the narrow scrollbar to something other
+than yellow:
+${settings} Appearance ${gt} Scrollbars ${gt} Skinny-scrollbar color.
+${issue(97)}</li>
+<li>Load time should be a bit faster!</li>
+</ul>`,
+            },
+            {
+                "tab": i18n.get("What's new?"),
+                "group": `Version 0.1.13${brplain('2017-12-12')}`,
+                'group_html':true,
                 "type": "description",
                 "text":
 `<ul>

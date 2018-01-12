@@ -1,6 +1,7 @@
+//rmodal.js
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
-    typeof define === 'function' && define.amd ? define(factory) :
+    typeof define === 'function' && define.amd ? define('rmodal',factory) :
     (global.RModal = factory());
 }(this, (function () { 'use strict';
 
@@ -198,4 +199,3 @@ RModal.version = '1.0.28';
 return RModal;
 
 })));
-//# sourceMappingURL=rmodal.js.map

@@ -3,6 +3,8 @@
 .tf-window.tfs-saved > a > i {
     content: url(/assets/icons/folder-from-jstree-default-dark-32px.png);
 }
+
+/* For Chrome */
 .visible-window-icon, .tf-window.tfs-open > a > i {
     content: url(/assets/icons/monitor.png);    /* or folder.png? */
 }
@@ -10,6 +12,17 @@
 .visible-saved-window-icon, .tf-window.tfs-open.tfs-saved > a > i {
     content: url(/assets/icons/monitor_add.png);    /* or folder.png? */
 }
+
+/* For Firefox */
+.tf-window.tfs-open.tfs-saved > a > i::before {
+    content: url(/assets/icons/monitor_add.png);    /* or folder.png? */
+}
+
+.tf-window.tfs-open > a > i::before {
+    content: url(/assets/icons/monitor.png);    /* or folder.png? */
+}
+
+/* Back to cross-browser */
 
 .fff-page /*, .tf-tab > i*/ {
     content: url(/assets/icons/page_white.png);

@@ -31,7 +31,7 @@
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD
-        define(factory);
+        define('multidex',factory);
     } else if (typeof exports === 'object') {
         // Node, CommonJS-like
         module.exports = factory();

@@ -2,7 +2,7 @@
 (function (root, definition) {
     "use strict";
     if (typeof define === 'function' && define.amd) {
-        define(definition);
+        define('loglevel',definition);
     } else if (typeof module === 'object' && module.exports) {
         module.exports = definition();
     } else {

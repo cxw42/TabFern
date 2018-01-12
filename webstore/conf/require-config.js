@@ -15,6 +15,33 @@ var require = {
         'view': '../src/view',
         'common': '../src/common',
     },
+    bundles: {
+        // NOTE: keep these lists in sync with the lists in the Makefile
+        'view/bundle_common': [
+            'jquery',
+            'loglevel',
+        ],
+        'view/bundle_tree': [
+            'jstree',
+            'jstree-actions',
+            'jstree-flagnode',
+            'jstree-because',
+            'jstree-multitype',
+            'jstree-redraw-event',
+            'multidex',
+            'justhtmlescape',
+            'signals',
+            'asynquence',
+            'asynquence-contrib',
+            'asq-helpers',
+            'rmodal',
+            'tinycolor',
+            'keypress',
+            'hamburger',
+            'import-file',
+            'export-file'
+        ]
+    },
     async: {
         useHash: true   // #callback=x rather than ?callback=x since Chrome
                         // won't load files with ?

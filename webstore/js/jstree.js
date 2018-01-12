@@ -2,7 +2,7 @@
 (function (factory) {
 	"use strict";
 	if (typeof define === 'function' && define.amd) {
-		define(['jquery'], factory);
+		define('jstree',['jquery'], factory);
 	}
 	else if(typeof module !== 'undefined' && module.exports) {
 		module.exports = factory(require('jquery'));
