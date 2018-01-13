@@ -32,7 +32,8 @@ var log;
 var K;      ///< Constants loaded from view/const.js, for ease of access
 var D;      ///< Shorthand access to the details, view/item_details.js
 var T;      ///< Shorthand access to the tree, view/item_tree.js ("Tree")
-var I;      ///< Shorthand access to the item routines, view/item.js ("Item")
+var M;      ///< Shorthand access to the model, view/item.js
+            ///< Note: item.js will eventually be renamed to model.js.
 var ASQ;    ///< Shorthand for asynquence
 var ASQH;   ///< Shorthand for asq-helpers
 
@@ -97,7 +98,7 @@ function local_init()
     K = Modules['view/const'];
     D = Modules['view/item_details'];
     T = Modules['view/item_tree'];
-    I = Modules['view/item'];
+    M = Modules['view/item'];
     ASQ = Modules['asynquence-contrib'];
     ASQH = Modules['asq-helpers'];
 
@@ -398,7 +399,7 @@ function actionRenameWindow(node_id, node, unused_action_id, unused_action_el)
 
     // TODO replace window.prompt with an in-DOM GUI.
     let win_name = window.prompt('New window name?',
-            I.remove_unsaved_markers(I.get_win_raw_text(win_val)));
+            M.remove_unsaved_markers(M.get_win_raw_text(win_val)));
     if(win_name === null) return;   // user cancelled
 
     // A bit of a hack --- if the user hits OK on the default text for a
@@ -409,7 +410,7 @@ function actionRenameWindow(node_id, node, unused_action_id, unused_action_el)
         win_val.raw_title = win_name;
     }
 
-    I.remember(node_id, false);
+    M.remember(node_id, false);
         // assume that a user who bothered to rename a node
         // wants to keep it.  false => do not change the raw_title,
         // since the user just specified it.
@@ -423,8 +424,8 @@ function actionForgetWindow(node_id, node, unused_action_id, unused_action_el)
     let win_val = D.windows.by_node_id(node_id);
     if(!win_val) return;
 
-    I.mark_as_unsaved(win_val);
-    I.refresh_label(node_id);
+    M.mark_as_unsaved(win_val);
+    M.refresh_label(node_id);
 
     if(win_val.isOpen) {    // should always be true, but just in case...
         //T.treeobj.set_type(node, K.NT_WIN_EPHEMERAL);
@@ -441,8 +442,8 @@ function actionRememberWindow(node_id, node, unused_action_id, unused_action_el)
     let win_val = D.windows.by_node_id(node_id);
     if(!win_val) return;
 
-    I.remember(node_id);
-    I.refresh_label(node_id);
+    M.remember(node_id);
+    M.refresh_label(node_id);
     T.treeobj.add_multitype(node, K.NST_SAVED);
 
     saveTree();
@@ -480,7 +481,7 @@ function actionCloseWindowButDoNotSave(node_id, node, unused_action_id, unused_a
     }
 
     win_val.isOpen = false;
-    I.remember(node_id);
+    M.remember(node_id);
     T.treeobj.del_multitype(node_id, K.NST_OPEN);
 
     // Collapse the tree, if the user wants that
@@ -583,7 +584,7 @@ function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el,
     } else {    // Confirmation required
 
         showConfirmationModalDialog(
-            'Delete window "' + I.get_win_raw_text(win_val) + '"?'
+            'Delete window "' + M.get_win_raw_text(win_val) + '"?'
         )
 
         // Processing after the dialog closes
@@ -624,7 +625,7 @@ function actionToggleTabTopBorder(node_id, node, unused_action_id, unused_action
         T.treeobj.del_multitype(node_id, K.NST_TOP_BORDER);
     }
 
-    I.remember(node.parent);
+    M.remember(node.parent);
         // assume that a user who bothered to add a divider to a tab
         // wants to keep the window the tab is in.
 
@@ -635,7 +636,7 @@ function actionToggleTabTopBorder(node_id, node, unused_action_id, unused_action
 /// @param node_id {string} The ID of a node representing a tab.
 function actionEditBullet(node_id, node, unused_action_id, unused_action_el)
 {
-    let val = I.get_node_val(node_id);
+    let val = M.get_node_val(node_id);
     if(!val || val.ty !== K.IT_TAB) return;
 
     // TODO replace window.prompt with an in-DOM GUI.
@@ -646,9 +647,9 @@ function actionEditBullet(node_id, node, unused_action_id, unused_action_el)
     if(new_bullet === null) return;   // user cancelled
 
     val.raw_bullet = new_bullet;
-    I.refresh_label(node_id);
+    M.refresh_label(node_id);
 
-    I.remember(node.parent);
+    M.remember(node.parent);
         // assume that a user who bothered to add a note
         // wants to keep the window the note is in.
 
@@ -670,15 +671,23 @@ function actionDeleteTab(node_id, node, unused_action_id, unused_action_el,
     let tab_node = T.treeobj.get_node(node_id);
     if(!tab_node) return;
 
+    let parent_val = D.windows.by_node_id(tab_node.parent);
+    if(!parent_val) return;     // don't delete tabs without parents
+    let parent_node = T.treeobj.get_node(parent_val.node_id);
+    if(!parent_node) return;
+
     function doDeletion() {
         if(tab_val.tab_id !== K.NONE) {     // Remove open tabs
             chrome.tabs.remove(tab_val.tab_id, ignore_chrome_error);
             //tabOnDeleted will do the rest
         } else {                            // Remove closed tabs
-            D.tabs.remove_value(tab_val);
-                // So any events that are triggered won't try to look for a
-                // nonexistent tab.
-            T.treeobj.delete_node(tab_node);
+            M.eraseTab(tab_val);
+
+            // If it was the last tab, delete it
+            if(parent_node.children.length === 0) {
+                M.eraseWin(parent_val);
+            }
+
             saveTree();
                 // Save manually because we don't have a handler for
                 // treeOnDelete.
@@ -686,13 +695,8 @@ function actionDeleteTab(node_id, node, unused_action_id, unused_action_el,
     } //doDeletion()
 
     // Prompt for confirmation, if necessary
-    let is_keep, is_nokeep;
-    {
-        let parent_val = D.windows.by_node_id(tab_node.parent);
-        if(!parent_val) return;     // don't delete tabs without parents
-        is_keep = (parent_val.keep === K.WIN_KEEP);
-        is_nokeep = (parent_val.keep === K.WIN_NOKEEP);
-    }
+    let is_keep = (parent_val.keep === K.WIN_KEEP);
+    let is_nokeep = (parent_val.keep === K.WIN_NOKEEP);
 
     if( //is_internal_unimplemented ||
         (is_keep && !getBoolSetting(CFG_CONFIRM_DEL_OF_SAVED_TABS)) ||
@@ -702,7 +706,7 @@ function actionDeleteTab(node_id, node, unused_action_id, unused_action_el,
 
     } else {    // Confirmation required
         showConfirmationModalDialog(
-            'Delete tab "' + I.get_html_label(tab_val) + '"?'
+            'Delete tab "' + M.get_html_label(tab_val) + '"?'
         )
 
         // Processing after the dialog closes
@@ -813,7 +817,7 @@ function createNodeForTab(ctab, parent_node_id)
         }
     } // /debug
 
-    let {node_id, val} = I.makeItemForTab(parent_node_id, ctab);
+    let {node_id, val} = M.makeItemForTab(parent_node_id, ctab);
     addTabNodeActions(node_id);
 
     return node_id;
@@ -826,7 +830,7 @@ function createNodeForTab(ctab, parent_node_id)
 function createNodeForClosedTab(tab_data_v1, parent_node_id)
 {
     let node_mtype = (tab_data_v1.bordered ? K.NST_TOP_BORDER : false);
-    let {node_id, val} = I.makeItemForTab(
+    let {node_id, val} = M.makeItemForTab(
             parent_node_id, false,      // false => no Chrome window open
             tab_data_v1.raw_url,
             tab_data_v1.raw_title,
@@ -834,7 +838,7 @@ function createNodeForClosedTab(tab_data_v1, parent_node_id)
     );
     if(tab_data_v1.raw_bullet) {
         val.raw_bullet = String(tab_data_v1.raw_bullet);
-        I.refresh_label(node_id);
+        M.refresh_label(node_id);
     }
 
     addTabNodeActions(node_id);
@@ -888,7 +892,7 @@ function createNodeForWindow(cwin, keep)
     // Don't put our own popup window in the list
     if( cwin.id && (cwin.id === my_winid) ) return;
 
-    let {node_id, val} = I.makeItemForWindow(cwin, keep);
+    let {node_id, val} = M.makeItemForWindow(cwin, keep);
     if(!node_id) return;    //sanity check
 
     addWindowNodeActions(node_id);
@@ -913,7 +917,7 @@ function createNodeForClosedWindow(win_data_v1)
     log.info({'Closed window':win_data_v1.raw_title, 'is ephemeral?': is_ephemeral});
 
     // Make a node for a closed window
-    let {node_id, val} = I.makeItemForWindow();
+    let {node_id, val} = M.makeItemForWindow();
 
     // Mark recovered windows
     if(is_ephemeral) {
@@ -921,7 +925,7 @@ function createNodeForClosedWindow(win_data_v1)
         T.treeobj.add_multitype(node_id, K.NST_RECOVERED);
     }
 
-    // Update the model
+    // Update the item details
     let new_title;
     if( is_ephemeral && (typeof win_data_v1.raw_title !== 'string') ) {
         new_title = 'Recovered tabs';
@@ -934,7 +938,7 @@ function createNodeForClosedWindow(win_data_v1)
 
     val.raw_title = new_title;
 
-    I.refresh_label(node_id);
+    M.refresh_label(node_id);
 
     addWindowNodeActions(node_id);
 
@@ -1829,7 +1833,7 @@ function tabOnUpdated(tabid, changeinfo, ctab)
     } else {
         tab_node_val.raw_title = 'Tab';
     }
-    I.refresh_label(tab_node_id);
+    M.refresh_label(tab_node_id);
 
     {   // set the icon
         let icon_text;
@@ -2624,12 +2628,12 @@ var treeCheckCallback = (function(){
             console.groupEnd();
         } //logging
 
-        let moving_val = I.get_node_val(node.id);
+        let moving_val = M.get_node_val(node.id);
         if(!moving_val) return false;    // sanity check
 
         let new_parent_val;
         if(new_parent.id !== $.jstree.root) {
-            new_parent_val = I.get_node_val(new_parent.id);
+            new_parent_val = M.get_node_val(new_parent.id);
         }
 
         // The "can I drop here?" check.
@@ -3133,7 +3137,7 @@ function addOpenWindowsToTree(done, winarr)
                 } else {
                     T.treeobj.set_icon(tab_node_id, 'fff-page');
                 }
-                I.refresh_label(tab_node_id);
+                M.refresh_label(tab_node_id);
             } //foreach tab
         } //endif window already exists
     } //foreach window

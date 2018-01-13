@@ -159,7 +159,7 @@
         return true;
     }; //remember()
 
-    //////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////
     // Item creation //
 
     /// Make a node and its associated value.
@@ -345,6 +345,60 @@
 
         return {node_id: tab_node_id, val: tab_val};
     } //makeItemForTab
+
+    // #####################################################################
+    // #####################################################################
+    // New routines: item (tree+details) as model; Chrome itself as view.
+    //
+    // "Record" and "Erase" are adding/removing items, to distinguish them
+    // from creating and destroying Chrome widgets.
+
+    ////////////////////////////////////////////////////////////////////////
+    // Removing items
+
+    /// Delete a tab from the tree and the details.
+    /// @param tab_val_or_node_id {mixed}  If a string, the node ID of the
+    ///                                     tab; otherwise, the details
+    ///                                     record for the tab.
+    module.eraseTab = function(tab_val_or_node_id) {
+        if(!tab_val_or_node_id) return;
+
+        let tab_val, tab_node_id;
+        if(typeof tab_val_or_node_id === 'string') {
+            tab_node_id = tab_val_or_node_id;
+            tab_val = D.tabs.by_node_id(tab_node_id);
+        } else {
+            tab_val = tab_val_or_node_id;
+            tab_node_id = tab_val.node_id;
+        }
+
+        D.tabs.remove_value(tab_val);
+            // So any events that are triggered won't try to look for a
+            // nonexistent tab.
+        T.treeobj.delete_node(tab_node_id);
+    } //eraseTab
+
+    /// Delete a window from the tree and the details.
+    /// @param win_val_or_node_id {mixed}  If a string, the node ID of the
+    ///                                     window; otherwise, the details
+    ///                                     record for the window.
+    module.eraseWin = function(win_val_or_node_id) {
+        if(!win_val_or_node_id) return;
+
+        let win_val, win_node_id;
+        if(typeof win_val_or_node_id === 'string') {
+            win_node_id = win_val_or_node_id;
+            win_val = D.windows.by_node_id(win_node_id);
+        } else {
+            win_val = win_val_or_node_id;
+            win_node_id = win_val.node_id;
+        }
+
+        D.windows.remove_value(win_val);
+            // So any events that are triggered won't try to look for a
+            // nonexistent window.
+        T.treeobj.delete_node(win_node_id);
+    } //eraseWin
 
     return module;
 }));
