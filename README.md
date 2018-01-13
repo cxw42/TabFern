@@ -7,21 +7,7 @@ Very basic extension for vertical, grouped tabs.  Inspired by
 by Vladyslav Volovyk.  However, TabFern is not derived from or in any way
 affiliated with Vladyslav or his (excellent!) work.
 
-# Project layout
-
- - `/tabfern`: The development tree for TabFern itself
-   * `/tabfern/src`: Main source
-     - `/tabfern/src/bg`: Background page
-     - `/tabfern/src/view`: Popup
-     - `/tabfern/src/options_custom`: Options page
-   * `/tabfern/test`: Jasmine tests of TabFern
- - `/dist`: where build output from the build process will eventually go.
- - `/webstore`: The latest version of TabFern released to the Chrome Web Store.
-   Updated manually by the maintainers.
- - `/doc`: Documentation
- - `/scraps`: Holding pen for code that may yet be useful.  Nothing in the
-   project relies on the contents of `/scraps`.
- - `/plugin`: Skeleton of a TabFern plugin
+See [INTERNALS.md](INTERNALS.md) for details of how the code is structured.
 
 # Usage
 
