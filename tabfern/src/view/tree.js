@@ -287,7 +287,7 @@ function makeSaveData(data)
     return { tabfern: 42, version: K.SAVE_DATA_AS_VERSION, tree: data };
 } //makeSaveData()
 
-/// Save the tree to Chrome local storage.
+/// Save the tree to Chrome local storage as **V1** save data.
 /// @param save_ephemeral_windows {Boolean}
 ///     whether to save information for open, unsaved windows (default true)
 /// @param cbk {function}
@@ -340,7 +340,7 @@ function saveTree(save_ephemeral_windows = true, cbk = undefined)
                 let thistab = {};
                 thistab.raw_title = tab_val.raw_title;
                 thistab.raw_url = tab_val.raw_url;
-                // TODO save favIconUrl?
+                // TODO save favIconUrl?  Need to save it in the item first.
 
                 if(T.treeobj.has_multitype(tab_node_id, K.NST_TOP_BORDER)) {
                     thistab.bordered = true;
@@ -1173,7 +1173,7 @@ function flagOnlyCurrentTabCC(win)
     if(!isLastError()) {
         flagOnlyCurrentTab(win);
     } else {
-        log.error(chrome.runtime.lastError);
+        log.info({"Couldn't flag": chrome.runtime.lastError});
     }
 } //flagOnlyCurrentTabCC
 
@@ -3012,7 +3012,7 @@ function basicInit(done)
 } //basicInit
 
 /// Called after ASQ.try(chrome.runtime.sendMessage)
-function createMainTreeIfWinIdReceived(done, win_id_msg_or_error)
+function createMainTreeIfWinIdReceived_catch(done, win_id_msg_or_error)
 {
     if(ASQH.is_asq_try_err(win_id_msg_or_error)) {
         // This is fatal
@@ -3068,7 +3068,7 @@ function createMainTreeIfWinIdReceived(done, win_id_msg_or_error)
             done();
         }
     );
-} //createMainTreeIfWinIdReceived()
+} //createMainTreeIfWinIdReceived_catch()
 
 function addOpenWindowsToTree(done, winarr)
 {
@@ -3222,7 +3222,7 @@ function addEventListeners(done)
 } //addEventListeners
 
 /// Called after ASQ.try(chrome.storage.local.get(LOCN_KEY))
-function moveWinToLastPositionIfAny(done, items_or_err)
+function moveWinToLastPositionIfAny_catch(done, items_or_err)
 {   // move the popup window to its last position/size.
     // If there was an error (e.g., nonexistent key), just
     // accept the default size.
@@ -3250,7 +3250,7 @@ function moveWinToLastPositionIfAny(done, items_or_err)
     setTimeout(timedResizeDetector, K.RESIZE_DETECTOR_INTERVAL_MS);
 
     done();
-} //moveWinToLastPositionIfAny()
+} //moveWinToLastPositionIfAny_catch()
 
 /// The last function to be called after all other initialization has
 /// completed successfully.
@@ -3368,7 +3368,7 @@ function main(...args)
         // TODO maybe getCurrent?  Not sure if that's reliable.
         chrome.runtime.sendMessage({msg:MSG_GET_VIEW_WIN_ID}, ASQH.CC(done));
     })
-    .then(createMainTreeIfWinIdReceived)
+    .then(createMainTreeIfWinIdReceived_catch)
     .then(loadSavedWindowsIntoTree)
     .then((done)=>{
         chrome.windows.getAll({'populate': true}, ASQH.CC(done));
@@ -3379,7 +3379,7 @@ function main(...args)
         // Find out where the view was before, if anywhere
         chrome.storage.local.get(K.LOCN_KEY, ASQH.CC(done));
     })
-    .then(moveWinToLastPositionIfAny)
+    .then(moveWinToLastPositionIfAny_catch)
     .then(initTreeFinal)
     //.or(TODO show "couldn't load" in the popup)
     ;
