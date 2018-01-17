@@ -142,7 +142,7 @@ function getStringSetting(setting_name, default_value = undefined)
     return String(default_value);
 } //getStringSetting
 
-/// Get a boolean setting from options_custom, which uses HTML5 localStorage.
+/// Get a boolean setting from the settings page, which uses HTML5 localStorage.
 function getBoolSetting(setting_name, default_value = undefined)
 {
     if(typeof default_value === 'undefined' && setting_name in CFG_DEFAULTS) {
@@ -165,7 +165,7 @@ function getBoolSetting(setting_name, default_value = undefined)
     }
 } //getBoolSetting
 
-/// Find out whether the given setting from options_custom exists.
+/// Find out whether the given setting from the settings page exists.
 function haveSetting(setting_name)
 {
     if(!setting_name) return false;

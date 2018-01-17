@@ -21,7 +21,7 @@
     ],
     "persistent": true
   },
-  "options_page": "src/options_custom/index.html",
+  "options_page": "src/settings/index.html",
   "browser_action": {
     "default_icon": {
       "16": "assets/fern16.png",
