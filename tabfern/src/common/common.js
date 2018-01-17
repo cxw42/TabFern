@@ -7,45 +7,11 @@
 console.log('TabFern common.js loading');
 
 //////////////////////////////////////////////////////////////////////////
-// Test for Firefox //
-// Not sure if I need this, but I'm playing it safe for now.  Firefox returns
-// null rather than undefined in chrome.runtime.lastError when there is
-// no error.  This is to test for null in Firefox without changing my
-// Chrome code.  Hopefully in the future I can test for null/undefined
-// in either browser, and get rid of this block.
-
-(function(win){
-    let isLastError_chrome =
-        ()=>{return (typeof(chrome.runtime.lastError) !== 'undefined');};
-    let isLastError_firefox =
-        ()=>{return (chrome.runtime.lastError !== null);};
-
-    if(typeof browser !== 'undefined' && browser.runtime &&
-                                            browser.runtime.getBrowserInfo) {
-        browser.runtime.getBrowserInfo().then(
-            (info)=>{   // fullfillment
-                if(info.name === 'Firefox') {
-                    win.isLastError = isLastError_firefox;
-                } else {
-                    win.isLastError = isLastError_chrome;
-                }
-            },
-
-            ()=>{   //rejection --- assume Chrome by default
-                win.isLastError = isLastError_chrome;
-            }
-        );
-    } else {    // Chrome
-        win.isLastError = isLastError_chrome;
-    }
-})(window);
-
-//////////////////////////////////////////////////////////////////////////
 // General constants //
 
 /// The TabFern extension friendly version number.  Displayed in the
 /// title bar of the popup window, so lowercase (no shouting!).
-const TABFERN_VERSION='0.1.14 alpha \u26a0'
+const TABFERN_VERSION='0.1.15-pre.1 alpha \u26a0'
     // When you change this, also update:
     //  - manifest.json: both the version and version_name
     //  - package.json
@@ -113,6 +79,40 @@ const CFG_DEFAULTS = {
     [CFGS_THEME_NAME]: 'default-dark',
     [CFGS_SCROLLBAR_COLOR]: '',     // none by default
 };
+
+//////////////////////////////////////////////////////////////////////////
+// Test for Firefox //
+// Not sure if I need this, but I'm playing it safe for now.  Firefox returns
+// null rather than undefined in chrome.runtime.lastError when there is
+// no error.  This is to test for null in Firefox without changing my
+// Chrome code.  Hopefully in the future I can test for null/undefined
+// in either browser, and get rid of this block.
+
+(function(win){
+    let isLastError_chrome =
+        ()=>{return (typeof(chrome.runtime.lastError) !== 'undefined');};
+    let isLastError_firefox =
+        ()=>{return (chrome.runtime.lastError !== null);};
+
+    if(typeof browser !== 'undefined' && browser.runtime &&
+                                            browser.runtime.getBrowserInfo) {
+        browser.runtime.getBrowserInfo().then(
+            (info)=>{   // fullfillment
+                if(info.name === 'Firefox') {
+                    win.isLastError = isLastError_firefox;
+                } else {
+                    win.isLastError = isLastError_chrome;
+                }
+            },
+
+            ()=>{   //rejection --- assume Chrome by default
+                win.isLastError = isLastError_chrome;
+            }
+        );
+    } else {    // Chrome
+        win.isLastError = isLastError_chrome;
+    }
+})(window);
 
 //////////////////////////////////////////////////////////////////////////
 // Setting-related functions //
