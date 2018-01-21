@@ -77,28 +77,40 @@ describe('view/model', function() {
         let $node = $('#'+this.win_node_id).eq(0);
         expect($node.hasClass('tfs-saved')).toBe(false);
         expect(M.add_subtype(this.win_node_id, K.NST_SAVED)).toBe(true);
-        expect($node.hasClass('tfs-saved')).toBe(true);
+        since('the subtype should exist')
+        .expect(M.has_subtype(this.win_node_id, K.IT_WIN, K.NST_SAVED)).toBe(true);
+        since('the DOM node should have .tfs-saved')
+        .expect($node.hasClass('tfs-saved')).toBe(true);
     });
 
     it('can add a subtype to a tab',()=>{
         let $node = $('#'+this.tab_node_id).eq(0);
         expect($node.hasClass('tfs-top-bordered')).toBe(false);
         expect(M.add_subtype(this.tab_node_id, K.NST_TOP_BORDER)).toBe(true);
-        expect($node.hasClass('tfs-top-bordered')).toBe(true);
+        since('the subtype should exist')
+        .expect(M.has_subtype(this.tab_node_id, K.IT_TAB, K.NST_TOP_BORDER)).toBe(true);
+        since('the DOM node should have .tfs-top-bordered')
+        .expect($node.hasClass('tfs-top-bordered')).toBe(true);
     });
 
     it('can remove a subtype from a window',()=>{
         let $node = $('#'+this.win_node_id).eq(0);
         expect($node.eq(0).hasClass('tfs-saved')).toBe(true);
         expect(M.del_subtype(this.win_node_id, K.NST_SAVED)).toBe(true);
-        expect($node.eq(0).hasClass('tfs-saved')).toBe(false);
+        since('the subtype should be gone')
+        .expect(M.has_subtype(this.win_node_id, K.NST_SAVED)).toBe(false);
+        since('.tfs-saved should be gone')
+        .expect($node.eq(0).hasClass('tfs-saved')).toBe(false);
     });
 
     it('can remove a subtype from a tab',()=>{
         let $node = $('#'+this.tab_node_id).eq(0);
         expect($node.hasClass('tfs-top-bordered')).toBe(true);
         expect(M.del_subtype(this.tab_node_id, K.NST_TOP_BORDER)).toBe(true);
-        expect($node.hasClass('tfs-top-bordered')).toBe(false);
+        since('the subtype should be gone')
+        .expect(M.has_subtype(this.tab_node_id, K.NST_TOP_BORDER)).toBe(false);
+        since('.tfs-top-bordered should be gone')
+        .expect($node.hasClass('tfs-top-bordered')).toBe(false);
     });
 
     it('can mark a window as open',(done)=>{    // Use the current window as a test case
@@ -214,7 +226,7 @@ describe('view/model', function() {
     });
 
     afterAll(()=>{
-        //this.$div.remove();
+        this.$div.remove();
     });
 
 });

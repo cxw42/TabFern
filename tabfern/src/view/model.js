@@ -306,7 +306,7 @@
     // from creating and destroying Chrome widgets.
 
     //////////////////////////////////////////////////////////////////////
-    // Common routines
+    // Querying the model
 
     /// Get a {val, node_id} pair (vn) from one of those (vorn).
     /// @param val_or_node_id {mixed} If a string, the node ID of the
@@ -338,6 +338,23 @@
 
         return {val, node_id};
     } //vn_by_vorn
+
+    /// Determine whether a model has given subtype(s).
+    /// @param vorn {mixed} The item
+    /// @param tys {mixed} A single type or array of types
+    /// @return {Boolean} true if #vorn has all the subtypes in #tys;
+    ///                     false otherwise.
+    module.has_subtype = function(vorn, ...tys) {
+        if(!vorn || !tys) return false;
+        if(tys.length < 1) return false;
+        let {node_id} = module.vn_by_vorn(vorn);
+        if(!node_id) return false;
+
+        for(let ty of tys) {
+            if(!T.treeobj.has_multitype(node_id, ty)) return false;
+        }
+        return true;
+    } //add_subtype
 
     //////////////////////////////////////////////////////////////////////
     // Initializing and shutting down the model
