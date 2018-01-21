@@ -117,7 +117,7 @@
   MyReporter.prototype.jasmineDone = function() {
     console.log(
       `Finished suite ${this.failures ? 'with errors' : 'successfully'}` +
-      ((this.pending > 0) ? ` (${this.pending} tests pending and not run)` : '')
+      ((this.pending > 0) ? ` (${this.pending} test(s) pending and not run)` : '')
     );
   };
   env.addReporter(new MyReporter());
