@@ -95,12 +95,17 @@
   var MyReporter = function(){
     jasmineRequire.JsApiReporter.apply(this,arguments);
     this.failures = false;
+    this.pending = 0;
   };
   MyReporter.prototype = jasmineRequire.JsApiReporter.prototype;
   MyReporter.prototype.constructor = MyReporter;
-  MyReporter.prototype.specDone=function(o){
-      o=o||{};
-      if(o.status!=="passed"){
+  MyReporter.prototype.specDone = function(o){
+      o = o || {};
+      if(o.status === 'pending') {
+        console.info(`Pending (${o.pendingReason || 'unknown reason'}): ${o.fullName}`);
+        ++this.pending;
+
+      } else if(o.status!=="passed") {
         console.warn("Failed:" + o.fullName + '\n' + o.failedExpectations[0].message);
         this.failures = true;
       }
@@ -110,7 +115,10 @@
 //    this.failures = this.failures || (!!result.failedExpectations && result.failedExpectations.length>0);
 //  };
   MyReporter.prototype.jasmineDone = function() {
-    console.log('Finished suite ' + (this.failures ? 'with errors' : 'successfully'));
+    console.log(
+      `Finished suite ${this.failures ? 'with errors' : 'successfully'}` +
+      ((this.pending > 0) ? ` (${this.pending} tests pending and not run)` : '')
+    );
   };
   env.addReporter(new MyReporter());
   //---
