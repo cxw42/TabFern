@@ -12,6 +12,7 @@
 /// - n: a jstree node_id
 /// - ny: anything that can be passed to jstree.get_node() ("nodey" by
 ///   analogy with "truthy" and "falsy."
+/// - vorny: a val or a nodey
 
 (function (root, factory) {
     let imports=['jquery','jstree','loglevel', 'view/const',
@@ -308,20 +309,21 @@
     //////////////////////////////////////////////////////////////////////
     // Querying the model
 
-    /// Get a {val, node_id} pair (vn) from one of those (vorn).
-    /// @param val_or_node_id {mixed} If a string, the node ID of the
-    ///                               item; otherwise, the details
-    ///                               record for the item.
+    /// Get a {val, node_id} pair (vn) from one of those (vorny).
+    /// @param val_or_nodey {mixed} If a string, the node ID of the
+    ///                             item; otherwise, the details
+    ///                             record for the item, or the jstree node
+    ///                             record for the node.
     /// @param item_type {mixed=} If provided, the type of the item.
     ///             Otherwise, all types will be checked.
     /// @return {Object} {val, node_id}.    `val` is falsy if the
-    ///                                     given vorn was not found.
-    module.vn_by_vorn = function(val_or_node_id, item_type) {
-        if(!val_or_node_id) return module.VN_NONE;
+    ///                                     given vorny was not found.
+    module.vn_by_vorny = function(val_or_nodey, item_type) {
+        if(!val_or_nodey) return module.VN_NONE;
 
         let val, node_id;
-        if(typeof val_or_node_id === 'string') {
-            node_id = val_or_node_id;
+        if(typeof val_or_nodey === 'string') {          // a node_id
+            node_id = val_or_nodey;
             switch(item_type) {
                 case K.IT_WIN:
                     val = D.windows.by_node_id(node_id); break;
@@ -330,24 +332,33 @@
                 default:
                     val = D.val_by_node_id(node_id); break;
             }
-        } else {
-            val = val_or_node_id;
+
+        } else if(typeof val_or_nodey === 'object' && val_or_nodey.id &&
+                val_or_nodey.parent) {                  // A jstree node
+            node_id = val_or_nodey.id;
+            val = D.val_by_node_id(node_id);
+
+        } else if(typeof val_or_nodey === 'object' &&   // A details record
+                val_or_nodey.ty) {
+            val = val_or_nodey;
             if(!val.node_id) return module.VN_NONE;
             node_id = val.node_id;
+        } else {                                        // Unknown
+            return module.VN_NONE;
         }
 
         return {val, node_id};
-    } //vn_by_vorn
+    } //vn_by_vorny
 
     /// Determine whether a model has given subtype(s).
-    /// @param vorn {mixed} The item
+    /// @param vorny {mixed} The item
     /// @param tys {mixed} A single type or array of types
-    /// @return {Boolean} true if #vorn has all the subtypes in #tys;
+    /// @return {Boolean} true if #vorny has all the subtypes in #tys;
     ///                     false otherwise.
-    module.has_subtype = function(vorn, ...tys) {
-        if(!vorn || !tys) return false;
+    module.has_subtype = function(vorny, ...tys) {
+        if(!vorny || !tys) return false;
         if(tys.length < 1) return false;
-        let {node_id} = module.vn_by_vorn(vorn);
+        let {node_id} = module.vn_by_vorny(vorny);
         if(!node_id) return false;
 
         for(let ty of tys) {
@@ -404,12 +415,12 @@
     /// Does not process Chrome widgets.  Instead, assumes the tab is
     /// closed initially.
     ///
-    /// @param {mixed} vornParent The parent
+    /// @param {mixed} vornyParent The parent
     /// @return {Object} {val, node_id} The new item,
     ///                                 or module.VN_NONE on error.
-    module.vnRezTab = function(vornParent) {
+    module.vnRezTab = function(vornyParent) {
         let {val: parent_val, node_id: parent_node_id} =
-            module.vn_by_vorn(vornParent);
+            module.vn_by_vorny(vornyParent);
         if(!parent_val || !parent_node_id) return module.VN_NONE;
 
         // Sanity check that the node also exists
@@ -445,13 +456,13 @@
     // Updating model items
 
     /// Add a subtype (K.NST_*) to an item.
-    /// @param vorn {mixed} The item
+    /// @param vorny {mixed} The item
     /// @param tys {mixed} A single type or array of types
     /// @return {Boolean} true on success; false on error
-    module.add_subtype = function(vorn, ...tys) {
-        if(!vorn || !tys) return false;
+    module.add_subtype = function(vorny, ...tys) {
+        if(!vorny || !tys) return false;
         if(tys.length < 1) return false;
-        let {node_id} = module.vn_by_vorn(vorn);
+        let {node_id} = module.vn_by_vorny(vorny);
         if(!node_id) return false;
 
         for(let ty of tys) {
@@ -462,13 +473,13 @@
     } //add_subtype
 
     /// Remove a subtype (K.NST_*) from an item.
-    /// @param vorn {mixed} The item
+    /// @param vorny {mixed} The item
     /// @param tys {mixed} A single type or array of types
     /// @return {Boolean} true on success; false on error
-    module.del_subtype = function(vorn, ...tys) {
-        if(!vorn || !tys) return false;
+    module.del_subtype = function(vorny, ...tys) {
+        if(!vorny || !tys) return false;
         if(tys.length < 1) return false;
-        let {node_id} = module.vn_by_vorn(vorn);
+        let {node_id} = module.vn_by_vorny(vorny);
         if(!node_id) return false;
 
         for(let ty of tys) {
@@ -483,13 +494,13 @@
 
     /// Attach a Chrome window to an existing window item.
     /// Updates the item, but does not touch the Chrome window.
-    /// @param win_vorn {mixed} The item
+    /// @param win_vorny {mixed} The item
     /// @param cwin {Chrome Window} The open window
     /// @return {Boolean} true on success; false on error
-    module.markWinAsOpen = function(win_vorn, cwin) {
-        if(!win_vorn || !cwin || !cwin.id) return false;
+    module.markWinAsOpen = function(win_vorny, cwin) {
+        if(!win_vorny || !cwin || !cwin.id) return false;
 
-        let {val, node_id} = module.vn_by_vorn(win_vorn, K.IT_WIN);
+        let {val, node_id} = module.vn_by_vorny(win_vorny, K.IT_WIN);
         if(!val || !node_id) return false;
 
         if(val.isOpen || val.win) {
@@ -518,13 +529,13 @@
 
     /// Attach a Chrome tab to an existing tab item.
     /// Updates the item, but does not touch the Chrome tab.
-    /// @param tab_vorn {mixed} The item
+    /// @param tab_vorny {mixed} The item
     /// @param ctab {Chrome Tab} The open tab
     /// @return {Boolean} true on success; false on error
-    module.markTabAsOpen = function(tab_vorn, ctab) {
-        if(!tab_vorn || !ctab || !ctab.id) return false;
+    module.markTabAsOpen = function(tab_vorny, ctab) {
+        if(!tab_vorny || !ctab || !ctab.id) return false;
 
-        let {val, node_id} = module.vn_by_vorn(tab_vorn, K.IT_TAB);
+        let {val, node_id} = module.vn_by_vorny(tab_vorny, K.IT_TAB);
         if(!val || !node_id) return false;
 
         if(val.isOpen || val.tab) {
@@ -558,14 +569,14 @@
     //////////////////////////////////////////////////////////////////////
     // Removing Chrome widgets from model items
 
-    /// Remove the connection between #win_vorn and its Chrome window.
+    /// Remove the connection between #win_vorny and its Chrome window.
     /// Use this when the Chrome window has been closed.
-    /// @param win_vorn {mixed} The item
+    /// @param win_vorny {mixed} The item
     /// @return {Boolean} true on success; false on error
-    module.markWinAsClosed = function(win_vorn) {
-        if(!win_vorn) return false;
+    module.markWinAsClosed = function(win_vorny) {
+        if(!win_vorny) return false;
 
-        let {val, node_id} = module.vn_by_vorn(win_vorn, K.IT_WIN);
+        let {val, node_id} = module.vn_by_vorny(win_vorny, K.IT_WIN);
         if(!val || !node_id) return false;
 
         if(!val.isOpen || !val.win) {
@@ -589,15 +600,15 @@
         return true;
     } //markWinAsClosed
 
-    /// Remove the connection between #tab_vorn and its Chrome tab.
+    /// Remove the connection between #tab_vorny and its Chrome tab.
     /// Use this when the Chrome tab has been closed.
     /// NOTE: does not handle saved/unsaved at this time.  TODO should it?
-    /// @param tab_vorn {mixed} The item
+    /// @param tab_vorny {mixed} The item
     /// @return {Boolean} true on success; false on error
-    module.markTabAsClosed = function(tab_vorn) {
-        if(!tab_vorn) return false;
+    module.markTabAsClosed = function(tab_vorny) {
+        if(!tab_vorny) return false;
 
-        let {val, node_id} = module.vn_by_vorn(tab_vorn, K.IT_TAB);
+        let {val, node_id} = module.vn_by_vorny(tab_vorny, K.IT_TAB);
         if(!val || !node_id) return false;
 
         if(!val.isOpen || !val.tab) {
@@ -630,10 +641,10 @@
 
     /// Delete a tab from the tree and the details.
     /// TODO? Report error if tab is currently open?
-    /// @param tab_vorn {mixed}
+    /// @param tab_vorny {mixed}
     /// @return {Boolean} true on success; false on error
-    module.eraseTab = function(tab_vorn) {
-        let {val, node_id} = module.vn_by_vorn(tab_vorn, K.IT_TAB);
+    module.eraseTab = function(tab_vorny) {
+        let {val, node_id} = module.vn_by_vorny(tab_vorny, K.IT_TAB);
         if(!val || !node_id) return false;
 
         D.tabs.remove_value(val);
@@ -644,17 +655,15 @@
     } //eraseTab
 
     /// Delete a window from the tree and the details.  This will also
-    /// erase any remaining child nodes of #win_val_or_node_id from the
+    /// erase any remaining child nodes of #win_vorny from the
     /// tree and the details.  On an error return, not all children may
     /// have been destroyed.
     /// TODO? Report error if win is currently open?
     /// TODO? Report error if any children are left?
-    /// @param win_val_or_node_id {mixed}  If a string, the node ID of the
-    ///                                     window; otherwise, the details
-    ///                                     record for the window.
+    /// @param win_vorny {mixed}  The item
     /// @return {Boolean} true on success; false on error
-    module.eraseWin = function(win_val_or_node_id) {
-        let {val, node_id} = module.vn_by_vorn(win_val_or_node_id, K.IT_WIN);
+    module.eraseWin = function(win_vorny) {
+        let {val, node_id} = module.vn_by_vorny(win_vorny, K.IT_WIN);
         if(!val || !node_id) return false;
 
         let node = T.treeobj.get_node(node_id);

@@ -341,7 +341,7 @@ function saveTree(save_ephemeral_windows = true, cbk = undefined)
                 thistab.raw_url = tab_val.raw_url;
                 // TODO save favIconUrl?  Need to save it in the item first.
 
-                if(T.treeobj.has_multitype(tab_node_id, K.NST_TOP_BORDER)) {
+                if(M.has_subtype(tab_node_id, K.NST_TOP_BORDER)) {
                     thistab.bordered = true;
                 }
 
@@ -428,8 +428,8 @@ function actionForgetWindow(node_id, node, unused_action_id, unused_action_el)
 
     if(win_val.isOpen) {    // should always be true, but just in case...
         //T.treeobj.set_type(node, K.NT_WIN_EPHEMERAL);
-        T.treeobj.del_multitype(node, K.NST_SAVED);
-        T.treeobj.add_multitype(node, K.NST_OPEN);
+        M.del_subtype(node_id, K.NST_SAVED);
+        M.add_subtype(node_id, K.NST_OPEN);
     }
 
     saveTree();
@@ -443,7 +443,6 @@ function actionRememberWindow(node_id, node, unused_action_id, unused_action_el)
 
     M.remember(node_id);    // No-op if node_id isn't a window
     //M.refresh_label(node_id);
-    //T.treeobj.add_multitype(node, K.NST_SAVED);
 
     saveTree();
 } //actionForgetWindow()
@@ -481,7 +480,7 @@ function actionCloseWindowButDoNotSave(node_id, node, unused_action_id, unused_a
 
     win_val.isOpen = false;
     M.remember(node_id);
-    T.treeobj.del_multitype(node_id, K.NST_OPEN);
+    M.del_subtype(node_id, K.NST_OPEN);
 
     // Collapse the tree, if the user wants that
     if(getBoolSetting("collapse-tree-on-window-close")) {
@@ -498,7 +497,7 @@ function actionCloseWindowButDoNotSave(node_id, node, unused_action_id, unused_a
         tab_val.win_id = K.NONE;
         tab_val.index = K.NONE;
         tab_val.isOpen = false;
-        T.treeobj.del_multitype(tab_node_id, K.NST_OPEN);
+        M.del_subtype(tab_node_id, K.NST_OPEN);
         D.tabs.change_key(tab_val, 'tab_id', K.NONE);
         // raw_url and raw_title are left alone
     }
@@ -618,10 +617,10 @@ function actionToggleTabTopBorder(node_id, node, unused_action_id, unused_action
     if(!tab_val) return;
 
     // Note: adjust this if you add another IT_TAB type.
-    if(!T.treeobj.has_multitype(node_id, K.NST_TOP_BORDER)) {
-        T.treeobj.add_multitype(node_id, K.NST_TOP_BORDER);
+    if(!M.has_subtype(node_id, K.NST_TOP_BORDER)) {
+        M.add_subtype(node_id, K.NST_TOP_BORDER);
     } else {
-        T.treeobj.del_multitype(node_id, K.NST_TOP_BORDER);
+        M.del_subtype(node_id, K.NST_TOP_BORDER);
     }
 
     M.remember(node.parent);
@@ -920,8 +919,7 @@ function createNodeForClosedWindow(win_data_v1)
 
     // Mark recovered windows
     if(is_ephemeral) {
-        //T.treeobj.set_type(node_id, K.NT_RECOVERED);
-        T.treeobj.add_multitype(node_id, K.NST_RECOVERED);
+        M.add_subtype(node_id, K.NST_RECOVERED);
     }
 
     // Update the item details
@@ -1276,8 +1274,8 @@ function treeOnSelect(_evt_unused, evt_data)
     { // Remove "recovered" flags.  TODO update this when #34 is implemented.
         let win_node = is_win ? node : T.treeobj.get_node(node.parent);
         //if(T.treeobj.get_type(node) === K.NT_RECOVERED) {
-        if(win_node && T.treeobj.has_multitype(win_node, K.NST_RECOVERED)) {
-            T.treeobj.del_multitype(win_node, K.NST_RECOVERED);
+        if(win_node && M.has_subtype(win_node, K.NST_RECOVERED)) {
+            M.del_subtype(win_node, K.NST_RECOVERED);
         }
     }
 
@@ -1343,7 +1341,7 @@ function treeOnSelect(_evt_unused, evt_data)
                 win_val.keep = K.WIN_KEEP;      // just in case
                 win_val.win = win;
                 //T.treeobj.set_type(win_node.id, K.NT_WIN_ELVISH);
-                T.treeobj.add_multitype(win_node.id, K.NST_OPEN);
+                M.add_subtype(win_node.id, K.NST_OPEN);
 
                 T.treeobj.open_node(win_node);
                 T.treeobj.redraw_node(win_node);
@@ -1385,7 +1383,7 @@ function treeOnSelect(_evt_unused, evt_data)
                     tab_val.raw_title = tab.title || '## Unknown title ##';
                     tab_val.isOpen = true;
                     D.tabs.change_key(tab_val, 'tab_id', tab_val.tab.id);
-                    T.treeobj.add_multitype(tab_node_id, K.NST_OPEN);
+                    M.add_subtype(tab_node_id, K.NST_OPEN);
                 }
 
                 // Another hack for the strange behaviour above: get rid of
@@ -1774,7 +1772,7 @@ var tabOnCreated = (function(){
             tab_val.win_id = ctab.windowId;
             tab_val.index = ctab.index;
             tab_val.tab = ctab;
-            T.treeobj.add_multitype(tab_node_id, K.NST_OPEN);
+            M.add_subtype(tab_node_id, K.NST_OPEN);
 
             // Change the URL to the actual URL.  Use ASQ() so errors will
             // be reported to the console.
@@ -2541,7 +2539,7 @@ var treeCheckCallback = (function(){
                 val.win_id = K.NONE;
                 val.index = K.NONE;
                 val.isOpen = false;
-                T.treeobj.del_multitype(val.node_id, K.NST_OPEN);
+                M.del_subtype(val.node_id, K.NST_OPEN);
                 T.treeobj.flag_node(val.node_id, false, true);  // clear flag
             });
 
@@ -3103,9 +3101,9 @@ function addOpenWindowsToTree(done, winarr)
             existing_win.val.isOpen = true;
             // don't change val.keep, which may have either value.
             existing_win.val.win = win;
-            T.treeobj.add_multitype(existing_win.node, K.NST_OPEN);
+            M.add_subtype(existing_win.node, K.NST_OPEN);
             if(existing_win.val.keep === K.WIN_KEEP) {
-                T.treeobj.add_multitype(existing_win.node, K.NST_SAVED);
+                M.add_subtype(existing_win.node, K.NST_SAVED);
             }
 
             T.treeobj.open_node(existing_win.node);
@@ -3126,7 +3124,7 @@ function addOpenWindowsToTree(done, winarr)
                 tab_val.raw_title = ctab.title || '## Unknown title ##';
                 tab_val.isOpen = true;
                 D.tabs.change_key(tab_val, 'tab_id', tab_val.tab.id);
-                T.treeobj.add_multitype(tab_node_id, K.NST_OPEN);
+                M.add_subtype(tab_node_id, K.NST_OPEN);
 
                 if(ctab.favIconUrl) {
                     T.treeobj.set_icon(tab_node_id, encodeURI(ctab.favIconUrl));

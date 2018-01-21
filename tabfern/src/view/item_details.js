@@ -31,7 +31,9 @@
     /// The module we are creating
     let module = {};
 
-    /// Map between open-tab IDs and node IDs
+    /// Map between open-tab IDs and node IDs.
+    /// Design decision: no fields named "parent" so I can distinguish
+    /// jstree node records from multidex values.
     module.tabs = multidex(
         K.IT_TAB, //type
         [ //keys
@@ -53,7 +55,9 @@
             'raw_favicon_url',  //favicon URL
         ]);
 
-    /// Map between open-window IDs and node IDs
+    /// Map between open-window IDs and node IDs.
+    /// Design decision: no fields named "parent" so I can distinguish
+    /// jstree node records from multidex values.
     module.windows = multidex(
         K.IT_WIN,  //type
         [ //keys
