@@ -32,8 +32,7 @@ var log;
 var K;      ///< Constants loaded from view/const.js, for ease of access
 var D;      ///< Shorthand access to the details, view/item_details.js
 var T;      ///< Shorthand access to the tree, view/item_tree.js ("Tree")
-var M;      ///< Shorthand access to the model, view/item.js
-            ///< Note: item.js will eventually be renamed to model.js.
+var M;      ///< Shorthand access to the model, view/model.js
 var ASQ;    ///< Shorthand for asynquence
 var ASQH;   ///< Shorthand for asq-helpers
 
@@ -98,7 +97,7 @@ function local_init()
     K = Modules['view/const'];
     D = Modules['view/item_details'];
     T = Modules['view/item_tree'];
-    M = Modules['view/item'];
+    M = Modules['view/model'];
     ASQ = Modules['asynquence-contrib'];
     ASQH = Modules['asq-helpers'];
 
@@ -2089,7 +2088,7 @@ function hamSettings()
 {
     // Actually open the window
     K.openWindowForURL(chrome.extension.getURL(
-        '/src/options_custom/index.html' +
+        '/src/settings/index.html' +
         (ShowWhatIsNew ? '#open=last' : ''))
     );
 
@@ -3322,7 +3321,7 @@ let dependencies = [
 
     // Modules of TabFern itself
     'view/const', 'view/item_details', 'view/sorts', 'view/item_tree',
-    'view/item', 'common/validation'
+    'view/model', 'common/validation'
 ];
 
 /// Make short names in Modules for some modules.  shortname => longname

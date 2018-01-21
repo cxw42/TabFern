@@ -1,13 +1,17 @@
-// view/item.js: Routines for managing items as a whole (both tree nodes
+// view/model.js: Routines for managing items as a whole (both tree nodes
 // and detail records).  Part of TabFern.
 // Copyright (c) 2017 Chris White, Jasmine Hegman.
 
 // The item module enforces that invariant that, except during calls to these
 // routines, each node in the treeobj has a 1-1 relationship with a value in
-// the details.
+// the details.  The treeobj, including its DOM, is part of the model.
 
-// TODO name these functions with some kind of Hungarian notation so you know
-// whether they take node_id, val, or something else.
+/// Hungarian elements used in this file:
+/// - vn: a {val, node_id} object
+/// - vorn: a val, or a node_id
+/// - n: a jstree node_id
+/// - ny: anything that can be passed to jstree.get_node() ("nodey" by
+///   analogy with "truthy" and "falsy."
 
 (function (root, factory) {
     let imports=['jquery','jstree','loglevel', 'view/const',
@@ -39,7 +43,10 @@
     /// The module we are creating
     let module = {};
 
-    //////////////////////////////////////////////////////////////////////////
+    /// Value returned by vn*() on error
+    module.VN_NONE = {val: null, node_id: ''};
+
+    //////////////////////////////////////////////////////////////////////
     // Data-access routines //
 
     /// Find a node's value in the model, regardless of type.
@@ -120,7 +127,7 @@
         return retval;
     };
 
-    //////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////
     // Item manipulation //
 
     /// Update the tree-node text for an item.
@@ -131,10 +138,31 @@
         let val = D.val_by_node_id(node_id);
         if(!val) return false;
         let retval = T.treeobj.rename_node(node_id, module.get_html_label(val));
-        // TODO also update the icon?
 
         return retval;
     };
+
+    /// Update the icon of tab item #val.
+    /// @param val {Object} The details record for this item
+    /// @return {Boolean} true on success; false on error
+    module.refresh_tab_icon = function(val) {
+        if(!val || !val.node_id) return false;
+        if(val.ty !== K.IT_TAB) return false;
+
+        let icon = 'fff-page';
+        if(val.raw_favicon_url) {
+            icon = encodeURI(val.raw_favicon_url);
+        } else if((/\.pdf$/i).test(val.raw_url)) {  //special-case PDFs
+            icon = 'fff-page-white-with-red-banner';
+        }
+
+        T.treeobj.set_icon(val.node_id, icon);
+
+        // TODO? if the favicon doesn't load, replace the icon with the
+        // generic page icon so we don't keep hitting the favIconUrl.
+
+        return true;
+    } //refresh_tab_icon
 
     /// Mark the window identified by #win_node_id as to be kept.
     /// @param win_node_id {string} The window node ID
@@ -159,90 +187,8 @@
         return true;
     }; //remember()
 
-    ////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////
     // Item creation //
-
-    /// Make a node and its associated value.
-    /// @param {K.IT_* constant} node_ty The type of the node to create
-    /// @param {number} chrome_id   The Chrome window/tab id, if any.
-    /// @return {object} {node, val}.  On failure, members are falsy.
-    module.makeNodeAndValue_NOTYETDONE = function(node_ty, chrome_id = K.NONE) {
-        let retval = {node: null, val: null};
-        switch(node_ty) {
-            // TODO
-            case K.IT_WIN:
-                break;
-            case K.IT_TAB:
-                break;
-            // otherwise leave retval as it was
-        }
-        return retval;
-    }; //makeNodeAndValue
-
-    /// Update the model and the tree to map a tab's node to an open Chrome tab.
-    /// @param node_ref {mixed} a reference to the node for the tab
-    /// @param ctab {Chrome Tab} the open tab
-    /// @return True on success, or false on error
-    module.realizeTab_NOTYETDONE = function(node_ref, ctab)
-    {
-        // Sanity check
-        let tab_val = D.tabs.by_tab_id(ctab.id);
-        if(!tab_val) {
-            tab_val = D.tabs.add({tab_id: ctab.id});
-            log.error( {'Refusing to map node for existing tab': ctab.id,
-                        'already at node':tab_val.node_id});
-            return false;
-        }
-
-        let node = T.treeobj.get_node(node_ref);
-        if(!node) return false;
-
-        T.treeobj.rename_node(node, Esc.escape(ctab.title));
-        T.treeobj.set_icon(node,
-            (ctab.favIconUrl ? encodeURI(ctab.favIconUrl) : 'fff-page') );
-            // TODO if the favicon doesn't load, replace the icon with the generic
-            // page icon so we don't keep hitting the favIconUrl.
-
-        D.tabs.add({tab_id: ctab.id, node_id: node.id,
-            win_id: ctab.windowId, index: ctab.index, tab: ctab,
-            raw_url: ctab.url, raw_title: ctab.title, isOpen: true,
-            raw_bullet: null,
-        });
-
-        return node.id;
-    } //realizeTab
-
-    /// Remove a tab's connection to #ctab.  The tab's node stays in the tree.
-    module.virtualizeTab_NOTYETDONE = function(node_ref, ctab)
-    {
-    } //virtualizeTab
-
-    /// Update the model and the tree to map a fern to an open Chrome window
-    /// @param cwin {Chrome Window} the open window
-    /// @param fern_node_ref {mixed} a reference to the fern for the window
-    /// @return The node ID of the fern's node, or false on error.
-    module.bindWindowToTree_NOTYETDONE = function(cwin, fern_node_ref)
-    {
-        // Sanity check
-        let win_val = D.windows.by_win_id(cwin.id);
-        if(win_val) {
-            log.error( {'Refusing to map node for existing win': cwin.id,
-                        'already at node':win_val.node_id});
-            return false;
-        }
-
-        let node = T.treeobj.get_node(node_ref);
-        if(!node) return false;
-
-        win_val = D.windows.add({
-            win_id: cwin.id, node_id: node.id, win: cwin,
-            raw_title: null,    // default name
-            raw_bullet: null,
-            isOpen: true, keep: keep
-        });
-
-        return node.id;
-    } //bindWindowToTree
 
     /// Create a new fern, optionally for an open Chrome window.
     /// ** Does not populate any tab nodes --- this is just for a window.
@@ -350,54 +296,303 @@
     // #####################################################################
     // New routines: item (tree+details) as model; Chrome itself as view.
     //
-    // "Record" and "Erase" are adding/removing items, to distinguish them
+    // "Rez" and "Erase" are adding/removing items, to distinguish them
     // from creating and destroying Chrome widgets.
 
-    ////////////////////////////////////////////////////////////////////////
-    // Removing items
+    //////////////////////////////////////////////////////////////////////
+    // Common routines
 
-    /// Delete a tab from the tree and the details.
-    /// @param tab_val_or_node_id {mixed}  If a string, the node ID of the
-    ///                                     tab; otherwise, the details
-    ///                                     record for the tab.
-    module.eraseTab = function(tab_val_or_node_id) {
-        if(!tab_val_or_node_id) return;
+    /// Get a {val, node_id} pair (vn) from one of those (vorn).
+    /// @param val_or_node_id {mixed} If a string, the node ID of the
+    ///                               item; otherwise, the details
+    ///                               record for the item.
+    /// @return {Object} {val, node_id}.    `val` is falsy if the
+    ///                                     given vorn was not found.
+    module.vn_by_vorn = function(val_or_node_id, item_type) {
+        if(!val_or_node_id) return module.VN_NONE;
 
-        let tab_val, tab_node_id;
-        if(typeof tab_val_or_node_id === 'string') {
-            tab_node_id = tab_val_or_node_id;
-            tab_val = D.tabs.by_node_id(tab_node_id);
+        let val, node_id;
+        if(typeof val_or_node_id === 'string') {
+            node_id = val_or_node_id;
+            switch(item_type) {
+                case K.IT_WIN:
+                    val = D.windows.by_node_id(tab_node_id); break;
+                case K.IT_TAB:
+                    val = D.tabs.by_node_id(tab_node_id); break;
+            }
         } else {
-            tab_val = tab_val_or_node_id;
-            tab_node_id = tab_val.node_id;
+            val = val_or_node_id;
+            node_id = val.node_id;
         }
 
-        D.tabs.remove_value(tab_val);
+        return {val, node_id};
+    } //vn_by_vorn
+
+    //////////////////////////////////////////////////////////////////////
+    // Adding model items
+
+    /// Add a model node/item for a window.  Does not process Chrome
+    /// widgets.  Instead, assumes the tab is closed initially.
+    ///
+    /// @return {Object} {val, node_id} The new item,
+    ///                                 or module.VN_NONE on error.
+    module.vnRezWin = function() {
+        let node_id = T.treeobj.create_node(
+                $.jstree.root,
+                { text: 'Window' }
+        );
+        if(node_id === false) return module.VN_NONE;
+
+        T.treeobj.add_multitype(node_id, K.IT_WIN);
+
+        let val = D.windows.add({
+            win_id: K.NONE,
+            node_id: node_id,
+            win: undefined,
+            raw_title: null,
+            raw_bullet: null,
+            isOpen: false,
+            keep: undefined
+        });
+
+        if(!val) {
+            T.treeobj.delete_node(node_id);
+            return module.VN_NONE;
+        }
+
+        return {val, node_id};
+    } //vnRezWin
+
+    /// Add a model node/item for a tab, with the given parent.
+    /// Does not process Chrome widgets.  Instead, assumes the tab is
+    /// closed initially.
+    ///
+    /// @param {mixed} vornParent The parent
+    /// @return {Object} {val, node_id} The new item,
+    ///                                 or module.VN_NONE on error.
+    module.vnRezTab = function(vornParent) {
+        let {val: parent_val, node_id: parent_node_id} =
+            module.vn_by_vorn(vornParent);
+        if(!parent_val || !parent_node_id) return module.VN_NONE;
+
+        // Sanity check that the node also exists
+        let parent_node = T.treeobj.get_node(parent_node_id);
+        if(!parent_node) return module.VN_NONE;
+
+        let node_id = T.treeobj.create_node(
+                parent_node,
+                { text: 'Tab' }
+        );
+        if(node_id === false) return module.VN_NONE;
+
+        T.treeobj.add_multitype(node_id, K.IT_TAB);
+
+        let val = D.tabs.add({
+            tab_id: K.NONE,
+            node_id: node_id,
+            win_id: K.NONE,
+            index: K.NONE,
+            tab: undefined,
+            isOpen: false,
+        });
+
+        if(!val) {
+            T.treeobj.delete_node(node_id);
+            return module.VN_NONE;
+        }
+
+        return {val, node_id};
+    } //vnRezTab
+
+    //////////////////////////////////////////////////////////////////////
+    // Attaching Chrome widgets to model items
+
+    /// Attach a Chrome window to an existing window item.
+    /// Updates the item, but does not touch the Chrome window.
+    /// @param win_vorn {mixed} The item
+    /// @param cwin {Chrome Window} The open window
+    /// @return {Boolean} true on success; false on error
+    module.markWinAsOpen = function(win_vorn, cwin) {
+        if(!win_vorn || !cwin || !cwin.id) return false;
+
+        let {val, node_id} = vn_by_vorn(win_vorn, K.IT_TAB);
+        if(!val || !node_id) return false;
+
+        if(val.isOpen || val.win) {
+            log.error({'Refusing to re-mark already-open window as open':val});
+            return false;
+        }
+
+        let node = T.treeobj.get_node(node_id);
+        if(!node) return false;
+
+        D.windows.change_key(val, 'win_id', cwin.id);
+        // node_id unchanged
+        val.win = cwin;
+        // raw_title unchanged (TODO is this the Right Thing?)
+        val.isOpen = true;
+        // keep unchanged
+        // raw_bullet unchanged
+
+        module.refresh_label(node_id);
+        // TODO refresh icon?
+
+        return true;
+    } //markWinAsOpen
+
+    /// Attach a Chrome tab to an existing tab item.
+    /// Updates the item, but does not touch the Chrome tab.
+    /// @param tab_vorn {mixed} The item
+    /// @param ctab {Chrome Tab} The open tab
+    /// @return {Boolean} true on success; false on error
+    module.markTabAsOpen = function(tab_vorn, ctab) {
+        if(!tab_vorn || !ctab || !ctab.id) return false;
+
+        let {val, node_id} = vn_by_vorn(tab_vorn, K.IT_TAB);
+        if(!val || !node_id) return false;
+
+        if(val.isOpen || val.tab) {
+            log.error({'Refusing to re-mark already-open tab as open':val});
+            return false;
+        }
+
+        let node = T.treeobj.get_node(node_id);
+        if(!node) return false;
+
+        D.tabs.change_key(val, 'tab_id', ctab.id);
+        // It already has a node_id
+        val.win_id = ctab.windowId;
+        val.index = ctab.index;
+        val.tab = ctab;
+        // val.being_opened unchanged
+        val.raw_url = ctab.url;
+        val.raw_title = ctab.title;
+        val.isOpen = true;
+        // val.raw_bullet is unchanged since it doesn't come from ctab
+        val.raw_favicon_url = ctab.favIconUrl;
+
+        T.treeobj.add_multitype(tab_node_id, K.NST_OPEN);
+
+        T.treeobj.rename_node(node_id, module.get_html_label(val));
+
+        module.refresh_label(node_id);
+        module.refresh_tab_icon(val);   // since favicon may have changed
+
+        return true;
+    } //markTabAsOpen
+
+    //////////////////////////////////////////////////////////////////////
+    // Removing Chrome widgets from model items
+
+    /// Remove the connection between #win_vorn and its Chrome window.
+    /// Use this when the Chrome window has been closed.
+    /// @param win_vorn {mixed} The item
+    /// @return {Boolean} true on success; false on error
+    module.markWinAsClosed = function(win_vorn) {
+        if(!win_vorn) return false;
+
+        let {val, node_id} = vn_by_vorn(win_vorn, K.IT_WIN);
+        if(!val || !node_id) return false;
+
+        if(!val.isOpen || !val.win) {
+            log.error({'Refusing to re-mark already-closed window as closed':val});
+            return false;
+        }
+
+        D.windows.change_key(val, 'win_id', K.NONE);
+        // node_id unchanged
+        val.win = undefined;
+        // raw_title unchanged
+        val.isOpen = false;
+        // keep unchanged - this is an unmark, not an erase.
+        // raw_bullet unchanged
+
+        module.refresh_label(node_id);
+        //TODO refresh icon
+
+        return true;
+    } //markWinAsClosed
+
+    /// Remove the connection between #tab_vorn and its Chrome tab.
+    /// Use this when the Chrome tab has been closed.
+    /// @param tab_vorn {mixed} The item
+    /// @return {Boolean} true on success; false on error
+    module.markTabAsClosed = function(tab_vorn) {
+        if(!tab_vorn) return false;
+
+        let {val, node_id} = vn_by_vorn(tab_vorn, K.IT_TAB);
+        if(!val || !node_id) return false;
+
+        if(!val.isOpen || !val.tab) {
+            log.error({'Refusing to re-mark already-closed tab as closed':val});
+            return false;
+        }
+
+        D.tabs.change_key(val, 'tab_id', K.NONE);
+        // node_id is unchanged
+        val.win_id = K.NONE;
+        val.index = K.NONE;
+        val.tab = undefined;
+        // being_opened unchanged
+        // raw_url unchanged
+        // raw_title unchanged
+        val.isOpen = false;
+        // raw_bullet unchanged
+        // raw_favicon_url unchanged
+
+        module.refresh_label(node_id);  // TODO is this necessary?
+        // Don't change icon - keep favicon
+
+        return true;
+    } //markTabAsClosed
+
+    //////////////////////////////////////////////////////////////////////
+    // Removing model items
+
+    /// Delete a tab from the tree and the details.
+    /// TODO? Report error if tab is currently open?
+    /// @param tab_vorn {mixed}
+    /// @return {Boolean} true on success; false on error
+    module.eraseTab = function(tab_vorn) {
+        let {val, node_id} = vn_by_vorn(tab_vorn, K.IT_TAB);
+        if(!val || !node_id) return false;
+
+        D.tabs.remove_value(val);
             // So any events that are triggered won't try to look for a
             // nonexistent tab.
-        T.treeobj.delete_node(tab_node_id);
+        T.treeobj.delete_node(node_id);
+        return true;
     } //eraseTab
 
-    /// Delete a window from the tree and the details.
+    /// Delete a window from the tree and the details.  This will also
+    /// erase any remaining child nodes of #win_val_or_node_id from the
+    /// tree and the details.  On an error return, not all children may
+    /// have been destroyed.
+    /// TODO? Report error if win is currently open?
     /// @param win_val_or_node_id {mixed}  If a string, the node ID of the
     ///                                     window; otherwise, the details
     ///                                     record for the window.
+    /// @return {Boolean} true on success; false on error
     module.eraseWin = function(win_val_or_node_id) {
-        if(!win_val_or_node_id) return;
+        let {val, node_id} = vn_by_vorn(win_val_or_node_id, K.IT_WIN);
+        if(!val || !node_id) return false;
 
-        let win_val, win_node_id;
-        if(typeof win_val_or_node_id === 'string') {
-            win_node_id = win_val_or_node_id;
-            win_val = D.windows.by_node_id(win_node_id);
-        } else {
-            win_val = win_val_or_node_id;
-            win_node_id = win_val.node_id;
+        let node = T.treeobj.get_node(node_id);
+        if(!node) return false;
+
+        // Remove the children cleanly
+        for(let child_node_id of node.children) {
+            if(!module.eraseTab(child_node_id)) {
+                return false;
+            }
         }
 
-        D.windows.remove_value(win_val);
+        D.windows.remove_value(val);
             // So any events that are triggered won't try to look for a
             // nonexistent window.
-        T.treeobj.delete_node(win_node_id);
+        T.treeobj.delete_node(node_id);
+
+        return true;
     } //eraseWin
 
     return module;
