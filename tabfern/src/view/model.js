@@ -1,6 +1,6 @@
 // view/model.js: Routines for managing items as a whole (both tree nodes
 // and detail records).  Part of TabFern.
-// Copyright (c) 2017 Chris White, Jasmine Hegman.
+// Copyright (c) 2017--2018 Chris White, Jasmine Hegman.
 
 // The item module enforces that invariant that, except during calls to these
 // routines, each node in the treeobj has a 1-1 relationship with a value in
@@ -81,14 +81,21 @@
         }
     }; //get_win_raw_text()
 
-    module.mark_as_unsaved = function(val) {
+    /// Mark window item #val as unsaved.
+    /// @param val {Object} the item
+    /// @return {Boolean} true on success; false on error
+    module.mark_win_as_unsaved = function(val) {
+        if(!val || val.ty !== K.IT_WIN || !val.node_id) return false;
         val.keep = K.WIN_NOKEEP;
         if(val.raw_title !== null) {
             val.raw_title = module.remove_unsaved_markers(val.raw_title) +
                             ' (Unsaved)';
         }
         // If raw_title is null, get_win_raw_text() will return 'Unsaved',
-        // so we don't need to do anything here.
+        // so we don't need to manually assign text here.
+
+        module.refresh_label(val.node_id);
+        return true;
     }; //mark_as_unsaved()
 
     /// Remove " (Unsaved)" flags from a string
@@ -168,12 +175,11 @@
     /// @param win_node_id {string} The window node ID
     /// @param cleanup_title {optional boolean, default true}
     ///             If true, remove unsaved markers from the raw_title.
-    /// @return truthy on success; falsy on failure
+    /// @return {Boolean} true on success; false on error
     module.remember = function(win_node_id, cleanup_title = true) {
         if(!win_node_id) return false;
-        let val = D.val_by_node_id(win_node_id);
+        let val = D.windows.by_node_id(win_node_id);
         if(!val) return false;
-        if(val.ty !== K.IT_WIN) return false;
 
         val.keep = K.WIN_KEEP;
         T.treeobj.add_multitype(win_node_id, K.NST_SAVED);
@@ -329,17 +335,26 @@
     } //vn_by_vorn
 
     //////////////////////////////////////////////////////////////////////
+    // Initializing and shutting down the model
+
+    // TODO add a function that wraps T.create() so the user of model does
+    // not have to directly access T to kick things off.
+
+    //////////////////////////////////////////////////////////////////////
     // Adding model items
 
     /// Add a model node/item for a window.  Does not process Chrome
     /// widgets.  Instead, assumes the tab is closed initially.
     ///
+    /// @param isFirstChild {Boolean} [false] If truthy, the new node will be
+    ///     the first child of its parent; otherwise, the last child.
     /// @return {Object} {val, node_id} The new item,
     ///                                 or module.VN_NONE on error.
-    module.vnRezWin = function() {
+    module.vnRezWin = function(isFirstChild=false) {
         let node_id = T.treeobj.create_node(
                 $.jstree.root,
-                { text: 'Window' }
+                { text: 'Window' },
+                (isFirstChild ? 'first' : 'last')
         );
         if(node_id === false) return module.VN_NONE;
 
@@ -405,6 +420,43 @@
     } //vnRezTab
 
     //////////////////////////////////////////////////////////////////////
+    // Updating model items
+
+    /// Add a multitype to an item.
+    /// @param vorn {mixed} The item
+    /// @param tys {mixed} A single type or array of types
+    /// @return {Boolean} true on success; false on error
+    module.add_type = function(vorn, ...tys) {
+        if(!vorn || !tys) return false;
+        if(tys.length < 1) return false;
+        let {node_id} = vn_by_vorn(win_vorn, K.IT_TAB);
+        if(!node_id) return false;
+
+        for(let ty of tys) {
+            T.treeobj.add_multitype(node_id, ty);
+                // TODO report failure to add a type?
+        }
+        return true;
+    } //add_type
+
+    /// Remove a multitype from an item.
+    /// @param vorn {mixed} The item
+    /// @param tys {mixed} A single type or array of types
+    /// @return {Boolean} true on success; false on error
+    module.del_type = function(vorn, ...tys) {
+        if(!vorn || !tys) return false;
+        if(tys.length < 1) return false;
+        let {node_id} = vn_by_vorn(win_vorn, K.IT_TAB);
+        if(!node_id) return false;
+
+        for(let ty of tys) {
+            T.treeobj.del_multitype(node_id, ty);
+                // TODO report failure to remove a type?
+        }
+        return true;
+    } //add_type
+
+    //////////////////////////////////////////////////////////////////////
     // Attaching Chrome widgets to model items
 
     /// Attach a Chrome window to an existing window item.
@@ -433,6 +485,8 @@
         val.isOpen = true;
         // keep unchanged
         // raw_bullet unchanged
+
+        T.treeobj.add_multitype(node_id, K.NST_OPEN);
 
         module.refresh_label(node_id);
         // TODO refresh icon?
@@ -471,7 +525,7 @@
         // val.raw_bullet is unchanged since it doesn't come from ctab
         val.raw_favicon_url = ctab.favIconUrl;
 
-        T.treeobj.add_multitype(tab_node_id, K.NST_OPEN);
+        T.treeobj.add_multitype(node_id, K.NST_OPEN);
 
         T.treeobj.rename_node(node_id, module.get_html_label(val));
 

@@ -1,5 +1,5 @@
 // tree.js: main script for tree.html in the popup window of TabFern
-// cxw42, 2017
+// Copyright (c) cxw42, 2017--2018
 // See /doc/design.md for information about notation and organization.
 
 // TODO break more of this into separate modules
@@ -423,8 +423,8 @@ function actionForgetWindow(node_id, node, unused_action_id, unused_action_el)
     let win_val = D.windows.by_node_id(node_id);
     if(!win_val) return;
 
-    M.mark_as_unsaved(win_val);
-    M.refresh_label(node_id);
+    M.mark_win_as_unsaved(win_val);
+    //M.refresh_label(node_id);
 
     if(win_val.isOpen) {    // should always be true, but just in case...
         //T.treeobj.set_type(node, K.NT_WIN_EPHEMERAL);
@@ -438,12 +438,12 @@ function actionForgetWindow(node_id, node, unused_action_id, unused_action_el)
 /// Mark a window as K.KEEP but don't close it
 function actionRememberWindow(node_id, node, unused_action_id, unused_action_el)
 {
-    let win_val = D.windows.by_node_id(node_id);
-    if(!win_val) return;
+    //let win_val = D.windows.by_node_id(node_id);
+    //if(!win_val) return;
 
-    M.remember(node_id);
-    M.refresh_label(node_id);
-    T.treeobj.add_multitype(node, K.NST_SAVED);
+    M.remember(node_id);    // No-op if node_id isn't a window
+    //M.refresh_label(node_id);
+    //T.treeobj.add_multitype(node, K.NST_SAVED);
 
     saveTree();
 } //actionForgetWindow()
