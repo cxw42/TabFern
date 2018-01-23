@@ -101,13 +101,24 @@
   MyReporter.prototype.constructor = MyReporter;
   MyReporter.prototype.specDone = function(o){
       o = o || {};
-      if(o.status === 'pending') {
-        console.info(`Pending (${o.pendingReason || 'unknown reason'}): ${o.fullName}`);
-        ++this.pending;
+      switch(o.status) {  // report pending, failed to the console
+        case 'pending':
+          console.info(`Pending (${o.pendingReason || 'unknown reason'}): ${o.fullName}`);
+          ++this.pending;
+          break;
 
-      } else if(o.status!=="passed") {
-        console.warn("Failed:" + o.fullName + '\n' + o.failedExpectations[0].message);
-        this.failures = true;
+        case "failed":
+          console.warn("Failed:" + o.fullName + '\n' + o.failedExpectations[0].message);
+          this.failures = true;
+          break;
+
+        case 'disabled':  // Don't report these
+        case 'passed':
+          break;
+
+        default:          // Report other statuses
+          console.info({[`${o.status} ${o.fullName}`]: o});
+          break;
       }
   };
 //  MyReporter.prototype.suiteDone = function(result) {
