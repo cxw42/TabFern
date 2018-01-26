@@ -14,6 +14,8 @@
 ///   analogy with "truthy" and "falsy."
 /// - vorny: a val or a nodey
 
+// Boilerplate {{{1
+
 (function (root, factory) {
     let imports=['jquery','jstree','loglevel', 'view/const',
                     'view/item_details', 'view/item_tree', 'justhtmlescape'];
@@ -40,6 +42,7 @@
     "use strict";
 
     function loginfo(...args) { log.info('TabFern view/item.js: ', ...args); };
+    // }}}1
 
     /// The module we are creating
     let module = {};
@@ -47,8 +50,7 @@
     /// Value returned by vn*() on error
     module.VN_NONE = {val: null, node_id: ''};
 
-    //////////////////////////////////////////////////////////////////////
-    // Data-access routines //
+    // Data-access routines //////////////////////////////////////////// {{{1
 
     /// Find a node's value in the model, regardless of type.
     /// @param node_ref {mixed} If a string, the node id; otherwise, anything
@@ -135,8 +137,8 @@
         return retval;
     };
 
-    //////////////////////////////////////////////////////////////////////
-    // Item manipulation //
+    // }}}1
+    // Item manipulation /////////////////////////////////////////////// {{{1
 
     /// Update the tree-node text for an item.
     /// @param node_id {string} the node's ID (which doubles as the item's id)
@@ -194,8 +196,8 @@
         return true;
     }; //remember()
 
-    //////////////////////////////////////////////////////////////////////
-    // Item creation //
+    // }}}1
+    // Item creation /////////////////////////////////////////////////// {{{1
 
     /// Create a new fern, optionally for an open Chrome window.
     /// ** Does not populate any tab nodes --- this is just for a window.
@@ -299,6 +301,7 @@
         return {node_id: tab_node_id, val: tab_val};
     } //makeItemForTab
 
+    // }}}1
     // #####################################################################
     // #####################################################################
     // New routines: item (tree+details) as model; Chrome itself as view.
@@ -687,4 +690,4 @@
     return module;
 }));
 
-// vi: set ts=4 sts=4 sw=4 et ai fo-=o fo-=r: //
+// vi: set ts=4 sts=4 sw=4 et ai fo-=ro foldmethod=marker: //

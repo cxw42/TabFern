@@ -9965,7 +9965,7 @@
                 }
             } //remove_value
 
-            /// Add a value created with new_value or clone_value to the
+            /// Add a value created with new_value() or clone_value() to the
             /// multidex.  Overwrites index entries for any key fields.
             /// @return The new value
             function add_value(val)

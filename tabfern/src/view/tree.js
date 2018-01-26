@@ -907,14 +907,15 @@ function createNodeForWindow(cwin, keep)
 
 /// Create a tree node for a closed window
 /// @param win_data_v1      V1 save data for the window
-function createNodeForClosedWindow(win_data_v1)
+function createNodeForClosedWindowV1(win_data_v1)
 {
     let is_ephemeral = Boolean(win_data_v1.ephemeral);  // missing => false
     let shouldCollapse = getBoolSetting(CFG_COLLAPSE_ON_STARTUP);
 
     log.info({'Closed window':win_data_v1.raw_title, 'is ephemeral?': is_ephemeral});
 
-    // Make a node for a closed window
+    // Make a node for a closed window.  The node is marked KEEP.
+    // TODO need to not mark it keep if it's ephemeral and still open.
     let {node_id, val} = M.makeItemForWindow();
 
     // Mark recovered windows
@@ -947,7 +948,7 @@ function createNodeForClosedWindow(win_data_v1)
     }
 
     return node_id;
-} //createNodeForClosedWindow
+} //createNodeForClosedWindowV1
 
 ////////////////////////////////////////////////////////////////////////// }}}1
 // Loading // {{{1
@@ -961,7 +962,7 @@ var was_loading_error = false;
 ///                             a match.
 /// @return {mixed} the existing window's node and value as {node, val},
 ///                 or false if no match.
-function winAlreadyExists(cwin)
+function winAlreadyExistsInTree(cwin)
 {
     WIN:
     for(let existing_win_node_id of T.treeobj.get_node($.jstree.root).children) {
@@ -991,7 +992,7 @@ function winAlreadyExists(cwin)
     } //foreach existing window
 
     return false;
-} //winAlreadyExists()
+} //winAlreadyExistsInTree()
 
 /// Add the save data into the tree.
 /// Design decision: TabFern SHALL always be able to load older save files.
@@ -1018,7 +1019,7 @@ var loadSavedWindowsFromData = (function(){
                 let v1_tab = {raw_title: v0_tab.text, raw_url: v0_tab.url};
                 v1_win.tabs.push(v1_tab);
             }
-            createNodeForClosedWindow(v1_win);
+            createNodeForClosedWindowV1(v1_win);
             ++numwins;
         }
         return numwins;    //load successful
@@ -1037,7 +1038,7 @@ var loadSavedWindowsFromData = (function(){
         //log.info({'loadSaveDataV1':data});
         let numwins=0;
         for(let win_data_v1 of data.tree) {
-            createNodeForClosedWindow(win_data_v1);
+            createNodeForClosedWindowV1(win_data_v1);
             ++numwins;
         }
         return numwins;
@@ -1060,9 +1061,11 @@ var loadSavedWindowsFromData = (function(){
                 vernum = 0;
             } else if( (typeof data === 'object') &&
                     ('tabfern' in data) &&
-                    (data['tabfern'] == 42) &&
-                    ('version' in data)) {    // a specific version
-                vernum = data['version']
+                    (data['tabfern'] === 42) &&
+                    ('version' in data) &&
+                    (typeof data.version === 'number') &&
+                    Number.isInteger(data.version)) {    // a specific version
+                vernum = data.version;
             } else {
                 log.error('Could not identify the version number of the save data');
                 break READIT;
@@ -1713,7 +1716,7 @@ var tabOnCreated = (function(){
 //            ASQ().then((done)=>{
 //                chrome.windows.get(win_id,{populate:true},CC(done));
 //            }).val(()=>{
-//                let existing_win = winAlreadyExists(win);
+//                let existing_win = winAlreadyExistsInTree(win);
 //                if(existing_win) {
 //                    actionDeleteWindow(win_node_id, T.treeobj.get_node(win_node_id),null,null);
 //                    // TODO open the saved window and connect it with the new tabs
@@ -3091,7 +3094,7 @@ function addOpenWindowsToTree(done, winarr)
 //            continue;
 //        }
 
-        let existing_win = winAlreadyExists(win);
+        let existing_win = winAlreadyExistsInTree(win);
         if(!existing_win) {
             createNodeForWindow(win, K.WIN_NOKEEP);
         } else {
@@ -3105,6 +3108,13 @@ function addOpenWindowsToTree(done, winarr)
             if(existing_win.val.keep === K.WIN_KEEP) {
                 M.add_subtype(existing_win.node, K.NST_SAVED);
             }
+
+            // If it was open, we by definition didn't need to recover it.
+            // TODO update per createNodeForClosedWindowV1 --- it will
+            // still be marked KEEP.
+            M.del_subtype(existing_win.node.id, K.NST_RECOVERED);
+            existing_win.val.raw_title =
+                existing_win.val.raw_title.replace(/ (Recovered)$/,'');
 
             T.treeobj.open_node(existing_win.node);
             T.treeobj.redraw_node(existing_win.node);
