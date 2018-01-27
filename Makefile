@@ -38,11 +38,11 @@ all: bundle
 
 bundle: $(DEST_BUNDLE_1) $(DEST_BUNDLE_2)
 
-$(DEST_BUNDLE_1): $(TO_BUNDLE_1)
-	./bundle.sh $@ $^
+$(DEST_BUNDLE_1): $(TO_BUNDLE_1) bundle.sh Makefile
+	./bundle.sh $@ $(TO_BUNDLE_1)
 
-$(DEST_BUNDLE_2): $(TO_BUNDLE_2)
-	./bundle.sh $@ $^
+$(DEST_BUNDLE_2): $(TO_BUNDLE_2) bundle.sh Makefile
+	./bundle.sh $@ $(TO_BUNDLE_2)
 
 clean:
 	-rm $(DEST_BUNDLE_1) $(DEST_BUNDLE_2)

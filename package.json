@@ -30,7 +30,6 @@
   "dependencies": {
     "asynquence": "^0.10.0",
     "blake2s-js": "^1.2.3",
-    "blakejs": "^1.1.0",
     "requirejs": "^2.3.5",
     "rmodal": "^1.0.28",
     "spectrum-colorpicker": "^1.8.0",

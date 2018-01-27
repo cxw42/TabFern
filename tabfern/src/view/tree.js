@@ -36,6 +36,38 @@ var M;      ///< Shorthand access to the model, view/model.js
 var ASQ;    ///< Shorthand for asynquence
 var ASQH;   ///< Shorthand for asq-helpers
 
+/// require.js modules used by this file
+let Module_dependencies = [
+    // Modules that are not specific to TabFern
+    'jquery', 'jstree', 'jstree-actions', 'jstree-flagnode',
+    'jstree-because',
+    'loglevel', 'hamburger', 'bypasser', 'multidex', 'justhtmlescape',
+    'signals', 'export-file', 'import-file',
+    'asynquence-contrib', 'asq-helpers', 'rmodal',
+    'tinycolor',
+
+    // Shimmed modules.  Refer to these via Modules or *without* the
+    // `window.` prefix so it will be easier to refactor references
+    // to them later when we switch to a full build system.
+    'buffer',   // defines window.Buffer
+    'blake2s',  // defines window.BLAKE2s
+
+    // Modules for keyboard-shortcut handling.  Not really TabFern-specific,
+    // but not yet disentangled fully.
+    'shortcuts', 'dmauro_keypress', 'shortcuts_keybindings_default',
+
+    // Modules of TabFern itself
+    'view/const', 'view/item_details', 'view/sorts', 'view/item_tree',
+    'view/model', 'common/validation'
+];
+
+/// Make short names in Modules for some modules.  shortname => longname
+let Module_shortnames = {
+    exporter: 'export-file',
+    importer: 'import-file',
+    default_shortcuts: 'shortcuts_keybindings_default',
+};
+
 ////////////////////////////////////////////////////////////////////////// }}}1
 // Globals // {{{1
 
@@ -3313,42 +3345,16 @@ function initIncompleteWarning()
 //////////////////////////////////////////////////////////////////////////
 // MAIN //
 
-/// require.js modules used by this file
-let dependencies = [
-    // Modules that are not specific to TabFern
-    'jquery', 'jstree', 'jstree-actions', 'jstree-flagnode',
-    'jstree-because',
-    'loglevel', 'hamburger', 'bypasser', 'multidex', 'justhtmlescape',
-    'signals', 'export-file', 'import-file',
-    'asynquence-contrib', 'asq-helpers', 'rmodal',
-    'tinycolor',
-
-    // Modules for keyboard-shortcut handling.  Not really TabFern-specific,
-    // but not yet disentangled fully.
-    'shortcuts', 'dmauro_keypress', 'shortcuts_keybindings_default',
-
-    // Modules of TabFern itself
-    'view/const', 'view/item_details', 'view/sorts', 'view/item_tree',
-    'view/model', 'common/validation'
-];
-
-/// Make short names in Modules for some modules.  shortname => longname
-let module_shortnames = {
-    exporter: 'export-file',
-    importer: 'import-file',
-    default_shortcuts: 'shortcuts_keybindings_default',
-};
-
 function main(...args)
 {
     // Hack: Copy the loaded modules into our Modules global
     for(let depidx = 0; depidx < args.length; ++depidx) {
-        Modules[dependencies[depidx]] = args[depidx];
+        Modules[Module_dependencies[depidx]] = args[depidx];
     }
 
     // Easier names for some modules
-    for(let shortname in module_shortnames) {
-        Modules[shortname] = Modules[module_shortnames[shortname]];
+    for(let shortname in Module_shortnames) {
+        Modules[shortname] = Modules[Module_shortnames[shortname]];
     }
 
     local_init();
@@ -3393,7 +3399,7 @@ function main(...args)
 
 } // main()
 
-require(dependencies, main);
+require(Module_dependencies, main);
 // }}}1
 
 // ###########################################################################

@@ -39,8 +39,16 @@ var require = {
             'keypress',
             'hamburger',
             'import-file',
-            'export-file'
+            'export-file',
         ]
+    },
+    shim: { // Note: can't bundle non-AMD shimmed modules --- requirejs#1172
+        buffer: {
+            exports: 'Buffer'
+        },
+        blake2s: {
+            exports: 'BLAKE2s'
+        }
     },
     async: {
         useHash: true   // #callback=x rather than ?callback=x since Chrome

@@ -309,8 +309,7 @@
     // "Rez" and "Erase" are adding/removing items, to distinguish them
     // from creating and destroying Chrome widgets.
 
-    //////////////////////////////////////////////////////////////////////
-    // Querying the model
+    // Querying the model ////////////////////////////////////////////// {{{1
 
     /// Get a {val, node_id} pair (vn) from one of those (vorny).
     /// @param val_or_nodey {mixed} If a string, the node ID of the
@@ -368,8 +367,9 @@
             if(!T.treeobj.has_multitype(node_id, ty)) return false;
         }
         return true;
-    } //add_subtype
+    } //has_subtype
 
+    // }}}1
     //////////////////////////////////////////////////////////////////////
     // Initializing and shutting down the model
 
