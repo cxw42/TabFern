@@ -153,8 +153,6 @@ describe('view/model', function() {
 
             let parent_val = D.windows.by_win_id(ctab.windowId);
             expect(parent_val).toBeTruthy();
-            since('The parent window should have an ordered_url_hash now')
-            .expect(parent_val.ordered_url_hash).toBeTruthy();
             done();
         });
     });

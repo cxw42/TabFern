@@ -1,5 +1,8 @@
 // view/item_details.js: Detail records and related utilities for
 // TabFern items.
+// Note: the details do not include all the data.  Parent/child relationships between
+// nodes, and top borders on items, are kept in the tree.
+//
 // Copyright (c) 2017 Chris White, Jasmine Hegman.
 
 (function (root, factory) {
@@ -74,7 +77,8 @@
             'raw_title',    // the window's title (e.g., "Window")
             'isOpen',       // whether the window is open or not
             'keep',         // whether the window should be saved or not
-            'raw_bullet',   // User-provided text (brief).  null => none
+            //'raw_bullet',   // User-provided text (brief).  null => none
+                // Not currently used.
         ]);
 
     /// Find a node's value in the model, regardless of type.

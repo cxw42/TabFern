@@ -116,7 +116,7 @@ var Esc;
 var Bypasser;
 
 ////////////////////////////////////////////////////////////////////////// }}}1
-// Initialization // {{{1
+// Module setup, and utilities // {{{1
 
 /// Init those of our globals that don't require any data to be loaded.
 /// Call after Modules has been populated.
@@ -142,6 +142,21 @@ function local_init()
     });
 
 } //init()
+
+/// Copy properties named #property_names from #source to #dest.
+/// If #modifier is provided, it is applied to each property value before assigning.
+/// @return A copy of dest, or null
+function copyTruthyProperties(dest, source, property_names, modifier)
+{
+    if(!dest || !source || !property_names) return null;
+    if(!Array.isArray(property_names)) property_names = [property_names];
+    if(!modifier || typeof modifier !== 'function') modifier = ((x)=>{return x;});
+
+    for(let key of property_names) {
+        if(source[key]) dest[key] = modifier(source[key]);
+    }
+    return dest;
+} //copy
 
 ////////////////////////////////////////////////////////////////////////// }}}1
 // DOM Manipulation // {{{1
@@ -372,7 +387,9 @@ function saveTree(save_ephemeral_windows = true, cbk = undefined)
                 let thistab = {};
                 thistab.raw_title = tab_val.raw_title;
                 thistab.raw_url = tab_val.raw_url;
-                // TODO save favIconUrl?  Need to save it in the item first.
+                if(tab_val.raw_favicon_url) {
+                    thistab.raw_favicon_url = tab_val.raw_favicon_url;
+                }
 
                 if(M.has_subtype(tab_node_id, K.NST_TOP_BORDER)) {
                     thistab.bordered = true;
@@ -381,7 +398,7 @@ function saveTree(save_ephemeral_windows = true, cbk = undefined)
                 if(tab_val.raw_bullet) thistab.raw_bullet = tab_val.raw_bullet;
                 result_win.tabs.push(thistab);
             }
-        }
+        } //endif has children
 
         result.push(result_win);
     } //foreach window
@@ -665,7 +682,7 @@ function actionToggleTabTopBorder(node_id, node, unused_action_id, unused_action
 
 /// Edit a node's bullet.  ** Synchronous **.
 /// @param node_id {string} The ID of a node representing a tab.
-function actionEditBullet(node_id, node, unused_action_id, unused_action_el)
+function actionEditTabBullet(node_id, node, unused_action_id, unused_action_el)
 {
     let val = M.get_node_val(node_id);
     if(!val || val.ty !== K.IT_TAB) return;
@@ -685,7 +702,7 @@ function actionEditBullet(node_id, node, unused_action_id, unused_action_el)
         // wants to keep the window the note is in.
 
     saveTree();
-} //actionEditBullet
+} //actionEditTabBullet
 
 /// Delete a tab's entry in the tree.
 /// @param node_id {string} the ID of the node to delete
@@ -808,24 +825,24 @@ function actionDeleteTab(node_id, node, unused_action_id, unused_action_el,
 
 // = = = Tabs = = = = = = = = = = = = = = = = = =
 
-function addTabNodeActions(win_node_id)
+function addTabNodeActions(tab_node_id)
 {
-    T.treeobj.make_group(win_node_id, {
+    T.treeobj.make_group(tab_node_id, {
         selector: 'div.jstree-wholerow',
         child: true,
         class: K.ACTION_GROUP_WIN_CLASS // + ' jstree-animated' //TODO?
     });
 
-    T.treeobj.add_action(win_node_id, {
+    T.treeobj.add_action(tab_node_id, {
         id: 'editBullet',
         class: 'fff-pencil ' + K.ACTION_BUTTON_WIN_CLASS,
         text: '&nbsp;',
         grouped: true,
-        callback: actionEditBullet,
+        callback: actionEditTabBullet,
         dataset: { action: 'editBullet' }
     });
 
-    T.treeobj.add_action(win_node_id, {
+    T.treeobj.add_action(tab_node_id, {
         id: 'deleteTab',
         class: 'fff-cross ' + K.ACTION_BUTTON_WIN_CLASS,
         text: '&nbsp;',
@@ -838,17 +855,21 @@ function addTabNodeActions(win_node_id)
 
 /// Create a tree node for an open tab.
 /// @param ctab {Chrome Tab} the tab record
+/// @return The node ID on success, or falsy on failure.
 function createNodeForTab(ctab, parent_node_id)
 {
-    { //  debug
-        let tab_val = D.tabs.by_tab_id(ctab.id);
-        if(tab_val) {
-            log.error('Refusing to create node for existing tab ' + ctab.id);
-            return;
-        }
-    } // /debug
+//    { //  debug
+//        let tab_val = D.tabs.by_tab_id(ctab.id);
+//        if(tab_val) {
+//            log.error('Refusing to create node for existing tab ' + ctab.id);
+//            return;
+//        }
+//    } // /debug
 
-    let {node_id, val} = M.makeItemForTab(parent_node_id, ctab);
+    let {node_id, val} = M.vnRezTab(parent_node_id);  //M.makeItemForTab(parent_node_id, ctab);
+    if(!node_id) return false;
+    M.markTabAsOpen(val, ctab);
+
     addTabNodeActions(node_id);
 
     return node_id;
@@ -857,25 +878,36 @@ function createNodeForTab(ctab, parent_node_id)
 /// Create a tree node for a closed tab
 /// @param tab_data_v1      V1 save data for the tab
 /// @param parent_node_id   The node id for a closed window
-/// @return node_id         The node id for the new tab
-function createNodeForClosedTab(tab_data_v1, parent_node_id)
+/// @return node_id         The node id for the new tab, or falsy on failure
+function createNodeForClosedTabV1(tab_data_v1, parent_node_id)
 {
-    let node_mtype = (tab_data_v1.bordered ? K.NST_TOP_BORDER : false);
-    let {node_id, val} = M.makeItemForTab(
-            parent_node_id, false,      // false => no Chrome window open
-            tab_data_v1.raw_url,
-            tab_data_v1.raw_title,
-            node_mtype
-    );
-    if(tab_data_v1.raw_bullet) {
-        val.raw_bullet = String(tab_data_v1.raw_bullet);
-        M.refresh_label(node_id);
-    }
+//    let node_mtype = (tab_data_v1.bordered ? K.NST_TOP_BORDER : false);
+//    let {node_id, val} = M.makeItemForTab(
+//            parent_node_id, false,      // false => no Chrome window open
+//            tab_data_v1.raw_url,
+//            tab_data_v1.raw_title,
+//            node_mtype
+//    );
+
+//    if(tab_data_v1.raw_url.match('TM2-0219')) {
+//        debugger;
+//    }
+    let {node_id, val} = M.vnRezTab(parent_node_id);
+    if(!node_id) return false;
+
+    // Copy properties into the details
+    copyTruthyProperties(val, tab_data_v1,
+            ['raw_url', 'raw_title', 'raw_bullet', 'raw_favicon_url'],
+            String);
+
+    M.refresh_label(node_id);
+
+    if(tab_data_v1.bordered) M.add_subtype(val, K.NST_TOP_BORDER);
 
     addTabNodeActions(node_id);
 
     return node_id;
-} //createNodeForClosedTab
+} //createNodeForClosedTabV1
 
 // = = = Windows = = = = = = = = = = = = = = = = =
 
@@ -917,7 +949,7 @@ function addWindowNodeActions(win_node_id)
 } //addWindowNodeActions
 
 /// Create a tree node for open Chrome window #cwin.
-/// @returns the tree-node ID, or undefined on error.
+/// @returns the tree-node ID, or falsy on error.
 function createNodeForWindow(cwin, keep)
 {
     if(!cwin || !cwin.id) return;
@@ -927,7 +959,7 @@ function createNodeForWindow(cwin, keep)
 
     let is_first = (!!cwin && getBoolSetting(CFG_NEW_WINS_AT_TOP));
     let {node_id, val} = M.vnRezWin(is_first);  //M.makeItemForWindow(cwin, keep);
-    if(!node_id) return;    //sanity check
+    if(!node_id) return false;    //sanity check
 
     M.markWinAsOpen(val, cwin);
     if(keep) {
@@ -941,18 +973,16 @@ function createNodeForWindow(cwin, keep)
     if(cwin.tabs) {                      // new windows may have no tabs
         for(let tab of cwin.tabs) {
             log.info('   ' + tab.id.toString() + ': ' + tab.title);
-            createNodeForTab(tab, node_id);
+            createNodeForTab(tab, node_id);     //TODO handle errors
         }
     }
-
-    T.treeobj.open_node(node_id);
-        // TODO move this into M.vnRezTab once createNodeForTab calls it.
 
     return node_id;
 } //createNodeForWindow
 
 /// Create a tree node for a closed window
 /// @param win_data_v1      V1 save data for the window
+/// @return the node ID, or falsy on failure
 function createNodeForClosedWindowV1(win_data_v1)
 {
     let is_ephemeral = Boolean(win_data_v1.ephemeral);  // missing => false
@@ -961,8 +991,10 @@ function createNodeForClosedWindowV1(win_data_v1)
     log.info({'Closed window':win_data_v1.raw_title, 'is ephemeral?': is_ephemeral});
 
     // Make a node for a closed window.  The node is marked KEEP.
-    // TODO need to not mark it keep if it's ephemeral and still open.
-    let {node_id, val} = M.makeItemForWindow();
+    // TODO don't mark it keep if it's ephemeral and still open.
+    let {node_id, val} = M.vnRezWin();  // M.makeItemForWindow();
+    if(!node_id) return false;
+    M.remember(node_id, false);         // Closed windows are KEEP by design
 
     // TODO restore ordered_url_hash
 
@@ -991,9 +1023,12 @@ function createNodeForClosedWindowV1(win_data_v1)
     if(win_data_v1.tabs) {
         for(let tab_data_v1 of win_data_v1.tabs) {
             //log.info('   ' + tab_data_v1.text);
-            createNodeForClosedTab(tab_data_v1, node_id);
+            createNodeForClosedTabV1(tab_data_v1, node_id);
         }
     }
+
+    M.updateOrderedURLHash(val);
+        // Now that all the tabs are in, hash the window.
 
     return node_id;
 } //createNodeForClosedWindowV1
@@ -1012,34 +1047,56 @@ var was_loading_error = false;
 ///                 or false if no match.
 function winAlreadyExistsInTree(cwin)
 {
-    WIN:
-    for(let existing_win_node_id of T.treeobj.get_node($.jstree.root).children) {
+    if(!cwin || !cwin.tabs || cwin.tabs.length < 1) return false;
 
-        // Is it already open?  If so, don't hijack it.
-        // This also catches non-window nodes such as the holding pen.
-        let existing_win_val = D.windows.by_node_id(existing_win_node_id);
-        if(!existing_win_val || typeof existing_win_val.isOpen === 'undefined' ||
-                existing_win_val.isOpen ) continue WIN;
+    // Get #cwin's hash
+    let child_urls = [];
+    for(let ctab of cwin.tabs) {
+        if(!ctab.url) return false;     // Assume not existent if we can't tell.
+        child_urls.push(ctab.url);
+    }
 
-        // Does it have the same number of tabs?  If not, skip it.
-        let existing_win_node = T.treeobj.get_node(existing_win_node_id);
-        if(existing_win_node.children.length != cwin.tabs.length)
-            continue WIN;
+    let ordered_url_hash = M.orderedHashOfStrings(child_urls);
+    let val = D.windows.by_ordered_url_hash(ordered_url_hash);
+    if(!val) return false;
 
-        // Same number of tabs.  Are they the same URLs?
-        for(let i=0; i<cwin.tabs.length; ++i) {
-            let existing_tab_val = D.tabs.by_node_id(existing_win_node.children[i]);
-            if(!existing_tab_val) continue WIN;
-            if(existing_tab_val.raw_url !== cwin.tabs[i].url) continue WIN;
-        }
+    let node = T.treeobj.get_node(val.node_id);
+    if(!node) return false;
 
-        // Since all the tabs have the same URLs, assume we are reopening
-        // an existing window.
-        return {node: existing_win_node, val: existing_win_val};
+    // Sanity check, e.g., in case of corrupted save data.  If the hashes match
+    // but the tab counts don't, assume failure.
+    if(cwin.tabs.length !== node.children.length) return false;
 
-    } //foreach existing window
+    return {node, val};
 
-    return false;
+//    WIN:
+//    for(let existing_win_node_id of T.treeobj.get_node($.jstree.root).children) {
+//
+//        // Is it already open?  If so, don't hijack it.
+//        // This also catches non-window nodes such as the holding pen.
+//        let existing_win_val = D.windows.by_node_id(existing_win_node_id);
+//        if(!existing_win_val || typeof existing_win_val.isOpen === 'undefined' ||
+//                existing_win_val.isOpen ) continue WIN;
+//
+//        // Does it have the same number of tabs?  If not, skip it.
+//        let existing_win_node = T.treeobj.get_node(existing_win_node_id);
+//        if(existing_win_node.children.length != cwin.tabs.length)
+//            continue WIN;
+//
+//        // Same number of tabs.  Are they the same URLs?
+//        for(let i=0; i<cwin.tabs.length; ++i) {
+//            let existing_tab_val = D.tabs.by_node_id(existing_win_node.children[i]);
+//            if(!existing_tab_val) continue WIN;
+//            if(existing_tab_val.raw_url !== cwin.tabs[i].url) continue WIN;
+//        }
+//
+//        // Since all the tabs have the same URLs, assume we are reopening
+//        // an existing window.
+//        return {node: existing_win_node, val: existing_win_val};
+//
+//    } //foreach existing window
+//
+//    return false;
 } //winAlreadyExistsInTree()
 
 /// Add the save data into the tree.
@@ -1071,7 +1128,7 @@ var loadSavedWindowsFromData = (function(){
             ++numwins;
         }
         return numwins;    //load successful
-    }  //loadSaveDataV0
+    } //loadSaveDataV0
 
     /// Populate the tree from version-1 save data in #data.
     /// V1 format: { ... , tree:[win, win, ...] }
@@ -1091,7 +1148,7 @@ var loadSavedWindowsFromData = (function(){
             ++numwins;
         }
         return numwins;
-    }
+    } //loadSaveDataV1
 
     /// The mapping table from versions to loaders.
     /// each loader should return truthy if load successful, falsy otherwise.
@@ -1300,7 +1357,7 @@ function treeOnSelect(_evt_unused, evt_data)
 
                 // Tabs
                 case 'editBullet':
-                    actionEditBullet(node.id, node, null, null); break;
+                    actionEditTabBullet(node.id, node, null, null); break;
                 case 'deleteTab':
                     actionDeleteTab(node.id, node, null, null, evt_data.event);
                         // as deleteWindow, above.
@@ -2419,7 +2476,7 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
                 // Use K.nextTickRunner so the context menu can be
                 // hidden before actionRenameWindow() calls window.prompt().
                 action: K.nextTickRunner(
-                    function(){actionEditBullet(node.id, node, null, null);}
+                    function(){actionEditTabBullet(node.id, node, null, null);}
                 )
             },
         };
@@ -2906,7 +2963,7 @@ function messageListener(request, sender, sendResponse)
                 chrome.windows.update(my_winid, {focused:true}, cc);
             })
             .then((done)=>{     // Do the edit (synchronous)
-                actionEditBullet(tab_val.node_id,
+                actionEditTabBullet(tab_val.node_id,
                                 T.treeobj.get_node(tab_val.node_id),
                                 null,null);
                 done();
@@ -3119,84 +3176,115 @@ function createMainTreeIfWinIdReceived_catch(done, win_id_msg_or_error)
     );
 } //createMainTreeIfWinIdReceived_catch()
 
-function addOpenWindowsToTree(done, winarr)
+function addOpenWindowsToTree(done, cwins)
 {
     let dat = {};
     let focused_win_id;
 
-    for(let win of winarr) {
-        log.info('Open window ' + win.id +
-            ((win.tabs && win.tabs[0] && win.tabs[0].title) ?
-                ` "${win.tabs[0].title}"` : ' (no title)'));
+    for(let cwin of cwins) {
+        log.info('Open window ' + cwin.id +
+            ((cwin.tabs && cwin.tabs[0] && cwin.tabs[0].title) ?
+                ` "${cwin.tabs[0].title}"` : ' (no title)'));
 
-        if(win.focused) {
-            focused_win_id = win.id;
+        if(cwin.focused) {
+            focused_win_id = cwin.id;
         }
 
-        if(win.id === my_winid) continue;
+        if(cwin.id === my_winid) continue;
             // This used to be taken care of by createNodeForWindow,
             // but doing it here is cleaner.
 
         // TODO? skip popups here and throughout, or handle them better.
-//        if(win.type === 'popup') {
-//            log.debug(`Skipping popup window ${win.id}`);
+//        if(cwin.type === 'popup') {
+//            log.debug(`Skipping popup window ${cwin.id}`);
 //            continue;
 //        }
 
-        let existing_win = winAlreadyExistsInTree(win);
+        let existing_win = winAlreadyExistsInTree(cwin);
         if(!existing_win) {
-            createNodeForWindow(win, K.WIN_NOKEEP);
+            createNodeForWindow(cwin, K.WIN_NOKEEP);
         } else {
             // Attach the open window to the saved window
             log.info('Found existing window in the tree: ' + existing_win.val.raw_title);
-            D.windows.change_key(existing_win.val, 'win_id', win.id);
-            existing_win.val.isOpen = true;
-            // don't change val.keep, which may have either value.
-            existing_win.val.win = win;
-            M.add_subtype(existing_win.node, K.NST_OPEN);
-            if(existing_win.val.keep === K.WIN_KEEP) {
-                M.add_subtype(existing_win.node, K.NST_SAVED);
-            }
+
+            M.markWinAsOpen(existing_win.val, cwin);
+                // Doesn't touch the tabs.
+
+//            D.windows.change_key(existing_win.val, 'win_id', cwin.id);
+//            existing_win.val.isOpen = true;
+//            // don't change val.keep, which may have either value.
+//            existing_win.val.win = cwin;
+//            M.add_subtype(existing_win.node, K.NST_OPEN);
+
+            // I don't think we need this any more, since a saved window would
+            // have already been marked as KEEP.
+//            if(existing_win.val.keep === K.WIN_KEEP) {
+//                M.add_subtype(existing_win.node, K.NST_SAVED);
+//            }
 
             // If it was open, we by definition didn't need to recover it.
-            // TODO update per createNodeForClosedWindowV1 --- it will
-            // still be marked KEEP.
-            M.del_subtype(existing_win.node.id, K.NST_RECOVERED);
-            if(existing_win.val.raw_title) {
-                existing_win.val.raw_title =
-                    existing_win.val.raw_title.replace(/ (Recovered)$/,'');
+            // Undo the recovery actions that createNodeForClosedWindowV1()
+            // took (KEEP, NST_RECOVERED).
+            if(M.has_subtype(existing_win.node.id, K.NST_RECOVERED)) {
+                M.del_subtype(existing_win.node.id, K.NST_RECOVERED);
+                existing_win.val.raw_title = null;      //default title
+                M.mark_win_as_unsaved(existing_win.val, false);     // also refreshes the label
             }
 
-            T.treeobj.open_node(existing_win.node);
-            T.treeobj.redraw_node(existing_win.node);
+            // Do we need these?
+//            T.treeobj.open_node(existing_win.node);
+//            T.treeobj.redraw_node(existing_win.node);
 
-            // If we reach here, win.tabs.length === existing_win.node.children.length.
-            for(let idx=0; idx < win.tabs.length; ++idx) {
+            if(cwin.tabs.length !== existing_win.node.children.length) {
+                log.error({
+                    'Mismatched child count':
+                        `${cwin.tabs.length} !== ${existing_win.node.children.length}`,
+                    cwin,
+                    existing_win
+                });
+
+                was_loading_error = true;
+                continue;   // TODO handle this better
+            }
+
+            // If we reach here, cwin.tabs.length === existing_win.node.children.length.
+            for(let idx=0; idx < cwin.tabs.length; ++idx) {
                 let tab_node_id = existing_win.node.children[idx];
                 let tab_val = D.tabs.by_node_id(tab_node_id);
                 if(!tab_val) continue;
 
-                let ctab = win.tabs[idx];
+                let ctab = cwin.tabs[idx];
 
-                tab_val.win_id = win.id;
-                tab_val.index = idx;
-                tab_val.tab = ctab;
-                tab_val.raw_url = ctab.url || 'about:blank';
-                tab_val.raw_title = ctab.title || '## Unknown title ##';
-                tab_val.isOpen = true;
-                D.tabs.change_key(tab_val, 'tab_id', tab_val.tab.id);
-                M.add_subtype(tab_node_id, K.NST_OPEN);
+                // Do we need these?
+                ctab.url = ctab.url || 'about:blank';
+                ctab.title = ctab.title || '## Unknown title ##';
 
-                if(ctab.favIconUrl) {
-                    T.treeobj.set_icon(tab_node_id, encodeURI(ctab.favIconUrl));
-                } else if((/\.pdf$/i).test(tab_val.raw_url)) {
-                    T.treeobj.set_icon(tab_node_id,
-                                        'fff-page-white-with-red-banner');
-                } else {
-                    T.treeobj.set_icon(tab_node_id, 'fff-page');
-                }
-                M.refresh_label(tab_node_id);
+                M.markTabAsOpen(tab_node_id, ctab);
+
+//                tab_val.win_id = cwin.id;
+//                tab_val.index = idx;
+//                tab_val.tab = ctab;
+//                tab_val.raw_url = ctab.url || 'about:blank';
+//                tab_val.raw_title = ctab.title || '## Unknown title ##';
+//                tab_val.isOpen = true;
+//                D.tabs.change_key(tab_val, 'tab_id', tab_val.tab.id);
+//                M.add_subtype(tab_node_id, K.NST_OPEN);
+//
+//                if(ctab.favIconUrl) {
+//                    T.treeobj.set_icon(tab_node_id, encodeURI(ctab.favIconUrl));
+//                } else if((/\.pdf$/i).test(tab_val.raw_url)) {
+//                    T.treeobj.set_icon(tab_node_id,
+//                                        'fff-page-white-with-red-banner');
+//                } else {
+//                    T.treeobj.set_icon(tab_node_id, 'fff-page');
+//                }
+//                M.refresh_label(tab_node_id);
+
             } //foreach tab
+
+            // Note: We do not need to update existing_win.val.ordered_url_hash.
+            // Since we got here, we know that it was a match.
+
         } //endif window already exists
     } //foreach window
 
@@ -3208,7 +3296,7 @@ function addOpenWindowsToTree(done, winarr)
     }
 
     done();
-} //addOpenWindowsToTree(done,winarr)
+} //addOpenWindowsToTree(done,cwins)
 
 function addEventListeners(done)
 {
@@ -3314,6 +3402,8 @@ function moveWinToLastPositionIfAny_catch(done, items_or_err)
 /// completed successfully.
 function initTreeFinal(done)
 {
+    return; // DEBUG - don't save
+
     if(!was_loading_error) {
         did_init_complete = true;
         // Assume the document is loaded by this point.
@@ -3393,6 +3483,7 @@ function main(...args)
     // Run the main init steps once the page has loaded
     let s = ASQ();
     callbackOnLoad(s.errfcb());
+
     s.then(basicInit)
     .try((done)=>{
         // Get our Chrome-extensions-API window ID from the background page.
@@ -3418,7 +3509,7 @@ function main(...args)
 
 } // main()
 
-require(Module_dependencies, main);
+require(Module_dependencies, main);     // Do it, Rockapella!
 // }}}1
 
 // ###########################################################################

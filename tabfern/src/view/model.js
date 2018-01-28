@@ -49,7 +49,7 @@
     /// The module we are creating
     let module = {};
 
-    /// Value returned by vn*() on error
+    /// Value returned by vn*() on error.  Both members are falsy.
     module.VN_NONE = {val: null, node_id: ''};
 
     // Data-access routines //////////////////////////////////////////// {{{1
@@ -92,7 +92,10 @@
     /// @return {Boolean} true on success; false on error
     module.mark_win_as_unsaved = function(val, adjust_title=true) {
         if(!val || val.ty !== K.IT_WIN || !val.node_id) return false;
+
         val.keep = K.WIN_NOKEEP;
+        T.treeobj.del_multitype(val.node_id, K.NST_SAVED);
+
         if(adjust_title && (val.raw_title !== null)) {
             val.raw_title = module.remove_unsaved_markers(val.raw_title) +
                             ' (Unsaved)';
@@ -318,15 +321,16 @@
     // before hashing.
     // @param strs {mixed} a string or array of strings.
     // @return {String} the hash, as a string of hex chars
-    module.hashStrings = function(strs) {
+    module.orderedHashOfStrings = function(strs) {
         if(!Array.isArray(strs)) strs = [strs];
         let blake = new BLAKE2s(32);
         for(let str of strs) {
-            let databuf = new Uint8Array(Buffer.from(str, 'utf8'));
+            let databuf = new Uint8Array(Buffer.from(str + '\0', 'utf8'));
+                // Design choice: append \0 so each string has nonzero length
             blake.update(databuf);
         }
         return blake.hexDigest();
-    } //hashString
+    } //orderedHashOfStrings
 
     // Update the given node's ordered_url_hash to reflect its current children.
     // @return {Boolean} True if the ordered_url_hash was set; false if it
@@ -348,7 +352,7 @@
             child_urls.push(child_url);
         }
 
-        let ordered_url_hash = module.hashStrings(child_urls);
+        let ordered_url_hash = module.orderedHashOfStrings(child_urls);
 
         // Check if a different window already has that hash.  If so, that
         // window keeps that hash.
@@ -592,7 +596,8 @@
 
     /// Attach a Chrome tab to an existing tab item.
     /// Updates the item, but does not touch the Chrome tab.
-    /// Also updates the parent's val.ordered_url_hash.
+    /// ** NOTE ** Does NOT update the parent's val.ordered_url_hash.
+    /// ** NOTE ** Does NOT attach any child nodes to tabs.
     /// @param tab_vorny {mixed} The item
     /// @param ctab {Chrome Tab} The open tab
     /// @return {Boolean} true on success; false on error
@@ -627,7 +632,9 @@
         module.refresh_label(node_id);
         module.refresh_tab_icon(val);   // since favicon may have changed
 
-        module.updateOrderedURLHash(node.parent);
+        // Design decision: tree items for open windows always start expanded.
+        // No one has requested any other behaviour, as of the time of writing.
+        T.treeobj.open_node(node.parent);
 
         return true;
     } //markTabAsOpen
@@ -708,6 +715,7 @@
     // Removing model items
 
     /// Delete a tab from the tree and the details.
+    /// ** NOTE ** Does NOT update the parent's val.ordered_url_hash.
     /// TODO? Report error if tab is currently open?
     /// @param tab_vorny {mixed}
     /// @return {Boolean} true on success; false on error
@@ -722,8 +730,6 @@
             // So any events that are triggered won't try to look for a
             // nonexistent tab.
         T.treeobj.delete_node(node_id);
-
-        module.updateOrderedURLHash(parent_node_id);
 
         return true;
     } //eraseTab
