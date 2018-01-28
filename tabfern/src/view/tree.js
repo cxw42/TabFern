@@ -858,15 +858,7 @@ function addTabNodeActions(tab_node_id)
 /// @return The node ID on success, or falsy on failure.
 function createNodeForTab(ctab, parent_node_id)
 {
-//    { //  debug
-//        let tab_val = D.tabs.by_tab_id(ctab.id);
-//        if(tab_val) {
-//            log.error('Refusing to create node for existing tab ' + ctab.id);
-//            return;
-//        }
-//    } // /debug
-
-    let {node_id, val} = M.vnRezTab(parent_node_id);  //M.makeItemForTab(parent_node_id, ctab);
+    let {node_id, val} = M.vnRezTab(parent_node_id);
     if(!node_id) return false;
     M.markTabAsOpen(val, ctab);
 
@@ -881,17 +873,6 @@ function createNodeForTab(ctab, parent_node_id)
 /// @return node_id         The node id for the new tab, or falsy on failure
 function createNodeForClosedTabV1(tab_data_v1, parent_node_id)
 {
-//    let node_mtype = (tab_data_v1.bordered ? K.NST_TOP_BORDER : false);
-//    let {node_id, val} = M.makeItemForTab(
-//            parent_node_id, false,      // false => no Chrome window open
-//            tab_data_v1.raw_url,
-//            tab_data_v1.raw_title,
-//            node_mtype
-//    );
-
-//    if(tab_data_v1.raw_url.match('TM2-0219')) {
-//        debugger;
-//    }
     let {node_id, val} = M.vnRezTab(parent_node_id);
     if(!node_id) return false;
 
@@ -958,7 +939,7 @@ function createNodeForWindow(cwin, keep)
     if( cwin.id && (cwin.id === my_winid) ) return;
 
     let is_first = (!!cwin && getBoolSetting(CFG_NEW_WINS_AT_TOP));
-    let {node_id, val} = M.vnRezWin(is_first);  //M.makeItemForWindow(cwin, keep);
+    let {node_id, val} = M.vnRezWin(is_first);
     if(!node_id) return false;    //sanity check
 
     M.markWinAsOpen(val, cwin);
@@ -992,7 +973,7 @@ function createNodeForClosedWindowV1(win_data_v1)
 
     // Make a node for a closed window.  The node is marked KEEP.
     // TODO don't mark it keep if it's ephemeral and still open.
-    let {node_id, val} = M.vnRezWin();  // M.makeItemForWindow();
+    let {node_id, val} = M.vnRezWin();
     if(!node_id) return false;
     M.remember(node_id, false);         // Closed windows are KEEP by design
 
@@ -1068,35 +1049,6 @@ function winAlreadyExistsInTree(cwin)
     if(cwin.tabs.length !== node.children.length) return false;
 
     return {node, val};
-
-//    WIN:
-//    for(let existing_win_node_id of T.treeobj.get_node($.jstree.root).children) {
-//
-//        // Is it already open?  If so, don't hijack it.
-//        // This also catches non-window nodes such as the holding pen.
-//        let existing_win_val = D.windows.by_node_id(existing_win_node_id);
-//        if(!existing_win_val || typeof existing_win_val.isOpen === 'undefined' ||
-//                existing_win_val.isOpen ) continue WIN;
-//
-//        // Does it have the same number of tabs?  If not, skip it.
-//        let existing_win_node = T.treeobj.get_node(existing_win_node_id);
-//        if(existing_win_node.children.length != cwin.tabs.length)
-//            continue WIN;
-//
-//        // Same number of tabs.  Are they the same URLs?
-//        for(let i=0; i<cwin.tabs.length; ++i) {
-//            let existing_tab_val = D.tabs.by_node_id(existing_win_node.children[i]);
-//            if(!existing_tab_val) continue WIN;
-//            if(existing_tab_val.raw_url !== cwin.tabs[i].url) continue WIN;
-//        }
-//
-//        // Since all the tabs have the same URLs, assume we are reopening
-//        // an existing window.
-//        return {node: existing_win_node, val: existing_win_val};
-//
-//    } //foreach existing window
-//
-//    return false;
 } //winAlreadyExistsInTree()
 
 /// Add the save data into the tree.
@@ -1807,33 +1759,102 @@ function initFocusHandler()
 /// we check for that here.
 var tabOnCreated = (function(){
 
-    /// Make a callback that will check if the window matches an existing
-    /// window.  The callback can be invoked either as an ASQ callback (done)
-    /// or as an error-first callback.
-    function make_merge_check_cbk(win_id)
+    /// Make an ASQ step that will check if the window matches an existing
+    /// window.
+    function make_merge_check_step(win_id)
     {
-        return function inner(inner_done_or_err) {
+        return function merge_check_inner(check_done) {
             //DEBUG
-            log.debug({'(unimplemented) merge check for window':win_id});
-            if(typeof inner_done_or_err === 'function') inner_done_or_err();
-            return;
+            log.debug({'merge check for window':win_id});
 
-            // TODO fill this in
-//            ASQ().then((done)=>{
-//                chrome.windows.get(win_id,{populate:true},CC(done));
-//            }).val(()=>{
-//                let existing_win = winAlreadyExistsInTree(win);
-//                if(existing_win) {
-//                    actionDeleteWindow(win_node_id, T.treeobj.get_node(win_node_id),null,null);
-//                    // TODO open the saved window and connect it with the new tabs
-//                } //endif existing
-//                if(typeof inner_done === 'function') inner_done();
-//            });
+            let seq = ASQH.NowCCTry((cc)=>{
+                chrome.windows.get(win_id,{populate:true}, cc);
+            });
 
-        };
-    } //make_merge_check_cbk
+            seq.then((done, cwin_or_err)=>{
+                if(ASQH.is_asq_try_err(cwin_or_err)) {
+                    done.fail(cwin_or_err.catch);
+                    return;
+                }
 
-    return function inner(ctab)
+                let cwin = cwin_or_err;
+                let existing_win = winAlreadyExistsInTree(cwin);
+                if(existing_win) {
+                    log.info({'Found existing window': cwin, existing_win});
+                    //actionDeleteWindow(win_node_id, T.treeobj.get_node(win_node_id),null,null);
+                    log.debug({'merging not yet implemented for window':win_id});
+                    // TODO open the saved window and connect it with the new tabs.
+                    // ** Make sure to do this synchronously. **
+                    // We get multiple tabOnCreated messages, and more than one
+                    // could reach this point.
+
+                } //endif existing
+            });
+
+            seq.pipe(check_done);
+        }; //merge_check_inner()
+    } //make_merge_check_step()
+
+    /// Check if we're opening a tab on our own initiative, e.g., because
+    /// it was dragged from a closed window into an open window.
+    /// This is indicated by the URL being /src/view/newtab.html.
+    /// @return {Boolean} true if we handled the action, false otherwise
+    function handle_tabfern_action(tab_val, ctab)
+    {
+        if(tab_val || !ctab.url) return false;
+
+        let hash;
+
+        try {
+            let url = new URL(ctab.url);
+            if(!url.hash) return false;
+
+            hash = url.hash.slice(1);
+            if(!hash) return false;
+
+            if(url.href.split("#")[0] !==
+                chrome.runtime.getURL('/src/view/newtab.html')
+            ) {
+                return false;
+            }
+
+            // See if the hash is a node ID for a tab.
+            tab_val = D.tabs.by_node_id(hash);
+            if(!tab_val || !tab_val.being_opened) return false;
+
+        } catch(e) {
+            log.info({[`tabOnCreated handle_tabfern_action exception: ${e}`]: ctab});
+            return false;
+        }
+
+        // If we get here, it is a tab we are opening.  Change the URL
+        // to the URL we actually wanted (newtab.html is a placeholder)
+
+        let tab_node_id = hash;
+        tab_val.being_opened = false;
+
+        // Attach the ctab to the value
+        D.tabs.change_key(tab_val, 'tab_id', ctab.id);
+        tab_val.win_id = ctab.windowId;
+        tab_val.index = ctab.index;
+        tab_val.tab = ctab;
+        M.add_subtype(tab_node_id, K.NST_OPEN);
+
+        // Change the ctab's URL to the actual URL.
+        let seq = ASQ();
+        chrome.tabs.update(ctab.id, {url: tab_val.raw_url}, ASQH.CCgo(seq));
+            // tabOnUpdated will change the tree based on the update,
+            // and will call saveTree().
+
+        // Design decision: Since this change was a result of action by
+        // TabFern or TF's user, it's not a merge candidate.  E.g., having
+        // the user drag and drop a tab, and then suddenly have an
+        // unexpected merge happen, would be quite disruptive.
+
+        return true;    // It's handled!
+    } //handle_tabfern_action()
+
+    function tab_on_created_inner(ctab)
     {
         log.info({'Tab created': ctab.id, ctab});
 
@@ -1845,78 +1866,54 @@ var tabOnCreated = (function(){
         // See if this is a duplicate of an existing tab
         let tab_val = D.tabs.by_tab_id(ctab.id);
 
-        // Check if we're manually opening a tab.  This is indicated by
-        // the URL being /src/view/newtab.html.
-        CHECK: if(!tab_val && ctab.url) {
-            let hash;
-            try {
-                let url = new URL(ctab.url);
-                if(!url.hash) break CHECK;
-
-                hash = url.hash.slice(1);
-                if(!hash) break CHECK;
-
-                if(url.href.split("#")[0] !==
-                    chrome.runtime.getURL('/src/view/newtab.html')
-                ) {
-                    break CHECK;
-                }
-
-                // See if the hash is a node ID for a tab.
-                tab_val = D.tabs.by_node_id(hash);
-                if(!tab_val || !tab_val.being_opened) break CHECK;
-
-            } catch(e) {
-                log.info({[`tabOnCreated exception: ${e}`]: ctab});
-                break CHECK;
-            }
-
-            // If we get here, it is a manually-opened tab.  Process it.
-
-            tab_node_id = hash;
-            tab_val.being_opened = false;
-
-            // Attach the ctab to the value
-            D.tabs.change_key(tab_val, 'tab_id', ctab.id);
-            tab_val.win_id = ctab.windowId;
-            tab_val.index = ctab.index;
-            tab_val.tab = ctab;
-            M.add_subtype(tab_node_id, K.NST_OPEN);
-
-            // Change the URL to the actual URL.  Use ASQ() so errors will
-            // be reported to the console.
-            let seq = ASQ();
-            chrome.tabs.update(ctab.id, {url: tab_val.raw_url}, ASQH.CCgo(seq));
-            //tabOnUpdated will change the tree based on the update.
-            seq.then(make_merge_check_cbk(ctab.windowId));
-
-            // TODO check_existing once that's filled in.
-
-            return; // *** EXIT POINT ***
-        } //endif CHECK
-
-        /// What to do after saving
-        let cbk = make_merge_check_cbk(ctab.windowId);
-
-        if(tab_val === undefined) {     // If not, create the tab
-            let tab_node_id = createNodeForTab(ctab, win_node_id);   // Adds at end
-            T.treeobj.because('chrome','move_node',tab_node_id, win_node_id, ctab.index);
-                // Put it in the right place
-            tab_val = D.tabs.by_tab_id(ctab.id);
-        } else {
-            log.info('   - That tab already exists.');
-            T.treeobj.because('chrome', 'move_node', tab_val.node_id, win_node_id, ctab.index);
-                // Just put it where it now belongs.
-            cbk = undefined;    // Rearranging tabs doesn't trigger a merge
+        // If it's a tab action we triggered, process it.
+        if(handle_tabfern_action(tab_val, ctab)) {
+            return;     // *** EXIT POINT ***
         }
 
-        updateTabIndexValues(win_node_id);      // This leaves us in a consistent state.
+        /// What to do after saving
+        let cbk;
 
-        // TODO Check if we now match a saved window.  If so, merge the two.
+        if(tab_val) {
+            // It's a duplicate
+            log.info('   - That tab already exists.');
 
-        saveTree(true, cbk);
+            // Just put it where it now belongs.
+            T.treeobj.because('chrome', 'move_node',
+                    tab_val.node_id, win_node_id, ctab.index);
 
-    }; //inner()
+            // Design decision: rearranging tabs doesn't trigger a merge check
+
+            // Make sure all the other indices are up to date
+            updateTabIndexValues(win_node_id);
+
+            saveTree(true, cbk);
+
+        } else {
+            // It's not a duplicate, so make a node for it.
+            let tab_node_id = createNodeForTab(ctab, win_node_id);
+
+            // Put it in the right place, since createNodeForTab adds at end.
+            T.treeobj.because('chrome','move_node',
+                    tab_node_id, win_node_id, ctab.index);
+
+            tab_val = D.tabs.by_tab_id(ctab.id);
+
+            updateTabIndexValues(win_node_id);
+
+            let seq = ASQ();
+
+            // Design decision: after creating the node, check if it's a
+            // duplicate.
+            seq.try(make_merge_check_step(ctab.windowId));
+                // .try => always run the following saveTree
+
+            seq.then((done)=>{saveTree(true, done);});
+        }
+
+    }; //tab_on_created_inner()
+
+    return tab_on_created_inner;
 })(); //tabOnCreated()
 
 function tabOnUpdated(tabid, changeinfo, ctab)
@@ -1926,6 +1923,8 @@ function tabOnUpdated(tabid, changeinfo, ctab)
     let tab_node_val = D.tabs.by_tab_id(tabid);
     if(!tab_node_val) return;
     let tab_node_id = tab_node_val.node_id;
+
+    //TODO? merge check?
 
     let node = T.treeobj.get_node(tab_node_id);
     tab_node_val.isOpen = true;     //lest there be any doubt
@@ -3210,18 +3209,6 @@ function addOpenWindowsToTree(done, cwins)
             M.markWinAsOpen(existing_win.val, cwin);
                 // Doesn't touch the tabs.
 
-//            D.windows.change_key(existing_win.val, 'win_id', cwin.id);
-//            existing_win.val.isOpen = true;
-//            // don't change val.keep, which may have either value.
-//            existing_win.val.win = cwin;
-//            M.add_subtype(existing_win.node, K.NST_OPEN);
-
-            // I don't think we need this any more, since a saved window would
-            // have already been marked as KEEP.
-//            if(existing_win.val.keep === K.WIN_KEEP) {
-//                M.add_subtype(existing_win.node, K.NST_SAVED);
-//            }
-
             // If it was open, we by definition didn't need to recover it.
             // Undo the recovery actions that createNodeForClosedWindowV1()
             // took (KEEP, NST_RECOVERED).
@@ -3260,26 +3247,6 @@ function addOpenWindowsToTree(done, cwins)
                 ctab.title = ctab.title || '## Unknown title ##';
 
                 M.markTabAsOpen(tab_node_id, ctab);
-
-//                tab_val.win_id = cwin.id;
-//                tab_val.index = idx;
-//                tab_val.tab = ctab;
-//                tab_val.raw_url = ctab.url || 'about:blank';
-//                tab_val.raw_title = ctab.title || '## Unknown title ##';
-//                tab_val.isOpen = true;
-//                D.tabs.change_key(tab_val, 'tab_id', tab_val.tab.id);
-//                M.add_subtype(tab_node_id, K.NST_OPEN);
-//
-//                if(ctab.favIconUrl) {
-//                    T.treeobj.set_icon(tab_node_id, encodeURI(ctab.favIconUrl));
-//                } else if((/\.pdf$/i).test(tab_val.raw_url)) {
-//                    T.treeobj.set_icon(tab_node_id,
-//                                        'fff-page-white-with-red-banner');
-//                } else {
-//                    T.treeobj.set_icon(tab_node_id, 'fff-page');
-//                }
-//                M.refresh_label(tab_node_id);
-
             } //foreach tab
 
             // Note: We do not need to update existing_win.val.ordered_url_hash.
@@ -3303,7 +3270,7 @@ function addEventListeners(done)
     // At this point, the saved and open windows have been loaded into the
     // tree.  Therefore, we can position the action groups.  We already
     // saved the position, so do not need to specify it here.
-    log.info({'rjustify all at':T.last_r_edge});
+    log.info({'initial rjustify all at':T.last_r_edge});
     T.rjustify_action_group_at();
 
     // And, since we're loaded, make sure we reset these when the tree
@@ -3402,7 +3369,7 @@ function moveWinToLastPositionIfAny_catch(done, items_or_err)
 /// completed successfully.
 function initTreeFinal(done)
 {
-    return; // DEBUG - don't save
+    //return; // DEBUG - don't save
 
     if(!was_loading_error) {
         did_init_complete = true;
