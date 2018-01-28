@@ -151,9 +151,16 @@ describe('view/model', function() {
             expect(this.tab_val.isOpen).toBe(true);
             expect($node.find('a').first().text()).toMatch(/^Jasmine\b/);
 
+            let parent_val = D.windows.by_win_id(ctab.windowId);
+            expect(parent_val).toBeTruthy();
+            since('The parent window should have an ordered_url_hash now')
+            .expect(parent_val.ordered_url_hash).toBeTruthy();
             done();
         });
     });
+
+    // TODO test opening a second window with the same tab URL, and making sure
+    // the first window keeps the corresponding ordered_url_hash.
 
     it('can mark a tab as closed',()=>{
         let $node = $('#'+this.tab_node_id).eq(0);

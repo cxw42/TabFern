@@ -359,6 +359,7 @@ function saveTree(save_ephemeral_windows = true, cbk = undefined)
 
         result_win.raw_title = win_val.raw_title;
         result_win.tabs = [];
+        result_win.ordered_url_hash = win_val.ordered_url_hash || undefined;
         if(is_ephemeral) result_win.ephemeral = true;
             // Don't bother putting it in if we don't need it.
 
@@ -919,11 +920,21 @@ function addWindowNodeActions(win_node_id)
 /// @returns the tree-node ID, or undefined on error.
 function createNodeForWindow(cwin, keep)
 {
+    if(!cwin || !cwin.id) return;
+
     // Don't put our own popup window in the list
     if( cwin.id && (cwin.id === my_winid) ) return;
 
-    let {node_id, val} = M.makeItemForWindow(cwin, keep);
+    let is_first = (!!cwin && getBoolSetting(CFG_NEW_WINS_AT_TOP));
+    let {node_id, val} = M.vnRezWin(is_first);  //M.makeItemForWindow(cwin, keep);
     if(!node_id) return;    //sanity check
+
+    M.markWinAsOpen(val, cwin);
+    if(keep) {
+        M.remember(node_id, false);
+    } else {
+        M.mark_win_as_unsaved(val, false);
+    }
 
     addWindowNodeActions(node_id);
 
@@ -933,6 +944,9 @@ function createNodeForWindow(cwin, keep)
             createNodeForTab(tab, node_id);
         }
     }
+
+    T.treeobj.open_node(node_id);
+        // TODO move this into M.vnRezTab once createNodeForTab calls it.
 
     return node_id;
 } //createNodeForWindow
@@ -949,6 +963,8 @@ function createNodeForClosedWindowV1(win_data_v1)
     // Make a node for a closed window.  The node is marked KEEP.
     // TODO need to not mark it keep if it's ephemeral and still open.
     let {node_id, val} = M.makeItemForWindow();
+
+    // TODO restore ordered_url_hash
 
     // Mark recovered windows
     if(is_ephemeral) {
@@ -1062,6 +1078,7 @@ var loadSavedWindowsFromData = (function(){
     /// Each win is {raw_title: "foo", tabs: [tab, tab, ...]}
     ///     A V1 win may optionally include:
     ///     - ephemeral:<truthy> (default false) to mark ephemeral windows.
+    ///     - ordered_url_hash {String}
     /// Each tab is {raw_title: "foo", raw_url: "bar"}
     ///     A V1 tab may optionally include:
     ///     - bordered:<truthy> (default false) to mark windows with borders
@@ -3145,8 +3162,10 @@ function addOpenWindowsToTree(done, winarr)
             // TODO update per createNodeForClosedWindowV1 --- it will
             // still be marked KEEP.
             M.del_subtype(existing_win.node.id, K.NST_RECOVERED);
-            existing_win.val.raw_title =
-                existing_win.val.raw_title.replace(/ (Recovered)$/,'');
+            if(existing_win.val.raw_title) {
+                existing_win.val.raw_title =
+                    existing_win.val.raw_title.replace(/ (Recovered)$/,'');
+            }
 
             T.treeobj.open_node(existing_win.node);
             T.treeobj.redraw_node(existing_win.node);

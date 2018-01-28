@@ -63,6 +63,11 @@
         [ //keys
             'win_id',   // from Chrome
             'node_id',  // from jstree
+            'ordered_url_hash',
+                // Hash of the URLs of its tabs, in order.  Used for
+                // determining whether a window is open.  NOTE: if a user
+                // opens two windows with exactly the same set of tabs,
+                // whichever one already has that ordered_url_hash will keep it.
         ],
         [ //other data
             'win',          // the actual Window record from chrome

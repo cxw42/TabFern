@@ -18,7 +18,8 @@
 
 (function (root, factory) {
     let imports=['jquery','jstree','loglevel', 'view/const',
-                    'view/item_details', 'view/item_tree', 'justhtmlescape'];
+                    'view/item_details', 'view/item_tree', 'justhtmlescape',
+                    'buffer', 'blake2s'];
 
     if (typeof define === 'function' && define.amd) {
         // AMD
@@ -38,7 +39,8 @@
         }
         root.tabfern_item = factory(...requirements);
     }
-}(this, function ($, _unused_jstree_placeholder_, log, K, D, T, Esc ) {
+}(this, function ($, _unused_jstree_placeholder_, log, K, D, T, Esc,
+                    Buffer, BLAKE2s) {
     "use strict";
 
     function loginfo(...args) { log.info('TabFern view/item.js: ', ...args); };
@@ -86,11 +88,12 @@
 
     /// Mark window item #val as unsaved.
     /// @param val {Object} the item
+    /// @param adjust_title {Boolean=true} Add unsaved markers if truthy
     /// @return {Boolean} true on success; false on error
-    module.mark_win_as_unsaved = function(val) {
+    module.mark_win_as_unsaved = function(val, adjust_title=true) {
         if(!val || val.ty !== K.IT_WIN || !val.node_id) return false;
         val.keep = K.WIN_NOKEEP;
-        if(val.raw_title !== null) {
+        if(adjust_title && (val.raw_title !== null)) {
             val.raw_title = module.remove_unsaved_markers(val.raw_title) +
                             ' (Unsaved)';
         }
@@ -309,6 +312,59 @@
     // "Rez" and "Erase" are adding/removing items, to distinguish them
     // from creating and destroying Chrome widgets.
 
+    // Helper routines ///////////////////////////////////////////////// {{{1
+
+    // Hash the strings in #strs together.  All strings are encoded in utf8
+    // before hashing.
+    // @param strs {mixed} a string or array of strings.
+    // @return {String} the hash, as a string of hex chars
+    module.hashStrings = function(strs) {
+        if(!Array.isArray(strs)) strs = [strs];
+        let blake = new BLAKE2s(32);
+        for(let str of strs) {
+            let databuf = new Uint8Array(Buffer.from(str, 'utf8'));
+            blake.update(databuf);
+        }
+        return blake.hexDigest();
+    } //hashString
+
+    // Update the given node's ordered_url_hash to reflect its current children.
+    // @return {Boolean} True if the ordered_url_hash was set; false if it
+    //                      wasn't.  On false return, the ordered_url_hash
+    //                      will have been set to a falsy value.
+    module.updateOrderedURLHash = function(vornyParent) {
+        let {val: parent_val, node_id: parent_node_id} =
+            module.vn_by_vorny(vornyParent, K.IT_WIN);
+        let parent_node = T.treeobj.get_node(parent_node_id);
+        if(!parent_val || !parent_node_id || !parent_node) return false;
+
+        let child_urls = [];
+        for(let child_node_id of parent_node.children) {
+            let child_url = D.tabs.by_node_id(child_node_id, 'raw_url');
+            if(!child_url) {   // rather than inconsistent state, just clear it
+                D.windows.change_key(parent_val, 'ordered_url_hash', null);
+                return false;
+            }
+            child_urls.push(child_url);
+        }
+
+        let ordered_url_hash = module.hashStrings(child_urls);
+
+        // Check if a different window already has that hash.  If so, that
+        // window keeps that hash.
+        let other_win_val = D.windows.by_ordered_url_hash(ordered_url_hash);
+        if(other_win_val) {
+            D.windows.change_key(parent_val, 'ordered_url_hash', null);
+                // This window will no longer participate in merge detection.
+            return false;
+        } else {
+            D.windows.change_key(parent_val, 'ordered_url_hash', ordered_url_hash);
+        }
+
+        return true;
+    }; //updateOrderedURLHash()
+
+    // }}}1
     // Querying the model ////////////////////////////////////////////// {{{1
 
     /// Get a {val, node_id} pair (vn) from one of those (vorny).
@@ -514,6 +570,10 @@
         let node = T.treeobj.get_node(node_id);
         if(!node) return false;
 
+        T.treeobj.open_node(node_id);
+            // We always open nodes for presently-open windows.  However, this
+            // won't work if no tabs have been added yet.
+
         D.windows.change_key(val, 'win_id', cwin.id);
         // node_id unchanged
         val.win = cwin;
@@ -532,6 +592,7 @@
 
     /// Attach a Chrome tab to an existing tab item.
     /// Updates the item, but does not touch the Chrome tab.
+    /// Also updates the parent's val.ordered_url_hash.
     /// @param tab_vorny {mixed} The item
     /// @param ctab {Chrome Tab} The open tab
     /// @return {Boolean} true on success; false on error
@@ -565,6 +626,8 @@
 
         module.refresh_label(node_id);
         module.refresh_tab_icon(val);   // since favicon may have changed
+
+        module.updateOrderedURLHash(node.parent);
 
         return true;
     } //markTabAsOpen
@@ -613,6 +676,8 @@
 
         let {val, node_id} = module.vn_by_vorny(tab_vorny, K.IT_TAB);
         if(!val || !node_id) return false;
+        let node = T.treeobj.get_node(node_id);
+        if(!node) return false;
 
         if(!val.isOpen || !val.tab) {
             log.error({'Refusing to re-mark already-closed tab as closed':val});
@@ -648,12 +713,18 @@
     /// @return {Boolean} true on success; false on error
     module.eraseTab = function(tab_vorny) {
         let {val, node_id} = module.vn_by_vorny(tab_vorny, K.IT_TAB);
-        if(!val || !node_id) return false;
+        let node = T.treeobj.get_node(node_id);
+        if(!val || !node_id || !node) return false;
+
+        let parent_node_id = node.parent;
 
         D.tabs.remove_value(val);
             // So any events that are triggered won't try to look for a
             // nonexistent tab.
         T.treeobj.delete_node(node_id);
+
+        module.updateOrderedURLHash(parent_node_id);
+
         return true;
     } //eraseTab
 
