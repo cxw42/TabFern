@@ -332,10 +332,11 @@
         return blake.hexDigest();
     } //orderedHashOfStrings
 
-    // Update the given node's ordered_url_hash to reflect its current children.
-    // @return {Boolean} True if the ordered_url_hash was set; false if it
-    //                      wasn't.  On false return, the ordered_url_hash
-    //                      will have been set to a falsy value.
+    /// Update the given node's ordered_url_hash to reflect its current children.
+    /// @return {Boolean} True if the ordered_url_hash was set or was
+    ///                     unchanged; false if neither of those holds.
+    ///                     On false return, the ordered_url_hash
+    ///                     will have been set to a falsy value.
     module.updateOrderedURLHash = function(vornyParent) {
         let {val: parent_val, node_id: parent_node_id} =
             module.vn_by_vorny(vornyParent, K.IT_WIN);
@@ -357,15 +358,17 @@
         // Check if a different window already has that hash.  If so, that
         // window keeps that hash.
         let other_win_val = D.windows.by_ordered_url_hash(ordered_url_hash);
-        if(other_win_val) {
+
+        if(Object.is(parent_val, other_win_val)) {
+            return true;    // it's already us :)
+        } else if(other_win_val) {
             D.windows.change_key(parent_val, 'ordered_url_hash', null);
                 // This window will no longer participate in merge detection.
             return false;
         } else {
             D.windows.change_key(parent_val, 'ordered_url_hash', ordered_url_hash);
+            return true;
         }
-
-        return true;
     }; //updateOrderedURLHash()
 
     // }}}1
@@ -567,7 +570,7 @@
         if(!val || !node_id) return false;
 
         if(val.isOpen || val.win) {
-            log.error({'Refusing to re-mark already-open window as open':val});
+            log.info({'Refusing to re-mark already-open window as open':val});
             return false;
         }
 
@@ -608,7 +611,7 @@
         if(!val || !node_id) return false;
 
         if(val.isOpen || val.tab) {
-            log.error({'Refusing to re-mark already-open tab as open':val});
+            log.info({'Refusing to re-mark already-open tab as open':val});
             return false;
         }
 
@@ -653,7 +656,7 @@
         if(!val || !node_id) return false;
 
         if(!val.isOpen || !val.win) {
-            log.error({'Refusing to re-mark already-closed window as closed':val});
+            log.info({'Refusing to re-mark already-closed window as closed':val});
             return false;
         }
 
@@ -687,7 +690,7 @@
         if(!node) return false;
 
         if(!val.isOpen || !val.tab) {
-            log.error({'Refusing to re-mark already-closed tab as closed':val});
+            log.info({'Refusing to re-mark already-closed tab as closed':val});
             return false;
         }
 

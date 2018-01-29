@@ -163,8 +163,13 @@ function copyTruthyProperties(dest, source, property_names, modifier)
 
 /// Set the tab.index values of the tab nodes in a window.  Assumes that
 /// the nodes are in the proper order in the tree.
+/// As a convenience, also updates the window's ordered_url_hash.  This
+/// function is generally called when something has changed that requires
+/// recalculation anyway.
+///
 /// \pre    #win_node_id is the id of a node that both exists and represents
 ///         a window.
+///
 /// @param win_node_id The node for the window
 /// @param as_open {Array} optional array of nodes to treat as if they were open
 function updateTabIndexValues(win_node_id, as_open = [])
@@ -187,6 +192,13 @@ function updateTabIndexValues(win_node_id, as_open = [])
             ++tab_index;
         }
     }
+
+    let old_hash = D.windows.by_node_id(win_node_id, 'ordered_url_hash'); //DEBUG
+
+    M.updateOrderedURLHash(win_node_id);
+
+    let new_hash = D.windows.by_node_id(win_node_id, 'ordered_url_hash'); //DEBUG
+    log.trace(`win ${win_node_id} hash from ${old_hash} to ${new_hash}`); //DEBUG
 } //updateTabIndexValues
 
 /// Get the size of a window, as an object
@@ -1014,6 +1026,68 @@ function createNodeForClosedWindowV1(win_data_v1)
     return node_id;
 } //createNodeForClosedWindowV1
 
+// = = = Combo = = = = = = = = = = = = = = = = = =
+
+/// Update #existing_win to connect to #cwin.  Also hooks up all the
+/// ctabs.
+/// @param cwin {Chrome Window} The open window, populated with tabs.
+/// @param existing_win {object} An object with {val, node}, e.g., from
+///                             winAlreadyExistsInTree().
+/// @param during_init {Boolean=false} If truthy, failures correspond to init failure.
+/// \pre cwin.tabs.length === existing_win.node.children.length.
+function attachChromeWindowToSavedWindowItem(cwin, existing_win, during_init=false)
+{
+    // Attach the open window to the saved window
+    log.info({[`Attaching window ${cwin.id} to existing window in the tree`]:
+            existing_win});
+
+    M.markWinAsOpen(existing_win.val, cwin);
+        // Doesn't touch the tabs.
+
+    // If it was open, we by definition didn't need to recover it.
+    // Undo the recovery actions that createNodeForClosedWindowV1()
+    // took (KEEP, NST_RECOVERED).
+    if(M.has_subtype(existing_win.node.id, K.NST_RECOVERED)) {
+        M.del_subtype(existing_win.node.id, K.NST_RECOVERED);
+        existing_win.val.raw_title = null;      //default title
+        M.mark_win_as_unsaved(existing_win.val, false);     // also refreshes the label
+    }
+
+    // Do we need these?
+//    T.treeobj.open_node(existing_win.node);
+//    T.treeobj.redraw_node(existing_win.node);
+
+    if(cwin.tabs.length !== existing_win.node.children.length) {
+        log.error({
+            'Mismatched child count':
+                `${cwin.tabs.length} !== ${existing_win.node.children.length}`,
+            cwin,
+            existing_win
+        });
+
+        if(during_init) was_loading_error = true;
+        return;   // TODO handle this better
+    }
+
+    // If we reach here, cwin.tabs.length === existing_win.node.children.length.
+    for(let idx=0; idx < cwin.tabs.length; ++idx) {
+        let tab_node_id = existing_win.node.children[idx];
+        let tab_val = D.tabs.by_node_id(tab_node_id);
+        if(!tab_val) continue;
+
+        let ctab = cwin.tabs[idx];
+
+        // Do we need these?
+        ctab.url = ctab.url || 'about:blank';
+        ctab.title = ctab.title || '## Unknown title ##';
+
+        M.markTabAsOpen(tab_node_id, ctab);
+    } //foreach tab
+
+    // Note: We do not need to update existing_win.val.ordered_url_hash.
+    // Since we got here, we know that it was a match.
+} //attachChromeWindowToSavedWindowItem()
+
 ////////////////////////////////////////////////////////////////////////// }}}1
 // Loading // {{{1
 
@@ -1241,6 +1315,7 @@ var awaitSelectTimeoutId = undefined;
 /// Process clicks on items in the tree.  Also works for keyboard navigation
 /// with arrow keys and Enter.
 /// TODO break "open window" out into a separate function.
+/// TODO RESUME HERE - refactor the below to use the new model
 function treeOnSelect(_evt_unused, evt_data)
 {
     //log.info(evt_data.node);
@@ -1759,16 +1834,38 @@ function initFocusHandler()
 /// we check for that here.
 var tabOnCreated = (function(){
 
+    /// Detach nodes for existing windows and tabs from those windows/tabs,
+    /// and destroy the parts of the model that used to represent those
+    /// windows/tabs.
+    /// TODO handle failure better
+    /// @return truthy for success, falsy for failure
+    function destroy_subtree_but_not_widgets(node_id)
+    {
+        let node = T.treeobj.get_node(node_id);
+        if(!node) return false;
+
+        for(let child_node_id of node.children) {
+            if(!M.markTabAsClosed(child_node_id)) return false;
+            if(!M.eraseTab(child_node_id)) return false;
+        }
+
+        if(!M.markWinAsClosed(node_id)) return false;
+        if(!M.eraseWin(node_id)) return false;
+
+        return true;
+    } //destroy_subtree_but_not_widgets()
+
     /// Make an ASQ step that will check if the window matches an existing
     /// window.
-    function make_merge_check_step(win_id)
+    function make_merge_check_step(ctab)
     {
         return function merge_check_inner(check_done) {
             //DEBUG
-            log.debug({'merge check for window':win_id});
+            log.debug({[`merge check tab ${ctab.id} win ${ctab.windowId}`]:
+                        ctab});
 
             let seq = ASQH.NowCCTry((cc)=>{
-                chrome.windows.get(win_id,{populate:true}, cc);
+                chrome.windows.get(ctab.windowId,{populate:true}, cc);
             });
 
             seq.then((done, cwin_or_err)=>{
@@ -1779,16 +1876,37 @@ var tabOnCreated = (function(){
 
                 let cwin = cwin_or_err;
                 let existing_win = winAlreadyExistsInTree(cwin);
-                if(existing_win) {
-                    log.info({'Found existing window': cwin, existing_win});
+                MERGE: if(existing_win && existing_win.val &&
+                    !existing_win.val.isOpen    // don't hijack other open wins
+                ) {
+                    log.info({
+                        [`merge ${cwin.id} Found existing window`]: cwin,
+                        existing_win
+                    });
                     //actionDeleteWindow(win_node_id, T.treeobj.get_node(win_node_id),null,null);
-                    log.debug({'merging not yet implemented for window':win_id});
+                    log.debug(`merge ${ctab.windowId}==${cwin.id}: start`);
                     // TODO open the saved window and connect it with the new tabs.
                     // ** Make sure to do this synchronously. **
                     // We get multiple tabOnCreated messages, and more than one
                     // could reach this point.
 
-                } //endif existing
+                    // The window we are going to pull from
+                    let old_win_val = D.windows.by_win_id(cwin.id);
+                    if(!old_win_val) {
+                        log.debug(`merge ${cwin.id}: bail - could not get old_win_val`);
+                        break MERGE;
+                    }
+
+                    // Detach the existing nodes from their chrome wins/tabs
+                    if(!destroy_subtree_but_not_widgets(old_win_val.node_id)) {
+                        log.debug(`merge ${cwin.id}: bail - could not remove old subtree`);
+                        break MERGE;
+                    }
+
+                    // Attach the old nodes to the wins/tabs
+                    attachChromeWindowToSavedWindowItem(cwin, existing_win, false);
+
+                } //endif existing (MERGE)
             });
 
             seq.pipe(check_done);
@@ -1905,7 +2023,7 @@ var tabOnCreated = (function(){
 
             // Design decision: after creating the node, check if it's a
             // duplicate.
-            seq.try(make_merge_check_step(ctab.windowId));
+            seq.try(make_merge_check_step(ctab));
                 // .try => always run the following saveTree
 
             seq.then((done)=>{saveTree(true, done);});
@@ -1924,37 +2042,43 @@ function tabOnUpdated(tabid, changeinfo, ctab)
     if(!tab_node_val) return;
     let tab_node_id = tab_node_val.node_id;
 
-    //TODO? merge check?
-
     let node = T.treeobj.get_node(tab_node_id);
     tab_node_val.isOpen = true;     //lest there be any doubt
-    tab_node_val.raw_url = changeinfo.url || ctab.url || 'about:blank';
+//    tab_node_val.raw_url = changeinfo.url || ctab.url || 'about:blank';
+
+    if(changeinfo.url) {
+        tab_node_val.raw_url = changeinfo.url;
+        M.updateOrderedURLHash(node.parent);
+            // When the URL changes, the hash changes, too.
+    }
 
     // Set the name
+//    tab_node_val.raw_title = changeinfo.title || ctab.title || 'Tab';
     if(changeinfo.title) {
         tab_node_val.raw_title = changeinfo.title;
-    } else if(ctab.title) {
-        tab_node_val.raw_title = ctab.title;
-    } else {
-        tab_node_val.raw_title = 'Tab';
+        M.refresh_label(tab_node_id);
     }
-    M.refresh_label(tab_node_id);
 
-    {   // set the icon
-        let icon_text;
-        if(changeinfo.favIconUrl) {
-            icon_text = encodeURI(changeinfo.favIconUrl);
-        } else if(ctab.favIconUrl) {
-            icon_text = encodeURI(ctab.favIconUrl);
-        } else if((/\.pdf$/i).test(tab_node_val.raw_url)) {
-            // Special case for PDFs because I use them a lot.
-            // Not using the Silk page_white_acrobat icon.
-            icon_text = 'fff-page-white-with-red-banner';
-        } else {
-            icon_text = 'fff-page';
-        }
-        T.treeobj.set_icon(tab_node_id, icon_text);
+    if(changeinfo.favIconUrl) {
+        tab_node_val.raw_favicon_url = changeinfo.favIconUrl;
+        M.refresh_tab_icon(tab_node_val);
     }
+
+//    {   // set the icon
+//        let icon_text;
+//        if(changeinfo.favIconUrl) {
+//            icon_text = encodeURI(changeinfo.favIconUrl);
+//        } else if(ctab.favIconUrl) {
+//            icon_text = encodeURI(ctab.favIconUrl);
+//        } else if((/\.pdf$/i).test(tab_node_val.raw_url)) {
+//            // Special case for PDFs because I use them a lot.
+//            // Not using the Silk page_white_acrobat icon.
+//            icon_text = 'fff-page-white-with-red-banner';
+//        } else {
+//            icon_text = 'fff-page';
+//        }
+//        T.treeobj.set_icon(tab_node_id, icon_text);
+//    }
 
     saveTree();
 
@@ -3146,7 +3270,7 @@ function createMainTreeIfWinIdReceived_catch(done, win_id_msg_or_error)
     // inner_resize event.
     // TODO? move this into item_tree?
     $(window).on('inner_resize', function(evt, wid) {
-        log.info({inner_resize:evt, wid});
+        //log.info({inner_resize:evt, wid});
         T.rjustify_action_group_at(wid);
     });
 
@@ -3200,58 +3324,12 @@ function addOpenWindowsToTree(done, cwins)
 //        }
 
         let existing_win = winAlreadyExistsInTree(cwin);
-        if(!existing_win) {
+        if(!existing_win || (existing_win.val && existing_win.val.isOpen)) {
+            // Doesn't exist, or the duplicate is already open (e.g., if two
+            // windows are open with the same set of tabs)
             createNodeForWindow(cwin, K.WIN_NOKEEP);
         } else {
-            // Attach the open window to the saved window
-            log.info('Found existing window in the tree: ' + existing_win.val.raw_title);
-
-            M.markWinAsOpen(existing_win.val, cwin);
-                // Doesn't touch the tabs.
-
-            // If it was open, we by definition didn't need to recover it.
-            // Undo the recovery actions that createNodeForClosedWindowV1()
-            // took (KEEP, NST_RECOVERED).
-            if(M.has_subtype(existing_win.node.id, K.NST_RECOVERED)) {
-                M.del_subtype(existing_win.node.id, K.NST_RECOVERED);
-                existing_win.val.raw_title = null;      //default title
-                M.mark_win_as_unsaved(existing_win.val, false);     // also refreshes the label
-            }
-
-            // Do we need these?
-//            T.treeobj.open_node(existing_win.node);
-//            T.treeobj.redraw_node(existing_win.node);
-
-            if(cwin.tabs.length !== existing_win.node.children.length) {
-                log.error({
-                    'Mismatched child count':
-                        `${cwin.tabs.length} !== ${existing_win.node.children.length}`,
-                    cwin,
-                    existing_win
-                });
-
-                was_loading_error = true;
-                continue;   // TODO handle this better
-            }
-
-            // If we reach here, cwin.tabs.length === existing_win.node.children.length.
-            for(let idx=0; idx < cwin.tabs.length; ++idx) {
-                let tab_node_id = existing_win.node.children[idx];
-                let tab_val = D.tabs.by_node_id(tab_node_id);
-                if(!tab_val) continue;
-
-                let ctab = cwin.tabs[idx];
-
-                // Do we need these?
-                ctab.url = ctab.url || 'about:blank';
-                ctab.title = ctab.title || '## Unknown title ##';
-
-                M.markTabAsOpen(tab_node_id, ctab);
-            } //foreach tab
-
-            // Note: We do not need to update existing_win.val.ordered_url_hash.
-            // Since we got here, we know that it was a match.
-
+            attachChromeWindowToSavedWindowItem(cwin, existing_win);
         } //endif window already exists
     } //foreach window
 
