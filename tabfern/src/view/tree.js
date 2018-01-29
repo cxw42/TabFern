@@ -2044,41 +2044,29 @@ function tabOnUpdated(tabid, changeinfo, ctab)
 
     let node = T.treeobj.get_node(tab_node_id);
     tab_node_val.isOpen = true;     //lest there be any doubt
-//    tab_node_val.raw_url = changeinfo.url || ctab.url || 'about:blank';
 
-    if(changeinfo.url) {
-        tab_node_val.raw_url = changeinfo.url;
+    // Caution: changeinfo doesn't always have all the changed information.
+    // Therefore, we check changeinfo and ctab.
+
+    let new_raw_url = changeinfo.url || ctab.url || 'about:blank';
+    if(new_raw_url !== tab_node_val.raw_url) {
+        tab_node_val.raw_url = new_raw_url;
         M.updateOrderedURLHash(node.parent);
             // When the URL changes, the hash changes, too.
     }
 
     // Set the name
-//    tab_node_val.raw_title = changeinfo.title || ctab.title || 'Tab';
-    if(changeinfo.title) {
-        tab_node_val.raw_title = changeinfo.title;
+    let new_raw_title = changeinfo.title || ctab.title || 'Tab';
+    if(new_raw_title !== tab_node_val.raw_title) {
+        tab_node_val.raw_title = new_raw_title;
         M.refresh_label(tab_node_id);
     }
 
-    if(changeinfo.favIconUrl) {
-        tab_node_val.raw_favicon_url = changeinfo.favIconUrl;
+    let new_raw_favicon_url = changeinfo.favIconUrl || ctab.favIconUrl || null;
+    if(new_raw_favicon_url !== tab_node_val.raw_favicon_url) {
+        tab_node_val.raw_favicon_url = new_raw_favicon_url;
         M.refresh_tab_icon(tab_node_val);
     }
-
-//    {   // set the icon
-//        let icon_text;
-//        if(changeinfo.favIconUrl) {
-//            icon_text = encodeURI(changeinfo.favIconUrl);
-//        } else if(ctab.favIconUrl) {
-//            icon_text = encodeURI(ctab.favIconUrl);
-//        } else if((/\.pdf$/i).test(tab_node_val.raw_url)) {
-//            // Special case for PDFs because I use them a lot.
-//            // Not using the Silk page_white_acrobat icon.
-//            icon_text = 'fff-page-white-with-red-banner';
-//        } else {
-//            icon_text = 'fff-page';
-//        }
-//        T.treeobj.set_icon(tab_node_id, icon_text);
-//    }
 
     saveTree();
 
