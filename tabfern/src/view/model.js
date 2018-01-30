@@ -130,6 +130,10 @@
     /// @return A string
     module.get_html_label = function(val) {
         let retval = '';
+        if(val.isPinned) {  // TODO make this optional?
+            retval += '&#x1f4cc;&nbsp;';    // PUSHPIN
+        }
+
         if(val.raw_bullet && typeof val.raw_bullet === 'string') {
             // The first condition checks for null/undefined/&c., and also for
             // empty strings.
@@ -508,6 +512,7 @@
             index: K.NONE,
             tab: undefined,
             isOpen: false,
+            isPinned: false,
         });
 
         if(!val) {
@@ -599,6 +604,7 @@
 
     /// Attach a Chrome tab to an existing tab item.
     /// Updates the item, but does not touch the Chrome tab.
+    /// As a result, the item takes values from the tab.
     /// ** NOTE ** Does NOT update the parent's val.ordered_url_hash.
     /// ** NOTE ** Does NOT attach any child nodes to tabs.
     /// @param tab_vorny {mixed} The item
@@ -629,6 +635,7 @@
         val.isOpen = true;
         // val.raw_bullet is unchanged since it doesn't come from ctab
         val.raw_favicon_url = ctab.favIconUrl;
+        val.isPinned = !!ctab.pinned;
 
         T.treeobj.add_multitype(node_id, K.NST_OPEN);
 

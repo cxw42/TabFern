@@ -156,7 +156,7 @@ function copyTruthyProperties(dest, source, property_names, modifier)
         if(source[key]) dest[key] = modifier(source[key]);
     }
     return dest;
-} //copy
+} //copyTruthyProperties
 
 ////////////////////////////////////////////////////////////////////////// }}}1
 // DOM Manipulation // {{{1
@@ -396,21 +396,20 @@ function saveTree(save_ephemeral_windows = true, cbk = undefined)
                 let tab_val = D.tabs.by_node_id(tab_node_id);
                 if(!tab_val) continue;
 
-                let thistab = {};
-                thistab.raw_title = tab_val.raw_title;
-                thistab.raw_url = tab_val.raw_url;
-                if(tab_val.raw_favicon_url) {
-                    thistab.raw_favicon_url = tab_val.raw_favicon_url;
-                }
+                let thistab_v1 = {};    ///< the V1 save data for the tab
+                thistab_v1.raw_title = tab_val.raw_title;
+                thistab_v1.raw_url = tab_val.raw_url;
+
+                copyTruthyProperties(thistab_v1, tab_val,
+                        ['raw_favicon_url', 'isPinned', 'raw_bullet']);
 
                 if(M.has_subtype(tab_node_id, K.NST_TOP_BORDER)) {
-                    thistab.bordered = true;
+                    thistab_v1.bordered = true;
                 }
 
-                if(tab_val.raw_bullet) thistab.raw_bullet = tab_val.raw_bullet;
-                result_win.tabs.push(thistab);
-            }
-        } //endif has children
+                result_win.tabs.push(thistab_v1);
+            } //foreach tab
+        } //endif window has child tabs
 
         result.push(result_win);
     } //foreach window
@@ -892,6 +891,7 @@ function createNodeForClosedTabV1(tab_data_v1, parent_node_id)
     copyTruthyProperties(val, tab_data_v1,
             ['raw_url', 'raw_title', 'raw_bullet', 'raw_favicon_url'],
             String);
+    copyTruthyProperties(val, tab_data_v1, 'isPinned', Boolean);
 
     M.refresh_label(node_id);
 
@@ -1512,15 +1512,24 @@ function treeOnSelect(_evt_unused, evt_data)
 
                     let tab = win.tabs[idx];
 
+                    D.tabs.change_key(tab_val, 'tab_id', tab.id);
+                    M.add_subtype(tab_node_id, K.NST_OPEN);
+
+                    // Update realtime values from the ctab to the tab_val
                     tab_val.win_id = win.id;
                     tab_val.index = idx;
                     tab_val.tab = tab;
                     tab_val.raw_url = tab.url || 'about:blank';
                     tab_val.raw_title = tab.title || '## Unknown title ##';
                     tab_val.isOpen = true;
-                    D.tabs.change_key(tab_val, 'tab_id', tab_val.tab.id);
-                    M.add_subtype(tab_node_id, K.NST_OPEN);
-                }
+
+                    // Apply changes from the tab_val to the ctab
+                    if(tab_val.isPinned) {
+                        chrome.tabs.update(tab.id, {pinned: true},
+                                ignore_chrome_error);
+                    }
+
+                } //foreach tab
 
                 // Another hack for the strange behaviour above: get rid of
                 // any tabs we didn't expect.  This assumes the tabs we
@@ -2048,6 +2057,7 @@ function tabOnUpdated(tabid, changeinfo, ctab)
     // Caution: changeinfo doesn't always have all the changed information.
     // Therefore, we check changeinfo and ctab.
 
+    // URL
     let new_raw_url = changeinfo.url || ctab.url || 'about:blank';
     if(new_raw_url !== tab_node_val.raw_url) {
         tab_node_val.raw_url = new_raw_url;
@@ -2055,13 +2065,32 @@ function tabOnUpdated(tabid, changeinfo, ctab)
             // When the URL changes, the hash changes, too.
     }
 
-    // Set the name
+    // pinned
+    let new_pinned = null;
+    let should_refresh_label = false;
+
+    if('pinned' in changeinfo) {
+        new_pinned = changeinfo.pinned;
+    } else if('pinned' in ctab) {
+        new_pinned = ctab.pinned;
+    }
+    if(new_pinned !== null) {
+        tab_node_val.isPinned = new_pinned;
+        should_refresh_label = true;
+    }
+
+    // title
     let new_raw_title = changeinfo.title || ctab.title || 'Tab';
     if(new_raw_title !== tab_node_val.raw_title) {
         tab_node_val.raw_title = new_raw_title;
+        should_refresh_label = true;
+    }
+
+    if(should_refresh_label) {
         M.refresh_label(tab_node_id);
     }
 
+    // favicon
     let new_raw_favicon_url = changeinfo.favIconUrl || ctab.favIconUrl || null;
     if(new_raw_favicon_url !== tab_node_val.raw_favicon_url) {
         tab_node_val.raw_favicon_url = new_raw_favicon_url;

@@ -56,6 +56,9 @@
                             // It's not called a "note" because we may
                             // someday add a long-form notes field.
             'raw_favicon_url',  //favicon URL
+            'isPinned',     // whether the tab is pinned
+            // Note: isTopBordered (NST_TOP_BORDER) is stored in the jstree,
+            // not here.
         ]);
 
     /// Map between open-window IDs and node IDs.
