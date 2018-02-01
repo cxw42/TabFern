@@ -2875,10 +2875,11 @@ var treeCheckCallback = (function()
                 windowId: parent_val.win_id,
                 url: chrome.runtime.getURL('/src/view/newtab.html') + '#' + moving_val.node_id,
                     // pass the node ID to the tabOnUpdated callback
-                index: moving_val.index
+                index: moving_val.index,
+                pinned: !!moving_val.isPinned,
             }, ASQH.CC(done));
         });
-        // The URL and the item will be linked in tabOnCreated, so we're done.
+        // The Chrome tab and the item will be linked in tabOnCreated, so we're done.
 
     } //open_tab_within_window
 
