@@ -28,13 +28,15 @@ var Modules = {};
 /// HACK - a global for loglevel (typing `Modules.log` everywhere is a pain).
 var log;
 
-// Shorthands for easier access:
+// Shorthands for easier access
 var K;      ///< Constants loaded from view/const.js, for ease of access
 var D;      ///< Shorthand access to the details, view/item_details.js
 var T;      ///< Shorthand access to the tree, view/item_tree.js ("Tree")
 var M;      ///< Shorthand access to the model, view/model.js
 var ASQ;    ///< Shorthand for asynquence
 var ASQH;   ///< Shorthand for asq-helpers
+var L;      ///< Holder --- L.log === log.  This gives closures access to the
+            ///< current log instance.
 
 /// require.js modules used by this file
 let Module_dependencies = [
@@ -122,7 +124,8 @@ var Bypasser;
 /// Call after Modules has been populated.
 function local_init()
 {
-    log = Modules.loglevel;
+    L = {};
+    L.log = log = Modules.loglevel;
     log.setDefaultLevel(log.levels.WARN);
 
     Esc = Modules.justhtmlescape;
@@ -2045,7 +2048,7 @@ var tabOnCreated = (function(){
 
 function tabOnUpdated(tabid, changeinfo, ctab)
 {
-    log.info({'Tab updated': tabid, changeinfo, ctab});
+    log.info({'Tab updated': tabid, 'Index': ctab.index, changeinfo, ctab});
 
     let tab_node_val = D.tabs.by_tab_id(tabid);
     if(!tab_node_val) return;
@@ -2115,7 +2118,7 @@ function tabOnUpdated(tabid, changeinfo, ctab)
 /// Handle movements of tabs or tab groups within a window.
 function tabOnMoved(tabid, moveinfo)
 {
-    log.info({'Tab moved': tabid, moveinfo});
+    log.info({'Tab moved': tabid, 'toIndex': moveinfo.toIndex, moveinfo});
 
     let from_idx = moveinfo.fromIndex;
     let to_idx = moveinfo.toIndex;
@@ -2691,9 +2694,15 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
 // Drag-and-drop support // {{{1
 
 /// Determine whether a node or set of nodes can be dragged.
+/// This function has to take pinned tabs into account, because we don't
+/// get any event from Chrome if we try to move a single pinned tab to the
+/// right of a non-pinned tab.  In my tests in Chrome 63, it also appears
+/// we don't even get an error message.
+///
 /// @param {array} nodes The full jstree node record(s) being dragged
+/// @param {Object} evt_unused The event (not currently used)
 /// @return {boolean} Whether or not the node is draggable
-function dndIsDraggable(nodes, evt)
+function dndIsDraggable(nodes, evt_unused)
 {
     if(log.getLevel() <= log.levels.TRACE) {
         console.group('is draggable?');
@@ -2702,11 +2711,28 @@ function dndIsDraggable(nodes, evt)
         console.groupEnd();
     }
 
-    // Can't drag the holding pen.  This shouldn't be an issue, since it's
-    // hidden, but I'll leave the check here just in case.
+    /// Are any of the nodes pinned?
+    let dragging_pinned_node = false;
+
     for(let node of nodes) {
-        if(node && node.id && node.id === T.holding_node_id) return false;
-    }
+        if(!node || !node.id) return false;
+
+        // Can't drag the holding pen.  This shouldn't be an issue, since it's
+        // hidden, but I'll leave the check here just in case.
+        if(node.id === T.holding_node_id) return false;
+
+        let val = D.val_by_node_id(node.id);
+        if(!val) return false;
+
+        // Check tabs for pinned status
+        if(val.ty === K.IT_TAB) {
+            if(dragging_pinned_node) return false;
+                // For now, only permit dragging one pinned tab at a time.
+                // TODO relax this later so users can drag groups of adjacent
+                // pinned tabs.
+            dragging_pinned_node = true;
+        }
+    } //foreach node
 
     return true;        // Any other node is draggable.
 } //dndIsDraggable
@@ -2714,22 +2740,25 @@ function dndIsDraggable(nodes, evt)
 /// Determine whether a node is a valid drop target.
 /// This function actually gets called for all changes to the tree,
 /// so we permit everything except for invalid drops.
+///
 /// @param operation {string}
 /// @param node {Object} The full jstree node record of the node that might
 ///                      be affected
 /// @param new_parent {Object} The full jstree node record of the
 ///                             node to be the parent
 /// @param more {mixed} optional object of additional data.
+///
 /// @return {boolean} whether or not the operation is permitted
 ///
-var treeCheckCallback = (function(){
+var treeCheckCallback = (function()
+{
 
     /// The move_node callback we will use to remove empty windows
     /// when dragging the last tab out of a window
     function remove_empty_window(evt, data)
     {   // Note: data.old_parent is the node ID of the former parent
         if(!data.old_parent) return;
-        if(log.getLevel() <= log.levels.TRACE) {
+        if(L.log.getLevel() <= L.log.levels.DEBUG) {
             console.group('remove_empty_window');
             console.log(evt);
             console.log(data);
@@ -2757,15 +2786,20 @@ var treeCheckCallback = (function(){
         if(!parent_val) return;
 
         if(parent_val.isOpen) {
+            // Move an open tab from one open window to another (or the same).
+
             if(parent_val.win_id === K.NONE) return;
-            // Move an open tab from one open window to another.
-            // Chrome fires a tabOnMoved after we do this, so we
-            // don't have to update the tree here.
+            // Chrome fires a tabOnMoved after we do this (if it works),
+            // so we don't have to update the tree here.
             // As above, delay to be on the safe side.
-            ASQ().val(()=>{
+            ASQ().then((done)=>{
                 chrome.tabs.move(val.tab_id,
                     {windowId: parent_val.win_id, index: data.position}
-                    , ignore_chrome_error);
+                    , ASQH.CC(done));
+            })
+            .or((err)=>{
+                // Doesn't fire for invalid moves of pinned tabs in Chrome 63
+                L.log.warn({[`Couldn't move tab ${val.tab_id}`]:err});
             });
 
         } else {
@@ -2858,9 +2892,10 @@ var treeCheckCallback = (function(){
             // Don't let the user edit node names with F2
 
         if(operation !== 'move_node') return true;
+            // Everything else besides moves doesn't need a check.
 
         // Don't log checks during initial tree population
-        if(did_init_complete && (log.getLevel() <= log.levels.TRACE) ) {
+        if(did_init_complete && (L.log.getLevel() <= L.log.levels.DEBUG) ) {
             console.group('check callback for ' + operation);
             console.log(node);
             console.log(new_parent);
@@ -2868,7 +2903,7 @@ var treeCheckCallback = (function(){
             if(more) console.log(more);
             if(!more || !more.dnd) {
                 console.group('Not drag and drop');
-                console.trace();
+                console.debug();
                 console.groupEnd();
             }
             console.groupEnd();
@@ -2877,16 +2912,16 @@ var treeCheckCallback = (function(){
         let moving_val = M.get_node_val(node.id);
         if(!moving_val) return false;    // sanity check
 
-        let new_parent_val;
+        let new_parent_val = null;
         if(new_parent.id !== $.jstree.root) {
             new_parent_val = M.get_node_val(new_parent.id);
         }
 
-        // The "can I drop here?" check.
+        // The "can I drop here?" check during DND.  Doesn't implicate the
+        // holding pen because you can't drag/drop an invisible node.
         if(more && more.dnd && operation==='move_node') {
 
-            node_being_dragged = node.id;
-
+            DND_CHECK:
             if(moving_val.ty === K.IT_WIN) {              // Dragging windows
                 // Can't drop inside another window - only before or after
                 if(more.pos==='i') return false;
@@ -2895,31 +2930,162 @@ var treeCheckCallback = (function(){
                 if(new_parent.id !== $.jstree.root) return false;
 
             } else if(moving_val.ty === K.IT_TAB) {          // Dragging tabs
-                // Tabs: Can drop closed tabs in closed windows, or open
-                // tabs in open windows.  Can also drop open tabs to closed
-                // windows, in which case the tab is closed.
-                // Can also drop closed tabs to open windows.
-                // TODO revisit this when we later
-                // permit opening tab-by-tab (#35).
+                // Tabs: Can drop closed tabs in closed windows, or open tabs
+                // in open windows.  Can also drop open tabs to closed windows,
+                // in which case the tab is closed.  Can also drop closed tabs
+                // to open windows.
+                // TODO revisit this when we later permit opening
+                // tab-by-tab (#35).
 
-
-                if(moving_val.isOpen) {      // open tab
-                    if( !new_parent_val || //!new_parent_val.isOpen ||
-                        new_parent_val.ty !== K.IT_WIN
-                    ) {
-                        return false;
-                    }
-
-                } else {                    // closed tab
-                    if( !new_parent_val || // new_parent_val.isOpen ||
-                        new_parent_val.ty !== K.IT_WIN
-                    ) {
-                        return false;
-                    }
+                // Force boolean, just in case.  TODO remove this once I have
+                // finished refactoring to the new model.
+                if(typeof moving_val.isPinned !== 'boolean') {
+                    log.warn({'Non-boolean moving_val.isPinned':moving_val});
+                    moving_val.isPinned = !!moving_val.isPinned;
                 }
-            } //endif tab
 
-            if(log.getLevel()<=log.levels.TRACE) console.log('OK to drop here');
+                // Check for valid parent
+                if( !new_parent_val || new_parent_val.ty !== K.IT_WIN ) return false;
+                let new_parent_node = T.treeobj.get_node(new_parent_val.node_id);
+                if(!new_parent_node || !new_parent_node.children) return false;
+
+                if(new_parent_node.children.length < 1) {   // Shouldn't happen?
+                    log.warn({'DND check wrt parent with no children':new_parent_node,
+                        new_parent_val,
+                        moving_val,
+                        more});
+                    return false;
+                }
+
+                // Pinning-related checks need the reference node
+                if(!more.pos || !more.ref || !more.ref.id) return false;
+                let ref_val = D.val_by_node_id(more.ref.id);
+                if(!ref_val) return false;
+
+                if( (ref_val.ty === K.IT_TAB) && (more.pos === 'i') ) {
+                    return false;  // Can't move tabs under tabs
+                    // TODO update for #34
+                }
+
+                if( (ref_val.ty === K.IT_TAB) && (more.ref.parent !== new_parent_node.id) ) {
+                    L.log.error(`DND oops: ${more.ref.parent} !== ${new_parent_node.id}`);
+                    return false;    // shouldn't happen
+                }
+
+                if(ref_val.ty === K.IT_WIN) {
+                    // Can't drop nodes outside windows
+                    if(more.pos !== 'i') return false;
+
+                    // The node will become the new first child.  A pinned tab
+                    // can be dropped in front anytime, but a non-pinned tab can
+                    // only be dropped if there isn't a pinned tab in the window.
+                    // The first tab in a window is pinned if there are any
+                    // pinned tabs in that window.
+                    let new_parent_has_pinned =
+                        !!D.tabs.by_node_id(new_parent_node.children[0],
+                                            'isPinned');
+                    if(new_parent_has_pinned && !moving_val.isPinned) return false;
+                    break DND_CHECK;    // Don't need any other checks
+                } //endif
+
+                if(ref_val.ty !== K.IT_TAB) break DND_CHECK;    // future-proofing
+
+                // Prohibit moving pinned tabs to the right of non-pinned tabs,
+                // or moving non-pinned tabs to the left of pinned tabs.
+
+                L.log.debug({[
+                    `Moving ${moving_val.isPinned?'pinned':'non-pinned'} ` +
+                    `node ${moving_val.node_id} to ` +
+                    `${((more.pos==='b')?'before':'after')} ` +
+                    `${D.tabs.by_node_id(more.ref.id,'isPinned')?'pinned':'non-pinned'} node ` +
+                    `${more.ref.id}`
+                    ]:more});
+
+                let first_node = true;
+                let last_was_pinned;    ///< whether the previous child node was pinned
+                let saw_ref = false;    ///< whether we have reached the reference
+                let has_pinned_group = false;
+
+                let child_idx, child_node_id;
+                for(child_idx=0; child_idx < new_parent_node.children.length; ++child_idx) {
+                    child_node_id = new_parent_node.children[child_idx];
+                    let child_pinned = !!D.tabs.by_node_id(child_node_id, 'isPinned');
+                        // `!!` because it might be undefined
+
+                    if(first_node) {
+                        // Remember where we are.  Chrome's invariant is that
+                        // there is an optional group of pinned tab(s) before
+                        // an optional group of non-pinned tab(s).  Therefore,
+                        // a bool suffices to track where we are.
+                        // This effectively duplicates the type of the 1st child
+                        // to an imaginary 0th child to the left, which makes
+                        // things work out OK.
+                        last_was_pinned = child_pinned;
+
+                        // Because of the invariant, the very first tab tells
+                        // us whether there are any pinned tabs attached to
+                        // this window.
+                        has_pinned_group = child_pinned;
+
+                        // If there are no pinned tabs, any non-pinned tab can
+                        // be dropped anywhere in the window.  Therefore, we
+                        // can fast-bail here.
+                        if(!has_pinned_group && !moving_val.isPinned) break;
+
+                        // Check the first node, if we're dropping before it.
+                        if( (child_node_id === more.ref.id) && (more.pos === 'b') ) {
+                            // Can't drop non-pinned before pinned.
+                            if(child_pinned && (!moving_val.isPinned)) return false;
+
+                            // Can drop pinned or nonpinned before nonpinned
+                            if(!child_pinned) break;
+                        }
+                    }
+                    first_node = false;
+
+                    let should_check =
+                        // We just passed the reference and we're dropping after
+                        saw_ref ||
+                        // We're at the reference and we're dropping before
+                        ((child_node_id === more.ref.id) && (more.pos === 'b'));
+
+                    if(should_check) {
+                        // In the middle of a group, only that type is allowed.
+                        if( (last_was_pinned === child_pinned) &&
+                            (moving_val.isPinned !== child_pinned) ) return false;
+
+                        // Now that we've done the check, we don't need to check
+                        // any other nodes.
+                        // - If we're dropping after (saw_ref), we have done the
+                        //   one more node we needed to do after the reference.
+                        // - If we're dropping before, we've already checked
+                        //   everything we need to, so we're done.
+                        saw_ref = false;    // mark that we don't need to
+                                            // check a drop after the last node
+                        break;
+                    }
+
+                    last_was_pinned = child_pinned;
+                    saw_ref = (child_node_id === more.ref.id);
+                } //foreach child node
+
+                // Special-case check for dropping after the last node.  This
+                // isn't checked in the loop above because this is index
+                // nchildren, and the loop stops at nchildren-1.
+                if( (child_idx === new_parent_node.children.length) &&  //ran off the end
+                    (more.pos === 'a') &&                               //dropping after the end
+                    saw_ref &&                                          //the end was the ref
+                    moving_val.isPinned &&                              //moving a pinned tab
+                    (!last_was_pinned)                                  //after a non-pinned tab
+                ) {
+                    return false;
+                }
+
+                L.log.debug(`Move of pinned node ${moving_val.node_id} OK so far`);
+
+            } //endif dragging tab
+
+            L.log.debug('OK to drop here');
 
         } //endif move_node checks
 
@@ -2931,7 +3097,7 @@ var treeCheckCallback = (function(){
                 void 0; // a place to put a breakpoint
             }
 
-            if(log.getLevel() <= log.levels.TRACE) {
+            if(L.log.getLevel() <= L.log.levels.DEBUG) {
                 console.group('check callback for node move');
                 console.log(moving_val);
                 console.log(node);
@@ -2955,16 +3121,15 @@ var treeCheckCallback = (function(){
                     // windows.
                     if( curr_parent_id !== T.holding_node_id &&
                         new_parent_id !== T.holding_node_id &&
-                        (!new_parent_val) ) // || !new_parent_val.isOpen) )
+                        (!new_parent_val) )
                         return false;
 
                 } else {
                     // Can move closed tabs to any window
-                    if(!new_parent_val //|| new_parent_val.isOpen
-                    ) return false;
+                    if(!new_parent_val) return false;
                 }
             }
-            if(log.getLevel()<=log.levels.TRACE) console.log('OK to move');
+            L.log.debug('OK to move');
         } //endif move_node
 
         // If we made it here, the operation is OK.
