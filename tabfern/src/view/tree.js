@@ -2251,6 +2251,10 @@ function tabOnAttached(tabid, attachinfo)
     T.treeobj.because('chrome','move_node', tab_val.node_id, new_win_val.node_id,
             attachinfo.newPosition);
 
+    // Open after moving because otherwise the window might not have any
+    // children yet.
+    T.treeobj.open_node(new_win_val.node_id);
+
     tab_val.win_id = attachinfo.newWindowId;
     tab_val.index = attachinfo.newPosition;
 
