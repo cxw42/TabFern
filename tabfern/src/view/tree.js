@@ -1729,9 +1729,31 @@ function initFocusHandler()
         /// Focus event handler.  Empirically, this happens after the
         /// chrome.windows.onFocusChanged event.
         $(window).focus(function(evt){
-            log.debug({onfocus:evt, x_blurred,y_blurred,
-                elts: document.elementsFromPoint(x_blurred,y_blurred)
-            });
+
+            if(log.getLevel()<=log.levels.DEBUG) {
+                let obj = {onfocus:evt};
+                obj.x_blurred =  (
+                    (typeof x_blurred === 'number' &&
+                        Number.isFinite(x_blurred)) ?
+                    x_blurred :
+                    String(x_blurred)
+                );
+
+                obj.y_blurred =  (
+                    (typeof y_blurred === 'number' &&
+                        Number.isFinite(y_blurred)) ?
+                    y_blurred :
+                    String(y_blurred)
+                );
+
+                if(typeof obj.x_blurred === 'number' &&
+                        typeof obj.y_blurred === 'number') {
+                    obj.elts = document.elementsFromPoint(x_blurred,y_blurred);
+                }
+
+                log.debug(obj);
+            } //endif DEBUG
+
             $(window).off('mousemove.tabfern');
             x_blurred = undefined;  // can't leave them sitting around,
             y_blurred = undefined;  // lest we risk severe confusion.
@@ -1807,7 +1829,7 @@ function initFocusHandler()
         }
 
         else if(change_to === FC_TO_TF) {
-            if(typeof x_blurred !== 'undefined') {
+            if(typeof x_blurred === 'number' && typeof y_blurred === 'number') {
                 // We can guess where the click was
                 let elts = document.elementsFromPoint(x_blurred,y_blurred);
                 if( elts && elts.length &&
@@ -2801,6 +2823,12 @@ var treeCheckCallback = (function()
                     {windowId: parent_val.win_id, index: data.position}
                     , ASQH.CC(done));
             })
+            .then((done)=>{
+                // It appears that chrome.tabs.move() throws away pinned
+                // status in Chrome 64.  Make sure it is consistent.
+                chrome.tabs.update(val.tab_id, {pinned: !!val.isPinned},
+                    ASQH.CC(done));
+            })
             .or((err)=>{
                 // Doesn't fire for invalid moves of pinned tabs in Chrome 63
                 L.log.warn({[`Couldn't move tab ${val.tab_id}`]:err});
@@ -2830,7 +2858,9 @@ var treeCheckCallback = (function()
                 T.treeobj.flag_node(val.node_id, false, true);  // clear flag
             });
 
-            // Now that it's disconnected, close the actual tab
+            // Now that it's disconnected, close the actual tab.
+            // TODO update per #79 - need to try to remove the tab first,
+            // then see what happens.
             seq.try((done)=>{
                 chrome.tabs.remove(tab_id, ASQH.CC(done));
                 // if tab_id was the last tab in old_parent, winOnRemoved
@@ -2875,13 +2905,16 @@ var treeCheckCallback = (function()
             moving_val.being_opened = true;
                 // so tabOnCreated doesn't duplicate it
 
-            chrome.tabs.create({                // open the tab
+            let newtab_info = {
                 windowId: parent_val.win_id,
                 url: chrome.runtime.getURL('/src/view/newtab.html') + '#' + moving_val.node_id,
                     // pass the node ID to the tabOnUpdated callback
                 index: moving_val.index,
                 pinned: !!moving_val.isPinned,
-            }, ASQH.CC(done));
+            }
+
+            log.info({'Moving tab':newtab_info});
+            chrome.tabs.create(newtab_info, ASQH.CC(done));
         });
         // The Chrome tab and the item will be linked in tabOnCreated, so we're done.
 
