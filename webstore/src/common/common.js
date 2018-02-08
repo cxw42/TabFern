@@ -7,45 +7,11 @@
 console.log('TabFern common.js loading');
 
 //////////////////////////////////////////////////////////////////////////
-// Test for Firefox //
-// Not sure if I need this, but I'm playing it safe for now.  Firefox returns
-// null rather than undefined in chrome.runtime.lastError when there is
-// no error.  This is to test for null in Firefox without changing my
-// Chrome code.  Hopefully in the future I can test for null/undefined
-// in either browser, and get rid of this block.
-
-(function(win){
-    let isLastError_chrome =
-        ()=>{return (typeof(chrome.runtime.lastError) !== 'undefined');};
-    let isLastError_firefox =
-        ()=>{return (chrome.runtime.lastError !== null);};
-
-    if(typeof browser !== 'undefined' && browser.runtime &&
-                                            browser.runtime.getBrowserInfo) {
-        browser.runtime.getBrowserInfo().then(
-            (info)=>{   // fullfillment
-                if(info.name === 'Firefox') {
-                    win.isLastError = isLastError_firefox;
-                } else {
-                    win.isLastError = isLastError_chrome;
-                }
-            },
-
-            ()=>{   //rejection --- assume Chrome by default
-                win.isLastError = isLastError_chrome;
-            }
-        );
-    } else {    // Chrome
-        win.isLastError = isLastError_chrome;
-    }
-})(window);
-
-//////////////////////////////////////////////////////////////////////////
 // General constants //
 
 /// The TabFern extension friendly version number.  Displayed in the
 /// title bar of the popup window, so lowercase (no shouting!).
-const TABFERN_VERSION='0.1.14 alpha \u26a0'
+const TABFERN_VERSION='0.1.15 alpha \u26a0'
     // When you change this, also update:
     //  - manifest.json: both the version and version_name
     //  - package.json
@@ -115,6 +81,40 @@ const CFG_DEFAULTS = {
 };
 
 //////////////////////////////////////////////////////////////////////////
+// Test for Firefox //
+// Not sure if I need this, but I'm playing it safe for now.  Firefox returns
+// null rather than undefined in chrome.runtime.lastError when there is
+// no error.  This is to test for null in Firefox without changing my
+// Chrome code.  Hopefully in the future I can test for null/undefined
+// in either browser, and get rid of this block.
+
+(function(win){
+    let isLastError_chrome =
+        ()=>{return (typeof(chrome.runtime.lastError) !== 'undefined');};
+    let isLastError_firefox =
+        ()=>{return (chrome.runtime.lastError !== null);};
+
+    if(typeof browser !== 'undefined' && browser.runtime &&
+                                            browser.runtime.getBrowserInfo) {
+        browser.runtime.getBrowserInfo().then(
+            (info)=>{   // fullfillment
+                if(info.name === 'Firefox') {
+                    win.isLastError = isLastError_firefox;
+                } else {
+                    win.isLastError = isLastError_chrome;
+                }
+            },
+
+            ()=>{   //rejection --- assume Chrome by default
+                win.isLastError = isLastError_chrome;
+            }
+        );
+    } else {    // Chrome
+        win.isLastError = isLastError_chrome;
+    }
+})(window);
+
+//////////////////////////////////////////////////////////////////////////
 // Setting-related functions //
 
 const SETTING_PREFIX = 'store.settings.';
@@ -142,7 +142,7 @@ function getStringSetting(setting_name, default_value = undefined)
     return String(default_value);
 } //getStringSetting
 
-/// Get a boolean setting from options_custom, which uses HTML5 localStorage.
+/// Get a boolean setting from the settings page, which uses HTML5 localStorage.
 function getBoolSetting(setting_name, default_value = undefined)
 {
     if(typeof default_value === 'undefined' && setting_name in CFG_DEFAULTS) {
@@ -165,7 +165,7 @@ function getBoolSetting(setting_name, default_value = undefined)
     }
 } //getBoolSetting
 
-/// Find out whether the given setting from options_custom exists.
+/// Find out whether the given setting from the settings page exists.
 function haveSetting(setting_name)
 {
     if(!setting_name) return false;

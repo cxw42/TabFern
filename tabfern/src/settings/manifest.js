@@ -261,6 +261,17 @@ bar (it will start with "file://")</li>
             // Changelog                                          {{{1
             {
                 "tab": i18n.get("What's new?"),
+                "group": `Version 0.1.15${brplain('2018-02-xx')}`,
+                'group_html':true,
+                "type": "description",
+                "text":
+`<ul>
+<li>TabFern now has a basic understanding of pinned tabs. ${issue(106)} ${issue(107)}</li>
+<li>Better handling of crashes, recovery, and reopening tabs.  ${issue(41)} ${issue(55)} ${issue(96)}</li>
+</ul>`
+            },
+            {
+                "tab": i18n.get("What's new?"),
                 "group": `Version 0.1.14${brplain('2018-01-12')}`,
                 'group_html':true,
                 "type": "description",

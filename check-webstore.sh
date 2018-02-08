@@ -7,13 +7,13 @@
 # the master tree.
 echo
 echo === Files different in / and /webstore/ ===
-for f in LICENSE.md README.md ; do
+for f in LICENSE.md ; do
     diff "$f" "webstore/$f" &>/dev/null || echo "$f"
 done
 
 echo === Files only in webstore/ or differing from tabfern/ ===
 find webstore -name \*.swp -o -wholename webstore/LICENSE.md -o \
-    -wholename webstore/README.md -o -type f -print | \
+    -type f -print | \
     while IFS= read -r f ; do
         diff "$f" "tabfern/${f#webstore/}" &>/dev/null || echo "$f"
     done

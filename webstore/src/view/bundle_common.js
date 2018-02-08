@@ -10254,6 +10254,7 @@ if ( !noGlobal ) {
 
 return jQuery;
 } );
+
 // Begin bundled file ///////////////////////////////////////////////////
 // tabfern/js/loglevel.js
 
@@ -10502,3 +10503,4 @@ return jQuery;
 
     return defaultLogger;
 }));
+

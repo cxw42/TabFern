@@ -176,8 +176,8 @@ window.addEventListener('load',
     { 'once': true }
 );
 
-// Set the defaults for the options.  options_custom does not appear
-// to have this facility.
+// Set the defaults for the options.  The settings boilerplate from
+// extensionizr does not appear to have this facility.
 for(opt in CFG_DEFAULTS) {
     setSettingIfNonexistent(opt, CFG_DEFAULTS[opt]);
 }

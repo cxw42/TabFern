@@ -1,5 +1,8 @@
 // view/item_details.js: Detail records and related utilities for
 // TabFern items.
+// Note: the details do not include all the data.  Parent/child relationships between
+// nodes, and top borders on items, are kept in the tree.
+//
 // Copyright (c) 2017 Chris White, Jasmine Hegman.
 
 (function (root, factory) {
@@ -31,7 +34,9 @@
     /// The module we are creating
     let module = {};
 
-    /// Map between open-tab IDs and node IDs
+    /// Map between open-tab IDs and node IDs.
+    /// Design decision: no fields named "parent" so I can distinguish
+    /// jstree node records from multidex values.
     module.tabs = multidex(
         K.IT_TAB, //type
         [ //keys
@@ -46,26 +51,37 @@
             'raw_url',      // the tab's URL
             'raw_title',    // the tab's title.  null => default.
             'isOpen',       // open or not
-            // TODO save favIconUrl?
             'raw_bullet',   // User-provided descriptive text (brief).
                             // null => none.
                             // It's not called a "note" because we may
                             // someday add a long-form notes field.
+            'raw_favicon_url',  //favicon URL
+            'isPinned',     // whether the tab is pinned
+            // Note: isTopBordered (NST_TOP_BORDER) is stored in the jstree,
+            // not here.
         ]);
 
-    /// Map between open-window IDs and node IDs
+    /// Map between open-window IDs and node IDs.
+    /// Design decision: no fields named "parent" so I can distinguish
+    /// jstree node records from multidex values.
     module.windows = multidex(
         K.IT_WIN,  //type
         [ //keys
             'win_id',   // from Chrome
             'node_id',  // from jstree
+            'ordered_url_hash',
+                // Hash of the URLs of its tabs, in order.  Used for
+                // determining whether a window is open.  NOTE: if a user
+                // opens two windows with exactly the same set of tabs,
+                // whichever one already has that ordered_url_hash will keep it.
         ],
         [ //other data
             'win',          // the actual Window record from chrome
             'raw_title',    // the window's title (e.g., "Window")
             'isOpen',       // whether the window is open or not
             'keep',         // whether the window should be saved or not
-            'raw_bullet',   // User-provided text (brief).  null => none
+            //'raw_bullet',   // User-provided text (brief).  null => none
+                // Not currently used.
         ]);
 
     /// Find a node's value in the model, regardless of type.
