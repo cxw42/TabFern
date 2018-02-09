@@ -2,10 +2,12 @@
 
 ![screenshot](https://raw.githubusercontent.com/cxw42/TabFern/gh-pages/screenshot.png)
 
-Very basic extension for vertical, grouped tabs.  Inspired by
-[Tabs Outliner](https://chrome.google.com/webstore/detail/tabs-outliner/eggkanocgddhmamlbiijnphhppkpkmkl)
-by Vladyslav Volovyk.  However, TabFern is not derived from or in any way
-affiliated with Vladyslav or his (excellent!) work.
+A [Google Chrome extension](https://chrome.google.com/webstore/detail/tabfern-tab-manager-and-b/hbajjpcdbninabigakflkhiogmmjaakm) that:
+
+ - Gives you a vertical list of all your open tabs
+ - Groups your tabs by window
+ - Saves sets of tabs so you can close them and resume later
+ - Backs up and restores sets of tabs
 
 See [INTERNALS.md](INTERNALS.md) for details of how the code is structured.
 
@@ -56,9 +58,18 @@ See [INTERNALS.md](INTERNALS.md) for details of how the code is structured.
 
 # Legal
 
-Copyright (c) 2017 Chris White, Jasmine Hegman.  CC-BY-SA 4.0 International.
+Copyright (c) 2017 Chris White and contributors.  CC-BY-SA 4.0 International.
 See [LICENSE.md](LICENSE.md) for details, which are controlling in case of any
 difference between that file and this section.
+
+Contributors:
+
+ - [Jasmine Hegman](https://github.com/r4j4h)
+
+Originally inspired by
+[Tabs Outliner](https://chrome.google.com/webstore/detail/tabs-outliner/eggkanocgddhmamlbiijnphhppkpkmkl)
+by Vladyslav Volovyk.  However, TabFern is not derived from Tabs Outliner.
+TabFern is not affiliated in any way with Vladyslav or Tabs Outliner.
 
 ![logo](https://raw.githubusercontent.com/cxw42/TabFern/master/webstore/assets/fern128.png)
 

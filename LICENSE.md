@@ -2,12 +2,17 @@
 
 TabFern is Copyright (c) 2017&ndash;2018 Chris White and contributors.
 
+Contributors:
+
+ - [Jasmine Hegman](https://github.com/r4j4h)
+
+
 Unless otherwise specified by individual files or groups of files,
 the contents of TabFern are licensed as follows.  Thanks to
 [idleberg](https://github.com/idleberg/Creative-Commons-Markdown/blob/master/4.0/by-nc-sa.markdown)
 for the Markdown text.
 
-More information about TabFern is available at 
+More information about TabFern is available at
 [https://cxw42.github.io/TabFern/](https://cxw42.github.io/TabFern/).
 
 ## Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International Public License
@@ -168,3 +173,4 @@ c. No term or condition of this Public License will be waived and no failure to 
 
 d. Nothing in this Public License constitutes or may be interpreted as a limitation upon, or waiver of, any privileges and immunities that apply to the Licensor or You, including from the legal processes of any jurisdiction or authority.
 
+[]( vi: set ts=4 sts=4 sw=4 et ai ft=markdown: )

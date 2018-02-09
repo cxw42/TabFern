@@ -261,13 +261,15 @@ bar (it will start with "file://")</li>
             // Changelog                                          {{{1
             {
                 "tab": i18n.get("What's new?"),
-                "group": `Version 0.1.15${brplain('2018-02-xx')}`,
+                "group": `Version 0.1.15${brplain('2018-02-09')}`,
                 'group_html':true,
                 "type": "description",
                 "text":
 `<ul>
 <li>TabFern now has a basic understanding of pinned tabs. ${issue(106)} ${issue(107)}</li>
 <li>Better handling of crashes, recovery, and reopening tabs.  ${issue(41)} ${issue(55)} ${issue(96)}</li>
+<li>We have enough experience with TabFern that I have removed the "alpha"
+status!  One step closer to <a href="https://github.com/cxw42/TabFern/issues?q=is%3Aopen+is%3Aissue+milestone%3Av1.0">version 1.0</a>.</li>
 </ul>`
             },
             {

@@ -64,7 +64,7 @@ function initMain()
     W = window.frames[0];
         // Thanks to https://stackoverflow.com/a/13913943/2877364 by
         // https://stackoverflow.com/users/1105384/shank
-    document.title = 'TabFern ' + TABFERN_VERSION;
+    document.title = `TabFern (v${TABFERN_VERSION})`;
 } //initMain
 
 //////////////////////////////////////////////////////////////////////////
