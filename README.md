@@ -2,26 +2,14 @@
 
 ![screenshot](https://raw.githubusercontent.com/cxw42/TabFern/gh-pages/screenshot.png)
 
-Very basic extension for vertical, grouped tabs.  Inspired by
-[Tabs Outliner](https://chrome.google.com/webstore/detail/tabs-outliner/eggkanocgddhmamlbiijnphhppkpkmkl)
-by Vladyslav Volovyk.  However, TabFern is not derived from or in any way
-affiliated with Vladyslav or his (excellent!) work.
+A [Google Chrome extension](https://chrome.google.com/webstore/detail/tabfern-tab-manager-and-b/hbajjpcdbninabigakflkhiogmmjaakm) that:
 
-# Project layout
+ - Gives you a vertical list of all your open tabs
+ - Groups your tabs by window
+ - Saves sets of tabs so you can close them and resume later
+ - Backs up and restores sets of tabs
 
- - `/tabfern`: The development tree for TabFern itself
-   * `/tabfern/src`: Main source
-     - `/tabfern/src/bg`: Background page
-     - `/tabfern/src/view`: Popup
-     - `/tabfern/src/options_custom`: Options page
-   * `/tabfern/test`: Jasmine tests of TabFern
- - `/dist`: where build output from the build process will eventually go.
- - `/webstore`: The latest version of TabFern released to the Chrome Web Store.
-   Updated manually by the maintainers.
- - `/doc`: Documentation
- - `/scraps`: Holding pen for code that may yet be useful.  Nothing in the
-   project relies on the contents of `/scraps`.
- - `/plugin`: Skeleton of a TabFern plugin
+See [INTERNALS.md](INTERNALS.md) for details of how the code is structured.
 
 # Usage
 
@@ -70,9 +58,18 @@ affiliated with Vladyslav or his (excellent!) work.
 
 # Legal
 
-Copyright (c) 2017 Chris White, Jasmine Hegman.  CC-BY-SA 4.0 International.
+Copyright (c) 2017 Chris White and contributors.  CC-BY-SA 4.0 International.
 See [LICENSE.md](LICENSE.md) for details, which are controlling in case of any
 difference between that file and this section.
+
+Contributors:
+
+ - [Jasmine Hegman](https://github.com/r4j4h)
+
+Originally inspired by
+[Tabs Outliner](https://chrome.google.com/webstore/detail/tabs-outliner/eggkanocgddhmamlbiijnphhppkpkmkl)
+by Vladyslav Volovyk.  However, TabFern is not derived from Tabs Outliner.
+TabFern is not affiliated in any way with Vladyslav or Tabs Outliner.
 
 ![logo](https://raw.githubusercontent.com/cxw42/TabFern/master/webstore/assets/fern128.png)
 

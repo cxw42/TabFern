@@ -355,6 +355,11 @@ div.jstree-wholerow-hovered > .tf-action-group {
     grid-column: span 12;
 }
 
+/* clip button labels, which otherwise overflow when the user zooms. */
+.modal-content .btn {
+    overflow: hidden;
+}
+
 /* }}}1 */
 /* --- Tweak up jstree -------------------------------------------- {{{1 -- */
 

@@ -15,5 +15,6 @@ for f in "$@" ; do
 
 EOF
     cat "$f" >> "$dest"
+    echo >> "$dest"     # in case of no \n at last line
 done
 

@@ -1,6 +1,6 @@
 {
   "name": "tabfern",
-  "version": "0.1.14.1337",
+  "version": "0.1.15.1337",
   "description": "Google Chrome extension for displaying, saving, and managing tabs",
   "main": "src/view/main.js",
   "directories": {
@@ -29,6 +29,7 @@
   "homepage": "https://cxw42.github.io/TabFern/",
   "dependencies": {
     "asynquence": "^0.10.0",
+    "blake2s-js": "^1.2.3",
     "requirejs": "^2.3.5",
     "rmodal": "^1.0.28",
     "spectrum-colorpicker": "^1.8.0",
@@ -36,12 +37,15 @@
     "tinycolor2": "^1.4.1"
   },
   "devDependencies": {
+    "benchmark": "^2.1.4",
     "css-loader": "^0.28.7",
     "extract-text-webpack-plugin": "^3.0.0",
+    "jasmine2-custom-message": "^0.8.4",
     "node-sass": "^4.5.3",
     "raw-loader": "^0.5.1",
     "sass": "^1.0.0-beta.2",
     "sass-loader": "^6.0.6",
+    "seedrandom": "^2.4.3",
     "style-loader": "^0.18.2",
     "webpack": "^3.6.0"
   }

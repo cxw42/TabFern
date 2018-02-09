@@ -1,8 +1,8 @@
 {
   "name": "TabFern tab manager and backup tool",
   "short_name": "TabFern",
-  "version": "0.1.14.1337",
-  "version_name": "0.1.14 ALPHA - YMMV",
+  "version": "0.1.15.1337",
+  "version_name": "0.1.15",
   "offline_enabled": true,
   "manifest_version": 2,
   "minimum_chrome_version": "54",
@@ -21,7 +21,7 @@
     ],
     "persistent": true
   },
-  "options_page": "src/options_custom/index.html",
+  "options_page": "src/settings/index.html",
   "browser_action": {
     "default_icon": {
       "16": "assets/fern16.png",

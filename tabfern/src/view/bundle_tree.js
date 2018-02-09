@@ -8458,6 +8458,7 @@
 	}
 
 }));
+
 // Begin bundled file ///////////////////////////////////////////////////
 // tabfern/js/jstree-actions.js
 
@@ -8827,6 +8828,7 @@
 	}
 
 }));
+
 // Begin bundled file ///////////////////////////////////////////////////
 // tabfern/js/jstree-flagnode.js
 
@@ -9081,6 +9083,7 @@
 
 }));
 // vi: set ts=4 sw=4: //
+
 // Begin bundled file ///////////////////////////////////////////////////
 // tabfern/js/jstree-because.js
 
@@ -9143,6 +9146,7 @@
 }));
 
 // vi: set ts=4 sw=4 ai: //
+
 // Begin bundled file ///////////////////////////////////////////////////
 // tabfern/js/jstree-multitype.js
 
@@ -9723,6 +9727,7 @@
 	};
 }));
 // vi: set ts=2 sw=2: //
+
 // Begin bundled file ///////////////////////////////////////////////////
 // tabfern/js/jstree-redraw-event.js
 
@@ -9767,6 +9772,7 @@
 }));
 
 // vi: set ts=4 sw=4 ai: //
+
 // Begin bundled file ///////////////////////////////////////////////////
 // tabfern/js/multidex.js
 
@@ -9965,7 +9971,7 @@
                 }
             } //remove_value
 
-            /// Add a value created with new_value or clone_value to the
+            /// Add a value created with new_value() or clone_value() to the
             /// multidex.  Overwrites index entries for any key fields.
             /// @return The new value
             function add_value(val)
@@ -10066,6 +10072,7 @@
 // https://github.com/getify/You-Dont-Know-JS/blob/master/this%20%26%20object%20prototypes/ch2.md
 
 // vi: set ts=4 sts=4 sw=4 et ai fo-=o: //
+
 // Begin bundled file ///////////////////////////////////////////////////
 // tabfern/js/justhtmlescape.js
 
@@ -10181,6 +10188,7 @@
 // DEALINGS IN THE SOFTWARE.
 
 // vi: set ts=4 sts=4 sw=4 et ai fo-=o: //
+
 // Begin bundled file ///////////////////////////////////////////////////
 // tabfern/js/signals.js
 
@@ -10629,6 +10637,7 @@
     }
 
 }(this));
+
 // Begin bundled file ///////////////////////////////////////////////////
 // tabfern/js/asynquence.js
 
@@ -11516,6 +11525,7 @@
 
 	return createSequence;
 });
+
 // Begin bundled file ///////////////////////////////////////////////////
 // tabfern/js/asynquence-contrib.js
 
@@ -13879,6 +13889,7 @@ ASQ.wrap = function $$wrap(fn, opts) {
 	// just return `ASQ` itself for convenience sake
 	return ASQ;
 });
+
 // Begin bundled file ///////////////////////////////////////////////////
 // tabfern/js/asq-helpers.js
 
@@ -14038,6 +14049,7 @@ ASQ.wrap = function $$wrap(fn, opts) {
 }));
 
 // vi: set ts=4 sts=4 sw=4 et ai fo-=o: //
+
 // Begin bundled file ///////////////////////////////////////////////////
 // tabfern/js/rmodal.js
 
@@ -14242,6 +14254,7 @@ RModal.version = '1.0.28';
 return RModal;
 
 })));
+
 // Begin bundled file ///////////////////////////////////////////////////
 // tabfern/js/tinycolor.js
 
@@ -15440,6 +15453,7 @@ else {
 }
 
 })(Math);
+
 // Begin bundled file ///////////////////////////////////////////////////
 // tabfern/js/keypress.js
 
@@ -16586,6 +16600,7 @@ Combo options available and their defaults:
   }
 
 }).call(this);
+
 // Begin bundled file ///////////////////////////////////////////////////
 // tabfern/js/hamburger.js
 
@@ -16694,6 +16709,7 @@ Combo options available and their defaults:
 // http://davidbcalhoun.com/2014/what-is-amd-commonjs-and-umd/
 
 // vi: set ts=4 sts=4 sw=4 et ai fo-=o fo-=r: //
+
 // Begin bundled file ///////////////////////////////////////////////////
 // tabfern/js/import-file.js
 
@@ -16781,6 +16797,7 @@ Combo options available and their defaults:
 /// by Hendy Tarnando, https://www.thewebflash.com/author/frosdqy/
 
 // vi: set ts=4 sts=4 sw=4 et ai fo-=o: //
+
 // Begin bundled file ///////////////////////////////////////////////////
 // tabfern/js/export-file.js
 
@@ -16842,3 +16859,4 @@ Combo options available and their defaults:
 /// by Hendy Tarnando, https://www.thewebflash.com/author/frosdqy/
 
 // vi: set ts=4 sts=4 sw=4 et ai fo-=o: //
+
