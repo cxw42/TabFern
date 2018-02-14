@@ -850,7 +850,12 @@ function addTabNodeActions(tab_node_id)
     T.treeobj.add_action(tab_node_id, {
         id: 'editBullet',
         class: 'fff-pencil ' + K.ACTION_BUTTON_WIN_CLASS,
-        text: '&nbsp;',
+        text: '\xa0',
+        // I tried this approach but it was a bit ugly.  For example, the
+        // image was in the right place but the border of the <i /> was offset
+        // down a pixel or two.  Also, the class was required for the
+        // "Actually" event check in treeOnSelect.
+        //html: `<img src="/assets/icons/pencil.png" class=${K.ACTION_BUTTON_WIN_CLASS} />`,
         grouped: true,
         callback: actionEditTabBullet,
         dataset: { action: 'editBullet' }
@@ -859,7 +864,7 @@ function addTabNodeActions(tab_node_id)
     T.treeobj.add_action(tab_node_id, {
         id: 'deleteTab',
         class: 'fff-cross ' + K.ACTION_BUTTON_WIN_CLASS,
-        text: '&nbsp;',
+        text: '\xa0',
         grouped: true,
         callback: actionDeleteTab,
         dataset: { action: 'deleteTab' }
@@ -919,7 +924,7 @@ function addWindowNodeActions(win_node_id)
     T.treeobj.add_action(win_node_id, {
         id: 'renameWindow',
         class: 'fff-pencil ' + K.ACTION_BUTTON_WIN_CLASS,
-        text: '&nbsp;',
+        text: '\xa0',
         grouped: true,
         callback: actionRenameWindow,
         dataset: { action: 'renameWindow' }
@@ -928,7 +933,7 @@ function addWindowNodeActions(win_node_id)
     T.treeobj.add_action(win_node_id, {
         id: 'closeWindow',
         class: 'fff-picture-delete ' + K.ACTION_BUTTON_WIN_CLASS,
-        text: '&nbsp;',
+        text: '\xa0',
         grouped: true,
         callback: actionCloseWindowAndSave,
         dataset: { action: 'closeWindow' }
@@ -937,7 +942,7 @@ function addWindowNodeActions(win_node_id)
     T.treeobj.add_action(win_node_id, {
         id: 'deleteWindow',
         class: 'fff-cross ' + K.ACTION_BUTTON_WIN_CLASS,
-        text: '&nbsp;',
+        text: '\xa0',
         grouped: true,
         callback: actionDeleteWindow,
         dataset: { action: 'deleteWindow' }
@@ -3385,6 +3390,10 @@ function preLoadInit()
     let url = chrome.runtime.getURL(
                 `/assets/jstree-3.3.4/themes/${getThemeName()}/style.css`);
     let before = document.getElementById('last-stylesheet');
+    loadCSS(document, url, before);
+
+    // Load our icons after the jstree theme so they can override the theme
+    url = chrome.runtime.getURL('/assets/css/icons.css');
     loadCSS(document, url, before);
 
     let body = document.querySelector('body');

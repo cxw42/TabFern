@@ -194,7 +194,7 @@
 
         jstreeTypes[K.IT_WIN] = {
             li_attr: { 'class': WIN_CLASS },
-            icon: 'clear-icon',  // We will overlay the actual icon in the CSS
+            //icon: 'clear-icon',  // We will overlay the actual icon in the CSS
         };
 
         jstreeTypes[K.NST_OPEN] = { li_attr: { 'class': OPEN_CLASS } };
