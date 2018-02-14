@@ -897,6 +897,7 @@ function createNodeForClosedTabV1(tab_data_v1, parent_node_id)
     copyTruthyProperties(val, tab_data_v1, 'isPinned', Boolean);
 
     M.refresh_label(node_id);
+    M.refresh_tab_icon(val);
 
     if(tab_data_v1.bordered) M.add_subtype(val, K.NST_TOP_BORDER);
 
