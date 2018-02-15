@@ -15,18 +15,28 @@
 }
 
 /* For Firefox */
+/*
 .tf-window.tfs-open.tfs-saved > a > i::before {
-    content: url(/assets/icons/monitor_add.png);    /* or folder.png? */
+    content: url(/assets/icons/monitor_add.png);    * or folder.png? *
 }
 
 .tf-window.tfs-open > a > i::before {
-    content: url(/assets/icons/monitor.png);    /* or folder.png? */
+    content: url(/assets/icons/monitor.png);    * or folder.png? *
 }
+*/
 
 /* Back to cross-browser */
 
 .jstree-themeicon-custom.fff-page /*, .tf-tab > i*/ {
     background-image: url(/assets/icons/page_white.png);
+}
+
+.jstree-themeicon-custom.fff-monitor-add {
+    background-image: url(/assets/icons/monitor_add.png);
+}
+
+.jstree-themeicon-custom.fff-monitor {
+    background-image: url(/assets/icons/monitor.png);
 }
 
 .jstree-themeicon-custom.fff-page-white-with-red-banner {

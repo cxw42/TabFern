@@ -52,6 +52,67 @@
     /// Value returned by vn*() on error.  Both members are falsy.
     module.VN_NONE = {val: null, node_id: ''};
 
+    // Querying the model ////////////////////////////////////////////// {{{1
+
+    /// Get a {val, node_id} pair (vn) from one of those (vorny).
+    /// @param val_or_nodey {mixed} If a string, the node ID of the
+    ///                             item; otherwise, the details
+    ///                             record for the item, or the jstree node
+    ///                             record for the node.
+    /// @param item_type {mixed=} If provided, the type of the item.
+    ///             Otherwise, all types will be checked.
+    /// @return {Object} {val, node_id}.    `val` is falsy if the
+    ///                                     given vorny was not found.
+    module.vn_by_vorny = function(val_or_nodey, item_type) {
+        if(!val_or_nodey) return module.VN_NONE;
+
+        let val, node_id;
+        if(typeof val_or_nodey === 'string') {          // a node_id
+            node_id = val_or_nodey;
+            switch(item_type) {
+                case K.IT_WIN:
+                    val = D.windows.by_node_id(node_id); break;
+                case K.IT_TAB:
+                    val = D.tabs.by_node_id(node_id); break;
+                default:
+                    val = D.val_by_node_id(node_id); break;
+            }
+
+        } else if(typeof val_or_nodey === 'object' && val_or_nodey.id &&
+                val_or_nodey.parent) {                  // A jstree node
+            node_id = val_or_nodey.id;
+            val = D.val_by_node_id(node_id);
+
+        } else if(typeof val_or_nodey === 'object' &&   // A val (details record)
+                val_or_nodey.ty) {
+            val = val_or_nodey;
+            if(!val.node_id) return module.VN_NONE;
+            node_id = val.node_id;
+        } else {                                        // Unknown
+            return module.VN_NONE;
+        }
+
+        return {val, node_id};
+    } //vn_by_vorny
+
+    /// Determine whether a model has given subtype(s).
+    /// @param vorny {mixed} The item
+    /// @param tys {mixed} A single type or array of types
+    /// @return {Boolean} true if #vorny has all the subtypes in #tys;
+    ///                     false otherwise.
+    module.has_subtype = function(vorny, ...tys) {
+        if(!vorny || !tys) return false;
+        if(tys.length < 1) return false;
+        let {node_id} = module.vn_by_vorny(vorny);
+        if(!node_id) return false;
+
+        for(let ty of tys) {
+            if(!T.treeobj.has_multitype(node_id, ty)) return false;
+        }
+        return true;
+    } //has_subtype
+
+    // }}}1
     // Data-access routines //////////////////////////////////////////// {{{1
 
     /// Find a node's value in the model, regardless of type.
@@ -86,7 +147,7 @@
         }
     }; //get_win_raw_text()
 
-    /// Mark window item #val as unsaved.
+    /// Mark window item #val as unsaved (forget #val).
     /// @param val {Object} the item
     /// @param adjust_title {Boolean=true} Add unsaved markers if truthy
     /// @return {Boolean} true on success; false on error
@@ -104,6 +165,7 @@
         // so we don't need to manually assign text here.
 
         module.refresh_label(val.node_id);
+        module.refresh_icon(val);
         return true;
     }; //mark_as_unsaved()
 
@@ -162,27 +224,48 @@
         return retval;
     };
 
-    /// Update the icon of tab item #val.
-    /// @param val {Object} The details record for this item
+    /// Update the icon of #vorny
+    /// @param vorny {Mixed} The item
     /// @return {Boolean} true on success; false on error
-    module.refresh_tab_icon = function(val) {
-        if(!val || !val.node_id) return false;
-        if(val.ty !== K.IT_TAB) return false;
+    module.refresh_icon = function(vorny) {
+        let {val, node_id} = module.vn_by_vorny(vorny);
+        let node = T.treeobj.get_node(node_id);
+        if(!val || !node_id || !node) return false;
 
-        let icon = 'fff-page';
-        if(val.raw_favicon_url) {
-            icon = encodeURI(val.raw_favicon_url);
-        } else if((/\.pdf$/i).test(val.raw_url)) {  //special-case PDFs
-            icon = 'fff-page-white-with-red-banner';
+        let icon;
+
+        switch(val.ty) {
+            case K.IT_TAB:
+                icon = 'fff-page';
+                if(val.raw_favicon_url) {
+                    icon = encodeURI(val.raw_favicon_url);
+                } else if((/\.pdf$/i).test(val.raw_url)) {  //special-case PDFs
+                    icon = 'fff-page-white-with-red-banner';
+                }
+                break;
+
+            case K.IT_WIN:
+                icon = true;    // default icon for closed windows
+                if(val.isOpen && val.keep) {    // open and saved
+                    icon = 'fff-monitor-add';
+                } else if(val.isOpen) {         // ephemeral
+                    icon = 'fff-monitor';
+                }
+                break;
+
+            default:
+                return false;
         }
 
-        T.treeobj.set_icon(val.node_id, icon);
+        if(!icon) return false;
+
+        T.treeobj.set_icon(node, icon);
 
         // TODO? if the favicon doesn't load, replace the icon with the
         // generic page icon so we don't keep hitting the favIconUrl.
 
         return true;
-    } //refresh_tab_icon
+    } //refresh_icon
 
     /// Mark the window identified by #win_node_id as to be kept.
     /// @param win_node_id {string} The window node ID
@@ -203,113 +286,9 @@
         }
 
         module.refresh_label(win_node_id);
+        module.refresh_icon(val);
         return true;
     }; //remember()
-
-    // }}}1
-    // Item creation /////////////////////////////////////////////////// {{{1
-
-    /// Create a new fern, optionally for an open Chrome window.
-    /// ** Does not populate any tab nodes --- this is just for a window.
-    /// @param cwin {Chrome Window record} The open window.
-    ///                         If falsy, there is no Chrome window presently.
-    /// @param keep {boolean} If #cwin is truthy, determines whether the window
-    ///                         is (true) open and saved or (false) ephemeral.
-    ///                         If #cwin is falsy, #keep is ignored and treated
-    ///                         as if it were `true`.
-    /// @return {object} {node_id (the fern's id), val}.  On error,
-    ///                 at least one of node_id or val will be falsy.
-    module.makeItemForWindow = function(cwin, keep) {
-        if(!cwin) keep = K.WIN_KEEP;  //creating item for a closed window => keep
-        keep = (keep ? K.WIN_KEEP : K.WIN_NOKEEP);  //regularize
-
-        let error_return = {node_id:null, val:null};
-
-        let pos = (!!cwin && getBoolSetting(CFG_NEW_WINS_AT_TOP)) ? 'first' : 'last';
-        let win_node_id = T.treeobj.create_node(
-                $.jstree.root,                          // parent
-                {     text: 'Window'                    // node data
-                    , state: { 'opened': !!cwin }
-                },
-                pos
-        );
-        if(win_node_id === false) return error_return;
-        T.treeobj.add_multitype(win_node_id, K.IT_WIN);
-        if(cwin) T.treeobj.add_multitype(win_node_id, K.NST_OPEN);
-        if(keep) T.treeobj.add_multitype(win_node_id, K.NST_SAVED);
-
-        loginfo({'Adding nodeid map for cwinid': cwin ? cwin.id : 'none'});
-        let win_val = D.windows.add({
-            win_id: (cwin ? cwin.id : K.NONE),
-            node_id: win_node_id,
-            win: (cwin ? cwin : undefined),
-            raw_title: null,    // default name
-            raw_bullet: null,
-            isOpen: !!cwin,
-            keep: keep
-        });
-
-        T.treeobj.rename_node(win_node_id, module.get_html_label(win_val));
-
-        return {node_id: win_node_id, val: win_val};
-    } //makeItemForWindow
-
-    /// Create a new node for a tab, optionally for an open Chrome tab.
-    /// @param parent_node_id {string} The parent's node ID (a window)
-    /// @param ctab {Chrome Tab record} The open tab.
-    ///                         If falsy, there is no Chrome tab presently.
-    /// @param raw_url {string} If #ctab is falsy, the URL of the tab
-    /// @param raw_title {string} If #ctab is falsy, the title of the tab
-    /// @param tys {mixed} If provided, add those multitypes to the tab
-    /// @return {object} {node_id, val}.  On error,
-    ///                 at least one of node_id or val will be falsy.
-    module.makeItemForTab = function(parent_node_id, ctab, raw_url, raw_title,
-            tys) {
-        let error_return = {node_id:null, val:null};
-        if(!parent_node_id) return error_return;
-
-        let tab_node_id = T.treeobj.create_node(
-                parent_node_id,
-                { text: 'Tab' }
-        );
-        if(tab_node_id === false) return error_return;
-
-        T.treeobj.add_multitype(tab_node_id, K.IT_TAB);
-        if(ctab) T.treeobj.add_multitype(tab_node_id, K.NST_OPEN);
-
-        if(tys) {
-            if(!$.isArray(tys)) tys=[tys];
-            for(let ty of tys) T.treeobj.add_multitype(tab_node_id, ty);
-        }
-
-        let tab_val = D.tabs.add({
-            tab_id: (ctab ? ctab.id : K.NONE),
-            node_id: tab_node_id,
-            win_id: (ctab ? ctab.windowId : K.NONE),
-            index: (ctab ? ctab.index : K.NONE),
-            tab: (ctab || undefined),
-            raw_url: (ctab ? ctab.url : String(raw_url)),
-            raw_title: (ctab ? ctab.title : String(raw_title)),
-            raw_bullet: null,
-            isOpen: !!ctab,
-        });
-
-        T.treeobj.rename_node(tab_node_id, module.get_html_label(tab_val));
-
-        { // Set icon
-            let icon = 'fff-page';
-            if(ctab && ctab.favIconUrl) {
-                icon = encodeURI(ctab.favIconUrl);
-            } else if((/\.pdf$/i).test(tab_val.raw_url)) {  //special-case PDFs
-                icon = 'fff-page-white-with-red-banner';
-            }
-            T.treeobj.set_icon(tab_node_id, icon);
-            // TODO if the favicon doesn't load, replace the icon with the
-            // generic page icon so we don't keep hitting the favIconUrl.
-        }
-
-        return {node_id: tab_node_id, val: tab_val};
-    } //makeItemForTab
 
     // }}}1
     // #####################################################################
@@ -319,7 +298,7 @@
     // "Rez" and "Erase" are adding/removing items, to distinguish them
     // from creating and destroying Chrome widgets.
 
-    // Helper routines ///////////////////////////////////////////////// {{{1
+    // Hashing routines //////////////////////////////////////////////// {{{1
 
     // Hash the strings in #strs together.  All strings are encoded in utf8
     // before hashing.
@@ -376,75 +355,13 @@
     }; //updateOrderedURLHash()
 
     // }}}1
-    // Querying the model ////////////////////////////////////////////// {{{1
-
-    /// Get a {val, node_id} pair (vn) from one of those (vorny).
-    /// @param val_or_nodey {mixed} If a string, the node ID of the
-    ///                             item; otherwise, the details
-    ///                             record for the item, or the jstree node
-    ///                             record for the node.
-    /// @param item_type {mixed=} If provided, the type of the item.
-    ///             Otherwise, all types will be checked.
-    /// @return {Object} {val, node_id}.    `val` is falsy if the
-    ///                                     given vorny was not found.
-    module.vn_by_vorny = function(val_or_nodey, item_type) {
-        if(!val_or_nodey) return module.VN_NONE;
-
-        let val, node_id;
-        if(typeof val_or_nodey === 'string') {          // a node_id
-            node_id = val_or_nodey;
-            switch(item_type) {
-                case K.IT_WIN:
-                    val = D.windows.by_node_id(node_id); break;
-                case K.IT_TAB:
-                    val = D.tabs.by_node_id(node_id); break;
-                default:
-                    val = D.val_by_node_id(node_id); break;
-            }
-
-        } else if(typeof val_or_nodey === 'object' && val_or_nodey.id &&
-                val_or_nodey.parent) {                  // A jstree node
-            node_id = val_or_nodey.id;
-            val = D.val_by_node_id(node_id);
-
-        } else if(typeof val_or_nodey === 'object' &&   // A details record
-                val_or_nodey.ty) {
-            val = val_or_nodey;
-            if(!val.node_id) return module.VN_NONE;
-            node_id = val.node_id;
-        } else {                                        // Unknown
-            return module.VN_NONE;
-        }
-
-        return {val, node_id};
-    } //vn_by_vorny
-
-    /// Determine whether a model has given subtype(s).
-    /// @param vorny {mixed} The item
-    /// @param tys {mixed} A single type or array of types
-    /// @return {Boolean} true if #vorny has all the subtypes in #tys;
-    ///                     false otherwise.
-    module.has_subtype = function(vorny, ...tys) {
-        if(!vorny || !tys) return false;
-        if(tys.length < 1) return false;
-        let {node_id} = module.vn_by_vorny(vorny);
-        if(!node_id) return false;
-
-        for(let ty of tys) {
-            if(!T.treeobj.has_multitype(node_id, ty)) return false;
-        }
-        return true;
-    } //has_subtype
-
-    // }}}1
-    //////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////
     // Initializing and shutting down the model
 
     // TODO add a function that wraps T.create() so the user of model does
     // not have to directly access T to kick things off.
 
-    //////////////////////////////////////////////////////////////////////
-    // Adding model items
+    // Adding model items ////////////////////////////////////////////// {{{1
 
     /// Add a model node/item for a window.  Does not process Chrome
     /// widgets.  Instead, assumes the tab is closed initially.
@@ -477,6 +394,9 @@
             T.treeobj.delete_node(node_id);
             return module.VN_NONE;
         }
+
+        module.refresh_label(node_id);
+        module.refresh_icon(val);
 
         return {val, node_id};
     } //vnRezWin
@@ -520,11 +440,14 @@
             return module.VN_NONE;
         }
 
+        module.refresh_label(node_id);
+        module.refresh_icon(val);
+
         return {val, node_id};
     } //vnRezTab
 
-    //////////////////////////////////////////////////////////////////////
-    // Updating model items
+    // }}}1
+    // Updating model items //////////////////////////////////////////// {{{1
 
     /// Add a subtype (K.NST_*) to an item.
     /// @param vorny {mixed} The item
@@ -560,8 +483,8 @@
         return true;
     } //add_subtype
 
-    //////////////////////////////////////////////////////////////////////
-    // Attaching Chrome widgets to model items
+    // }}}1
+    // Attaching Chrome widgets to model items ///////////////////////// {{{1
 
     /// Attach a Chrome window to an existing window item.
     /// Updates the item, but does not touch the Chrome window.
@@ -597,7 +520,7 @@
         T.treeobj.add_multitype(node_id, K.NST_OPEN);
 
         module.refresh_label(node_id);
-        // TODO refresh icon?
+        module.refresh_icon(val);
 
         return true;
     } //markWinAsOpen
@@ -640,7 +563,7 @@
         T.treeobj.add_multitype(node_id, K.NST_OPEN);
 
         module.refresh_label(node_id);
-        module.refresh_tab_icon(val);   // since favicon may have changed
+        module.refresh_icon(val);   // since favicon may have changed
 
         // Design decision: tree items for open windows always start expanded.
         // No one has requested any other behaviour, as of the time of writing.
@@ -649,8 +572,8 @@
         return true;
     } //markTabAsOpen
 
-    //////////////////////////////////////////////////////////////////////
-    // Removing Chrome widgets from model items
+    // }}}1
+    // Removing Chrome widgets from model items //////////////////////// {{{1
 
     /// Remove the connection between #win_vorny and its Chrome window.
     /// Use this when the Chrome window has been closed.
@@ -678,7 +601,7 @@
         T.treeobj.del_multitype(node_id, K.NST_OPEN);
 
         module.refresh_label(node_id);
-        //TODO refresh icon
+        module.refresh_icon(val);
 
         return true;
     } //markWinAsClosed
@@ -721,8 +644,8 @@
         return true;
     } //markTabAsClosed
 
-    //////////////////////////////////////////////////////////////////////
-    // Removing model items
+    // }}}1
+    // Removing model items //////////////////////////////////////////// {{{1
 
     /// Delete a tab from the tree and the details.
     /// ** NOTE ** Does NOT update the parent's val.ordered_url_hash.
@@ -773,6 +696,8 @@
 
         return true;
     } //eraseWin
+
+    // }}}1
 
     return module;
 }));

@@ -488,7 +488,6 @@ function actionForgetWindow(node_id, node, unused_action_id, unused_action_el)
     if(!win_val) return;
 
     M.mark_win_as_unsaved(win_val);
-    //M.refresh_label(node_id);
 
     if(win_val.isOpen) {    // should always be true, but just in case...
         //T.treeobj.set_type(node, K.NT_WIN_EPHEMERAL);
@@ -506,7 +505,6 @@ function actionRememberWindow(node_id, node, unused_action_id, unused_action_el)
     //if(!win_val) return;
 
     M.remember(node_id);    // No-op if node_id isn't a window
-    //M.refresh_label(node_id);
 
     saveTree();
 } //actionForgetWindow()
@@ -902,7 +900,7 @@ function createNodeForClosedTabV1(tab_data_v1, parent_node_id)
     copyTruthyProperties(val, tab_data_v1, 'isPinned', Boolean);
 
     M.refresh_label(node_id);
-    M.refresh_tab_icon(val);
+    M.refresh_icon(val);
 
     if(tab_data_v1.bordered) M.add_subtype(val, K.NST_TOP_BORDER);
 
@@ -1019,6 +1017,7 @@ function createNodeForClosedWindowV1(win_data_v1)
     val.raw_title = new_title;
 
     M.refresh_label(node_id);
+    M.refresh_icon(val);
 
     addWindowNodeActions(node_id);
 
@@ -1059,12 +1058,8 @@ function attachChromeWindowToSavedWindowItem(cwin, existing_win, during_init=fal
     if(M.has_subtype(existing_win.node.id, K.NST_RECOVERED)) {
         M.del_subtype(existing_win.node.id, K.NST_RECOVERED);
         existing_win.val.raw_title = null;      //default title
-        M.mark_win_as_unsaved(existing_win.val, false);     // also refreshes the label
+        M.mark_win_as_unsaved(existing_win.val, false);
     }
-
-    // Do we need these?
-//    T.treeobj.open_node(existing_win.node);
-//    T.treeobj.redraw_node(existing_win.node);
 
     if(cwin.tabs.length !== existing_win.node.children.length) {
         log.error({
@@ -1487,6 +1482,8 @@ function treeOnSelect(_evt_unused, evt_data)
                 win_val.win = win;
                 //T.treeobj.set_type(win_node.id, K.NT_WIN_ELVISH);
                 M.add_subtype(win_node.id, K.NST_OPEN);
+                M.refresh_label(win_node.id);
+                M.refresh_icon(win_node);
 
                 T.treeobj.open_node(win_node);
                 T.treeobj.redraw_node(win_node);
@@ -2125,7 +2122,7 @@ function tabOnUpdated(tabid, changeinfo, ctab)
     let new_raw_favicon_url = changeinfo.favIconUrl || ctab.favIconUrl || null;
     if(new_raw_favicon_url !== tab_node_val.raw_favicon_url) {
         tab_node_val.raw_favicon_url = new_raw_favicon_url;
-        M.refresh_tab_icon(tab_node_val);
+        M.refresh_icon(tab_node_val);
     }
 
     saveTree();
