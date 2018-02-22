@@ -739,7 +739,7 @@ function actionDeleteTab(node_id, node, unused_action_id, unused_action_el,
     function doDeletion() {
         if(tab_val.tab_id !== K.NONE) {     // Remove open tabs
             chrome.tabs.remove(tab_val.tab_id, ignore_chrome_error);
-            //tabOnDeleted will do the rest
+            //tabOnRemoved will do the rest
         } else {                            // Remove closed tabs
             M.eraseTab(tab_val);
 
@@ -757,11 +757,15 @@ function actionDeleteTab(node_id, node, unused_action_id, unused_action_el,
     // Prompt for confirmation, if necessary
     let is_keep = (parent_val.keep === K.WIN_KEEP);
     let is_nokeep = (parent_val.keep === K.WIN_NOKEEP);
+    let need_confirmation = (
+        (is_keep && getBoolSetting(CFG_CONFIRM_DEL_OF_SAVED_TABS)) ||
+        (is_nokeep && getBoolSetting(CFG_CONFIRM_DEL_OF_UNSAVED_TABS))
+    );
 
-    if( //is_internal_unimplemented ||
-        (is_keep && !getBoolSetting(CFG_CONFIRM_DEL_OF_SAVED_TABS)) ||
-        (is_nokeep && !getBoolSetting(CFG_CONFIRM_DEL_OF_UNSAVED_TABS))
-    ) { // No confirmation required - just do it
+    if( !need_confirmation ||
+        (/^((chrome:\/\/newtab\/?)|(about:blank))$/i.test(tab_val.raw_url))
+    ) {
+        // No confirmation required - just do it
         doDeletion();
 
     } else {    // Confirmation required
