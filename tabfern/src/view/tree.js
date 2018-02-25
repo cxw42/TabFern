@@ -478,6 +478,10 @@ function actionRenameWindow(node_id, node, unused_action_id, unused_action_el)
         // wants to keep it.  false => do not change the raw_title,
         // since the user just specified it.
 
+    M.del_subtype(node_id, K.NST_RECOVERED);
+        // The user has touched the window, so doesn't need the "recovered"
+        // reminder.
+
     saveTree();
 } //actionRenameWindow()
 
