@@ -1920,13 +1920,13 @@ var tabOnCreated = (function(){
                 }
 
                 let cwin = cwin_or_err;
-                let existing_win = winAlreadyExistsInTree(cwin);
-                MERGE: if(existing_win && existing_win.val &&
-                    !existing_win.val.isOpen    // don't hijack other open wins
+                let merge_to_win = winAlreadyExistsInTree(cwin);
+                MERGE: if(merge_to_win && merge_to_win.val &&
+                    !merge_to_win.val.isOpen    // don't hijack other open wins
                 ) {
                     log.info({
-                        [`merge ${cwin.id} Found existing window`]: cwin,
-                        existing_win
+                        [`merge ${cwin.id} Found merge target in tree for`]: cwin,
+                        merge_to_win
                     });
                     //actionDeleteWindow(win_node_id, T.treeobj.get_node(win_node_id),null,null);
                     log.debug(`merge ${ctab.windowId}==${cwin.id}: start`);
@@ -1936,20 +1936,20 @@ var tabOnCreated = (function(){
                     // could reach this point.
 
                     // The window we are going to pull from
-                    let old_win_val = D.windows.by_win_id(cwin.id);
-                    if(!old_win_val) {
-                        log.debug(`merge ${cwin.id}: bail - could not get old_win_val`);
+                    let merge_from_win_val = D.windows.by_win_id(cwin.id);
+                    if(!merge_from_win_val) {
+                        log.debug(`merge ${cwin.id}: bail - could not get merge_from_win_val`);
                         break MERGE;
                     }
 
                     // Detach the existing nodes from their chrome wins/tabs
-                    if(!destroy_subtree_but_not_widgets(old_win_val.node_id)) {
-                        log.debug(`merge ${cwin.id}: bail - could not remove old subtree`);
+                    if(!destroy_subtree_but_not_widgets(merge_from_win_val.node_id)) {
+                        log.debug(`merge ${cwin.id}: bail - could not remove subtree for open window`);
                         break MERGE;
                     }
 
                     // Attach the old nodes to the wins/tabs
-                    attachChromeWindowToSavedWindowItem(cwin, existing_win, false);
+                    attachChromeWindowToSavedWindowItem(cwin, merge_to_win, false);
 
                 } //endif existing (MERGE)
             });
