@@ -70,7 +70,7 @@ const CFG_DEFAULTS = {
     [CFG_OPEN_TOP_ON_STARTUP]: false,
     [CFG_HIDE_HORIZONTAL_SCROLLBARS]: true,
     [CFG_SKINNY_SCROLLBARS]: false,
-    [CFG_NEW_WINS_AT_TOP]: false,
+    [CFG_NEW_WINS_AT_TOP]: true,
     [CFG_SHOW_TREE_LINES]: false,
     [CFG_CONFIRM_DEL_OF_SAVED]: true,
     [CFG_CONFIRM_DEL_OF_UNSAVED]: false,
