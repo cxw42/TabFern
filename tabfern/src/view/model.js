@@ -196,16 +196,24 @@
             retval += '&#x1f4cc;&nbsp;';    // PUSHPIN
         }
 
+        let raw_text = module.get_win_raw_text(val);
         if(val.raw_bullet && typeof val.raw_bullet === 'string') {
             // The first condition checks for null/undefined/&c., and also for
             // empty strings.
             retval += '<span class="' + K.BULLET_CLASS + '">';
             retval += Esc.escape(val.raw_bullet);
-            retval += ' &#x2726;';   // a dingbat
-            retval += '</span> ';
+
+            // Add a dingbat if there is text to go on both sides of it.
+            if(raw_text && raw_text !== "\ufeff") {
+                // \ufeff is a special case for the Empty New Tab Page
+                // extension, which cxw42 has been using for some years now.
+                retval += ' &#x2726; ';   // the dingbat
+            }
+
+            retval += '</span>';
         }
 
-        retval += Esc.escape(module.get_win_raw_text(val));
+        retval += Esc.escape(raw_text);
         return retval;
     };
 
