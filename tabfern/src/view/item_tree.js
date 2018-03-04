@@ -207,7 +207,7 @@
             icon: 'fff-page',   // per-node icons will override this
         };
 
-        // TODO add option for users to create divider items between windows - 
+        // TODO add option for users to create divider items between windows -
         // e.g., <div style="display:inline-block; width: 100%; height:0px; margin-top:8px; margin-bottom:7px; border-top: 1px solid yellow;"></div>
 
         // The main config

@@ -266,6 +266,10 @@ bar (it will start with "file://")</li>
                 "type": "description",
                 "text":
 `<ul>
+<li>The tree will now show the icons for the sites, even on closed windows.
+    Note that you may need to be online to see the icons.  ${issue(83)}</li>
+<li>TabFern won't ask you if you want to delete new tabs or about:blank tabs.
+    Hopefully this saves you a little bit of time.  ${issue(109)}</li>
 </ul>`
             },
             {
