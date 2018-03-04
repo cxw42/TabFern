@@ -382,7 +382,8 @@
         let node_id = T.treeobj.create_node(
                 $.jstree.root,
                 { text: 'Window' },
-                (isFirstChild ? 'first' : 'last')
+                (isFirstChild ? 1 : 'last')
+                    // 1 => after the holding pen (T.holding_node_id)
         );
         if(node_id === false) return module.VN_NONE;
 
