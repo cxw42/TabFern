@@ -3355,6 +3355,28 @@ function messageListener(request, sender, sendResponse)
 } //messageListener
 
 ////////////////////////////////////////////////////////////////////////// }}}1
+// Helpers // {{{1
+
+/// Delete all nodes for closed windows.  Meant to be used from the console.
+/// TODO migrate this into a user-accessible function (#98)
+function delete_all_closed_nodes(are_you_sure)
+{
+    if(!are_you_sure) return;
+
+    let root = T.treeobj.get_node($.jstree.root);
+    if(!root) return
+
+    for(let i=root.children.length-1; i>0; --i) {
+        let child_node_id = root.children[i];
+        let isOpen = D.windows.by_node_id(child_node_id, 'isOpen');
+        if( !isOpen && child_node_id != T.holding_node_id ) {
+            actionDeleteWindow(child_node_id, T.treeobj.get_node(child_node_id),
+                undefined, undefined, undefined, true);
+        }
+    }
+} //delete_all_closed_nodes
+
+////////////////////////////////////////////////////////////////////////// }}}1
 // Startup / shutdown // {{{1
 
 let custom_bg_color = false;
