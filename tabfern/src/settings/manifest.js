@@ -6,7 +6,7 @@
     // Shortcuts for frequently-used items
     function icon(cls) { return `<i class="${cls}"></i>`; }
     function issue(num) { return `(<a href="https://github.com/cxw42/TabFern/issues/${num|0}">#${num|0}</a>)`; }
-    function brplain(date_str){return `<br/><span class="plain">${date_str}</span>`;}
+    function brplain(text){return `<br/><span class="plain">${text}</span>`;}
 
     let ham = icon('fa fa-bars');
     let gt = icon('fa fa-lg fa-caret-right');
@@ -261,7 +261,7 @@ bar (it will start with "file://")</li>
             // Changelog                                          {{{1
             {
                 "tab": i18n.get("What's new?"),
-                "group": `Version 0.1.16${brplain('2018-xx-xx')}`,
+                "group": `Version 0.1.16${brplain('2018-03-08')}`,
                 'group_html':true,
                 "type": "description",
                 "text":
