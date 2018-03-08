@@ -1,8 +1,8 @@
 {
   "name": "TabFern tab manager and backup tool",
   "short_name": "TabFern",
-  "version": "0.1.15.1337",
-  "version_name": "0.1.15",
+  "version": "0.1.16.1337",
+  "version_name": "0.1.16",
   "offline_enabled": true,
   "manifest_version": 2,
   "minimum_chrome_version": "54",

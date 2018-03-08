@@ -2480,7 +2480,7 @@
 					node.childNodes[1].childNodes[0].style.backgroundImage = 'url("'+obj.icon+'")';
 					node.childNodes[1].childNodes[0].style.backgroundPosition = 'center center';
 					node.childNodes[1].childNodes[0].style.backgroundSize = 'auto';
-					node.childNodes[1].childNodes[0].className += ' jstree-themeicon-custom';
+					node.childNodes[1].childNodes[0].className += ' jstree-themeicon-custom jstree-url-icon';
 				}
 			}
 
@@ -4715,7 +4715,7 @@
 				this.hide_icon(obj);
 			}
 			else if(icon === true || icon === null || icon === undefined || icon === '') {
-				dom.removeClass('jstree-themeicon-custom ' + old).css("background","").removeAttr("rel");
+				dom.removeClass('jstree-themeicon-custom jstree-url-icon ' + old).css("background","").removeAttr("rel");
 				if(old === false) { this.show_icon(obj); }
 			}
 			else if(icon.indexOf("/") === -1 && icon.indexOf(".") === -1) {
@@ -4725,7 +4725,7 @@
 			}
 			else {
 				dom.removeClass(old).css("background","");
-				dom.addClass('jstree-themeicon-custom').css("background", "url('" + icon + "') center center no-repeat").attr("rel",icon);
+				dom.addClass('jstree-themeicon-custom jstree-url-icon').css("background", "url('" + icon + "') center center no-repeat").attr("rel",icon);
 				if(old === false) { this.show_icon(obj); }
 			}
 			return true;
@@ -8588,6 +8588,7 @@
 		 * The action object can contain the following keys:
 		 * id       <- string An ID which identifies the action. The same ID can be shared across different nodes
 		 * text     <- string The action's text
+		 * html     <- string The action's html; used in preference to text if both are provided
 		 * class    <- string (a string containing all the classes you want to add to the action (space separated)
 		 * event    <- string The event on which the trigger will be called
 		 * callback <- function that will be called when the action is clicked
@@ -8681,7 +8682,11 @@
 
 			var action_el = document.createElement("i");
 			action_el.className = action.class;
-			action_el.textContent = action.text;
+			if(action.html) {
+				action_el.innerHTML = action.html;
+			} else {
+				action_el.textContent = action.text || '';
+			}
 
 			// Set up element data-* values, if any
 			if( action_el.dataset && action.dataset &&

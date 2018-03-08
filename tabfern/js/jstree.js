@@ -2477,7 +2477,7 @@
 					node.childNodes[1].childNodes[0].style.backgroundImage = 'url("'+obj.icon+'")';
 					node.childNodes[1].childNodes[0].style.backgroundPosition = 'center center';
 					node.childNodes[1].childNodes[0].style.backgroundSize = 'auto';
-					node.childNodes[1].childNodes[0].className += ' jstree-themeicon-custom';
+					node.childNodes[1].childNodes[0].className += ' jstree-themeicon-custom jstree-url-icon';
 				}
 			}
 
@@ -4712,7 +4712,7 @@
 				this.hide_icon(obj);
 			}
 			else if(icon === true || icon === null || icon === undefined || icon === '') {
-				dom.removeClass('jstree-themeicon-custom ' + old).css("background","").removeAttr("rel");
+				dom.removeClass('jstree-themeicon-custom jstree-url-icon ' + old).css("background","").removeAttr("rel");
 				if(old === false) { this.show_icon(obj); }
 			}
 			else if(icon.indexOf("/") === -1 && icon.indexOf(".") === -1) {
@@ -4722,7 +4722,7 @@
 			}
 			else {
 				dom.removeClass(old).css("background","");
-				dom.addClass('jstree-themeicon-custom').css("background", "url('" + icon + "') center center no-repeat").attr("rel",icon);
+				dom.addClass('jstree-themeicon-custom jstree-url-icon').css("background", "url('" + icon + "') center center no-repeat").attr("rel",icon);
 				if(old === false) { this.show_icon(obj); }
 			}
 			return true;

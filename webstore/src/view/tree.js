@@ -478,6 +478,10 @@ function actionRenameWindow(node_id, node, unused_action_id, unused_action_el)
         // wants to keep it.  false => do not change the raw_title,
         // since the user just specified it.
 
+    M.del_subtype(node_id, K.NST_RECOVERED);
+        // The user has touched the window, so doesn't need the "recovered"
+        // reminder.
+
     saveTree();
 } //actionRenameWindow()
 
@@ -488,7 +492,6 @@ function actionForgetWindow(node_id, node, unused_action_id, unused_action_el)
     if(!win_val) return;
 
     M.mark_win_as_unsaved(win_val);
-    //M.refresh_label(node_id);
 
     if(win_val.isOpen) {    // should always be true, but just in case...
         //T.treeobj.set_type(node, K.NT_WIN_EPHEMERAL);
@@ -506,7 +509,6 @@ function actionRememberWindow(node_id, node, unused_action_id, unused_action_el)
     //if(!win_val) return;
 
     M.remember(node_id);    // No-op if node_id isn't a window
-    //M.refresh_label(node_id);
 
     saveTree();
 } //actionForgetWindow()
@@ -741,7 +743,7 @@ function actionDeleteTab(node_id, node, unused_action_id, unused_action_el,
     function doDeletion() {
         if(tab_val.tab_id !== K.NONE) {     // Remove open tabs
             chrome.tabs.remove(tab_val.tab_id, ignore_chrome_error);
-            //tabOnDeleted will do the rest
+            //tabOnRemoved will do the rest
         } else {                            // Remove closed tabs
             M.eraseTab(tab_val);
 
@@ -759,11 +761,15 @@ function actionDeleteTab(node_id, node, unused_action_id, unused_action_el,
     // Prompt for confirmation, if necessary
     let is_keep = (parent_val.keep === K.WIN_KEEP);
     let is_nokeep = (parent_val.keep === K.WIN_NOKEEP);
+    let need_confirmation = (
+        (is_keep && getBoolSetting(CFG_CONFIRM_DEL_OF_SAVED_TABS)) ||
+        (is_nokeep && getBoolSetting(CFG_CONFIRM_DEL_OF_UNSAVED_TABS))
+    );
 
-    if( //is_internal_unimplemented ||
-        (is_keep && !getBoolSetting(CFG_CONFIRM_DEL_OF_SAVED_TABS)) ||
-        (is_nokeep && !getBoolSetting(CFG_CONFIRM_DEL_OF_UNSAVED_TABS))
-    ) { // No confirmation required - just do it
+    if( !need_confirmation ||
+        (/^((chrome:\/\/newtab\/?)|(about:blank))$/i.test(tab_val.raw_url))
+    ) {
+        // No confirmation required - just do it
         doDeletion();
 
     } else {    // Confirmation required
@@ -850,7 +856,12 @@ function addTabNodeActions(tab_node_id)
     T.treeobj.add_action(tab_node_id, {
         id: 'editBullet',
         class: 'fff-pencil ' + K.ACTION_BUTTON_WIN_CLASS,
-        text: '&nbsp;',
+        text: '\xa0',
+        // I tried this approach but it was a bit ugly.  For example, the
+        // image was in the right place but the border of the <i /> was offset
+        // down a pixel or two.  Also, the class was required for the
+        // "Actually" event check in treeOnSelect.
+        //html: `<img src="/assets/icons/pencil.png" class=${K.ACTION_BUTTON_WIN_CLASS} />`,
         grouped: true,
         callback: actionEditTabBullet,
         dataset: { action: 'editBullet' }
@@ -859,7 +870,7 @@ function addTabNodeActions(tab_node_id)
     T.treeobj.add_action(tab_node_id, {
         id: 'deleteTab',
         class: 'fff-cross ' + K.ACTION_BUTTON_WIN_CLASS,
-        text: '&nbsp;',
+        text: '\xa0',
         grouped: true,
         callback: actionDeleteTab,
         dataset: { action: 'deleteTab' }
@@ -897,6 +908,7 @@ function createNodeForClosedTabV1(tab_data_v1, parent_node_id)
     copyTruthyProperties(val, tab_data_v1, 'isPinned', Boolean);
 
     M.refresh_label(node_id);
+    M.refresh_icon(val);
 
     if(tab_data_v1.bordered) M.add_subtype(val, K.NST_TOP_BORDER);
 
@@ -918,7 +930,7 @@ function addWindowNodeActions(win_node_id)
     T.treeobj.add_action(win_node_id, {
         id: 'renameWindow',
         class: 'fff-pencil ' + K.ACTION_BUTTON_WIN_CLASS,
-        text: '&nbsp;',
+        text: '\xa0',
         grouped: true,
         callback: actionRenameWindow,
         dataset: { action: 'renameWindow' }
@@ -927,7 +939,7 @@ function addWindowNodeActions(win_node_id)
     T.treeobj.add_action(win_node_id, {
         id: 'closeWindow',
         class: 'fff-picture-delete ' + K.ACTION_BUTTON_WIN_CLASS,
-        text: '&nbsp;',
+        text: '\xa0',
         grouped: true,
         callback: actionCloseWindowAndSave,
         dataset: { action: 'closeWindow' }
@@ -936,7 +948,7 @@ function addWindowNodeActions(win_node_id)
     T.treeobj.add_action(win_node_id, {
         id: 'deleteWindow',
         class: 'fff-cross ' + K.ACTION_BUTTON_WIN_CLASS,
-        text: '&nbsp;',
+        text: '\xa0',
         grouped: true,
         callback: actionDeleteWindow,
         dataset: { action: 'deleteWindow' }
@@ -1013,6 +1025,7 @@ function createNodeForClosedWindowV1(win_data_v1)
     val.raw_title = new_title;
 
     M.refresh_label(node_id);
+    M.refresh_icon(val);
 
     addWindowNodeActions(node_id);
 
@@ -1053,12 +1066,8 @@ function attachChromeWindowToSavedWindowItem(cwin, existing_win, during_init=fal
     if(M.has_subtype(existing_win.node.id, K.NST_RECOVERED)) {
         M.del_subtype(existing_win.node.id, K.NST_RECOVERED);
         existing_win.val.raw_title = null;      //default title
-        M.mark_win_as_unsaved(existing_win.val, false);     // also refreshes the label
+        M.mark_win_as_unsaved(existing_win.val, false);
     }
-
-    // Do we need these?
-//    T.treeobj.open_node(existing_win.node);
-//    T.treeobj.redraw_node(existing_win.node);
 
     if(cwin.tabs.length !== existing_win.node.children.length) {
         log.error({
@@ -1481,6 +1490,8 @@ function treeOnSelect(_evt_unused, evt_data)
                 win_val.win = win;
                 //T.treeobj.set_type(win_node.id, K.NT_WIN_ELVISH);
                 M.add_subtype(win_node.id, K.NST_OPEN);
+                M.refresh_label(win_node.id);
+                M.refresh_icon(win_node);
 
                 T.treeobj.open_node(win_node);
                 T.treeobj.redraw_node(win_node);
@@ -1909,13 +1920,13 @@ var tabOnCreated = (function(){
                 }
 
                 let cwin = cwin_or_err;
-                let existing_win = winAlreadyExistsInTree(cwin);
-                MERGE: if(existing_win && existing_win.val &&
-                    !existing_win.val.isOpen    // don't hijack other open wins
+                let merge_to_win = winAlreadyExistsInTree(cwin);
+                MERGE: if(merge_to_win && merge_to_win.val &&
+                    !merge_to_win.val.isOpen    // don't hijack other open wins
                 ) {
                     log.info({
-                        [`merge ${cwin.id} Found existing window`]: cwin,
-                        existing_win
+                        [`merge ${cwin.id} Found merge target in tree for`]: cwin,
+                        merge_to_win
                     });
                     //actionDeleteWindow(win_node_id, T.treeobj.get_node(win_node_id),null,null);
                     log.debug(`merge ${ctab.windowId}==${cwin.id}: start`);
@@ -1925,20 +1936,20 @@ var tabOnCreated = (function(){
                     // could reach this point.
 
                     // The window we are going to pull from
-                    let old_win_val = D.windows.by_win_id(cwin.id);
-                    if(!old_win_val) {
-                        log.debug(`merge ${cwin.id}: bail - could not get old_win_val`);
+                    let merge_from_win_val = D.windows.by_win_id(cwin.id);
+                    if(!merge_from_win_val) {
+                        log.debug(`merge ${cwin.id}: bail - could not get merge_from_win_val`);
                         break MERGE;
                     }
 
                     // Detach the existing nodes from their chrome wins/tabs
-                    if(!destroy_subtree_but_not_widgets(old_win_val.node_id)) {
-                        log.debug(`merge ${cwin.id}: bail - could not remove old subtree`);
+                    if(!destroy_subtree_but_not_widgets(merge_from_win_val.node_id)) {
+                        log.debug(`merge ${cwin.id}: bail - could not remove subtree for open window`);
                         break MERGE;
                     }
 
                     // Attach the old nodes to the wins/tabs
-                    attachChromeWindowToSavedWindowItem(cwin, existing_win, false);
+                    attachChromeWindowToSavedWindowItem(cwin, merge_to_win, false);
 
                 } //endif existing (MERGE)
             });
@@ -2119,7 +2130,7 @@ function tabOnUpdated(tabid, changeinfo, ctab)
     let new_raw_favicon_url = changeinfo.favIconUrl || ctab.favIconUrl || null;
     if(new_raw_favicon_url !== tab_node_val.raw_favicon_url) {
         tab_node_val.raw_favicon_url = new_raw_favicon_url;
-        M.refresh_tab_icon(tab_node_val);
+        M.refresh_icon(tab_node_val);
     }
 
     saveTree();
@@ -3344,6 +3355,28 @@ function messageListener(request, sender, sendResponse)
 } //messageListener
 
 ////////////////////////////////////////////////////////////////////////// }}}1
+// Helpers // {{{1
+
+/// Delete all nodes for closed windows.  Meant to be used from the console.
+/// TODO migrate this into a user-accessible function (#98)
+function delete_all_closed_nodes(are_you_sure)
+{
+    if(!are_you_sure) return;
+
+    let root = T.treeobj.get_node($.jstree.root);
+    if(!root) return
+
+    for(let i=root.children.length-1; i>0; --i) {
+        let child_node_id = root.children[i];
+        let isOpen = D.windows.by_node_id(child_node_id, 'isOpen');
+        if( !isOpen && child_node_id != T.holding_node_id ) {
+            actionDeleteWindow(child_node_id, T.treeobj.get_node(child_node_id),
+                undefined, undefined, undefined, true);
+        }
+    }
+} //delete_all_closed_nodes
+
+////////////////////////////////////////////////////////////////////////// }}}1
 // Startup / shutdown // {{{1
 
 let custom_bg_color = false;
@@ -3384,6 +3417,10 @@ function preLoadInit()
     let url = chrome.runtime.getURL(
                 `/assets/jstree-3.3.4/themes/${getThemeName()}/style.css`);
     let before = document.getElementById('last-stylesheet');
+    loadCSS(document, url, before);
+
+    // Load our icons after the jstree theme so they can override the theme
+    url = chrome.runtime.getURL('/assets/css/icons.css');
     loadCSS(document, url, before);
 
     let body = document.querySelector('body');

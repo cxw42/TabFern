@@ -124,6 +124,7 @@
 		 * The action object can contain the following keys:
 		 * id       <- string An ID which identifies the action. The same ID can be shared across different nodes
 		 * text     <- string The action's text
+		 * html     <- string The action's html; used in preference to text if both are provided
 		 * class    <- string (a string containing all the classes you want to add to the action (space separated)
 		 * event    <- string The event on which the trigger will be called
 		 * callback <- function that will be called when the action is clicked
@@ -217,7 +218,11 @@
 
 			var action_el = document.createElement("i");
 			action_el.className = action.class;
-			action_el.textContent = action.text;
+			if(action.html) {
+				action_el.innerHTML = action.html;
+			} else {
+				action_el.textContent = action.text || '';
+			}
 
 			// Set up element data-* values, if any
 			if( action_el.dataset && action.dataset &&

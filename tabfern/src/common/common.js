@@ -11,7 +11,7 @@ console.log('TabFern common.js loading');
 
 /// The TabFern extension friendly version number.  Displayed in the
 /// title bar of the popup window, so lowercase (no shouting!).
-const TABFERN_VERSION='0.1.15'  //' alpha \u26a0'
+const TABFERN_VERSION='0.1.16'  //' alpha \u26a0'
     // When you change this, also update:
     //  - manifest.json: both the version and version_name
     //  - package.json
@@ -70,7 +70,7 @@ const CFG_DEFAULTS = {
     [CFG_OPEN_TOP_ON_STARTUP]: false,
     [CFG_HIDE_HORIZONTAL_SCROLLBARS]: true,
     [CFG_SKINNY_SCROLLBARS]: false,
-    [CFG_NEW_WINS_AT_TOP]: false,
+    [CFG_NEW_WINS_AT_TOP]: true,
     [CFG_SHOW_TREE_LINES]: false,
     [CFG_CONFIRM_DEL_OF_SAVED]: true,
     [CFG_CONFIRM_DEL_OF_UNSAVED]: false,
