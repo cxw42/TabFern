@@ -540,7 +540,7 @@ function actionCloseWindowButDoNotSave(node_id, node, unused_action_id, unused_a
         // the window is already gone, so the remove() throws.
         // See https://stackoverflow.com/a/45871870/2877364 by cxw
 
-        // TODO RESUME HERE --- don't actually proceed until
+        // TODO don't actually proceed until
         // the window is gone.  Test case: window.beforeonunload=()=>true;
     }
 
@@ -614,7 +614,7 @@ function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el,
         // Remove the window's node and value
         let scrollOffsets = [window.scrollX, window.scrollY];
         T.treeobj.delete_node(node_id);   //also deletes child nodes
-            // TODO RESUME HERE --- don't actually delete the node until
+            // TODO don't actually delete the node until
             // the window is gone.  Test case: window.beforeonunload=()=>true;
         window.scrollTo(...scrollOffsets);
 
@@ -705,14 +705,14 @@ function actionEditTabBullet(node_id, node, unused_action_id, unused_action_el)
 
     // TODO replace window.prompt with an in-DOM GUI.
     let question = `Note for tab "${val.raw_title}"?`;
-    //DEBUG
-    //new_bullet='42';
     let new_bullet = window.prompt(question, val.raw_bullet || '');
     if(new_bullet === null) return;   // user cancelled
 
     val.raw_bullet = new_bullet;
     M.refresh_label(node_id);
 
+    // TODO if window is currently ephemeral, only remember if
+    // new_bullet is nonempty.
     M.remember(node.parent);
         // assume that a user who bothered to add a note
         // wants to keep the window the note is in.

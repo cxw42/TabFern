@@ -158,6 +158,8 @@
         T.treeobj.del_multitype(val.node_id, K.NST_SAVED);
 
         if(adjust_title && (val.raw_title !== null)) {
+            // TODO if raw_title = 'Saved tabs', change it to 'Unsaved'.
+            // Otherwise, the below.
             val.raw_title = module.remove_unsaved_markers(val.raw_title) +
                             ' (Unsaved)';
         }
