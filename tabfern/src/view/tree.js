@@ -424,6 +424,7 @@ function saveTree(save_ephemeral_windows = true, cbk = undefined)
     chrome.storage.local.set(to_save,
         function() {
             if(!isLastError()) {
+                log.debug('Saved tree');
                 if(typeof cbk === 'function') {
                     cbk(null, to_save[K.STORAGE_KEY]);
                 }
@@ -1141,7 +1142,7 @@ function winAlreadyExistsInTree(cwin)
 /// Design decision: TabFern SHALL always be able to load older save files.
 /// Never remove a loader from this function.
 /// @post The new windows are added after any existing windows in the tree
-/// @param {mixed} data The save data, parsed (i.e., not a JSON string)
+/// @param {mixed} data The save data, parsed (i.e., not a JSON-encoded string)
 /// @return {number} The number of new windows, or ===false on failure.
 ///                  ** Note: 0 is a valid number of windows to load!
 var loadSavedWindowsFromData = (function(){
@@ -2408,11 +2409,13 @@ function hamBackup()
 /// already present.  It does not delete existing tabs/windows.
 function hamRestoreFromBackup()
 {
-    let importer = new Modules.importer(document, '.tabfern');
-    importer.getFileAsString(function(text, filename){
+    /// Process the text of the file once it's loaded
+    function processFile(text, filename) {
+        let ok;
         try {
             let parsed = JSON.parse(text);
-            if(loadSavedWindowsFromData(parsed) === false) {
+            ok = loadSavedWindowsFromData(parsed);
+            if(!ok) {
                 window.alert("I couldn't load the file " + filename + ': ' + e);
             }
         } catch(e) {
@@ -2420,7 +2423,17 @@ function hamRestoreFromBackup()
                 'understand as a TabFern save file.  Parse error code was: ' +
                 e);
         }
-    });
+
+        // If we were successful, save.  Otherwise, a reload of the extension
+        // before taking another action that triggers a save will result in
+        // the Restore never having happened.
+        if(ok) {
+            saveTree();
+        }
+    } //processFile()
+
+    let importer = new Modules.importer(document, '.tabfern');
+    importer.getFileAsString(processFile);
 } //hamRestoreFromBackup()
 
 function hamRestoreLastDeleted()
