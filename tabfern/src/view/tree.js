@@ -864,6 +864,7 @@ function addTabNodeActions(tab_node_id)
         // "Actually" event check in treeOnSelect.
         //html: `<img src="/assets/icons/pencil.png" class=${K.ACTION_BUTTON_WIN_CLASS} />`,
         grouped: true,
+        title: 'Add/edit label',
         callback: actionEditTabBullet,
         dataset: { action: 'editBullet' }
     });
@@ -873,6 +874,7 @@ function addTabNodeActions(tab_node_id)
         class: 'fff-cross ' + K.ACTION_BUTTON_WIN_CLASS,
         text: '\xa0',
         grouped: true,
+        title: "Delete (close; don't save)",
         callback: actionDeleteTab,
         dataset: { action: 'deleteTab' }
     });
@@ -933,6 +935,7 @@ function addWindowNodeActions(win_node_id)
         class: 'fff-pencil ' + K.ACTION_BUTTON_WIN_CLASS,
         text: '\xa0',
         grouped: true,
+        title: 'Edit text',
         callback: actionRenameWindow,
         dataset: { action: 'renameWindow' }
     });
@@ -942,6 +945,7 @@ function addWindowNodeActions(win_node_id)
         class: 'fff-picture-delete ' + K.ACTION_BUTTON_WIN_CLASS,
         text: '\xa0',
         grouped: true,
+        title: "Close and save",
         callback: actionCloseWindowAndSave,
         dataset: { action: 'closeWindow' }
     });
@@ -951,6 +955,7 @@ function addWindowNodeActions(win_node_id)
         class: 'fff-cross ' + K.ACTION_BUTTON_WIN_CLASS,
         text: '\xa0',
         grouped: true,
+        title: "Delete (close; don't save)",
         callback: actionDeleteWindow,
         dataset: { action: 'deleteWindow' }
     });
@@ -2082,6 +2087,7 @@ var tabOnCreated = (function(){
 
 function tabOnUpdated(tabid, changeinfo, ctab)
 {
+    let dirty = false;
     log.info({'Tab updated': tabid, 'Index': ctab.index, changeinfo, ctab});
 
     let tab_node_val = D.tabs.by_tab_id(tabid);
@@ -2097,6 +2103,7 @@ function tabOnUpdated(tabid, changeinfo, ctab)
     // URL
     let new_raw_url = changeinfo.url || ctab.url || 'about:blank';
     if(new_raw_url !== tab_node_val.raw_url) {
+        dirty = true;
         tab_node_val.raw_url = new_raw_url;
         M.updateOrderedURLHash(node.parent);
             // When the URL changes, the hash changes, too.
@@ -2111,7 +2118,8 @@ function tabOnUpdated(tabid, changeinfo, ctab)
     } else if('pinned' in ctab) {
         new_pinned = ctab.pinned;
     }
-    if(new_pinned !== null) {
+    if( (new_pinned !== null) && (tab_node_val.isPinned !== new_pinned) ) {
+        dirty = true;
         tab_node_val.isPinned = new_pinned;
         should_refresh_label = true;
     }
@@ -2119,6 +2127,7 @@ function tabOnUpdated(tabid, changeinfo, ctab)
     // title
     let new_raw_title = changeinfo.title || ctab.title || 'Tab';
     if(new_raw_title !== tab_node_val.raw_title) {
+        dirty = true;
         tab_node_val.raw_title = new_raw_title;
         should_refresh_label = true;
     }
@@ -2130,11 +2139,14 @@ function tabOnUpdated(tabid, changeinfo, ctab)
     // favicon
     let new_raw_favicon_url = changeinfo.favIconUrl || ctab.favIconUrl || null;
     if(new_raw_favicon_url !== tab_node_val.raw_favicon_url) {
+        dirty = true;
         tab_node_val.raw_favicon_url = new_raw_favicon_url;
         M.refresh_icon(tab_node_val);
     }
 
-    saveTree();
+    if(dirty) {
+        saveTree();
+    }
 
     // For some reason, Ctl+N plus filling in a tab doesn't give me a
     // focus change to the new window.  Therefore, if the tab that has

@@ -266,6 +266,7 @@ bar (it will start with "file://")</li>
                 "type": "description",
                 "text":
 `<ul>
+<li>Tooltips on the action buttons.  ${issue(117)}</li>
 </ul>`
             },
             {
