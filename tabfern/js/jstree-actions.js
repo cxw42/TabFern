@@ -234,6 +234,11 @@
                 }
             }
 
+            // Title
+            if(action.title) {
+                action_el.title = action.title;
+            }
+
             $(action_el).click(function(event) {
                 var node = self.get_node(action_el);
                 action.callback(node_id, node,
