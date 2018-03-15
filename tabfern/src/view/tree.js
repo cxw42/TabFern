@@ -4,7 +4,8 @@
 
 // TODO break more of this into separate modules
 
-console.log('Loading TabFern ' + TABFERN_VERSION);
+console.log(`=============================================================
+Loading TabFern ${TABFERN_VERSION}`);
 
 //////////////////////////////////////////////////////////////////////////
 // Modules // {{{1
@@ -1446,6 +1447,10 @@ function treeOnSelect(_evt_unused, evt_data)
         win_id = node_val.win_id;
 
     } else if( open_new_window ) {
+        // Ignore attempts to open two windows at once, since we currently
+        // can't handle them.
+        if(window_is_being_restored) return;
+
         // A closed window or tab.  Make sure we have the window.
         let win_node;
         let win_val;
@@ -1487,6 +1492,17 @@ function treeOnSelect(_evt_unused, evt_data)
               , height: newWinSize.height
             },
             function(win) {
+                // Note: In testing, this happens after the winOnCreated,
+                // tabOnCreated, and tabOnActivated events.  I don't know
+                // if that's guaranteed, though.
+                window_is_being_restored = false;
+
+                if(isLastError()) {
+                    window.alert(
+                        `Could not open window: ${chrome.runtime.lastError}`);
+                    return;     // with the state in the tree unchanged
+                }
+
                 // Update the tree and node mappings
                 log.info('Adding nodeid map for winid ' + win.id);
                 D.windows.change_key(win_val, 'win_id', win.id);
@@ -1494,7 +1510,6 @@ function treeOnSelect(_evt_unused, evt_data)
                 win_val.isOpen = true;
                 win_val.keep = K.WIN_KEEP;      // just in case
                 win_val.win = win;
-                //T.treeobj.set_type(win_node.id, K.NT_WIN_ELVISH);
                 M.add_subtype(win_node.id, K.NST_OPEN);
                 M.refresh_label(win_node.id);
                 M.refresh_icon(win_node);
@@ -1635,7 +1650,6 @@ function winOnCreated(win)
 
     T.treeobj.clear_flags();
     if(window_is_being_restored) {
-        window_is_being_restored = false;
         return;     // don't create an extra copy
     }
 
@@ -1800,7 +1814,7 @@ function initFocusHandler()
     } //leavingWindow
 
     /// The actual onFocusChanged event handler
-    function inner(win_id, _unused_internal)
+    function inner_onFocusChanged(win_id, _unused_internal)
     {
         let old_win_id = previously_focused_winid;
 
@@ -1874,9 +1888,9 @@ function initFocusHandler()
             }
         } //endif to_tf
 
-    }; //inner
+    }; //inner_onFocusChanged
 
-    winOnFocusChanged = inner;
+    winOnFocusChanged = inner_onFocusChanged;
 
 } //initFocusHandler
 
@@ -2028,7 +2042,10 @@ var tabOnCreated = (function(){
         log.info({'Tab created': ctab.id, ctab});
 
         let win_node_id = D.windows.by_win_id(ctab.windowId, 'node_id')
-        if(!win_node_id) return;
+        if(!win_node_id) {
+            log.info(`Unknown window ID ${ctab.windowId} - ignoring`);
+            return;
+        }
 
         let tab_node_id;
 
@@ -2957,7 +2974,8 @@ var treeCheckCallback = (function()
     } //open_tab_within_window
 
     // --- The main check callback ---
-    function inner(operation, node, new_parent, node_position, more)
+    function inner_treeCheckCallback(operation, node, new_parent,
+                node_position, more)
     {
         // Fast bail when possible
         if(operation === 'copy_node') return false;
@@ -3258,9 +3276,9 @@ var treeCheckCallback = (function()
         } //endif this is a non-dnd move
 
         return true;
-    } //inner
+    } //inner_treeCheckCallback
 
-    return inner;
+    return inner_treeCheckCallback;
 
     // Note on the code that doesn't check for more.dnd:
     // See https://github.com/vakata/jstree/issues/815 - the final node move
