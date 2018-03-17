@@ -53,6 +53,8 @@ const CFG_CONFIRM_DEL_OF_SAVED = 'confirm-del-of-saved-wins';
 const CFG_CONFIRM_DEL_OF_UNSAVED = 'confirm-del-of-unsaved-wins';
 const CFG_CONFIRM_DEL_OF_SAVED_TABS = 'confirm-del-of-saved-tabs';
 const CFG_CONFIRM_DEL_OF_UNSAVED_TABS = 'confirm-del-of-unsaved-tabs';
+const CFG_URL_IN_TOOLTIP = 'tooltip-has-url';
+const CFG_TITLE_IN_TOOLTIP = 'tooltip-has-title';
 
 // Strings
 const CFGS_BACKGROUND = 'window-background';
@@ -78,6 +80,8 @@ const CFG_DEFAULTS = {
     [CFG_CONFIRM_DEL_OF_UNSAVED_TABS]: false,
     [CFGS_THEME_NAME]: 'default-dark',
     [CFGS_SCROLLBAR_COLOR]: '',     // none by default
+    [CFG_URL_IN_TOOLTIP]: false,
+    [CFG_TITLE_IN_TOOLTIP]: false,
 };
 
 //////////////////////////////////////////////////////////////////////////

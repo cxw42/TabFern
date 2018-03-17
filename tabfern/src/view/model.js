@@ -63,6 +63,8 @@
     ///             Otherwise, all types will be checked.
     /// @return {Object} {val, node_id}.    `val` is falsy if the
     ///                                     given vorny was not found.
+    ///         If #item_type was specified and the given item wasn't
+    ///         of that type, also returns falsy.
     module.vn_by_vorny = function(val_or_nodey, item_type) {
         if(!val_or_nodey) return module.VN_NONE;
 
@@ -92,8 +94,11 @@
             return module.VN_NONE;
         }
 
+        if(item_type && (val.ty !== item_type)) {
+            return module.VN_NONE;
+        }
         return {val, node_id};
-    } //vn_by_vorny
+    }; //vn_by_vorny
 
     /// Determine whether a model has given subtype(s).
     /// @param vorny {mixed} The item
@@ -110,64 +115,71 @@
             if(!T.treeobj.has_multitype(node_id, ty)) return false;
         }
         return true;
-    } //has_subtype
+    }; //has_subtype
 
     // }}}1
     // Data-access routines //////////////////////////////////////////// {{{1
 
-    /// Find a node's value in the model, regardless of type.
-    /// @param node_ref {mixed} If a string, the node id; otherwise, anything
-    ///                         that can be passed to jstree.get_node.
+    /// Find a node's value in the model, regardless of type (DEPRECATED).
+    /// TODO replace calls to this (currently only in tree.js) with calls
+    /// to module.vn_by_vorny().
+    /// @param vorny {mixed} A vorny for the node
     /// @return ret {object} the value, or ===false if the node wasn't found.
-    module.get_node_val = function(node_ref)
+    module.get_node_val = function(vorny)
     {
-        // Get the node ID
-        let node_id;
-
-        if(typeof node_ref === 'string') {
-            node_id = node_ref;
-        } else {
-            let node = T.treeobj.get_node(node_ref);
-            if(node === false) return false;
-            node_id = node.id;
-        }
-
-        return D.val_by_node_id(node_id);
+        let {val} = module.vn_by_vorny(vorny);
+        return val || false;
     }; //get_node_val()
 
-    /// Get the textual version of raw_title for a window's value
-    module.get_win_raw_text = function(val)
+    /// Get the textual version of raw_title for an item.
+    /// @param vorny {mixed} the item
+    /// @return {string}
+    module.get_raw_text = function(vorny)
     {
-        if(val.raw_title !== null) {
-            return val.raw_title;
-        } else if(val.keep) {
-            return 'Saved tabs';
-        } else {
-            return 'Unsaved';
-        }
-    }; //get_win_raw_text()
+        let {val} = module.vn_by_vorny(vorny);
+        if(!val) return '** UNKNOWN **';
+            // TODO throw?
 
-    /// Mark window item #val as unsaved (forget #val).
-    /// @param val {Object} the item
+        if(val.raw_title !== null) {    // window or tab
+            return val.raw_title;
+        } else if(val.keep) {           // default title for saved window
+            return 'Saved tabs';
+        } else if(val.ty === K.IT_WIN) {    // def. title for ephem. win.
+            return 'Unsaved';
+        } else {                        // e.g., tabs with no raw_title.
+            // TODO see if this makes sense.
+            return "** no title **";
+        }
+    }; //get_raw_text()
+
+    /// Mark window item #vorny as unsaved (forget #vorny).
+    /// @param vorny {mixed} the item
     /// @param adjust_title {Boolean=true} Add unsaved markers if truthy
     /// @return {Boolean} true on success; false on error
-    module.mark_win_as_unsaved = function(val, adjust_title=true) {
-        if(!val || val.ty !== K.IT_WIN || !val.node_id) return false;
+    module.mark_win_as_unsaved = function(vorny, adjust_title=true) {
+        let {val, node_id} = module.vn_by_vorny(vorny, K.IT_WIN);
+        let node = T.treeobj.get_node(node_id);
+        if(!val || !node) return false;
 
         val.keep = K.WIN_NOKEEP;
-        T.treeobj.del_multitype(val.node_id, K.NST_SAVED);
+        T.treeobj.del_multitype(node, K.NST_SAVED);
 
         if(adjust_title && (val.raw_title !== null)) {
-            // TODO if raw_title = 'Saved tabs', change it to 'Unsaved'.
-            // Otherwise, the below.
-            val.raw_title = module.remove_unsaved_markers(val.raw_title) +
-                            ' (Unsaved)';
+            if(val.raw_title === 'Saved tabs') {
+                val.raw_title = 'Unsaved';
+            } else {
+                val.raw_title =
+                    module.remove_unsaved_markers(val.raw_title) +
+                    ' (Unsaved)';
+            }
         }
-        // If raw_title is null, get_win_raw_text() will return 'Unsaved',
+        // If raw_title is null, get_raw_text() will return 'Unsaved',
         // so we don't need to manually assign text here.
 
         module.refresh_label(val.node_id);
         module.refresh_icon(val);
+        module.refresh_tooltip(val);
+
         return true;
     }; //mark_as_unsaved()
 
@@ -182,7 +194,7 @@
         let re = /(\s+\(Unsaved\)){1,}\s*$/i;
         let matches = str.match(re);
         if(matches && matches.index > 0) {
-            return str.slice(0,matches.index);
+            return str.slice(0, matches.index);
         } else {
             return str;
         }
@@ -190,18 +202,26 @@
 
     /// Get the HTML for the node's label.  The output can be passed
     /// directly to jstree.rename_node().
-    /// @param val The multidex value for the item of interest
+    /// @param vorny {mixed} The item of interest, which
+    ///     can be a window or a tab.
     /// @return A string
-    module.get_html_label = function(val) {
+    module.get_html_label = function(vorny) {
+        let {val} = module.vn_by_vorny(vorny);
+        if(!val) return false;
+
         let retval = '';
         if(val.isPinned) {  // TODO make this optional?
+            // Note: for windows, isPinned is nonexistent, thus falsy.
             retval += '&#x1f4cc;&nbsp;';    // PUSHPIN
         }
 
-        let raw_text = module.get_win_raw_text(val);
+        let raw_text = module.get_raw_text(val);    // raw_title, or default
+
+        // Add the bullet, for tabs only.  For windows, raw_bullet is
+        // always falsy.
         if(val.raw_bullet && typeof val.raw_bullet === 'string') {
-            // The first condition checks for null/undefined/&c., and also for
-            // empty strings.
+            // The first condition checks for null/undefined/&c., and also
+            // for empty strings.
             retval += '<span class="' + K.BULLET_CLASS + '">';
             retval += Esc.escape(val.raw_bullet);
 
@@ -213,23 +233,50 @@
             }
 
             retval += '</span>';
-        }
+        } //endif there's a raw_bullet
 
         retval += Esc.escape(raw_text);
         return retval;
-    };
+    }; //get_html_label
 
     // }}}1
     // Item manipulation /////////////////////////////////////////////// {{{1
 
-    /// Update the tree-node text for an item.
+    /// Update the tooltip for an item.
+    /// @param vorny {mixed} the item
+    /// @return {Boolean} truthy on success; falsy on failure.
+    module.refresh_tooltip = function(vorny) {
+        let {val, node_id} = module.vn_by_vorny(vorny);
+        let node = T.treeobj.get_node(node_id);
+        if(!val || !node) return false;
+
+        let strs = [];
+        if(getBoolSetting(CFG_TITLE_IN_TOOLTIP)) {
+            let raw_text = module.get_raw_text(val); // raw_title, or default
+            strs.push(raw_text);
+        }
+        if(getBoolSetting(CFG_URL_IN_TOOLTIP) && (val.ty === K.IT_TAB) ) {
+            strs.push(val.raw_url);
+        }
+
+        let tooltip = strs.join('\n');  // '' if no tooltips
+
+        if(tooltip !== node.li_attr.title) {
+            node.li_attr.title = tooltip;
+            T.treeobj.redraw_node(node);
+        }
+
+        return true;
+    }; //refresh_tooltip
+
+    /// Update the tree-node text for an item from its details record.
     /// @param node_id {string} the node's ID (which doubles as the item's id)
     /// @return truthy on success, falsy on failure.
-    module.refresh_label = function(node_id) {
-        if(!node_id) return false;
-        let val = D.val_by_node_id(node_id);
-        if(!val) return false;
-        let retval = T.treeobj.rename_node(node_id, module.get_html_label(val));
+    module.refresh_label = function(vorny) {
+        let {val, node_id} = module.vn_by_vorny(vorny);
+        let node = T.treeobj.get_node(node_id);
+        if(!val || !node) return;
+        let retval = T.treeobj.rename_node(node, module.get_html_label(val));
 
         return retval;
     };
@@ -240,7 +287,7 @@
     module.refresh_icon = function(vorny) {
         let {val, node_id} = module.vn_by_vorny(vorny);
         let node = T.treeobj.get_node(node_id);
-        if(!val || !node_id || !node) return false;
+        if(!val || !node) return false;
 
         let icon;
 
@@ -275,28 +322,29 @@
         // generic page icon so we don't keep hitting the favIconUrl.
 
         return true;
-    } //refresh_icon
+    }; //refresh_icon
 
     /// Mark the window identified by #win_node_id as to be kept.
-    /// @param win_node_id {string} The window node ID
+    /// @param win_vorny {mixed} The window node
     /// @param cleanup_title {optional boolean, default true}
     ///             If true, remove unsaved markers from the raw_title.
     /// @return {Boolean} true on success; false on error
-    module.remember = function(win_node_id, cleanup_title = true) {
-        if(!win_node_id) return false;
-        let val = D.windows.by_node_id(win_node_id);
-        if(!val) return false;
+    module.remember = function(win_vorny, cleanup_title = true) {
+        let {val, node_id} = module.vn_by_vorny(win_vorny, K.IT_WIN);
+        let node = T.treeobj.get_node(node_id);
+        if(!val || !node) return false;
 
         val.keep = K.WIN_KEEP;
-        T.treeobj.add_multitype(win_node_id, K.NST_SAVED);
+        T.treeobj.add_multitype(node, K.NST_SAVED);
 
         if(cleanup_title) {
             val.raw_title = module.remove_unsaved_markers(
-                    module.get_win_raw_text(val));
+                    module.get_raw_text(val));
         }
 
-        module.refresh_label(win_node_id);
+        module.refresh_label(node_id);
         module.refresh_icon(val);
+        module.refresh_tooltip(val);
         return true;
     }; //remember()
 
@@ -323,7 +371,7 @@
             blake.update(databuf);
         }
         return blake.hexDigest();
-    } //orderedHashOfStrings
+    }; //orderedHashOfStrings
 
     /// Update the given node's ordered_url_hash to reflect its current children.
     /// @return {Boolean} True if the ordered_url_hash was set or was
@@ -408,9 +456,10 @@
 
         module.refresh_label(node_id);
         module.refresh_icon(val);
+        module.refresh_tooltip(val);
 
         return {val, node_id};
-    } //vnRezWin
+    }; //vnRezWin
 
     /// Add a model node/item for a tab, with the given parent.
     /// Does not process Chrome widgets.  Instead, assumes the tab is
@@ -453,9 +502,10 @@
 
         module.refresh_label(node_id);
         module.refresh_icon(val);
+        module.refresh_tooltip(val);
 
         return {val, node_id};
-    } //vnRezTab
+    }; //vnRezTab
 
     // }}}1
     // Updating model items //////////////////////////////////////////// {{{1
@@ -475,7 +525,7 @@
                 // TODO report failure to add a type?
         }
         return true;
-    } //add_subtype
+    }; //add_subtype
 
     /// Remove a subtype (K.NST_*) from an item.
     /// @param vorny {mixed} The item
@@ -492,7 +542,31 @@
                 // TODO report failure to remove a type?
         }
         return true;
-    } //add_subtype
+    }; //add_subtype
+
+    // TODO? implement this?
+//    /// Modify #vorny with all the changes from #deltas in one go.
+//    module.change = function(vorny, deltas) {
+//        let {val, node_id} = module.vn_by_vorny(vorny);
+//        let node = T.treeobj.get_node(node_id);
+//        if(!deltas || (typeof deltas !== 'object') || !val || !node) return;
+//
+//        /// A list of functions of this module to be called after
+//        /// the values are changed.
+//        let updates = [];
+//
+//        // Update the internal data
+//        for(let k in deltas) {
+//            let v = deltas[k];
+//            //TODO update val
+//            //TODO push the appropriate update
+//        }
+//
+//        // Commit the updates to the visible tree
+//        for(let fn of updates) {
+//            module[fn](vorny);
+//        }
+//    }; //change
 
     // }}}1
     // Attaching Chrome widgets to model items ///////////////////////// {{{1
@@ -532,9 +606,10 @@
 
         module.refresh_label(node_id);
         module.refresh_icon(val);
+        module.refresh_tooltip(val);
 
         return true;
-    } //markWinAsOpen
+    }; //markWinAsOpen
 
     /// Attach a Chrome tab to an existing tab item.
     /// Updates the item, but does not touch the Chrome tab.
@@ -575,13 +650,14 @@
 
         module.refresh_label(node_id);
         module.refresh_icon(val);   // since favicon may have changed
+        module.refresh_tooltip(val);
 
         // Design decision: tree items for open windows always start expanded.
         // No one has requested any other behaviour, as of the time of writing.
         T.treeobj.open_node(node.parent);
 
         return true;
-    } //markTabAsOpen
+    }; //markTabAsOpen
 
     // }}}1
     // Removing Chrome widgets from model items //////////////////////// {{{1
@@ -613,9 +689,10 @@
 
         module.refresh_label(node_id);
         module.refresh_icon(val);
+        module.refresh_tooltip(val);
 
         return true;
-    } //markWinAsClosed
+    }; //markWinAsClosed
 
     /// Remove the connection between #tab_vorny and its Chrome tab.
     /// Use this when the Chrome tab has been closed.
@@ -651,9 +728,11 @@
 
         module.refresh_label(node_id);  // TODO is this necessary?
         // Don't change icon - keep favicon
+        // Don't change tooltip - closing a tab doesn't affect the
+        // raw_title or raw_url.
 
         return true;
-    } //markTabAsClosed
+    }; //markTabAsClosed
 
     // }}}1
     // Removing model items //////////////////////////////////////////// {{{1
@@ -676,7 +755,7 @@
         T.treeobj.delete_node(node_id);
 
         return true;
-    } //eraseTab
+    }; //eraseTab
 
     /// Delete a window from the tree and the details.  This will also
     /// erase any remaining child nodes of #win_vorny from the
@@ -706,7 +785,7 @@
         T.treeobj.delete_node(node_id);
 
         return true;
-    } //eraseWin
+    }; //eraseWin
 
     // }}}1
 

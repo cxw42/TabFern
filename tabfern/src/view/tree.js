@@ -81,6 +81,8 @@ var my_winid;                   ///< window ID of this popup window
 var currently_focused_winid = null;
 
 /// HACK to avoid creating extra tree items.
+/// TODO? change this to an object with win node ID's as keys.  Use one of the
+/// tabs to carry the node ID for confirmation.
 var window_is_being_restored = false;
 
 /// The size of the last-closed window, to be used as the
@@ -464,7 +466,7 @@ function actionRenameWindow(node_id, node, unused_action_id, unused_action_el)
 
     // TODO replace window.prompt with an in-DOM GUI.
     let win_name = window.prompt('New window name?',
-            M.remove_unsaved_markers(M.get_win_raw_text(win_val)));
+            M.remove_unsaved_markers(M.get_raw_text(win_val)));
     if(win_name === null) return;   // user cancelled
 
     // A bit of a hack --- if the user hits OK on the default text for a
@@ -650,7 +652,7 @@ function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el,
     } else {    // Confirmation required
 
         showConfirmationModalDialog(
-            'Delete window "' + M.get_win_raw_text(win_val) + '"?'
+            'Delete window "' + M.get_raw_text(win_val) + '"?'
         )
 
         // Processing after the dialog closes
@@ -716,7 +718,7 @@ function actionEditTabBullet(node_id, node, unused_action_id, unused_action_el)
     // TODO if window is currently ephemeral, only remember if
     // new_bullet is nonempty.
     M.remember(node.parent);
-        // assume that a user who bothered to add a note
+        // Assume that a user who bothered to add a note
         // wants to keep the window the note is in.
 
     saveTree();
@@ -913,6 +915,7 @@ function createNodeForClosedTabV1(tab_data_v1, parent_node_id)
 
     M.refresh_label(node_id);
     M.refresh_icon(val);
+    M.refresh_tooltip(val);
 
     if(tab_data_v1.bordered) M.add_subtype(val, K.NST_TOP_BORDER);
 
@@ -1033,6 +1036,7 @@ function createNodeForClosedWindowV1(win_data_v1)
 
     M.refresh_label(node_id);
     M.refresh_icon(val);
+    M.refresh_tooltip(val);
 
     addWindowNodeActions(node_id);
 
@@ -1513,6 +1517,7 @@ function treeOnSelect(_evt_unused, evt_data)
                 M.add_subtype(win_node.id, K.NST_OPEN);
                 M.refresh_label(win_node.id);
                 M.refresh_icon(win_node);
+                M.refresh_tooltip(win_val);
 
                 T.treeobj.open_node(win_node);
                 T.treeobj.redraw_node(win_node);
@@ -1971,6 +1976,9 @@ var tabOnCreated = (function(){
                     // Attach the old nodes to the wins/tabs
                     attachChromeWindowToSavedWindowItem(cwin, merge_to_win, false);
 
+                    // TODO make sure the correct window is carrying the
+                    // ordered_url_hash in the multidex.  I think this might
+                    // be where #119 is happening.
                 } //endif existing (MERGE)
             });
 
@@ -2105,6 +2113,9 @@ var tabOnCreated = (function(){
 function tabOnUpdated(tabid, changeinfo, ctab)
 {
     let dirty = false;
+    let should_refresh_label = false;
+    let should_refresh_tooltip = false;
+
     log.info({'Tab updated': tabid, 'Index': ctab.index, changeinfo, ctab});
 
     let tab_node_val = D.tabs.by_tab_id(tabid);
@@ -2121,6 +2132,7 @@ function tabOnUpdated(tabid, changeinfo, ctab)
     let new_raw_url = changeinfo.url || ctab.url || 'about:blank';
     if(new_raw_url !== tab_node_val.raw_url) {
         dirty = true;
+        should_refresh_tooltip = true;
         tab_node_val.raw_url = new_raw_url;
         M.updateOrderedURLHash(node.parent);
             // When the URL changes, the hash changes, too.
@@ -2128,29 +2140,27 @@ function tabOnUpdated(tabid, changeinfo, ctab)
 
     // pinned
     let new_pinned = null;
-    let should_refresh_label = false;
 
     if('pinned' in changeinfo) {
         new_pinned = changeinfo.pinned;
     } else if('pinned' in ctab) {
         new_pinned = ctab.pinned;
     }
+
     if( (new_pinned !== null) && (tab_node_val.isPinned !== new_pinned) ) {
         dirty = true;
-        tab_node_val.isPinned = new_pinned;
         should_refresh_label = true;
+        tab_node_val.isPinned = new_pinned;
     }
 
     // title
     let new_raw_title = changeinfo.title || ctab.title || 'Tab';
     if(new_raw_title !== tab_node_val.raw_title) {
         dirty = true;
-        tab_node_val.raw_title = new_raw_title;
         should_refresh_label = true;
-    }
+        should_refresh_tooltip = true;
 
-    if(should_refresh_label) {
-        M.refresh_label(tab_node_id);
+        tab_node_val.raw_title = new_raw_title;
     }
 
     // favicon
@@ -2159,6 +2169,14 @@ function tabOnUpdated(tabid, changeinfo, ctab)
         dirty = true;
         tab_node_val.raw_favicon_url = new_raw_favicon_url;
         M.refresh_icon(tab_node_val);
+    }
+
+    if(should_refresh_label) {
+        M.refresh_label(tab_node_id);
+    }
+
+    if(should_refresh_tooltip) {
+        M.refresh_tooltip(tab_node_id);
     }
 
     if(dirty) {

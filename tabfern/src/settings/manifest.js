@@ -125,6 +125,12 @@
             // Appearance
             {
                 "tab": i18n.get("Appearance"),
+                "group": '',
+                "type": "description",
+                "text": i18n.get("Refresh the TabFern window to apply changes to these options."),
+            },
+            {
+                "tab": i18n.get("Appearance"),
                 "group": i18n.get("Scrollbars"),
                 "name": CFG_HIDE_HORIZONTAL_SCROLLBARS,
                 "type": "checkbox",
@@ -147,19 +153,13 @@
                     // placeholder - settings.js adds the actual control
                     // after this.
             },
-            {
-                "tab": i18n.get("Appearance"),
-                "group": i18n.get("Scrollbars"),
-                "type": "description",
-                "text": i18n.get("Refresh the TabFern window to apply changes to these options."),
-            },
             // Maybe add some theming options here?
             {
                 "tab": i18n.get("Appearance"),
                 "group": i18n.get("Tree"),
                 "name": CFG_SHOW_TREE_LINES,
                 "type": "checkbox",
-                "label": i18n.get('Show connecting lines between nodes' + refresh_message),
+                "label": i18n.get('Show connecting lines between nodes'),
             },
             {
                 "tab": i18n.get("Appearance"),
@@ -184,8 +184,7 @@
                 "group": i18n.get("Theme"),
                 "type": "description",
                 "text":
-`${refresh_message}<br/>
-The background can be specified as a CSS color name, rgb(r,g,b), hsl(h,s,l),
+`The background can be specified as a CSS color name, rgb(r,g,b), hsl(h,s,l),
 or a URL (data, https, chrome-extension, or file).
 To use images from your local disk (file):
 <ul>
@@ -193,6 +192,21 @@ To use images from your local disk (file):
 <li>Open the image you want in Chrome and copy the address out of the address
 bar (it will start with "file://")</li>
 <li>Paste the "file://..." URL into the box above.</li>`
+            },
+
+            {
+                "tab": i18n.get("Appearance"),
+                "group": i18n.get("Tooltips"),
+                "name": CFG_URL_IN_TOOLTIP,
+                "type": "checkbox",
+                "label": i18n.get("Show URL in each item's tooltip"),
+            },
+            {
+                "tab": i18n.get("Appearance"),
+                "group": i18n.get("Tooltips"),
+                "name": CFG_TITLE_IN_TOOLTIP,
+                "type": "checkbox",
+                "label": i18n.get("Show page title in each item's tooltip"),
             },
 
             // Features
@@ -267,6 +281,10 @@ bar (it will start with "file://")</li>
                 "text":
 `<ul>
 <li>Tooltips on the action buttons.  ${issue(117)}</li>
+<li>${settings} Appearance ${gt} Tooltips now has options to show the
+URL and title of each item in a tooltip on that item.  This way you can
+see URLs in the tree, and you can see long titles without having
+to scroll.  ${issue(104)}</li>
 </ul>`
             },
             {

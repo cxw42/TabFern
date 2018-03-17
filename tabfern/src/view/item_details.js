@@ -35,8 +35,10 @@
     let module = {};
 
     /// Map between open-tab IDs and node IDs.
-    /// Design decision: no fields named "parent" so I can distinguish
-    /// jstree node records from multidex values.
+    /// Design decisions:
+    /// - No fields named `parent` so I can distinguish jstree node
+    ///     records from multidex values.
+    /// - All types of records have `raw_title` and `isOpen` fields.
     module.tabs = multidex(
         K.IT_TAB, //type
         [ //keys
