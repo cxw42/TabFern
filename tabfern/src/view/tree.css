@@ -32,12 +32,12 @@
 */
 
 /* Color for open items, in a light theme */
-.jstree-default .tfs-open a {
+.jstree-default .tfs-open>a {
     color: #000;
 }
 
 /* Color for open items, in a dark theme */
-.jstree-default-dark .tfs-open a {
+.jstree-default-dark .tfs-open>a {
     color: #fff;
 }
 

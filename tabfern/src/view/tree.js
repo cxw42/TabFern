@@ -724,22 +724,15 @@ function actionEditTabBullet(node_id, node, unused_action_id, unused_action_el)
     saveTree();
 } //actionEditTabBullet
 
-/// Close the tab and save - NOT YET IMPLEMENTED
-function actionCloseTabAndSave(node_id, node, unused_action_id, unused_action_el)
-{
-    // TODO actionCloseTabButDoNotSave(node_id, node, unused_action_id, unused_action_el);
-    saveTree();
-} //actionCloseTabAndSave
-
 /// Delete a tab's entry in the tree.
 /// @param node_id {string} the ID of the node to delete
 /// @param node the node to delete
 /// @param evt {Event} (optional) If truthy, the event that triggered the action
 /// @param is_internal {Boolean} (optional) If truthy, this is an internal
 ///                              action, so don't prompt for confirmation.
-///                              ** Not yet used. **
+///                              ** currently unused **
 function actionDeleteTab(node_id, node, unused_action_id, unused_action_el,
-                            evt, is_internal_unimplemented)
+                            evt, is_internal_unused)
 {
     let tab_val = D.tabs.by_node_id(node_id);
     if(!tab_val) return;
@@ -772,10 +765,11 @@ function actionDeleteTab(node_id, node, unused_action_id, unused_action_el,
     // Prompt for confirmation, if necessary
     let is_keep = (parent_val.keep === K.WIN_KEEP);
     let is_nokeep = (parent_val.keep === K.WIN_NOKEEP);
-    let need_confirmation = (
-        (is_keep && getBoolSetting(CFG_CONFIRM_DEL_OF_SAVED_TABS)) ||
-        (is_nokeep && getBoolSetting(CFG_CONFIRM_DEL_OF_UNSAVED_TABS))
-    );
+    let need_confirmation = //!is_internal &&
+        (
+            (is_keep && getBoolSetting(CFG_CONFIRM_DEL_OF_SAVED_TABS)) ||
+            (is_nokeep && getBoolSetting(CFG_CONFIRM_DEL_OF_UNSAVED_TABS))
+        );
 
     if( !need_confirmation ||
         (/^((chrome:\/\/newtab\/?)|(about:blank))$/i.test(tab_val.raw_url))
@@ -850,6 +844,24 @@ function actionDeleteTab(node_id, node, unused_action_id, unused_action_el,
 //    });
 
 } //actionDeleteTab
+
+/// Close the tab and save
+function actionCloseTabAndSave(tab_node_id, tab_node, unused_action_id, unused_action_el)
+{
+    // TODO actionCloseTabButDoNotSave(node_id, node, unused_action_id, unused_action_el);
+    let parent_node_id = tab_node.parent;
+    M.remember(parent_node_id);
+    let tab_val = D.tabs.by_node_id(tab_node_id);
+    if(!tab_val || tab_val.tab_id === K.NONE) return;
+
+    let tab_id = tab_val.tab_id;    // since markTabAsClosed clears it
+    M.markTabAsClosed(tab_val);
+    chrome.tabs.remove(tab_id, ignore_chrome_error);
+        // Because the tab is already marked as closed, tabOnRemoved()
+        // won't delete its node.
+
+    saveTree();
+} //actionCloseTabAndSave
 
 ////////////////////////////////////////////////////////////////////////// }}}1
 // Tree-node creation // {{{1
@@ -1074,19 +1086,25 @@ function createNodeForClosedWindowV1(win_data_v1)
 
 /// Update #existing_win to connect to #cwin.  Also hooks up all the
 /// ctabs.
-/// Requires cwin.tabs.length === existing_win.node.children.length.
 ///
 /// @param cwin {Chrome Window} The open window, populated with tabs.
 /// @param existing_win {object} An object with {val, node}, e.g., from
 ///                             winAlreadyExistsInTree().
 /// @param options {object={}} Options.  Presently:
 /// - during_init {Boolean=false} If truthy, failures correspond to init failure.
-/// -
+/// - repin {Boolean=false} If truthy, set the pinned state of each tab from its
+///     corresponding tab_val.
+/// - tab_node_ids {array} For each Chrome tab in #cwin, the corresponding
+///                        node ID.  If missing, the default is
+///                        existing_win.node.children (i.e., all tabs open).
+///                        The number of tab_node_ids must match the number of
+///                        open tabs in #cwin.
 ///
 /// @return truthy on success; falsy on failure
 function connectChromeWindowToTreeWindowItem(cwin, existing_win, options = {})
 {
-    let during_init = !!options.during_init;
+    let tab_node_ids = options.tab_node_ids || existing_win.node.children;
+
     // Attach the open window to the saved window
     log.info({[`Attaching window ${cwin.id} to existing window in the tree`]:
             existing_win});
@@ -1103,21 +1121,22 @@ function connectChromeWindowToTreeWindowItem(cwin, existing_win, options = {})
         M.mark_win_as_unsaved(existing_win.val, false);
     }
 
-    if(cwin.tabs.length !== existing_win.node.children.length) {
+    if(cwin.tabs.length !== tab_node_ids.length) {
         log.error({
             'Mismatched child count':
-                `${cwin.tabs.length} !== ${existing_win.node.children.length}`,
+                `${cwin.tabs.length} !== ${tab_node_ids.length}`,
             cwin,
-            existing_win
+            existing_win,
+            options
         });
 
-        if(during_init) was_loading_error = true;
+        if(options.during_init) was_loading_error = true;
         return false;   // TODO handle this better
     }
 
-    // If we reach here, cwin.tabs.length === existing_win.node.children.length.
+    // If we reach here, cwin.tabs.length === tab_node_ids.length
     for(let idx=0; idx < cwin.tabs.length; ++idx) {
-        let tab_node_id = existing_win.node.children[idx];
+        let tab_node_id = tab_node_ids[idx];
         let tab_val = D.tabs.by_node_id(tab_node_id);
         if(!tab_val) continue;
 
@@ -1139,7 +1158,9 @@ function connectChromeWindowToTreeWindowItem(cwin, existing_win, options = {})
 
     // Note: We do not need to update existing_win.val.ordered_url_hash.
     // Since we got here, we know that it was a match.
+    // However, at the moment, updateTabIndexValues() does it anyway.
 
+    updateTabIndexValues(existing_win.node.id);
     T.treeobj.redraw_node(existing_win.node);
     return true;
 } //connectChromeWindowToTreeWindowItem()
@@ -1336,9 +1357,9 @@ function DBG_printSaveData()
 
 /// Helper for treeOnSelect() and winOnFocusChanged().
 /// chrome.windows.get() callback to flag the current tab in a window
-function flagOnlyCurrentTab(win)
+function flagOnlyCurrentTab(cwin)
 {
-    let win_node_id = D.windows.by_win_id(win.id, 'node_id');
+    let win_node_id = D.windows.by_win_id(cwin.id, 'node_id');
     let win_node = T.treeobj.get_node(win_node_id);
     if(!win_node) return;
 
@@ -1346,20 +1367,20 @@ function flagOnlyCurrentTab(win)
     T.treeobj.flag_node(win_node.children, false);
 
     // Flag the current tab
-    for(let tab of win.tabs) {
-        if(tab.active) {
-            let tab_node_id = D.tabs.by_tab_id(tab.id, 'node_id');
+    for(let ctab of cwin.tabs) {
+        if(ctab.active) {
+            let tab_node_id = D.tabs.by_tab_id(ctab.id, 'node_id');
             if(tab_node_id) T.treeobj.flag_node(tab_node_id);
             break;
         }
-    } //foreach tab
+    } //foreach ctab
 } //flagOnlyCurrentTab()
 
 // Chrome callback version of flagOnlyCurrentTab()
-function flagOnlyCurrentTabCC(win)
+function flagOnlyCurrentTabCC(cwin)
 {
     if(!isLastError()) {
-        flagOnlyCurrentTab(win);
+        flagOnlyCurrentTab(cwin);
     } else {
         log.info({"Couldn't flag": chrome.runtime.lastError});
     }
@@ -1374,6 +1395,18 @@ var awaitSelectTimeoutId = undefined;
 /// TODO RESUME HERE - refactor the below to use the new model
 function treeOnSelect(_evt_unused, evt_data)
 {
+    /// What kinds of things can happen as a result of a select event
+    let ActionTy = Object.freeze({
+        nop: 'nop',
+        activate_win: 'activate_win',   // win is open
+        activate_tab: 'activate_tab',   // tab is open
+        open_tab_in_win: 'open_tab_in_win',
+            // win is open, but tab is closed; open tab in existing window
+
+        open_win: 'open_win',           // win is closed; open all tabs
+        open_win_and_tab: 'open_win_and_tab',   // win is closed; open one tab
+    });
+
     //log.info(evt_data.node);
     if(typeof evt_data.node === 'undefined') return;
 
@@ -1384,20 +1417,6 @@ function treeOnSelect(_evt_unused, evt_data)
     }
 
     let node = evt_data.node;
-    let node_val, is_tab=false, is_win=false;
-
-    let win_id;     // If assigned, this window will be brought to the front
-                    // at the end of this function.
-    let win_node_id;
-
-    if(node_val = D.tabs.by_node_id(node.id)) {
-        is_tab = true;
-    } else if(node_val = D.windows.by_node_id(node.id)) {
-        is_win = true;
-    } else {
-        log.error('Selection of unknown node '+node);
-        return;     // unknown node type
-    }
 
     // TODO figure out why this doesn't work: T.treeobj.deselect_node(node, true);
     T.treeobj.deselect_all(true);
@@ -1405,7 +1424,7 @@ function treeOnSelect(_evt_unused, evt_data)
     //log.info('Clearing flags treeonselect');
     //T.treeobj.clear_flags(true);
 
-    // --------
+    // --- Check for button clicks ------------------------------------
     // Now that the selection is clear, see if this actually should have been
     // an action-button click.  The evt_data.event is not necessarily a
     // click.  For example, it can be a 'select_node' event from jstree.
@@ -1442,7 +1461,7 @@ function treeOnSelect(_evt_unused, evt_data)
                 case 'editBullet':
                     actionEditTabBullet(node.id, node, null, null); break;
                 case 'closeTab':
-                    actionCloseTabAndSave(node.id, node, null, null);
+                    actionCloseTabAndSave(node.id, node, null, null); break;
                 case 'deleteTab':
                     actionDeleteTab(node.id, node, null, null, evt_data.event);
                         // as deleteWindow, above.
@@ -1459,65 +1478,121 @@ function treeOnSelect(_evt_unused, evt_data)
         } //endif the click was actually an action button
     } //endif event has clientX
 
-    /// Do we need to open a new window?
-    let open_new_window = (!node_val.isOpen && (is_tab || is_win) );
+    // --- Figure out what to do --------------------------------------
 
-    // --------
-    // Process the actual node click
+    let node_val, is_tab=false, is_win=false;
+    let tab_val, win_val, tab_node, win_node;
 
-    { // Remove "recovered" flags.  TODO update this when #34 is implemented.
-        let win_node = is_win ? node : T.treeobj.get_node(node.parent);
-        //if(T.treeobj.get_type(node) === K.NT_RECOVERED) {
-        if(win_node && M.has_subtype(win_node, K.NST_RECOVERED)) {
-            M.del_subtype(win_node, K.NST_RECOVERED);
-        }
+    let win_id_to_highlight;
+        // If assigned, this window will be brought to the front at the
+        // end of this function.
+    let win_node_id;
+
+    if(node_val = D.tabs.by_node_id(node.id)) {
+        is_tab = true;
+        tab_val = node_val;
+        tab_node = node;
+
+        let parent_node_id = tab_node.parent;
+        if(!parent_node_id) return;
+        win_node = T.treeobj.get_node(parent_node_id);
+        if(!win_node) return;
+
+        win_node_id = parent_node_id;
+        win_val = D.windows.by_node_id(parent_node_id);
+        if(!win_val) return;
+
+    } else if(node_val = D.windows.by_node_id(node.id)) {
+        is_win = true;
+        win_val = node_val;
+        win_node_id = win_val.node_id;
+        win_node = T.treeobj.get_node(win_node_id);
+        if(!win_node) return;
+
+        // tab_val and tab_node stay falsy.
+
+    } else {
+        log.error('Selection of unknown node '+node);
+        return;     // unknown node type
     }
 
-    if(is_tab && node_val.isOpen) {   // An open tab
+    let action = ActionTy.nop;
+
+    if(win_val.isOpen) {
+        if(is_win) {    // clicked on an open window
+            action = ActionTy.activate_win;
+        } else {        // clicked on a tab in an open window
+            action = tab_val.isOpen ?  ActionTy.activate_tab
+                                    : ActionTy.open_tab_in_win;
+        }
+    } else {    // window is closed
+        action = is_win ? ActionTy.open_win : ActionTy.open_win_and_tab;
+    }
+
+    let already_flagged_window = false;
+
+    // --- Do it ------------------------------------------------------
+
+    // Remove "recovered" flags.  TODO update this when #34 is implemented.
+    if(win_node && M.has_subtype(win_node, K.NST_RECOVERED)) {
+        M.del_subtype(win_node, K.NST_RECOVERED);
+    }
+
+    if(action === ActionTy.activate_tab) {
         chrome.tabs.highlight({
-            windowId: node_val.win_id,
-            tabs: [node_val.index]     // Jump to the clicked-on tab
+            windowId: tab_val.win_id,
+            tabs: [tab_val.index]     // Jump to the clicked-on tab
         }, ignore_chrome_error);
         //log.info('flagging treeonselect' + node.id);
-        T.treeobj.flag_node(node);
-        win_id = node_val.win_id;
+        T.treeobj.flag_node(tab_node);
+        win_id_to_highlight = tab_val.win_id;
 
-    } else if(is_win && node_val.isOpen) {    // An open window
-        win_id = node_val.win_id;
+    } else if(action === ActionTy.activate_win) {
+        win_id_to_highlight = node_val.win_id;
 
-    } else if( open_new_window ) {
+    } else if(  action === ActionTy.open_win ||
+                action === ActionTy.open_win_and_tab) {
+
         // Ignore attempts to open two windows at once, since we currently
         // can't handle them.
         if(window_is_being_restored) return;
 
-        // A closed window or tab.  Make sure we have the window.
-        let win_node;
-        let win_val;
+//        // A closed window or tab.  Make sure we have the window.
+//        let win_node;
+//        let win_val;
+//
+//        if(is_win) {    // A closed window
+//            win_node = node;
+//            win_node_id = win_node.id;
+//            win_val = node_val;
+//
+//        } else {        // A closed tab - get its window record
+//            let parent_node_id = node.parent;
+//            if(!parent_node_id) return;
+//            let parent_node = T.treeobj.get_node(parent_node_id);
+//            if(!parent_node) return;
+//
+//            win_node = parent_node;
+//            win_node_id = win_node.id;
+//            win_val = D.windows.by_node_id(parent_node_id);
+//            if(!win_val) return;
+//        }
 
-        if(is_win) {    // A closed window
-            win_node = node;
-            win_node_id = win_node.id;
-            win_val = node_val;
+        let urls=[];    // Open all the tabs
+        let tab_node_ids;
 
-        } else {        // A closed tab - get its window record
-            let parent_node_id = node.parent;
-            if(!parent_node_id) return;
-            let parent_node = T.treeobj.get_node(parent_node_id);
-            if(!parent_node) return;
-
-            win_node = parent_node;
-            win_node_id = win_node.id;
-            win_val = D.windows.by_node_id(parent_node_id);
-            if(!win_val) return;
+        if(action === ActionTy.open_win) {
+            for(let child_id of win_node.children) {
+                let child_val = D.tabs.by_node_id(child_id);
+                urls.push(child_val.raw_url);
+            }
+        } else {
+            urls.push(tab_val.raw_url);
+            tab_node_ids = [tab_node.id];
         }
 
-        // Grab the URLs for all the tabs
-        let urls=[];
-        let expected_tab_count = win_node.children.length;
-        for(let child_id of win_node.children) {
-            let child_val = D.tabs.by_node_id(child_id);
-            urls.push(child_val.raw_url);
-        }
+        log.info({"Opening window":urls, tab_node_ids,
+            tab_node, tab_val, win_node, win_val});     // keep them in scope
 
         // Open the window
         window_is_being_restored = true;
@@ -1544,30 +1619,37 @@ function treeOnSelect(_evt_unused, evt_data)
 
                 // Update the tree and node mappings
                 log.info('Adding nodeid map for winid ' + cwin.id);
+                log.trace({urls, tab_node_ids, tab_node, tab_val,
+                            win_node, win_val});     // keep them in scope
+
                 connectChromeWindowToTreeWindowItem(
                     cwin,
                     { val: win_val, node: win_node },
-                    { repin: true }
+                    { repin: true, tab_node_ids }
                 );
 
                 // Set the highlights in the tree appropriately
                 T.treeobj.flag_node(win_node.id);
+                already_flagged_window = true;
                 flagOnlyCurrentTab(cwin);
+
+                win_id_to_highlight = cwin.id;
 
             } //create callback
         ); //windows.created
 
-    } else {    // it's a node type we don't know how to handle.
-        log.error('treeOnSelect: Unknown node ' + node);
+    } else if(action === ActionTy.open_tab_in_win) {    // add tab to existing win
+        //TODO
+        window.alert("Not yet implemented");
     }
 
     // Set highlights for the window, unless we had to open a new window.
     // If we opened a new window, the code above handled this.
-    if(!open_new_window && typeof win_id !== 'undefined') {
+    if(!already_flagged_window && win_id_to_highlight) {
         unflagAllWindows();
 
         // Clear the other windows' tabs' flags.
-        let node_id = D.windows.by_win_id(win_id, 'node_id');
+        let node_id = D.windows.by_win_id(win_id_to_highlight, 'node_id');
         //if(node_id) T.treeobj.clear_flags_by_type(K.NTs_TAB, node_id, true);
         if(node_id) {
             T.treeobj.clear_flags_by_multitype(K.IT_TAB, node_id, true);
@@ -1579,10 +1661,10 @@ function treeOnSelect(_evt_unused, evt_data)
         // Activate the window, if it still exists.
 // this is a test - trying for a bit of speed by calling windows.update
 // in the current tick
-//        chrome.windows.get(win_id, function(win) {
+//        chrome.windows.get(win_id_to_highlight, function(win) {
 //            if(isLastError()) return;
-            log.debug({'About to activate':win_id});
-            chrome.windows.update(win_id,{focused:true}, ignore_chrome_error);
+            log.debug({'About to activate':win_id_to_highlight});
+            chrome.windows.update(win_id_to_highlight,{focused:true}, ignore_chrome_error);
             // winOnFocusedChange will set the flag on the newly-focused window
 //        });
     }
@@ -2216,13 +2298,13 @@ function tabOnRemoved(tabid, removeinfo)
         let tab_node = T.treeobj.get_node(tab_node_id);
         if(!tab_node) return;
 
-        // Remove the node
         let tab_val = D.tabs.by_tab_id(tabid);
 
         // See if it's a tab we have already marked as removed.  If so,
         // whichever code marked it is responsible, and we're off the hook.
         if(!tab_val || tab_val.tab_id === K.NONE) return;
 
+        // Remove the node
         D.tabs.remove_value(tab_val);
             // So any events that are triggered won't try to look for a
             // nonexistent tab.
