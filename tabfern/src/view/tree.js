@@ -165,10 +165,11 @@ function copyTruthyProperties(dest, source, property_names, modifier)
 } //copyTruthyProperties
 
 ////////////////////////////////////////////////////////////////////////// }}}1
-// DOM Manipulation // {{{1
+// General record helpers // {{{1
 
 /// Set the tab.index values of the tab nodes in a window.  Assumes that
-/// the nodes are in the proper order in the tree.
+/// the nodes are in the proper order in the tree.  Only uses the model;
+/// doesn't touch the cwin or ctabs.
 /// As a convenience, also updates the window's ordered_url_hash.  This
 /// function is generally called when something has changed that requires
 /// recalculation anyway.
@@ -176,15 +177,15 @@ function copyTruthyProperties(dest, source, property_names, modifier)
 /// \pre    #win_node_id is the id of a node that both exists and represents
 ///         a window.
 ///
-/// @param win_node_id The node for the window
+/// @param win_nodey {mixed} The window, in any form accepted by jstree.get_node
 /// @param as_open {Array} optional array of nodes to treat as if they were open
-function updateTabIndexValues(win_node_id, as_open = [])
+function updateTabIndexValues(win_nodey, as_open = [])
 {
     // NOTE: later, when adding nested trees, see
     // https://stackoverflow.com/a/10823248/2877364 by
     // https://stackoverflow.com/users/106224/boltclock
 
-    let win_node = T.treeobj.get_node(win_node_id);
+    let win_node = T.treeobj.get_node(win_nodey);
     if(win_node===false) return;
 
     let tab_index=0;
@@ -199,12 +200,12 @@ function updateTabIndexValues(win_node_id, as_open = [])
         }
     }
 
-    let old_hash = D.windows.by_node_id(win_node_id, 'ordered_url_hash'); //DEBUG
+    let old_hash = D.windows.by_node_id(win_node.id, 'ordered_url_hash'); //DEBUG
 
-    M.updateOrderedURLHash(win_node_id);
+    M.updateOrderedURLHash(win_node.id);
 
-    let new_hash = D.windows.by_node_id(win_node_id, 'ordered_url_hash'); //DEBUG
-    log.trace(`win ${win_node_id} hash from ${old_hash} to ${new_hash}`); //DEBUG
+    let new_hash = D.windows.by_node_id(win_node.id, 'ordered_url_hash'); //DEBUG
+    log.trace(`win ${win_node.id} hash from ${old_hash} to ${new_hash}`); //DEBUG
 } //updateTabIndexValues
 
 /// Get the size of a window, as an object
@@ -1635,12 +1636,42 @@ function treeOnSelect(_evt_unused, evt_data)
 
                 win_id_to_highlight = cwin.id;
 
-            } //create callback
-        ); //windows.created
+            } //windows.create callback
+        ); //windows.create
 
     } else if(action === ActionTy.open_tab_in_win) {    // add tab to existing win
-        //TODO
-        window.alert("Not yet implemented");
+        // Figure out where to put it
+        let newindex=0;
+        for(let other_tab_node_id of win_node.children) {
+            if(other_tab_node_id === tab_node.id) break;
+            let tab_val = D.tabs.by_node_id(other_tab_node_id);
+            if(tab_val.isOpen) ++newindex;
+        }
+
+        // Open the tab
+        tab_val.being_opened = true;
+        chrome.tabs.create(
+            {
+                windowId: win_val.win_id,
+                index: newindex,
+                url: tab_val.raw_url,
+                url: chrome.runtime.getURL('/src/view/newtab.html') + '#' + tab_node.id,
+                active: true,
+                pinned: !!tab_val.isPinned,
+            },
+            function(ctab) {
+                // tabOnCreated connects the node to the ctab.
+                updateTabIndexValues(win_node, [tab_node.id]);
+
+                // Set the highlights in the tree appropriately
+                T.treeobj.flag_node(win_node.id);
+                already_flagged_window = true;
+                chrome.windows.get(win_val.win_id, {populate:true}, flagOnlyCurrentTabCC);
+
+                win_id_to_highlight = ctab.windowId;
+
+            } //tabs.create callback
+        ); //tabs.create
     }
 
     // Set highlights for the window, unless we had to open a new window.
@@ -1658,16 +1689,14 @@ function treeOnSelect(_evt_unused, evt_data)
             T.treeobj.open_node(node_id);
         }
 
-        // Activate the window, if it still exists.
-// this is a test - trying for a bit of speed by calling windows.update
-// in the current tick
-//        chrome.windows.get(win_id_to_highlight, function(win) {
-//            if(isLastError()) return;
-            log.debug({'About to activate':win_id_to_highlight});
-            chrome.windows.update(win_id_to_highlight,{focused:true}, ignore_chrome_error);
-            // winOnFocusedChange will set the flag on the newly-focused window
-//        });
-    }
+    } //endif need to flag
+
+    if(win_id_to_highlight) {   // Activate the window, if it still exists.
+        log.debug({'About to activate':win_id_to_highlight});
+        chrome.windows.update(win_id_to_highlight,{focused:true}, ignore_chrome_error);
+            // winOnFocusChanged will set the flag on the newly-focused window
+    } //endif
+
 } //treeOnSelect
 
 ////////////////////////////////////////////////////////////////////////// }}}1
