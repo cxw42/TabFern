@@ -724,6 +724,13 @@ function actionEditTabBullet(node_id, node, unused_action_id, unused_action_el)
     saveTree();
 } //actionEditTabBullet
 
+/// Close the tab and save - NOT YET IMPLEMENTED
+function actionCloseTabAndSave(node_id, node, unused_action_id, unused_action_el)
+{
+    // TODO actionCloseTabButDoNotSave(node_id, node, unused_action_id, unused_action_el);
+    saveTree();
+} //actionCloseTabAndSave
+
 /// Delete a tab's entry in the tree.
 /// @param node_id {string} the ID of the node to delete
 /// @param node the node to delete
@@ -870,6 +877,16 @@ function addTabNodeActions(tab_node_id)
         title: 'Add/edit label',
         callback: actionEditTabBullet,
         dataset: { action: 'editBullet' }
+    });
+
+    T.treeobj.add_action(tab_node_id, {
+        id: 'closeTab',
+        class: 'fff-picture-delete ' + K.ACTION_BUTTON_WIN_CLASS,
+        text: '\xa0',
+        grouped: true,
+        title: "Close and save",
+        callback: actionCloseTabAndSave,
+        dataset: { action: 'closeTab' }
     });
 
     T.treeobj.add_action(tab_node_id, {
@@ -1057,13 +1074,19 @@ function createNodeForClosedWindowV1(win_data_v1)
 
 /// Update #existing_win to connect to #cwin.  Also hooks up all the
 /// ctabs.
+/// Requires cwin.tabs.length === existing_win.node.children.length.
+///
 /// @param cwin {Chrome Window} The open window, populated with tabs.
 /// @param existing_win {object} An object with {val, node}, e.g., from
 ///                             winAlreadyExistsInTree().
-/// @param during_init {Boolean=false} If truthy, failures correspond to init failure.
-/// \pre cwin.tabs.length === existing_win.node.children.length.
-function attachChromeWindowToSavedWindowItem(cwin, existing_win, during_init=false)
+/// @param options {object={}} Options.  Presently:
+/// - during_init {Boolean=false} If truthy, failures correspond to init failure.
+/// -
+///
+/// @return truthy on success; falsy on failure
+function connectChromeWindowToTreeWindowItem(cwin, existing_win, options = {})
 {
+    let during_init = !!options.during_init;
     // Attach the open window to the saved window
     log.info({[`Attaching window ${cwin.id} to existing window in the tree`]:
             existing_win});
@@ -1089,7 +1112,7 @@ function attachChromeWindowToSavedWindowItem(cwin, existing_win, during_init=fal
         });
 
         if(during_init) was_loading_error = true;
-        return;   // TODO handle this better
+        return false;   // TODO handle this better
     }
 
     // If we reach here, cwin.tabs.length === existing_win.node.children.length.
@@ -1104,12 +1127,22 @@ function attachChromeWindowToSavedWindowItem(cwin, existing_win, during_init=fal
         ctab.url = ctab.url || 'about:blank';
         ctab.title = ctab.title || '## Unknown title ##';
 
+        let pinned = tab_val.isPinned;
         M.markTabAsOpen(tab_node_id, ctab);
+
+        // Apply changes from the tab_val to the ctab if requested.
+        // New tabs start out unpinned, so we may need to repin.
+        if(options.repin && pinned) {
+            chrome.tabs.update(ctab.id, {pinned: true}, ignore_chrome_error);
+        }
     } //foreach tab
 
     // Note: We do not need to update existing_win.val.ordered_url_hash.
     // Since we got here, we know that it was a match.
-} //attachChromeWindowToSavedWindowItem()
+
+    T.treeobj.redraw_node(existing_win.node);
+    return true;
+} //connectChromeWindowToTreeWindowItem()
 
 ////////////////////////////////////////////////////////////////////////// }}}1
 // Loading // {{{1
@@ -1408,6 +1441,8 @@ function treeOnSelect(_evt_unused, evt_data)
                 // Tabs
                 case 'editBullet':
                     actionEditTabBullet(node.id, node, null, null); break;
+                case 'closeTab':
+                    actionCloseTabAndSave(node.id, node, null, null);
                 case 'deleteTab':
                     actionDeleteTab(node.id, node, null, null, evt_data.event);
                         // as deleteWindow, above.
@@ -1495,7 +1530,7 @@ function treeOnSelect(_evt_unused, evt_data)
               , width: newWinSize.width
               , height: newWinSize.height
             },
-            function(win) {
+            function(cwin) {
                 // Note: In testing, this happens after the winOnCreated,
                 // tabOnCreated, and tabOnActivated events.  I don't know
                 // if that's guaranteed, though.
@@ -1508,105 +1543,16 @@ function treeOnSelect(_evt_unused, evt_data)
                 }
 
                 // Update the tree and node mappings
-                log.info('Adding nodeid map for winid ' + win.id);
-                D.windows.change_key(win_val, 'win_id', win.id);
+                log.info('Adding nodeid map for winid ' + cwin.id);
+                connectChromeWindowToTreeWindowItem(
+                    cwin,
+                    { val: win_val, node: win_node },
+                    { repin: true }
+                );
 
-                win_val.isOpen = true;
-                win_val.keep = K.WIN_KEEP;      // just in case
-                win_val.win = win;
-                M.add_subtype(win_node.id, K.NST_OPEN);
-                M.refresh_label(win_node.id);
-                M.refresh_icon(win_node);
-                M.refresh_tooltip(win_val);
-
-                T.treeobj.open_node(win_node);
-                T.treeobj.redraw_node(win_node);
-                    // Because open_node() doesn't redraw the parent, only
-                    // its children, and opening the node changes the
-                    // settings at this time.
-
-                // In Chrome 61, with v0.1.4, I observed strange behaviour:
-                // the window would open extra tabs that were copies of
-                // items listed in `urls`.  However, win.tabs.length sometimes
-                // would, and sometimes would not, indicate those extra tabs.
-                // It's a heisenbug.  It may arise from two TabFerns running
-                // at once.  It may also be related to what appears to be
-                // a Chrome 61 regression - Ctl+N for a new window will
-                // sometimes reopen previously-closed tabs. However, I
-                // don't know - I can't repro reliably.
-                // I have reported the Ctl+N issue:
-                // https://bugs.chromium.org/p/chromium/issues/detail?id=762951
-
-                // To hack around this if it happens again, I am trying:
-
-                if(win.tabs.length != expected_tab_count) {
-                    log.warn('Win ' + win.id + ': expected ' +
-                            expected_tab_count + ' tabs; got ' +
-                            win.tabs.length + 'tabs.');
-                }
-                let count_to_use = Math.min(expected_tab_count, win.tabs.length);
-                for(let idx=0; idx < count_to_use; ++idx) {
-                    let tab_node_id = win_node.children[idx];
-                    let tab_val = D.tabs.by_node_id(tab_node_id);
-                    if(!tab_val) continue;
-
-                    let tab = win.tabs[idx];
-
-                    D.tabs.change_key(tab_val, 'tab_id', tab.id);
-                    M.add_subtype(tab_node_id, K.NST_OPEN);
-
-                    // Update realtime values from the ctab to the tab_val
-                    tab_val.win_id = win.id;
-                    tab_val.index = idx;
-                    tab_val.tab = tab;
-                    tab_val.raw_url = tab.url || 'about:blank';
-                    tab_val.raw_title = tab.title || '## Unknown title ##';
-                    tab_val.isOpen = true;
-
-                    // Apply changes from the tab_val to the ctab
-                    if(tab_val.isPinned) {
-                        chrome.tabs.update(tab.id, {pinned: true},
-                                ignore_chrome_error);
-                    }
-
-                } //foreach tab
-
-                // Another hack for the strange behaviour above: get rid of
-                // any tabs we didn't expect.  This assumes the tabs we
-                // wanted come first in the window, which seems to be a safe
-                // assumption.
-                chrome.windows.get(win.id, {populate: true},
-                    function(win) {
-                        if(win.tabs.length > expected_tab_count) {
-                            log.warn('Win ' + win.id + ': expected ' +
-                                    expected_tab_count + ' tabs; got ' +
-                                    win.tabs.length + ' tabs --- pruning.');
-
-                            let to_prune=[];
-                            for(let tab_idx = expected_tab_count;
-                                tab_idx < win.tabs.length;
-                                ++tab_idx) {
-                                to_prune.push(win.tabs[tab_idx].id);
-                            } //foreach extra tab
-
-                            log.warn('Pruning ' + to_prune);
-                            chrome.tabs.remove(to_prune, ignore_chrome_error);
-                        } //endif we have extra tabs
-
-                        // if a tab was clicked on, activate that particular tab
-                        if(is_tab) {
-                            chrome.tabs.highlight({
-                                windowId: node_val.win_id,
-                                tabs: [node_val.index]
-                            }, ignore_chrome_error);
-                        }
-
-                        // Set the highlights in the tree appropriately
-                        T.treeobj.flag_node(win_node.id);
-                        flagOnlyCurrentTab(win);
-
-                    } //get callback
-                ); //windows.get
+                // Set the highlights in the tree appropriately
+                T.treeobj.flag_node(win_node.id);
+                flagOnlyCurrentTab(cwin);
 
             } //create callback
         ); //windows.created
@@ -1973,8 +1919,8 @@ var tabOnCreated = (function(){
                         break MERGE;
                     }
 
-                    // Attach the old nodes to the wins/tabs
-                    attachChromeWindowToSavedWindowItem(cwin, merge_to_win, false);
+                    // Connect the old nodes to the wins/tabs
+                    connectChromeWindowToTreeWindowItem(cwin, merge_to_win, false);
 
                     // TODO make sure the correct window is carrying the
                     // ordered_url_hash in the multidex.  I think this might
@@ -2720,6 +2666,16 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
                 )
             },
         };
+
+        if(tab_val.isOpen) {
+            tabItems.closeItem = {
+                    label: 'Close and remember',
+                    icon: 'fff-picture-delete',
+                    action:
+                        function(){actionCloseTabAndSave(node.id,node,null,null);}
+                };
+        }
+
 
         return tabItems;
     }
@@ -3647,7 +3603,7 @@ function addOpenWindowsToTree(done, cwins)
             // windows are open with the same set of tabs)
             createNodeForWindow(cwin, K.WIN_NOKEEP);
         } else {
-            attachChromeWindowToSavedWindowItem(cwin, existing_win);
+            connectChromeWindowToTreeWindowItem(cwin, existing_win);
         } //endif window already exists
     } //foreach window
 

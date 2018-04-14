@@ -49,6 +49,7 @@
             'win_id',       // from Chrome
             'index',        // in the current window
             'tab',          // the actual Tab record from Chrome
+                // TODO remove this --- tab_id should be enough
             'being_opened', // true if we are manually opening the Chrome tab
             'raw_url',      // the tab's URL
             'raw_title',    // the tab's title.  null => default.
@@ -79,6 +80,7 @@
         ],
         [ //other data
             'win',          // the actual Window record from chrome
+                // TODO remove this --- win_id should be enough
             'raw_title',    // the window's title (e.g., "Window")
             'isOpen',       // whether the window is open or not
             'keep',         // whether the window should be saved or not
