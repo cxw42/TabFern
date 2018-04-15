@@ -55,6 +55,9 @@ const CFG_CONFIRM_DEL_OF_SAVED_TABS = 'confirm-del-of-saved-tabs';
 const CFG_CONFIRM_DEL_OF_UNSAVED_TABS = 'confirm-del-of-unsaved-tabs';
 const CFG_URL_IN_TOOLTIP = 'tooltip-has-url';
 const CFG_TITLE_IN_TOOLTIP = 'tooltip-has-title';
+const CFG_OPEN_REST_ON_CLICK = 'open-rest-on-win-click',
+        CFG_OROC_DO = 'yes',
+        CFG_OROC_DO_NOT = 'no';
 
 // Strings
 const CFGS_BACKGROUND = 'window-background';
@@ -82,6 +85,7 @@ const CFG_DEFAULTS = {
     [CFGS_SCROLLBAR_COLOR]: '',     // none by default
     [CFG_URL_IN_TOOLTIP]: false,
     [CFG_TITLE_IN_TOOLTIP]: false,
+    [CFG_OPEN_REST_ON_CLICK]: CFG_OROC_DO,
 };
 
 //////////////////////////////////////////////////////////////////////////

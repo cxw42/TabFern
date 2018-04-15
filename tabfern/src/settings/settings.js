@@ -1,8 +1,11 @@
+// TabFern settings.js
+// Copyright (c) cxw42, 2017--2018
+
 /// An object to hold the settings for later programmatic access
 let settingsobj;
 
-function createPicker($$)
-{
+/// Create the color picker for the scrollbar color
+let createPicker = function createPicker($$) {
     let picker = $$('#scrollbar-color-picker-label');
 
     // Replace the manifest entry with the color picker
@@ -32,17 +35,16 @@ function createPicker($$)
 
         setSetting(CFGS_SCROLLBAR_COLOR, colorstring);
     });
-} //createPicker
+}; //createPicker
 
-window.addEvent("domready", function () {
+// Main //////////////////////////////////////////////////////////////
+
+let main = function main() {
     let $$ = jQuery;    // since $ is mootools
 
     // Option 1: Use the manifest:
     new FancySettings.initWithManifest(function (settings) {
         settingsobj = settings;
-        //settings.manifest.myButton.addEvent("action", function () {
-        //    alert("You clicked me!");
-        //});
 
         // ----------------------------
         // Create the color-picker for the skinny scrollbars
@@ -131,5 +133,8 @@ window.addEvent("domready", function () {
         password
     ]);
     */
-});
+}; //main()
+
+window.addEvent("domready", main);
+
 // vi: set ts=4 sts=4 sw=4 et ai: //

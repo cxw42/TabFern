@@ -1399,8 +1399,7 @@ var awaitSelectTimeoutId = undefined;
 /// Process clicks on items in the tree.  Also works for keyboard navigation
 /// with arrow keys and Enter.
 /// TODO break "open window" out into a separate function.
-/// TODO RESUME HERE - refactor the below to use the new model
-function treeOnSelect(_evt_unused, evt_data)
+function treeOnSelect(evt_unused, evt_data)
 {
     /// What kinds of things can happen as a result of a select event
     let ActionTy = Object.freeze({
@@ -1537,7 +1536,13 @@ function treeOnSelect(_evt_unused, evt_data)
                 }
             } //foreach child
 
-            action = child_closed ? ActionTy.open_rest : ActionTy.activate_win;
+            if( child_closed &&
+                (getStringSetting(CFG_OPEN_REST_ON_CLICK) === CFG_OROC_DO)
+            ) {
+                action = ActionTy.open_rest;
+            } else {
+                action = ActionTy.activate_win;
+            }
 
         } else {        // clicked on a tab in an open window
             action = tab_val.isOpen ?  ActionTy.activate_tab
@@ -1570,21 +1575,14 @@ function treeOnSelect(_evt_unused, evt_data)
 
     } else if(action === ActionTy.open_rest) {
         let seq = ASQ();
-        let curridx = 0;
 
-        for(let child_node_id of win_node.children) {
+        win_id_to_highlight = win_val.win_id;
+
+        win_node.children.forEach((child_node_id, curridx)=>{
             let child_val = D.tabs.by_node_id(child_node_id);
 
-            if(child_val.isOpen) {
-                //TODO RESUME HERE
-//                seq.then((done)=>{
-//                    chrome.tabs.move(child_val.tab_id,
-//                        { index: curridx }, ASQH.CC(done));
-//                });
-
-            } else {
+            if(!child_val.isOpen) {     // Open the tab
                 seq.then((done)=>{
-                    // Open the tab
                     child_val.being_opened = true;
                     chrome.tabs.create(
                         {
@@ -1597,11 +1595,8 @@ function treeOnSelect(_evt_unused, evt_data)
                         ASQH.CC(done)
                     );
                 });
-            }
-
-            ++curridx;
-
-        } //foreach child
+            } //endif child is closed
+        }); //foreach child
 
         // At the end, update everything
         seq.val(()=>{
@@ -1612,7 +1607,6 @@ function treeOnSelect(_evt_unused, evt_data)
             already_flagged_window = true;
             chrome.windows.get(win_val.win_id, {populate:true}, flagOnlyCurrentTabCC);
 
-            win_id_to_highlight = win_val.win_id;
         });
 
     } else if(  action === ActionTy.open_win ||

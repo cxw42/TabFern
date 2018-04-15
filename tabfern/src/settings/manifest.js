@@ -94,6 +94,21 @@
             },
 
             {
+                'tab': i18n.get('Behaviour'),
+                'group': i18n.get('Partly-open windows'),
+                'name': CFG_OPEN_REST_ON_CLICK,
+                'type': 'radioButtons',
+                'label': `When only some of the tabs in a window are open,
+                            what should happen when you click the
+                            name of the window?`,
+                'options': [
+                    {value: CFG_OROC_DO, text: 'Open all the remaining closed tabs'},
+                    {value: CFG_OROC_DO_NOT, text: 'Just bring the window to the front' +
+                        ' (open the remaining tabs from the right-click menu)'},
+                ],
+            },
+
+            {
                 "tab": i18n.get("Behaviour"),
                 "group": i18n.get("Deleting windows"),
                 "name": CFG_CONFIRM_DEL_OF_SAVED,
