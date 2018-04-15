@@ -849,19 +849,25 @@ function actionDeleteTab(node_id, node, unused_action_id, unused_action_el,
 /// Close the tab and save
 function actionCloseTabAndSave(tab_node_id, tab_node, unused_action_id, unused_action_el)
 {
-    // TODO actionCloseTabButDoNotSave(node_id, node, unused_action_id, unused_action_el);
-    let parent_node_id = tab_node.parent;
-    M.remember(parent_node_id);
     let tab_val = D.tabs.by_node_id(tab_node_id);
     if(!tab_val || tab_val.tab_id === K.NONE) return;
+    let window_node_id = tab_node.parent;
+    M.remember(window_node_id);
 
     let tab_id = tab_val.tab_id;    // since markTabAsClosed clears it
     M.markTabAsClosed(tab_val);
-    chrome.tabs.remove(tab_id, ignore_chrome_error);
+
+    ASQH.NowCC((cc)=>{
+        chrome.tabs.remove(tab_id, cc);
         // Because the tab is already marked as closed, tabOnRemoved()
         // won't delete its node.
+    })
+    .val(()=>{
+        // Refresh the tab.index values for the remaining tabs
+        updateTabIndexValues(window_node_id);
+        saveTree();
+    });
 
-    saveTree();
 } //actionCloseTabAndSave
 
 ////////////////////////////////////////////////////////////////////////// }}}1
@@ -1399,7 +1405,8 @@ function treeOnSelect(_evt_unused, evt_data)
     /// What kinds of things can happen as a result of a select event
     let ActionTy = Object.freeze({
         nop: 'nop',
-        activate_win: 'activate_win',   // win is open
+        activate_win: 'activate_win',   // win is open, as are all tabs
+        open_rest: 'open_rest',         // win is open, but not all tabs
         activate_tab: 'activate_tab',   // tab is open
         open_tab_in_win: 'open_tab_in_win',
             // win is open, but tab is closed; open tab in existing window
@@ -1521,7 +1528,17 @@ function treeOnSelect(_evt_unused, evt_data)
 
     if(win_val.isOpen) {
         if(is_win) {    // clicked on an open window
-            action = ActionTy.activate_win;
+            // See if any children are closed
+            let child_closed = false;
+            for(let child_node_id of win_node.children) {
+                if(!D.tabs.by_node_id(child_node_id, 'isOpen')) {
+                    child_closed = true;
+                    break;
+                }
+            } //foreach child
+
+            action = child_closed ? ActionTy.open_rest : ActionTy.activate_win;
+
         } else {        // clicked on a tab in an open window
             action = tab_val.isOpen ?  ActionTy.activate_tab
                                     : ActionTy.open_tab_in_win;
@@ -1550,6 +1567,53 @@ function treeOnSelect(_evt_unused, evt_data)
 
     } else if(action === ActionTy.activate_win) {
         win_id_to_highlight = node_val.win_id;
+
+    } else if(action === ActionTy.open_rest) {
+        let seq = ASQ();
+        let curridx = 0;
+
+        for(let child_node_id of win_node.children) {
+            let child_val = D.tabs.by_node_id(child_node_id);
+
+            if(child_val.isOpen) {
+                //TODO RESUME HERE
+//                seq.then((done)=>{
+//                    chrome.tabs.move(child_val.tab_id,
+//                        { index: curridx }, ASQH.CC(done));
+//                });
+
+            } else {
+                seq.then((done)=>{
+                    // Open the tab
+                    child_val.being_opened = true;
+                    chrome.tabs.create(
+                        {
+                            windowId: win_val.win_id,
+                            index: curridx,
+                            url: chrome.runtime.getURL('/src/view/newtab.html')
+                                    + '#' + child_node_id,
+                            pinned: !!child_val.isPinned,
+                        },
+                        ASQH.CC(done)
+                    );
+                });
+            }
+
+            ++curridx;
+
+        } //foreach child
+
+        // At the end, update everything
+        seq.val(()=>{
+            updateTabIndexValues(win_node, win_node.children);
+
+            // Set the highlights in the tree appropriately
+            T.treeobj.flag_node(win_node.id);
+            already_flagged_window = true;
+            chrome.windows.get(win_val.win_id, {populate:true}, flagOnlyCurrentTabCC);
+
+            win_id_to_highlight = win_val.win_id;
+        });
 
     } else if(  action === ActionTy.open_win ||
                 action === ActionTy.open_win_and_tab) {
@@ -1668,7 +1732,7 @@ function treeOnSelect(_evt_unused, evt_data)
                 already_flagged_window = true;
                 chrome.windows.get(win_val.win_id, {populate:true}, flagOnlyCurrentTabCC);
 
-                win_id_to_highlight = ctab.windowId;
+                win_id_to_highlight = win_val.win_id;
 
             } //tabs.create callback
         ); //tabs.create
