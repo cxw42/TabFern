@@ -85,7 +85,9 @@ const CFG_DEFAULTS = {
     [CFGS_SCROLLBAR_COLOR]: '',     // none by default
     [CFG_URL_IN_TOOLTIP]: false,
     [CFG_TITLE_IN_TOOLTIP]: false,
-    [CFG_OPEN_REST_ON_CLICK]: CFG_OROC_DO,
+    [CFG_OPEN_REST_ON_CLICK]: CFG_OROC_DO_NOT,
+        // Default to "not" since the point of tab-by-tab is largely to avoid
+        // opening huge numbers of tabs to get the one you want.
 };
 
 //////////////////////////////////////////////////////////////////////////

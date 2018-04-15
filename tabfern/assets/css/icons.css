@@ -60,6 +60,10 @@
     background-image: url(/assets/icons/text_padding_top.png);
 }
 
+.vakata-context .fff-application-cascade {
+    background-image: url(/assets/icons/application_cascade.png);
+}
+
 /* Class for icons with no content.  Used in jstree.set_icon() when the
  * icon is actually being set using CSS.
  */
@@ -87,7 +91,8 @@
 .vakata-context .fff-pencil,
 .vakata-context .fff-cross,
 .vakata-context .fff-picture-delete,
-.vakata-context .fff-text-padding-top {
+.vakata-context .fff-text-padding-top,
+.vakata-context .fff-application-cascade {
     background-repeat: no-repeat;
     background-position: center center;
 }

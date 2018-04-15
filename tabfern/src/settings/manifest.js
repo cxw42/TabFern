@@ -5,7 +5,9 @@
 (function(root){
     // Shortcuts for frequently-used items
     function icon(cls) { return `<i class="${cls}"></i>`; }
-    function issue(num) { return `(<a href="https://github.com/cxw42/TabFern/issues/${num|0}">#${num|0}</a>)`; }
+    function issue(num, noparens) {
+        return `${noparens?'':'('}<a href="https://github.com/cxw42/TabFern/issues/${num|0}">#${num|0}</a>${noparens?'':')'}`;
+    }
     function brplain(text){return `<br/><span class="plain">${text}</span>`;}
 
     let ham = icon('fa fa-bars');
@@ -295,6 +297,19 @@ bar (it will start with "file://")</li>
                 "type": "description",
                 "text":
 `<ul>
+<li class="gold-star">Opening one tab at a time!  Yes, the wait is over!  ${issue(35)}
+    <ul>
+    <li>Click on a tab in a closed window to open only that tab.</li>
+    <li>Click the "close and save" icon (${icon('fff-picture-delete')})
+        on a tab's tree entry to close only that tab.</li>
+    <li>To open any remaining closed tabs, right-click the window and choose
+        "Open all tabs."  (See ${settings} Behaviour ${gt} Partly-open windows
+        for another option.)</li>
+    </ul>
+    <p>Please note that if Chrome crashes while you have only some tabs open, the
+    recovered window will show up in TabFern as a separate, unsaved window
+    (related to ${issue(41, true)}).</p>
+</li>
 <li>Tooltips on the action buttons.  ${issue(117)}</li>
 <li>${settings} Appearance ${gt} Tooltips now has options to show the
 URL and title of each item in a tooltip on that item.  This way you can

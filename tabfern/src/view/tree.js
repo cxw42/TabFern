@@ -246,7 +246,26 @@ function unflagAllWindows() {
             undefined,  // any parent
             true        // true => don't need an event
     );
-};
+} //unflagAllWindows()
+
+/// See if any children are closed.
+/// @param win_nodey {mixed} The window in question
+function isWinPartlyOpen(win_nodey)
+{
+    let win_node = T.treeobj.get_node(win_nodey);
+    if(!win_node) return false;
+
+    // Window can't be partly open if it's closed
+    if(!D.windows.by_node_id(win_node.id, 'isOpen')) return false;
+
+    for(let child_node_id of win_node.children) {
+        if(!D.tabs.by_node_id(child_node_id, 'isOpen')) {
+            return true;    // At least one closed child => partly open
+        }
+    } //foreach child
+
+    return false;           // All open children => not partly open
+} //isWinPartlyOpen()
 
 ////////////////////////////////////////////////////////////////////////// }}}1
 // UI Controls // {{{1
@@ -457,6 +476,39 @@ function actionAsContextMenuCallback(action_function)
         action_function(node.id, node, null, data.element);
     };
 } //actionAsContextMenuCallback
+
+/// chrome.windows.get() callback to flag the current tab in a window.
+/// Helper for actionOpenRestOfTabs(), treeOnSelect() and winOnFocusChanged().
+function flagOnlyCurrentTab(cwin)
+{
+    let win_node_id = D.windows.by_win_id(cwin.id, 'node_id');
+    let win_node = T.treeobj.get_node(win_node_id);
+    if(!win_node) return;
+
+    // Clear the highlights of the tabs
+    T.treeobj.flag_node(win_node.children, false);
+
+    // Flag the current tab
+    for(let ctab of cwin.tabs) {
+        if(ctab.active) {
+            let tab_node_id = D.tabs.by_tab_id(ctab.id, 'node_id');
+            if(tab_node_id) T.treeobj.flag_node(tab_node_id);
+            break;
+        }
+    } //foreach ctab
+} //flagOnlyCurrentTab()
+
+// Chrome callback version of flagOnlyCurrentTab().
+function flagOnlyCurrentTabCC(cwin)
+{
+    if(!isLastError()) {
+        flagOnlyCurrentTab(cwin);
+    } else {
+        log.info({"Couldn't flag": chrome.runtime.lastError});
+    }
+} //flagOnlyCurrentTabCC
+
+// == Window actions ===================================================== {{{2
 
 /// Prompt the user for a new name for a window, and rename if the user
 /// hits OK.
@@ -679,6 +731,52 @@ function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el,
     } //endif confirmation required
 } //actionDeleteWindow
 
+/// Open the rest of the tabs in a partly-open window.
+/// @param win_node_id {string} the ID of the window's node
+/// @param win_node {object} the window's node
+function actionOpenRestOfTabs(win_node_id, win_node, unused_action_id, unused_action_el)
+{
+    if(!win_node_id || !win_node) return;
+    let win_val = D.windows.by_node_id(win_node_id);
+    if(!win_val) return;
+    if(!isWinPartlyOpen(win_node)) return;
+
+    let seq = ASQ();
+
+    win_node.children.forEach((child_node_id, curridx)=>{
+        let child_val = D.tabs.by_node_id(child_node_id);
+
+        if(!child_val.isOpen) {     // Open the tab
+            seq.then((done)=>{
+                child_val.being_opened = true;
+                chrome.tabs.create(
+                    {
+                        windowId: win_val.win_id,
+                        index: curridx,
+                        url: chrome.runtime.getURL('/src/view/newtab.html')
+                                + '#' + child_node_id,
+                        pinned: !!child_val.isPinned,
+                    },
+                    ASQH.CC(done)
+                );
+            });
+        } //endif child is closed
+    }); //foreach child
+
+    // At the end, update everything
+    seq.val(()=>{
+        updateTabIndexValues(win_node, win_node.children);
+
+        // Set the highlights in the tree appropriately
+        T.treeobj.flag_node(win_node.id);
+        already_flagged_window = true;
+        chrome.windows.get(win_val.win_id, {populate:true}, flagOnlyCurrentTabCC);
+    });
+} //actionOpenRestOfTabs
+
+// }}}2
+// == Tab actions ======================================================== {{{2
+
 /// Toggle the top border on a node.  This is a hack until I can add
 /// dividers.
 function actionToggleTabTopBorder(node_id, node, unused_action_id, unused_action_el)
@@ -850,7 +948,7 @@ function actionDeleteTab(node_id, node, unused_action_id, unused_action_el,
 function actionCloseTabAndSave(tab_node_id, tab_node, unused_action_id, unused_action_el)
 {
     let tab_val = D.tabs.by_node_id(tab_node_id);
-    if(!tab_val || tab_val.tab_id === K.NONE) return;
+    if(!tab_val || tab_val.tab_id === K.NONE) return;   //already closed => nop
     let window_node_id = tab_node.parent;
     M.remember(window_node_id);
 
@@ -870,6 +968,7 @@ function actionCloseTabAndSave(tab_node_id, tab_node, unused_action_id, unused_a
 
 } //actionCloseTabAndSave
 
+// }}}2
 ////////////////////////////////////////////////////////////////////////// }}}1
 // Tree-node creation // {{{1
 
@@ -1362,37 +1461,6 @@ function DBG_printSaveData()
 ////////////////////////////////////////////////////////////////////////// }}}1
 // jstree callbacks // {{{1
 
-/// Helper for treeOnSelect() and winOnFocusChanged().
-/// chrome.windows.get() callback to flag the current tab in a window
-function flagOnlyCurrentTab(cwin)
-{
-    let win_node_id = D.windows.by_win_id(cwin.id, 'node_id');
-    let win_node = T.treeobj.get_node(win_node_id);
-    if(!win_node) return;
-
-    // Clear the highlights of the tabs
-    T.treeobj.flag_node(win_node.children, false);
-
-    // Flag the current tab
-    for(let ctab of cwin.tabs) {
-        if(ctab.active) {
-            let tab_node_id = D.tabs.by_tab_id(ctab.id, 'node_id');
-            if(tab_node_id) T.treeobj.flag_node(tab_node_id);
-            break;
-        }
-    } //foreach ctab
-} //flagOnlyCurrentTab()
-
-// Chrome callback version of flagOnlyCurrentTab()
-function flagOnlyCurrentTabCC(cwin)
-{
-    if(!isLastError()) {
-        flagOnlyCurrentTab(cwin);
-    } else {
-        log.info({"Couldn't flag": chrome.runtime.lastError});
-    }
-} //flagOnlyCurrentTabCC
-
 /// ID for a timeout shared by newWinFocusCheckTest() and treeOnSelect()
 var awaitSelectTimeoutId = undefined;
 
@@ -1527,16 +1595,8 @@ function treeOnSelect(evt_unused, evt_data)
 
     if(win_val.isOpen) {
         if(is_win) {    // clicked on an open window
-            // See if any children are closed
-            let child_closed = false;
-            for(let child_node_id of win_node.children) {
-                if(!D.tabs.by_node_id(child_node_id, 'isOpen')) {
-                    child_closed = true;
-                    break;
-                }
-            } //foreach child
 
-            if( child_closed &&
+            if( isWinPartlyOpen(win_node) &&
                 (getStringSetting(CFG_OPEN_REST_ON_CLICK) === CFG_OROC_DO)
             ) {
                 action = ActionTy.open_rest;
@@ -1574,40 +1634,8 @@ function treeOnSelect(evt_unused, evt_data)
         win_id_to_highlight = node_val.win_id;
 
     } else if(action === ActionTy.open_rest) {
-        let seq = ASQ();
-
         win_id_to_highlight = win_val.win_id;
-
-        win_node.children.forEach((child_node_id, curridx)=>{
-            let child_val = D.tabs.by_node_id(child_node_id);
-
-            if(!child_val.isOpen) {     // Open the tab
-                seq.then((done)=>{
-                    child_val.being_opened = true;
-                    chrome.tabs.create(
-                        {
-                            windowId: win_val.win_id,
-                            index: curridx,
-                            url: chrome.runtime.getURL('/src/view/newtab.html')
-                                    + '#' + child_node_id,
-                            pinned: !!child_val.isPinned,
-                        },
-                        ASQH.CC(done)
-                    );
-                });
-            } //endif child is closed
-        }); //foreach child
-
-        // At the end, update everything
-        seq.val(()=>{
-            updateTabIndexValues(win_node, win_node.children);
-
-            // Set the highlights in the tree appropriately
-            T.treeobj.flag_node(win_node.id);
-            already_flagged_window = true;
-            chrome.windows.get(win_val.win_id, {populate:true}, flagOnlyCurrentTabCC);
-
-        });
+        actionOpenRestOfTabs(win_node.id, win_node, null, null);
 
     } else if(  action === ActionTy.open_win ||
                 action === ActionTy.open_win_and_tab) {
@@ -1616,28 +1644,7 @@ function treeOnSelect(evt_unused, evt_data)
         // can't handle them.
         if(window_is_being_restored) return;
 
-//        // A closed window or tab.  Make sure we have the window.
-//        let win_node;
-//        let win_val;
-//
-//        if(is_win) {    // A closed window
-//            win_node = node;
-//            win_node_id = win_node.id;
-//            win_val = node_val;
-//
-//        } else {        // A closed tab - get its window record
-//            let parent_node_id = node.parent;
-//            if(!parent_node_id) return;
-//            let parent_node = T.treeobj.get_node(parent_node_id);
-//            if(!parent_node) return;
-//
-//            win_node = parent_node;
-//            win_node_id = win_node.id;
-//            win_val = D.windows.by_node_id(parent_node_id);
-//            if(!win_val) return;
-//        }
-
-        let urls=[];    // Open all the tabs
+        let urls=[];
         let tab_node_ids;
 
         if(action === ActionTy.open_win) {
@@ -1645,7 +1652,8 @@ function treeOnSelect(evt_unused, evt_data)
                 let child_val = D.tabs.by_node_id(child_id);
                 urls.push(child_val.raw_url);
             }
-        } else {
+            tab_node_ids = win_node.children;
+        } else {    // Open only one tab
             urls.push(tab_val.raw_url);
             tab_node_ids = [tab_node.id];
         }
@@ -2803,20 +2811,13 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
     }
 
     // What kind of node is it?
-    let nodeType, win_val, tab_val;
-    {
-        win_val = D.windows.by_node_id(node.id);
-        if(win_val) nodeType = K.IT_WIN;
-    }
+    let nodeType, val;
+    val = D.val_by_node_id(node.id);
+    if(!val) return false;
 
-    if(!nodeType) {
-        tab_val = D.tabs.by_node_id(node.id);
-        if(tab_val) nodeType = K.IT_TAB;
-    }
+    nodeType = val.ty;
 
-    if(!nodeType) return false;     // A node type we don't know about
-
-    // -------
+    // --- Context menu for a tab ---
 
     if(nodeType === K.IT_TAB) {
         let tabItems = {
@@ -2836,7 +2837,7 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
             },
         };
 
-        if(tab_val.isOpen) {
+        if(val.isOpen) {
             tabItems.closeItem = {
                     label: 'Close and remember',
                     icon: 'fff-picture-delete',
@@ -2848,6 +2849,8 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
 
         return tabItems;
     }
+
+    // --- Context menu for a window ---
 
     if(nodeType === K.IT_WIN) {
         let winItems = {};
@@ -2864,7 +2867,7 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
             };
 
         // Forget/Remember
-        if( win_val.isOpen && (win_val.keep === K.WIN_KEEP) ) {
+        if( val.isOpen && (val.keep === K.WIN_KEEP) ) {
             winItems.forgetItem = {
                 label: "Forget but don't close",
                 title: "Do not save this window when it is closed",
@@ -2872,7 +2875,7 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
                 action:
                     function(){actionForgetWindow(node.id, node, null, null);}
             };
-        } else if( win_val.isOpen && (win_val.keep === K.WIN_NOKEEP) ) {
+        } else if( val.isOpen && (val.keep === K.WIN_NOKEEP) ) {
             winItems.rememberItem = {
                 label: "Remember",
                 title: "Save this window when it is closed",
@@ -2882,13 +2885,24 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
             };
         }
 
-        if(win_val.isOpen) {
+        if(val.isOpen) {
             winItems.closeItem = {
                     label: 'Close and remember',
                     icon: 'fff-picture-delete',
                     action:
                         function(){actionCloseWindowAndSave(node.id,node,null,null);}
                 };
+        }
+
+        if( isWinPartlyOpen(node) &&
+            (getStringSetting(CFG_OPEN_REST_ON_CLICK) === CFG_OROC_DO_NOT)
+        ) {
+            winItems.openAllItem = {
+                label: 'Open all tabs',
+                icon: 'fff-application-cascade',
+                action:
+                    function(){actionOpenRestOfTabs(node.id,node,null,null);}
+            };
         }
 
         winItems.deleteItem = {

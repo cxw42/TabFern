@@ -79,3 +79,21 @@
     font-weight: lighter;
     color: #999999;
 }
+
+.setting .fff-pencil {
+    content: url(/assets/icons/pencil.png);
+}
+
+.setting .fff-picture-delete {
+    content: url(/assets/icons/picture_delete.png);
+}
+
+.setting .fff-page-white-with-red-banner {
+    content: url(/assets/icons/page_white_red_banner.png);
+}
+
+.setting .fff-text-padding-top {
+    content: url(/assets/icons/text_padding_top.png);
+}
+
+/* vi: set ts=4 sts=4 sw=4 et ai: */

@@ -130,3 +130,19 @@ body.measuring .tab-content, body.measuring #search-result-container {
     opacity: 0;
     overflow: hidden;
 }
+
+/* Nested lists, and paragraphs in lists */
+ul li ul {
+    margin-left: 2em;
+}
+
+li.gold-star > p {      /* HACK */
+    margin-left: 16px;
+    margin-bottom: 0px;
+}
+
+ul li ul li ul {
+    margin-left: 4em;
+}
+
+/* vi: set ts=4 sts=4 sw=4 et ai: */
