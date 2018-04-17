@@ -615,6 +615,7 @@
     /// Updates the item, but does not touch the Chrome tab.
     /// As a result, the item takes values from the tab.
     /// ** NOTE ** Does NOT update the parent's val.ordered_url_hash.
+    /// ** NOTE ** Does NOT put the tab item in order under the parent
     /// ** NOTE ** Does NOT attach any child nodes to tabs.
     /// @param tab_vorny {mixed} The item
     /// @param ctab {Chrome Tab} The open tab

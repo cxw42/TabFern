@@ -2,6 +2,15 @@
 // Copyright (c) cxw42, 2017--2018
 // See /doc/design.md for information about notation and organization.
 
+// TODO: fix all move_node calls for partly-open windows
+
+// TODO: dnd - when rearranging tabs in a partly-open window, the positions
+// get off.  I think when dropping from before a closed tab to after a
+// closed tab.
+
+// maybe todo: option, true by default, to only open tree for collapsed,
+// closed window.
+
 // TODO break more of this into separate modules
 
 console.log(`=============================================================
@@ -266,6 +275,35 @@ function isWinPartlyOpen(win_nodey)
 
     return false;           // All open children => not partly open
 } //isWinPartlyOpen()
+
+/// Convert a Chrome tab index to an index in the tree for a window,
+/// even if the window is partly open.
+/// @pre The window must be open.
+/// @param win_nodey {mixed} The window in question
+/// @param cidx {nonnegative integer} the Chrome ctab.index
+function treeIdxByChromeIdx(win_nodey, cidx)
+{
+    let win_node = T.treeobj.get_node(win_nodey);
+    if(!win_node) return false;
+
+    // Window can't be partly open if it's closed
+    if(!D.windows.by_node_id(win_node.id, 'isOpen')) return false;
+    let nkids = win_node.children.length;
+
+    // #cidx is the number of open tabs we have to skip to get to where
+    // we want to insert.
+
+    let remaining = cidx;
+    let child_idx;
+    for(child_idx=0; (remaining > 0) && (child_idx <= nkids); ++child_idx) {
+        let child_node_id = win_node.children[child_idx];
+        if(D.tabs.by_node_id(child_node_id, 'isOpen')) {
+            --remaining;
+        }
+    }
+
+    return child_idx;
+} //treeIdxByChromeIdx()
 
 ////////////////////////////////////////////////////////////////////////// }}}1
 // UI Controls // {{{1
@@ -2197,7 +2235,8 @@ var tabOnCreated = (function(){
 
             // Just put it where it now belongs.
             T.treeobj.because('chrome', 'move_node',
-                    tab_val.node_id, win_node_id, ctab.index);
+                    tab_val.node_id, win_node_id,
+                    treeIdxByChromeIdx(win_node_id, ctab.index));
 
             // Design decision: rearranging tabs doesn't trigger a merge check
 
@@ -2211,8 +2250,13 @@ var tabOnCreated = (function(){
             let tab_node_id = createNodeForTab(ctab, win_node_id);
 
             // Put it in the right place, since createNodeForTab adds at end.
-            T.treeobj.because('chrome','move_node',
-                    tab_node_id, win_node_id, ctab.index);
+            // TODO if window is partly open, ctab.index is too low by the
+            // number of closed tabs before ctab.index.  Adjust accordingly.
+            let treeidx = treeIdxByChromeIdx(win_node_id, ctab.index);
+            if(treeidx !== false) {
+                T.treeobj.because('chrome','move_node',
+                        tab_node_id, win_node_id, treeidx);
+            }
 
             tab_val = D.tabs.by_tab_id(ctab.id);
 
