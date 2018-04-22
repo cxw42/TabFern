@@ -176,47 +176,6 @@ function copyTruthyProperties(dest, source, property_names, modifier)
 ////////////////////////////////////////////////////////////////////////// }}}1
 // General record helpers // {{{1
 
-/// Set the tab.index values of the tab nodes in a window.  Assumes that
-/// the nodes are in the proper order in the tree.  Only uses the model;
-/// doesn't touch the cwin or ctabs.
-/// As a convenience, also updates the window's ordered_url_hash.  This
-/// function is generally called when something has changed that requires
-/// recalculation anyway.
-///
-/// \pre    #win_node_id is the id of a node that both exists and represents
-///         a window.
-///
-/// @param win_nodey {mixed} The window, in any form accepted by jstree.get_node
-/// @param as_open {Array} optional array of nodes to treat as if they were open
-function updateTabIndexValues(win_nodey, as_open = [])
-{
-    // NOTE: later, when adding nested trees, see
-    // https://stackoverflow.com/a/10823248/2877364 by
-    // https://stackoverflow.com/users/106224/boltclock
-
-    let win_node = T.treeobj.get_node(win_nodey);
-    if(win_node===false) return;
-
-    let tab_index=0;
-    for(let tab_node_id of win_node.children) {
-        let tab_val = D.tabs.by_node_id(tab_node_id);
-
-        if( tab_val &&
-            (tab_val.isOpen || (as_open.indexOf(tab_node_id)!== -1) )
-        ) {
-            tab_val.index = tab_index;
-            ++tab_index;
-        }
-    }
-
-    let old_hash = D.windows.by_node_id(win_node.id, 'ordered_url_hash'); //DEBUG
-
-    M.updateOrderedURLHash(win_node.id);
-
-    let new_hash = D.windows.by_node_id(win_node.id, 'ordered_url_hash'); //DEBUG
-    log.trace(`win ${win_node.id} hash from ${old_hash} to ${new_hash}`); //DEBUG
-} //updateTabIndexValues
-
 /// Get the size of a window, as an object
 /// @param win {DOM window} The window
 function getWindowSize(win)
@@ -256,92 +215,6 @@ function unflagAllWindows() {
             true        // true => don't need an event
     );
 } //unflagAllWindows()
-
-/// See if any children are closed.
-/// @param win_nodey {mixed} The window in question
-function isWinPartlyOpen(win_nodey)
-{
-    let win_node = T.treeobj.get_node(win_nodey);
-    if(!win_node) return false;
-
-    // Window can't be partly open if it's closed
-    if(!D.windows.by_node_id(win_node.id, 'isOpen')) return false;
-
-    for(let child_node_id of win_node.children) {
-        if(!D.tabs.by_node_id(child_node_id, 'isOpen')) {
-            return true;    // At least one closed child => partly open
-        }
-    } //foreach child
-
-    return false;           // All open children => not partly open
-} //isWinPartlyOpen()
-
-/// Convert a Chrome tab index to an index in the tree for a window,
-/// even if the window is partly open.
-/// @pre The window must be open.
-/// @param win_nodey {mixed} The window in question
-/// @param cidx {nonnegative integer} the Chrome ctab.index
-function treeIdxByChromeIdx(win_nodey, cidx)
-{
-    let win_node = T.treeobj.get_node(win_nodey);
-    if(!win_node) return false;
-
-    // Window can't be partly open if it's closed
-    if(!D.windows.by_node_id(win_node.id, 'isOpen')) return false;
-    let nkids = win_node.children.length;
-
-    // #cidx is the number of open tabs we have to skip to get to where
-    // we want to insert.
-
-    let remaining = cidx;   //                     ||
-    let child_idx;          // Note: this was <=,  VV  but I don't recall why.
-    for(child_idx=0; (remaining > 0) && (child_idx < nkids); ++child_idx) {
-                            //                     ^^
-        let child_node_id = win_node.children[child_idx];
-        if(D.tabs.by_node_id(child_node_id, 'isOpen')) {
-            --remaining;
-        }
-    }
-
-    return child_idx;   // jstree index, so 0 <= retval <= nkids
-} //treeIdxByChromeIdx()
-
-/// Convert a tree index to a Chrome tab index in a window,
-/// even if the window is partly open.
-/// @pre The window must be open.
-/// @param win_nodey {mixed} The window in question
-/// @param tree_item {mixed} The child node or index whose ctab index we want.
-///         If string, the node ID; otherwise, the tree index in the tree.
-/// @pre #tree_idx <= number of children of #win_nodey
-function chromeIdxOfTab(win_nodey, tree_item)
-{
-    let win_node = T.treeobj.get_node(win_nodey);
-    if(!win_node) return false;
-
-    // Window can't be partly open if it's closed
-    if(!D.windows.by_node_id(win_node.id, 'isOpen')) return false;
-    let nkids = win_node.children.length;
-
-    let tree_idx;
-    if(typeof tree_item !== 'string') {
-        tree_idx = tree_item;
-    } else {
-        tree_idx = win_node.children.indexOf(tree_item);
-        if(tree_idx === -1) return false;
-    }
-
-    let retval = tree_idx;
-    for(let child_idx=0; child_idx < tree_idx; ++child_idx) {
-        let child_node_id = win_node.children[child_idx];
-
-        // Closed tabs don't contribute to the Chrome tab count
-        if(!D.tabs.by_node_id(child_node_id, 'isOpen')) {
-            --retval;
-        }
-    } //for tree-node children
-
-    return retval;
-} //chromeIdxOfTab()
 
 ////////////////////////////////////////////////////////////////////////// }}}1
 // UI Controls // {{{1
@@ -815,7 +688,7 @@ function actionOpenRestOfTabs(win_node_id, win_node, unused_action_id, unused_ac
     if(!win_node_id || !win_node) return;
     let win_val = D.windows.by_node_id(win_node_id);
     if(!win_val) return;
-    if(!isWinPartlyOpen(win_node)) return;
+    if(!M.isWinPartlyOpen(win_node)) return;
 
     let seq = ASQ();
 
@@ -830,7 +703,7 @@ function actionOpenRestOfTabs(win_node_id, win_node, unused_action_id, unused_ac
                         windowId: win_val.win_id,
                         index: curridx,
                             // Chrome magically bumps other tabs out of the way,
-                            // so we don't need to use chromeIdxOfTab here.
+                            // so we don't need to use M.chromeIdxOfTab here.
                         url: chrome.runtime.getURL('/src/view/newtab.html')
                                 + '#' + child_node_id,
                         pinned: !!child_val.isPinned,
@@ -843,7 +716,7 @@ function actionOpenRestOfTabs(win_node_id, win_node, unused_action_id, unused_ac
 
     // At the end, update everything
     seq.val(()=>{
-        updateTabIndexValues(win_node, win_node.children);
+        M.updateTabIndexValues(win_node, win_node.children);
 
         // Set the highlights in the tree appropriately
         T.treeobj.flag_node(win_node.id);
@@ -1040,7 +913,7 @@ function actionCloseTabAndSave(tab_node_id, tab_node, unused_action_id, unused_a
     })
     .val(()=>{
         // Refresh the tab.index values for the remaining tabs
-        updateTabIndexValues(window_node_id);
+        M.updateTabIndexValues(window_node_id);
         saveTree();
     });
 
@@ -1342,9 +1215,9 @@ function connectChromeWindowToTreeWindowItem(cwin, existing_win, options = {})
 
     // Note: We do not need to update existing_win.val.ordered_url_hash.
     // Since we got here, we know that it was a match.
-    // However, at the moment, updateTabIndexValues() does it anyway.
+    // However, at the moment, M.updateTabIndexValues() does it anyway.
 
-    updateTabIndexValues(existing_win.node.id);
+    M.updateTabIndexValues(existing_win.node.id);
     T.treeobj.redraw_node(existing_win.node);
     return true;
 } //connectChromeWindowToTreeWindowItem()
@@ -1678,7 +1551,7 @@ function treeOnSelect(evt_unused, evt_data)
     if(win_val.isOpen) {
         if(is_win) {    // clicked on an open window
 
-            if( isWinPartlyOpen(win_node) &&
+            if( M.isWinPartlyOpen(win_node) &&
                 (getStringSetting(CFG_OPEN_REST_ON_CLICK) === CFG_OROC_DO)
             ) {
                 action = ActionTy.open_rest;
@@ -1795,7 +1668,7 @@ function treeOnSelect(evt_unused, evt_data)
         //    let tab_val = D.tabs.by_node_id(other_tab_node_id);
         //    if(tab_val.isOpen) ++newindex;
         //}
-        let newindex = chromeIdxOfTab(win_node_id, tab_node.id);
+        let newindex = M.chromeIdxOfTab(win_node_id, tab_node.id);
 
         // Open the tab
         tab_val.being_opened = true;
@@ -1810,7 +1683,7 @@ function treeOnSelect(evt_unused, evt_data)
             },
             function(ctab) {
                 // tabOnCreated connects the node to the ctab.
-                updateTabIndexValues(win_node, [tab_node.id]);
+                M.updateTabIndexValues(win_node, [tab_node.id]);
 
                 // Set the highlights in the tree appropriately
                 T.treeobj.flag_node(win_node.id);
@@ -2279,7 +2152,7 @@ var tabOnCreated = (function(){
             log.info('   - That tab already exists.');
 
             // Just put it where it now belongs.
-            let treeidx = treeIdxByChromeIdx(win_node_id, ctab.index);
+            let treeidx = M.treeIdxByChromeIdx(win_node_id, ctab.index);
             if(treeidx !== false) { // tabOnCreated => the tab should exist
                 T.treeobj.because('chrome', 'move_node',
                     tab_val.node_id, win_node_id, treeidx);
@@ -2288,7 +2161,7 @@ var tabOnCreated = (function(){
             // Design decision: rearranging tabs doesn't trigger a merge check
 
             // Make sure all the other indices are up to date
-            updateTabIndexValues(win_node_id);
+            M.updateTabIndexValues(win_node_id);
 
             saveTree(true, cbk);
 
@@ -2299,7 +2172,7 @@ var tabOnCreated = (function(){
             // Put it in the right place, since createNodeForTab adds at end.
             // Note: if window is partly open, ctab.index is too low by the
             // number of closed tabs before ctab.index.  Adjust accordingly.
-            let treeidx = treeIdxByChromeIdx(win_node_id, ctab.index);
+            let treeidx = M.treeIdxByChromeIdx(win_node_id, ctab.index);
             if(treeidx !== false) {
                 T.treeobj.because('chrome','move_node',
                         tab_node_id, win_node_id, treeidx);
@@ -2307,7 +2180,7 @@ var tabOnCreated = (function(){
 
             tab_val = D.tabs.by_tab_id(ctab.id);
 
-            updateTabIndexValues(win_node_id);
+            M.updateTabIndexValues(win_node_id);
 
             let seq = ASQ();
 
@@ -2423,8 +2296,8 @@ function tabOnMoved(tabid, moveinfo)
     let tab_node_id = D.tabs.by_tab_id(tabid, 'node_id');
     if(!tab_node_id) return;
 
-    let from_idx = treeIdxByChromeIdx(window_node_id, moveinfo.fromIndex);
-    let to_idx = treeIdxByChromeIdx(window_node_id, moveinfo.toIndex);
+    let from_idx = M.treeIdxByChromeIdx(window_node_id, moveinfo.fromIndex);
+    let to_idx = M.treeIdxByChromeIdx(window_node_id, moveinfo.toIndex);
     if(from_idx === false || to_idx === false) {
         log.error(`Bad move indices: from ${from_idx} to ${to_idx}`);
         return;
@@ -2448,7 +2321,7 @@ function tabOnMoved(tabid, moveinfo)
 
     // Update the indices of all the tabs in this window.  This will update
     // the old tab and the new tab.
-    updateTabIndexValues(window_node_id);
+    M.updateTabIndexValues(window_node_id);
 
     saveTree();
 } //tabOnMoved
@@ -2501,7 +2374,7 @@ function tabOnRemoved(tabid, removeinfo)
     }
 
     // Refresh the tab.index values for the remaining tabs
-    updateTabIndexValues(window_node_id);
+    M.updateTabIndexValues(window_node_id);
 
     saveTree();
 } //tabOnRemoved
@@ -2528,7 +2401,7 @@ function tabOnDetached(tabid, detachinfo)
     tab_val.win_id = K.NONE;
     tab_val.index = K.NONE;
 
-    updateTabIndexValues(old_win_val.node_id);
+    M.updateTabIndexValues(old_win_val.node_id);
 
 } //tabOnDetached
 
@@ -2546,7 +2419,7 @@ function tabOnAttached(tabid, attachinfo)
     if(!new_win_val)    // ditto
         throw new Error("Unknown window attaching to???? "+attachinfo.newWindowId+' '+attachinfo.toString());
 
-    let tree_idx = treeIdxByChromeIdx(new_win_val.node_id, attachinfo.newPosition);
+    let tree_idx = M.treeIdxByChromeIdx(new_win_val.node_id, attachinfo.newPosition);
     log.info(`Attaching tab ${tabid} at `+
                 `ctabidx ${attachinfo.newPosition} => tree idx ${tree_idx}`);
     T.treeobj.because('chrome','move_node', tab_val.node_id, new_win_val.node_id,
@@ -2559,7 +2432,7 @@ function tabOnAttached(tabid, attachinfo)
     tab_val.win_id = attachinfo.newWindowId;
     tab_val.index = attachinfo.newPosition;
 
-    updateTabIndexValues(new_win_val.node_id);
+    M.updateTabIndexValues(new_win_val.node_id);
 } //tabOnAttached
 
 function tabOnReplaced(addedTabId, removedTabId)
@@ -2991,7 +2864,7 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
                 };
         }
 
-        if( isWinPartlyOpen(node) &&
+        if( M.isWinPartlyOpen(node) &&
             (getStringSetting(CFG_OPEN_REST_ON_CLICK) === CFG_OROC_DO_NOT)
         ) {
             winItems.openAllItem = {
@@ -3127,7 +3000,7 @@ var treeCheckCallback = (function()
             // so we don't have to update the tree here.
             // As above, delay to be on the safe side.
             ASQ().then((done)=>{
-                let ctab_idx = chromeIdxOfTab(dest_win_node_id, data.position);
+                let ctab_idx = M.chromeIdxOfTab(dest_win_node_id, data.position);
                 L.log.info(`Moving tab ${val.tab_id} pos ${data.position}` +
                             ` => ctab idx ${ctab_idx}`);
 
@@ -3183,8 +3056,8 @@ var treeCheckCallback = (function()
             // Whether or not the removal succeeded, update the tab indices
             // on both windows for safety.
             seq.val((result_unused)=>{
-                updateTabIndexValues(data.parent);
-                updateTabIndexValues(data.old_parent);
+                M.updateTabIndexValues(data.parent);
+                M.updateTabIndexValues(data.old_parent);
             });
 
         } //endif open parent window else
@@ -3210,16 +3083,16 @@ var treeCheckCallback = (function()
         // tab should have.  The tab node has already been moved, so the
         // index values match what will be the case once the ctab is created.
         ASQ().then((done)=>{
-            updateTabIndexValues(data.parent, [tab_node_id]);
+            M.updateTabIndexValues(data.parent, [tab_node_id]);
                 // [tab_node_id]: Treat the new tab as if it were open when
                 // computing index values.  This magically updates
                 // moving_val.index.
-            updateTabIndexValues(data.old_parent);
+            M.updateTabIndexValues(data.old_parent);
 
             moving_val.being_opened = true;
                 // so tabOnCreated doesn't duplicate it
 
-            let ctab_idx = chromeIdxOfTab(dest_win_node_id, moving_val.index);
+            let ctab_idx = M.chromeIdxOfTab(dest_win_node_id, moving_val.index);
             L.log.info(`Opening tab ${moving_val.tab_id} at `+
                         `pos ${moving_val.index} => ctab idx ${ctab_idx}`);
 

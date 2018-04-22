@@ -569,6 +569,150 @@
 //    }; //change
 
     // }}}1
+    // Mapping model indices /////////////////////////////////////////// {{{1
+
+    // The model stores ctab indices, and each tree node has an index under
+    // its parent.  These functions map between those indices.
+    //
+    // Mapping is used in: treeOnSelect(), tabOnCreated(), tabOnMoved(),
+    // tabOnAttached(), treeCheckCallback():move_open_tab_in_window(), and
+    // treeCheckCallback():open_tab_within_window().
+    //
+    // Refreshing tree indices is used in: actionOpenRestOfTabs(),
+    // actionCloseTabAndSave(), connectChromeWindowToTreeWindowItem(),
+    // treeOnSelect(), tabOnCreated():tab_on_created_inner(),
+    // tabOnMoved(), tabOnRemoved(), tabOnDetached(), tabOnAttached(),
+    // treeCheckCallback():move_open_tab_in_window(), and
+    // treeCheckCallback():open_tab_within_window(),
+
+    /// Set the tab.index values of the tab nodes in a window.  Assumes that
+    /// the nodes are in the proper order in the tree.  Only uses the model;
+    /// doesn't touch the cwin or ctabs.
+    /// As a convenience, also updates the window's ordered_url_hash.  This
+    /// function is generally called when something has changed that requires
+    /// recalculation anyway.
+    ///
+    /// \pre    #win_node_id is the id of a node that both exists and represents
+    ///         a window.
+    ///
+    /// @param win_nodey {mixed} The window, in any form accepted by jstree.get_node
+    /// @param as_open {Array} optional array of nodes to treat as if they were open
+    module.updateTabIndexValues = function updateTabIndexValues(win_nodey, as_open = [])
+    {
+        // NOTE: later, when adding nested trees, see
+        // https://stackoverflow.com/a/10823248/2877364 by
+        // https://stackoverflow.com/users/106224/boltclock
+
+        let win_node = T.treeobj.get_node(win_nodey);
+        if(win_node===false) return;
+
+        let tab_index=0;
+        for(let tab_node_id of win_node.children) {
+            let tab_val = D.tabs.by_node_id(tab_node_id);
+
+            if( tab_val &&
+                (tab_val.isOpen || (as_open.indexOf(tab_node_id)!== -1) )
+            ) {
+                tab_val.index = tab_index;
+                ++tab_index;
+            }
+        }
+
+        let old_hash = D.windows.by_node_id(win_node.id, 'ordered_url_hash'); //DEBUG
+
+        M.updateOrderedURLHash(win_node.id);
+
+        let new_hash = D.windows.by_node_id(win_node.id, 'ordered_url_hash'); //DEBUG
+        log.trace(`win ${win_node.id} hash from ${old_hash} to ${new_hash}`); //DEBUG
+    } //updateTabIndexValues
+
+    /// See if any children are closed.
+    /// @param win_nodey {mixed} The window in question
+    module.isWinPartlyOpen = function isWinPartlyOpen(win_nodey)
+    {
+        let win_node = T.treeobj.get_node(win_nodey);
+        if(!win_node) return false;
+
+        // Window can't be partly open if it's closed
+        if(!D.windows.by_node_id(win_node.id, 'isOpen')) return false;
+
+        for(let child_node_id of win_node.children) {
+            if(!D.tabs.by_node_id(child_node_id, 'isOpen')) {
+                return true;    // At least one closed child => partly open
+            }
+        } //foreach child
+
+        return false;           // All open children => not partly open
+    } //isWinPartlyOpen()
+
+    /// Convert a Chrome tab index to an index in the tree for a window,
+    /// even if the window is partly open.
+    /// @pre The window must be open.
+    /// @param win_nodey {mixed} The window in question
+    /// @param cidx {nonnegative integer} the Chrome ctab.index
+    module.treeIdxByChromeIdx = function treeIdxByChromeIdx(win_nodey, cidx)
+    {
+        let win_node = T.treeobj.get_node(win_nodey);
+        if(!win_node) return false;
+
+        // Window can't be partly open if it's closed
+        if(!D.windows.by_node_id(win_node.id, 'isOpen')) return false;
+        let nkids = win_node.children.length;
+
+        // #cidx is the number of open tabs we have to skip to get to where
+        // we want to insert.
+
+        let remaining = cidx;   //                     ||
+        let child_idx;          // Note: this was <=,  VV  but I don't recall why.
+        for(child_idx=0; (remaining > 0) && (child_idx < nkids); ++child_idx) {
+                                //                     ^^
+            let child_node_id = win_node.children[child_idx];
+            if(D.tabs.by_node_id(child_node_id, 'isOpen')) {
+                --remaining;
+            }
+        }
+
+        return child_idx;   // jstree index, so 0 <= retval <= nkids
+    } //treeIdxByChromeIdx()
+
+    /// Convert a tree index to a Chrome tab index in a window,
+    /// even if the window is partly open.
+    /// @pre The window must be open.
+    /// @param win_nodey {mixed} The window in question
+    /// @param tree_item {mixed} The child node or index whose ctab index we want.
+    ///         If string, the node ID; otherwise, the tree index in the tree.
+    /// @pre #tree_idx <= number of children of #win_nodey
+    module.chromeIdxOfTab = function chromeIdxOfTab(win_nodey, tree_item)
+    {
+        let win_node = T.treeobj.get_node(win_nodey);
+        if(!win_node) return false;
+
+        // Window can't be partly open if it's closed
+        if(!D.windows.by_node_id(win_node.id, 'isOpen')) return false;
+        let nkids = win_node.children.length;
+
+        let tree_idx;
+        if(typeof tree_item !== 'string') {
+            tree_idx = tree_item;
+        } else {
+            tree_idx = win_node.children.indexOf(tree_item);
+            if(tree_idx === -1) return false;
+        }
+
+        let retval = tree_idx;
+        for(let child_idx=0; child_idx < tree_idx; ++child_idx) {
+            let child_node_id = win_node.children[child_idx];
+
+            // Closed tabs don't contribute to the Chrome tab count
+            if(!D.tabs.by_node_id(child_node_id, 'isOpen')) {
+                --retval;
+            }
+        } //for tree-node children
+
+        return retval;
+    } //chromeIdxOfTab()
+
+    // }}}1
     // Attaching Chrome widgets to model items ///////////////////////// {{{1
 
     /// Attach a Chrome window to an existing window item.
