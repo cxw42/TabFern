@@ -809,6 +809,7 @@
 
     /// Remove the connection between #win_vorny and its Chrome window.
     /// Use this when the Chrome window has been closed.
+    /// NOTE: does not do anything with the tabs.
     /// @param win_vorny {mixed} The item
     /// @return {Boolean} true on success; false on error
     module.markWinAsClosed = function(win_vorny) {

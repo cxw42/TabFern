@@ -521,6 +521,7 @@ function actionRememberWindow(node_id, node, unused_action_id, unused_action_el)
 
 /// Close a window, but don't delete its tree nodes.  Used for saving windows.
 /// ** The caller must call saveTree() --- actionCloseWindowButDoNotSave() does not.
+/// TODO refactor this to use the model
 function actionCloseWindowButDoNotSave(node_id, node, unused_action_id, unused_action_el)
 {
     let win_val = D.windows.by_node_id(node_id);
