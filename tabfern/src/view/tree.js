@@ -293,17 +293,55 @@ function treeIdxByChromeIdx(win_nodey, cidx)
     // #cidx is the number of open tabs we have to skip to get to where
     // we want to insert.
 
-    let remaining = cidx;
-    let child_idx;
-    for(child_idx=0; (remaining > 0) && (child_idx <= nkids); ++child_idx) {
+    let remaining = cidx;   //                     ||
+    let child_idx;          // Note: this was <=,  VV  but I don't recall why.
+    for(child_idx=0; (remaining > 0) && (child_idx < nkids); ++child_idx) {
+                            //                     ^^
         let child_node_id = win_node.children[child_idx];
         if(D.tabs.by_node_id(child_node_id, 'isOpen')) {
             --remaining;
         }
     }
 
-    return child_idx;
+    return child_idx;   // jstree index, so 0 <= retval <= nkids
 } //treeIdxByChromeIdx()
+
+/// Convert a tree index to a Chrome tab index in a window,
+/// even if the window is partly open.
+/// @pre The window must be open.
+/// @param win_nodey {mixed} The window in question
+/// @param tree_item {mixed} The child node or index whose ctab index we want.
+///         If string, the node ID; otherwise, the tree index in the tree.
+/// @pre #tree_idx <= number of children of #win_nodey
+function chromeIdxOfTab(win_nodey, tree_item)
+{
+    let win_node = T.treeobj.get_node(win_nodey);
+    if(!win_node) return false;
+
+    // Window can't be partly open if it's closed
+    if(!D.windows.by_node_id(win_node.id, 'isOpen')) return false;
+    let nkids = win_node.children.length;
+
+    let tree_idx;
+    if(typeof tree_item !== 'string') {
+        tree_idx = tree_item;
+    } else {
+        tree_idx = win_node.children.indexOf(tree_item);
+        if(tree_idx === -1) return false;
+    }
+
+    let retval = tree_idx;
+    for(let child_idx=0; child_idx < tree_idx; ++child_idx) {
+        let child_node_id = win_node.children[child_idx];
+
+        // Closed tabs don't contribute to the Chrome tab count
+        if(!D.tabs.by_node_id(child_node_id, 'isOpen')) {
+            --retval;
+        }
+    } //for tree-node children
+
+    return retval;
+} //chromeIdxOfTab()
 
 ////////////////////////////////////////////////////////////////////////// }}}1
 // UI Controls // {{{1
@@ -781,7 +819,7 @@ function actionOpenRestOfTabs(win_node_id, win_node, unused_action_id, unused_ac
 
     let seq = ASQ();
 
-    win_node.children.forEach((child_node_id, curridx)=>{
+    win_node.children.forEach( (child_node_id, curridx)=>{
         let child_val = D.tabs.by_node_id(child_node_id);
 
         if(!child_val.isOpen) {     // Open the tab
@@ -791,6 +829,8 @@ function actionOpenRestOfTabs(win_node_id, win_node, unused_action_id, unused_ac
                     {
                         windowId: win_val.win_id,
                         index: curridx,
+                            // Chrome magically bumps other tabs out of the way,
+                            // so we don't need to use chromeIdxOfTab here.
                         url: chrome.runtime.getURL('/src/view/newtab.html')
                                 + '#' + child_node_id,
                         pinned: !!child_val.isPinned,
@@ -1504,9 +1544,12 @@ var awaitSelectTimeoutId = undefined;
 
 /// Process clicks on items in the tree.  Also works for keyboard navigation
 /// with arrow keys and Enter.
-/// TODO break "open window" out into a separate function.
+/// @param evt_unused {Event} Not currently used
+/// @param evt_data {Object} has fields node, action, selected, event.
 function treeOnSelect(evt_unused, evt_data)
 {
+    log.info({'treeOnSelect':evt_data});
+
     /// What kinds of things can happen as a result of a select event
     let ActionTy = Object.freeze({
         nop: 'nop',
@@ -1534,6 +1577,7 @@ function treeOnSelect(evt_unused, evt_data)
     // TODO figure out why this doesn't work: T.treeobj.deselect_node(node, true);
     T.treeobj.deselect_all(true);
         // Clear the selection.  True => no event due to this change.
+
     //log.info('Clearing flags treeonselect');
     //T.treeobj.clear_flags(true);
 
@@ -1745,12 +1789,13 @@ function treeOnSelect(evt_unused, evt_data)
 
     } else if(action === ActionTy.open_tab_in_win) {    // add tab to existing win
         // Figure out where to put it
-        let newindex=0;
-        for(let other_tab_node_id of win_node.children) {
-            if(other_tab_node_id === tab_node.id) break;
-            let tab_val = D.tabs.by_node_id(other_tab_node_id);
-            if(tab_val.isOpen) ++newindex;
-        }
+        //let newindex=0;
+        //for(let other_tab_node_id of win_node.children) {
+        //    if(other_tab_node_id === tab_node.id) break;
+        //    let tab_val = D.tabs.by_node_id(other_tab_node_id);
+        //    if(tab_val.isOpen) ++newindex;
+        //}
+        let newindex = chromeIdxOfTab(win_node_id, tab_node.id);
 
         // Open the tab
         tab_val.being_opened = true;
@@ -2234,9 +2279,11 @@ var tabOnCreated = (function(){
             log.info('   - That tab already exists.');
 
             // Just put it where it now belongs.
-            T.treeobj.because('chrome', 'move_node',
-                    tab_val.node_id, win_node_id,
-                    treeIdxByChromeIdx(win_node_id, ctab.index));
+            let treeidx = treeIdxByChromeIdx(win_node_id, ctab.index);
+            if(treeidx !== false) { // tabOnCreated => the tab should exist
+                T.treeobj.because('chrome', 'move_node',
+                    tab_val.node_id, win_node_id, treeidx);
+            }
 
             // Design decision: rearranging tabs doesn't trigger a merge check
 
@@ -2250,7 +2297,7 @@ var tabOnCreated = (function(){
             let tab_node_id = createNodeForTab(ctab, win_node_id);
 
             // Put it in the right place, since createNodeForTab adds at end.
-            // TODO if window is partly open, ctab.index is too low by the
+            // Note: if window is partly open, ctab.index is too low by the
             // number of closed tabs before ctab.index.  Adjust accordingly.
             let treeidx = treeIdxByChromeIdx(win_node_id, ctab.index);
             if(treeidx !== false) {
@@ -2363,13 +2410,10 @@ function tabOnUpdated(tabid, changeinfo, ctab)
     });
 } //tabOnUpdated
 
-/// Handle movements of tabs or tab groups within a window.
+/// Handle movements of open tabs or groups of tabs within a window.
 function tabOnMoved(tabid, moveinfo)
 {
     log.info({'Tab moved': tabid, 'toIndex': moveinfo.toIndex, moveinfo});
-
-    let from_idx = moveinfo.fromIndex;
-    let to_idx = moveinfo.toIndex;
 
     // Get the parent (window)
     let window_node_id = D.windows.by_win_id(moveinfo.windowId, 'node_id');
@@ -2379,9 +2423,15 @@ function tabOnMoved(tabid, moveinfo)
     let tab_node_id = D.tabs.by_tab_id(tabid, 'node_id');
     if(!tab_node_id) return;
 
+    let from_idx = treeIdxByChromeIdx(window_node_id, moveinfo.fromIndex);
+    let to_idx = treeIdxByChromeIdx(window_node_id, moveinfo.toIndex);
+    if(from_idx === false || to_idx === false) {
+        log.error(`Bad move indices: from ${from_idx} to ${to_idx}`);
+        return;
+    }
+
     // Move the tree node
-    //log.info('Moving tab from ' + from_idx.toString() + ' to ' +
-    //            to_idx.toString());
+    log.info(`Moving tab from ${from_idx} to ${to_idx}`);
 
     // As far as I can tell, in jstree, indices point between list
     // elements.  E.g., with n items, index 0 is before the first and
@@ -2496,8 +2546,11 @@ function tabOnAttached(tabid, attachinfo)
     if(!new_win_val)    // ditto
         throw new Error("Unknown window attaching to???? "+attachinfo.newWindowId+' '+attachinfo.toString());
 
+    let tree_idx = treeIdxByChromeIdx(new_win_val.node_id, attachinfo.newPosition);
+    log.info(`Attaching tab ${tabid} at `+
+                `ctabidx ${attachinfo.newPosition} => tree idx ${tree_idx}`);
     T.treeobj.because('chrome','move_node', tab_val.node_id, new_win_val.node_id,
-            attachinfo.newPosition);
+            tree_idx);
 
     // Open after moving because otherwise the window might not have any
     // children yet.
@@ -3062,7 +3115,8 @@ var treeCheckCallback = (function()
         if( !val || val.tab_id === K.NONE ) return;
 
         // Which window we're moving it to
-        let parent_val = D.windows.by_node_id(data.parent);
+        let dest_win_node_id = data.parent;
+        let parent_val = D.windows.by_node_id(dest_win_node_id);
         if(!parent_val) return;
 
         if(parent_val.isOpen) {
@@ -3073,8 +3127,12 @@ var treeCheckCallback = (function()
             // so we don't have to update the tree here.
             // As above, delay to be on the safe side.
             ASQ().then((done)=>{
+                let ctab_idx = chromeIdxOfTab(dest_win_node_id, data.position);
+                L.log.info(`Moving tab ${val.tab_id} pos ${data.position}` +
+                            ` => ctab idx ${ctab_idx}`);
+
                 chrome.tabs.move(val.tab_id,
-                    {windowId: parent_val.win_id, index: data.position}
+                    {windowId: parent_val.win_id, index: ctab_idx}
                     , ASQH.CC(done));
             })
             .then((done)=>{
@@ -3144,8 +3202,9 @@ var treeCheckCallback = (function()
         if(!moving_val) return;
 
         // Which window we're moving it to
-        let parent_val = D.windows.by_node_id(data.parent);
-        if(!parent_val || parent_val.win_id === K.NONE ) return;
+        let dest_win_node_id = data.parent;
+        let dest_win_val = D.windows.by_node_id(dest_win_node_id);
+        if(!dest_win_val || dest_win_val.win_id === K.NONE ) return;
 
         // Update the index values, so we know which index the
         // tab should have.  The tab node has already been moved, so the
@@ -3153,17 +3212,22 @@ var treeCheckCallback = (function()
         ASQ().then((done)=>{
             updateTabIndexValues(data.parent, [tab_node_id]);
                 // [tab_node_id]: Treat the new tab as if it were open when
-                // computing index values.
+                // computing index values.  This magically updates
+                // moving_val.index.
             updateTabIndexValues(data.old_parent);
 
             moving_val.being_opened = true;
                 // so tabOnCreated doesn't duplicate it
 
+            let ctab_idx = chromeIdxOfTab(dest_win_node_id, moving_val.index);
+            L.log.info(`Opening tab ${moving_val.tab_id} at `+
+                        `pos ${moving_val.index} => ctab idx ${ctab_idx}`);
+
             let newtab_info = {
-                windowId: parent_val.win_id,
+                windowId: dest_win_val.win_id,
                 url: chrome.runtime.getURL('/src/view/newtab.html') + '#' + moving_val.node_id,
                     // pass the node ID to the tabOnUpdated callback
-                index: moving_val.index,
+                index: ctab_idx,
                 pinned: !!moving_val.isPinned,
             }
 
@@ -3183,6 +3247,7 @@ var treeCheckCallback = (function()
             // we can't handle copies at present
         if(operation === 'edit') return false;
             // Don't let the user edit node names with F2
+            // TODO? post a message to myself to trigger an actionEditBullet
 
         if(operation !== 'move_node') return true;
             // Everything else besides moves doesn't need a check.
@@ -3216,7 +3281,7 @@ var treeCheckCallback = (function()
 
             DND_CHECK:
             if(moving_val.ty === K.IT_WIN) {              // Dragging windows
-                // Can't drop inside another window - only before or after
+                // Can't drop inside another window - only before or after (re. #34)
                 if(more.pos==='i') return false;
 
                 // Can't drop other than in the root
@@ -3306,6 +3371,7 @@ var treeCheckCallback = (function()
                         // `!!` because it might be undefined
 
                     if(first_node) {
+                        first_node = false;
                         // Remember where we are.  Chrome's invariant is that
                         // there is an optional group of pinned tab(s) before
                         // an optional group of non-pinned tab(s).  Therefore,
@@ -3333,8 +3399,7 @@ var treeCheckCallback = (function()
                             // Can drop pinned or nonpinned before nonpinned
                             if(!child_pinned) break;
                         }
-                    }
-                    first_node = false;
+                    } //endif first_node
 
                     let should_check =
                         // We just passed the reference and we're dropping after
@@ -3882,6 +3947,7 @@ function addEventListeners(done)
 
     // Set event listeners
     T.treeobj.element.on('changed.jstree', treeOnSelect);
+        // TODO why isn't this select_node.jstree?
 
     T.treeobj.element.on('move_node.jstree', K.nextTickRunner(saveTree));
         // Save after drag-and-drop.  TODO? find a better way to do this?
