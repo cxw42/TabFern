@@ -13,6 +13,8 @@
 /// - ny: anything that can be passed to jstree.get_node() ("nodey" by
 ///   analogy with "truthy" and "falsy."
 /// - vorny: a val or a nodey
+/// TODO? Change vorny to VorVNorNY?  I.e., also accept {val:...} and
+/// {node_id:...}?
 
 // Boilerplate {{{1
 

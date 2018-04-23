@@ -246,6 +246,7 @@ describe('view/model', function() {
     // }}}1
     // Index mapping /////////////////////////////////////////////////// {{{1
     describe('index mapping', ()=>{
+        // Fixture setup ================================== {{{2
 
         beforeAll(()=>{
             // Make a fake window and tabs
@@ -253,7 +254,8 @@ describe('view/model', function() {
             this.win_val = vn.val;
             this.win_node_id = vn.node_id;
             this.tab_vns = [];
-            for(let i=0; i<10; ++i) {
+            this.NTABS=10;
+            for(let i=0; i<this.NTABS; ++i) {
                 this.tab_vns.push(M.vnRezTab(this.win_val));
             }
             T.treeobj.open_node(this.win_node_id);  // TODO do async?  Seems to be OK.
@@ -265,43 +267,169 @@ describe('view/model', function() {
             /// @param which_tabs {Array}
             this.openSomeTabs = function openSomeTabs(which_tabs) {
                 this.tab_vns.forEach( (vn, idx)=>{   // Open all the tabs
-                    if(which_tabs && which_tabs.indexOf(idx)===-1) return;
-                    let fake_ctab = {id: idx+1,     // can't be 0
-                        windowId: this.win_val.win_id,
-                        index: idx,
-                        url: `http://example.com/${idx}`,
-                        title: `Fake tab ${idx}`,
-                        // no favIconUrl; no pinned (=> not pinned)
-                    };
-                    M.markTabAsOpen(vn.val, fake_ctab);
-                });
+                    let should_open =
+                            (!which_tabs || which_tabs.indexOf(idx)!==-1);
+                    if(should_open) {
+                        let fake_ctab = {id: idx+1,     // can't be 0
+                            windowId: this.win_val.win_id,
+                            index: idx,
+                            url: `http://example.com/${idx}`,
+                            title: `Fake tab ${idx}`,
+                            // no favIconUrl; no pinned (=> not pinned)
+                        };
+                        M.markTabAsOpen(vn.val, fake_ctab);
+                    }
+
+                    since(`Tab(s) ${which_tabs ? which_tabs : "(all)"} are` +
+                            ` open, so tab ${idx} should be ` +
+                            (should_open ? 'open': ' closed'))
+                    .expect(vn.val.isOpen).toBe(should_open);
+                }); //foreach tab
+
             }; //openSomeTabs()
 
             this.closeAllTabs = function closeAllTabs() {
                 this.tab_vns.forEach( (vn)=>{
-                    M.markTabAsClosed(vn);
+                    M.markTabAsClosed(vn.val);
                 });
             };
 
         });
 
-        it('identity-maps tree indices to Chrome indices in a fully-open window', ()=>{
-            this.openSomeTabs();    //open all
-            debugger; void Modules; void T;
+        // }}}2
+        // Fully-open window ============================== {{{2
+        describe('fully-open window',()=>{
+            beforeAll(()=>{this.openSomeTabs();});
 
-            this.tab_vns.forEach( (vn, idx)=>{
-                expect(M.chromeIdxOfTab(this.win_node_id, idx)).toBe(idx);
+            it('identity-maps tree indices to Chrome indices', ()=>{
+                //debugger; void Modules; void T;
+
+                this.tab_vns.forEach( (vn, idx)=>{
+                    expect(M.chromeIdxOfTab(this.win_node_id, idx)).toBe(idx);
+                });
             });
+
+            it('identity-maps Chrome indices to tree indices', ()=>{
+                this.tab_vns.forEach( (vn, idx)=>{
+                    expect(M.treeIdxByChromeIdx(this.win_node_id, idx)).toBe(idx);
+                });
+
+            });
+            afterAll(()=>{this.closeAllTabs();});
         });
 
-        it('identity-maps Chrome indices to tree indices in a fully-open window', ()=>{
-            this.tab_vns.forEach( (vn, idx)=>{
-                expect(M.treeIdxByChromeIdx(this.win_node_id, idx)).toBe(idx);
+        // }}}2
+        // Single tabs ==================================== {{{2
+        describe('first tab open',()=>{
+            beforeAll(()=>{this.openSomeTabs([0]);});
+            it('maps open tab->chrome',()=>{
+                expect(M.chromeIdxOfTab(this.win_node_id, 0)).toBe(0);
             });
-
-            this.closeAllTabs();
+            it('maps open chrome->tab',()=>{
+                expect(M.treeIdxByChromeIdx(this.win_node_id, 0)).toBe(0);
+            });
+            it('maps new-tab chrome->tab',()=>{
+                expect(M.treeIdxByChromeIdx(this.win_node_id, 1)).toBe(1);
+            });
+            afterAll(()=>{this.closeAllTabs();});
         });
 
+        describe('second tab open',()=>{
+            beforeAll(()=>{this.openSomeTabs([1]);});
+            it('maps open tab->chrome',()=>{
+                expect(M.chromeIdxOfTab(this.win_node_id, 1)).toBe(0);
+            });
+            it('maps open chrome->tab',()=>{
+                expect(M.treeIdxByChromeIdx(this.win_node_id, 0)).toBe(1);
+            });
+            it('maps new-tab chrome->tab',()=>{
+                expect(M.treeIdxByChromeIdx(this.win_node_id, 1)).toBe(2);
+            });
+            afterAll(()=>{this.closeAllTabs();});
+        });
+
+        describe('next-to-last tab open',()=>{
+            beforeAll(()=>{this.openSomeTabs([this.NTABS-2]);});
+            afterAll(()=>{this.closeAllTabs();});
+        });
+
+        describe('last tab open',()=>{
+            beforeAll(()=>{this.openSomeTabs([this.NTABS-1]);});
+            afterAll(()=>{this.closeAllTabs();});
+        });
+
+        // }}}2
+        // Pairs of tabs ================================== {{{2
+
+        describe('tabs 0 and 1 open',()=>{
+            beforeAll(()=>{this.openSomeTabs([0, 1]);});
+            afterAll(()=>{this.closeAllTabs();});
+        });
+
+        describe('tabs 1 and 2 open',()=>{
+            beforeAll(()=>{this.openSomeTabs([1, 2]);});
+            afterAll(()=>{this.closeAllTabs();});
+        });
+
+        describe('next-to-last two tabs open',()=>{
+            beforeAll(()=>{this.openSomeTabs([this.NTABS-2, this.NTABS-1]);});
+            afterAll(()=>{this.closeAllTabs();});
+        });
+
+        describe('last two tabs open',()=>{
+            beforeAll(()=>{this.openSomeTabs([this.NTABS-1, this.NTABS]);});
+            afterAll(()=>{this.closeAllTabs();});
+        });
+
+        // }}}2
+        // All but one tab ================================ {{{2
+
+        describe('all but tab 0 open',()=>{
+            beforeAll(()=>{
+                let arr = [];
+                for(let i=0; i<this.NKIDS; ++i) {
+                    if(i != 0) arr.push(i);
+                }
+                this.openSomeTabs(arr);
+            });
+            afterAll(()=>{this.closeAllTabs();});
+        });
+
+        describe('all but tab 1 open',()=>{
+            beforeAll(()=>{
+                let arr = [];
+                for(let i=0; i<this.NKIDS; ++i) {
+                    if(i != 1) arr.push(i);
+                }
+                this.openSomeTabs(arr);
+            });
+            afterAll(()=>{this.closeAllTabs();});
+        });
+
+        describe('all but next-to-last tab open',()=>{
+            beforeAll(()=>{
+                let arr = [];
+                for(let i=0; i<this.NKIDS; ++i) {
+                    if(i != this.NKIDS-2) arr.push(i);
+                }
+                this.openSomeTabs(arr);
+            });
+            afterAll(()=>{this.closeAllTabs();});
+        });
+
+        describe('all but last tab open',()=>{
+            beforeAll(()=>{
+                let arr = [];
+                for(let i=0; i<this.NKIDS; ++i) {
+                    if(i != this.NKIDS-1) arr.push(i);
+                }
+                this.openSomeTabs(arr);
+            });
+            afterAll(()=>{this.closeAllTabs();});
+        });
+
+        // }}}2
+        // Fixture teardown =============================== {{{2
         afterAll(()=>{
             delete this.win_val;
             delete this.win_node_id;
@@ -309,6 +437,7 @@ describe('view/model', function() {
             delete this.openSomeTabs;
             delete this.closeAllTabs;
         });
+        // }}}2
     });
 
     // }}}1
