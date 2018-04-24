@@ -661,20 +661,22 @@
         if(!D.windows.by_node_id(win_node.id, 'isOpen')) return false;
         let nkids = win_node.children.length;
 
-        // #cidx is the number of open tabs we have to skip to get to where
-        // we want to insert.
-
-        let remaining = cidx;   //                     ||
-        let child_idx;          // Note: this was <=,  VV  but I don't recall why.
-        for(child_idx=0; (remaining > 0) && (child_idx < nkids); ++child_idx) {
-                                //                     ^^
-            let child_node_id = win_node.children[child_idx];
-            if(D.tabs.by_node_id(child_node_id, 'isOpen')) {
-                --remaining;
+        // Build a node list as if all the open tabs were packed together
+        let orig_idx = [];
+        win_node.children.forEach( (kid_node_id, kid_idx)=>{
+            if(D.tabs.by_node_id(kid_node_id, 'isOpen')) {
+                orig_idx.push(kid_idx);
+                // TODO break if we've gone far enough?
             }
+        });
+
+        // Pick the cidx from that list
+        if(cidx >= orig_idx.length) {           // New tab off the end
+            return 1 + orig_idx[orig_idx.length-1];
+        } else {                                // Tab that exists
+            return orig_idx[cidx];
         }
 
-        return child_idx;   // jstree index, so 0 <= retval <= nkids
     } //treeIdxByChromeIdx()
 
     /// Convert a tree index to a Chrome tab index in a window,
@@ -683,7 +685,7 @@
     /// @param win_nodey {mixed} The window in question
     /// @param tree_item {mixed} The child node or index whose ctab index we want.
     ///         If string, the node ID; otherwise, the tree index in the tree.
-    /// @pre #tree_idx <= number of children of #win_nodey
+    ///         If numeric, #tree_item <= number of children of #win_nodey
     module.chromeIdxOfTab = function chromeIdxOfTab(win_nodey, tree_item)
     {
         let win_node = T.treeobj.get_node(win_nodey);
@@ -695,7 +697,7 @@
 
         let tree_idx;
         if(typeof tree_item !== 'string') {
-            tree_idx = tree_item;
+            tree_idx = Number(tree_item);
         } else {
             tree_idx = win_node.children.indexOf(tree_item);
             if(tree_idx === -1) return false;

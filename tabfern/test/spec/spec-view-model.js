@@ -350,11 +350,29 @@ describe('view/model', function() {
 
         describe('next-to-last tab open',()=>{
             beforeAll(()=>{this.openSomeTabs([this.NTABS-2]);});
+            it('maps open tab->chrome',()=>{
+                expect(M.chromeIdxOfTab(this.win_node_id, this.NTABS-2)).toBe(0);
+            });
+            it('maps open chrome->tab',()=>{
+                expect(M.treeIdxByChromeIdx(this.win_node_id, 0)).toBe(this.NTABS-2);
+            });
+            it('maps new-tab chrome->tab',()=>{
+                expect(M.treeIdxByChromeIdx(this.win_node_id, 1)).toBe(this.NTABS-1);
+            });
             afterAll(()=>{this.closeAllTabs();});
         });
 
         describe('last tab open',()=>{
             beforeAll(()=>{this.openSomeTabs([this.NTABS-1]);});
+            it('maps open tab->chrome',()=>{
+                expect(M.chromeIdxOfTab(this.win_node_id, this.NTABS-1)).toBe(0);
+            });
+            it('maps open chrome->tab',()=>{
+                expect(M.treeIdxByChromeIdx(this.win_node_id, 0)).toBe(this.NTABS-1);
+            });
+            it('maps new-tab chrome->tab',()=>{
+                expect(M.treeIdxByChromeIdx(this.win_node_id, 1)).toBe(this.NTABS);
+            });
             afterAll(()=>{this.closeAllTabs();});
         });
 
@@ -363,21 +381,75 @@ describe('view/model', function() {
 
         describe('tabs 0 and 1 open',()=>{
             beforeAll(()=>{this.openSomeTabs([0, 1]);});
+
+            it('maps open tab->chrome',()=>{
+                expect(M.chromeIdxOfTab(this.win_node_id, 0)).toBe(0);
+                expect(M.chromeIdxOfTab(this.win_node_id, 1)).toBe(1);
+            });
+            it('maps open chrome->tab',()=>{
+                expect(M.treeIdxByChromeIdx(this.win_node_id, 0)).toBe(0);
+                expect(M.treeIdxByChromeIdx(this.win_node_id, 1)).toBe(1);
+            });
+            it('maps new-tab chrome->tab',()=>{
+                expect(M.treeIdxByChromeIdx(this.win_node_id, 2)).toBe(2);
+            });
+
             afterAll(()=>{this.closeAllTabs();});
         });
 
         describe('tabs 1 and 2 open',()=>{
             beforeAll(()=>{this.openSomeTabs([1, 2]);});
+
+            // TODO throughout - failure cases - what about asking for the
+            // Chrome index of a closed tab?
+            it('maps open tab->chrome',()=>{
+                expect(M.chromeIdxOfTab(this.win_node_id, 1)).toBe(0);
+                expect(M.chromeIdxOfTab(this.win_node_id, 2)).toBe(1);
+            });
+            it('maps open chrome->tab',()=>{
+                expect(M.treeIdxByChromeIdx(this.win_node_id, 0)).toBe(1);
+                expect(M.treeIdxByChromeIdx(this.win_node_id, 1)).toBe(2);
+            });
+            it('maps new-tab chrome->tab',()=>{
+                expect(M.treeIdxByChromeIdx(this.win_node_id, 2)).toBe(3);
+            });
+
             afterAll(()=>{this.closeAllTabs();});
         });
 
         describe('next-to-last two tabs open',()=>{
-            beforeAll(()=>{this.openSomeTabs([this.NTABS-2, this.NTABS-1]);});
+            beforeAll(()=>{this.openSomeTabs([this.NTABS-3, this.NTABS-2]);});
+
+            it('maps open tab->chrome',()=>{
+                expect(M.chromeIdxOfTab(this.win_node_id, this.NTABS-3)).toBe(0);
+                expect(M.chromeIdxOfTab(this.win_node_id, this.NTABS-2)).toBe(1);
+            });
+            it('maps open chrome->tab',()=>{
+                expect(M.treeIdxByChromeIdx(this.win_node_id, 0)).toBe(this.NTABS-3);
+                expect(M.treeIdxByChromeIdx(this.win_node_id, 1)).toBe(this.NTABS-2);
+            });
+            it('maps new-tab chrome->tab',()=>{
+                expect(M.treeIdxByChromeIdx(this.win_node_id, 2)).toBe(this.NTABS-1);
+            });
+
             afterAll(()=>{this.closeAllTabs();});
         });
 
         describe('last two tabs open',()=>{
-            beforeAll(()=>{this.openSomeTabs([this.NTABS-1, this.NTABS]);});
+            beforeAll(()=>{this.openSomeTabs([this.NTABS-2, this.NTABS-1]);});
+
+            it('maps open tab->chrome',()=>{
+                expect(M.chromeIdxOfTab(this.win_node_id, this.NTABS-2)).toBe(0);
+                expect(M.chromeIdxOfTab(this.win_node_id, this.NTABS-1)).toBe(1);
+            });
+            it('maps open chrome->tab',()=>{
+                expect(M.treeIdxByChromeIdx(this.win_node_id, 0)).toBe(this.NTABS-2);
+                expect(M.treeIdxByChromeIdx(this.win_node_id, 1)).toBe(this.NTABS-1);
+            });
+            it('maps new-tab chrome->tab',()=>{
+                expect(M.treeIdxByChromeIdx(this.win_node_id, 2)).toBe(this.NTABS);
+            });
+
             afterAll(()=>{this.closeAllTabs();});
         });
 
