@@ -3376,24 +3376,29 @@ var treeCheckCallback = (function()
             (T.treeobj.reason() !== 'chrome')
         ) {
 
-            let old_parent = T.treeobj.get_node(node.parent);
+            let old_parent_node = T.treeobj.get_node(node.parent);
+            let old_parent_val = D.windows.by_node_id(node.parent);
 
             // If we are moving an open tab, set up to move the tab in Chrome.
             if( moving_val.isOpen &&
-                old_parent &&
+                old_parent_node &&
                 (node.id !== T.holding_node_id) &&
-                (old_parent.id !== T.holding_node_id) &&
+                (old_parent_node.id !== T.holding_node_id) &&
                 (new_parent.id !== T.holding_node_id)
             ) {
                 T.treeobj.element.one('move_node.jstree',
                                             move_open_tab_in_window);
             }
 
-            // If we are moving a closed tab into an open window, set up
-            // to open the tab in Chrome.
+            // If we are moving a closed tab from a closed window into an
+            // open window, set up to open the tab in Chrome.  Moves from
+            // open to open do not trigger an open since windows can be
+            // partly open.
             if( !moving_val.isOpen &&
                 new_parent_val &&
-                new_parent_val.isOpen
+                new_parent_val.isOpen &&
+                old_parent_val &&
+                !old_parent_val.isOpen
             ) {
                 T.treeobj.element.one('move_node.jstree',
                                             open_tab_within_window);
@@ -3404,13 +3409,13 @@ var treeCheckCallback = (function()
             // deleted once the move completes.
             // If the last tab is open, it is handled below.
             if( !moving_val.isOpen &&
-                old_parent &&
-                old_parent.children &&
+                old_parent_node &&
+                old_parent_node.children &&
                 (node.id !== T.holding_node_id) &&
-                (old_parent.id !== T.holding_node_id) &&
+                (old_parent_node.id !== T.holding_node_id) &&
                 (new_parent.id !== T.holding_node_id) &&
-                (new_parent.id !== old_parent.id) &&
-                (old_parent.children.length === 1)
+                (new_parent.id !== old_parent_node.id) &&
+                (old_parent_node.children.length === 1)
             ) {
                 T.treeobj.element.one('move_node.jstree', remove_empty_window);
             }
