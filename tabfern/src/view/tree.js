@@ -698,6 +698,7 @@ function actionOpenRestOfTabs(win_node_id, win_node, unused_action_id, unused_ac
 
         if(!child_val.isOpen) {     // Open the tab
             seq.then((done)=>{
+                log.info({"Opening tab":child_val});
                 child_val.being_opened = true;
                 chrome.tabs.create(
                     {
@@ -2035,7 +2036,8 @@ var tabOnCreated = (function(){
                     });
                     //actionDeleteWindow(win_node_id, T.treeobj.get_node(win_node_id),null,null);
                     log.debug(`merge ${ctab.windowId}==${cwin.id}: start`);
-                    // TODO open the saved window and connect it with the new tabs.
+
+                    // Open the saved window and connect it with the new tabs.
                     // ** Make sure to do this synchronously. **
                     // We get multiple tabOnCreated messages, and more than one
                     // could reach this point.
@@ -2166,14 +2168,14 @@ var tabOnCreated = (function(){
 
             saveTree(true, cbk);
 
-        } else {
-            // It's not a duplicate, so make a node for it.
+        } else {        // Not a duplicate
+            // Figure out where it's going to go.  This is for the benefit
+            // of tab grouping in partly-open windows.
+            let treeidx = M.treeIdxByChromeIdx(win_node_id, ctab.index);
+
             let tab_node_id = createNodeForTab(ctab, win_node_id);
 
             // Put it in the right place, since createNodeForTab adds at end.
-            // Note: if window is partly open, ctab.index is too low by the
-            // number of closed tabs before ctab.index.  Adjust accordingly.
-            let treeidx = M.treeIdxByChromeIdx(win_node_id, ctab.index);
             if(treeidx !== false) {
                 T.treeobj.because('chrome','move_node',
                         tab_node_id, win_node_id, treeidx);
@@ -2911,7 +2913,7 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
 /// @return {boolean} Whether or not the node is draggable
 function dndIsDraggable(nodes, evt_unused)
 {
-    if(log.getLevel() <= log.levels.TRACE) {
+    if(L.log.getLevel() <= L.log.levels.TRACE) {
         console.group('is draggable?');
         console.log(nodes);
         //console.log($.jstree.reference(evt.target));
@@ -3105,7 +3107,7 @@ var treeCheckCallback = (function()
                 pinned: !!moving_val.isPinned,
             }
 
-            log.info({'Moving tab':newtab_info});
+            L.log.info({'Moving tab':newtab_info});
             chrome.tabs.create(newtab_info, ASQH.CC(done));
         });
         // The Chrome tab and the item will be linked in tabOnCreated, so we're done.
@@ -3172,7 +3174,7 @@ var treeCheckCallback = (function()
                 // Force boolean, just in case.  TODO remove this once I have
                 // finished refactoring to the new model.
                 if(typeof moving_val.isPinned !== 'boolean') {
-                    log.warn({'Non-boolean moving_val.isPinned':moving_val});
+                    L.log.warn({'Non-boolean moving_val.isPinned':moving_val});
                     moving_val.isPinned = !!moving_val.isPinned;
                 }
 
@@ -3182,7 +3184,7 @@ var treeCheckCallback = (function()
                 if(!new_parent_node || !new_parent_node.children) return false;
 
                 if(new_parent_node.children.length < 1) {   // Shouldn't happen?
-                    log.warn({'DND check wrt parent with no children':new_parent_node,
+                    L.log.warn({'DND check wrt parent with no children':new_parent_node,
                         new_parent_val,
                         moving_val,
                         more});

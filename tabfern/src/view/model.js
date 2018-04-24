@@ -670,6 +670,8 @@
             }
         });
 
+        log.info({"Mapping in":orig_idx,"From":cidx});
+
         // Pick the cidx from that list
         if(cidx >= orig_idx.length) {           // New tab off the end
             return 1 + orig_idx[orig_idx.length-1];
