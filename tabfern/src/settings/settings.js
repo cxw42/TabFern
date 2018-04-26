@@ -4,7 +4,9 @@
 /// An object to hold the settings for later programmatic access
 let settingsobj;
 
-/// Create the color picker for the scrollbar color
+// Color picker //////////////////////////////////////////////////// {{{1
+
+/// Create the color picker for the scrollbar color.
 let createPicker = function createPicker($$) {
     let picker = $$('#scrollbar-color-picker-label');
 
@@ -37,7 +39,58 @@ let createPicker = function createPicker($$) {
     });
 }; //createPicker
 
-// Main //////////////////////////////////////////////////////////////
+// }}}1
+// Export/Import Settings ////////////////////////////////////////// {{{1
+
+/// Pack the settings into an object to export.
+/// TODO automate keeping this in sync with common.js.
+function saveSettingsToObject()
+{
+    return {};
+} //saveSettingsToObject
+
+/// Export the settings
+function exportSettings(evt_unused)
+{
+    let date_tag = new Date().toISOString().replace(/:/g,'.');
+        // DOS filenames can't include colons.
+        // TODO use local time - maybe
+        // https://www.npmjs.com/package/dateformat ?
+    let filename = 'TabFern settings backup ' + date_tag + '.tabfern_settings';
+
+    let saved_info = saveSettingsToObject();
+    Fileops.Export(document, JSON.stringify(saved_info), filename);
+} //exportSettings()
+
+/// Assign settings from an object we have loaded.
+/// TODO automate keeping this in sync with common.js.
+function loadSettingsFromObject(obj) {
+    return true;
+} //loadSettingsFromObject
+
+/// Import the settings
+function importSettings(evt_unused)
+{
+    function processFile(text, filename) {
+        try {
+            let parsed = JSON.parse(text);
+            let ok = loadSettingsFromObject(parsed);
+            if(!ok) {
+                window.alert("I couldn't load the file " + filename);
+            }
+        } catch(e) {
+            window.alert("File " + filename + ' is not something I can '+
+                'understand as a TabFern settings file.  Parse error code was: ' +
+                e);
+        }
+    } //processFile()
+
+    let importer = Fileops.Importer(document, '.tabfern_settings');
+    importer.getFileAsString(processFile);
+} //importSettings()
+
+// }}}1
+// Main //////////////////////////////////////////////////////////// {{{1
 
 let main = function main() {
     let $$ = jQuery;    // since $ is mootools
@@ -47,8 +100,13 @@ let main = function main() {
         settingsobj = settings;
 
         // ----------------------------
-        // Create the color-picker for the skinny scrollbars
-        createPicker($$);
+        // Finish creating the page
+        createPicker($$);   // Skinny-scrollbar color picker
+
+        // ----------------------------
+        // Hook up events
+        $$('#import-settings').on('click', importSettings);
+        $$('#export-settings').on('click', exportSettings);
 
         // ----------------------------
         // open tab specified in a query parm, if known.
@@ -136,5 +194,6 @@ let main = function main() {
 }; //main()
 
 window.addEvent("domready", main);
+// }}}1
 
-// vi: set ts=4 sts=4 sw=4 et ai: //
+// vi: set ts=4 sts=4 sw=4 et ai foldmethod=marker: //

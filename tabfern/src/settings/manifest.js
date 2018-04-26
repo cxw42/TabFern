@@ -37,6 +37,22 @@
                         ' of the list, information about recent feature additions'+
                         ' or changes.</p>'
             },
+            {
+                "tab": i18n.get("Welcome / Help"),
+                "group": i18n.get("Import/Export"),
+                "name": "export-settings",
+                "id": "export-settings",
+                "type": "button",
+                "text": "Export settings to file"
+            },
+            {
+                "tab": i18n.get("Welcome / Help"),
+                "group": i18n.get("Import/Export"),
+                "name": "import-settings",
+                "id": "import-settings",
+                "type": "button",
+                "text": "Import settings from file"
+            },
 
             // Behaviour.  Yeah, there's a "u" in there!
             {
@@ -170,7 +186,6 @@
                     // placeholder - settings.js adds the actual control
                     // after this.
             },
-            // Maybe add some theming options here?
             {
                 "tab": i18n.get("Appearance"),
                 "group": i18n.get("Tree"),
@@ -178,6 +193,8 @@
                 "type": "checkbox",
                 "label": i18n.get('Show connecting lines between nodes'),
             },
+
+            // Theming options
             {
                 "tab": i18n.get("Appearance"),
                 "group": i18n.get("Theme"),

@@ -55,15 +55,13 @@ const CFG_CONFIRM_DEL_OF_SAVED_TABS = 'confirm-del-of-saved-tabs';
 const CFG_CONFIRM_DEL_OF_UNSAVED_TABS = 'confirm-del-of-unsaved-tabs';
 const CFG_URL_IN_TOOLTIP = 'tooltip-has-url';
 const CFG_TITLE_IN_TOOLTIP = 'tooltip-has-title';
+
+// Strings, including limited-choice controls such as radio buttons and dropdowns.
+const CFGS_BACKGROUND = 'window-background';
+const CFGS_SCROLLBAR_COLOR = 'skinny-scrollbar-color';
 const CFG_OPEN_REST_ON_CLICK = 'open-rest-on-win-click',
         CFG_OROC_DO = 'yes',
         CFG_OROC_DO_NOT = 'no';
-
-// Strings
-const CFGS_BACKGROUND = 'window-background';
-const CFGS_SCROLLBAR_COLOR = 'skinny-scrollbar-color';
-
-// Other
 const CFGS_THEME_NAME = 'theme-name';
 
 const CFG_DEFAULTS = {
