@@ -459,44 +459,109 @@ describe('view/model', function() {
         describe('all but tab 0 open',()=>{
             beforeAll(()=>{
                 let arr = [];
-                for(let i=0; i<this.NKIDS; ++i) {
+                for(let i=0; i<this.NTABS; ++i) {
                     if(i != 0) arr.push(i);
                 }
                 this.openSomeTabs(arr);
             });
+
+            it('maps open tab->chrome',()=>{
+                for(let i=1; i<this.NTABS; ++i) {
+                    expect(M.chromeIdxOfTab(this.win_node_id, i)).toBe(i-1);
+                }
+            });
+            it('maps open chrome->tab',()=>{
+                for(let i=1; i<this.NTABS; ++i) {
+                    expect(M.treeIdxByChromeIdx(this.win_node_id, i-1)).toBe(i);
+                }
+            });
+            it('maps new-tab chrome->tab',()=>{
+                expect(M.treeIdxByChromeIdx(this.win_node_id, this.NTABS-1)).toBe(this.NTABS);
+            });
+
             afterAll(()=>{this.closeAllTabs();});
         });
 
         describe('all but tab 1 open',()=>{
             beforeAll(()=>{
                 let arr = [];
-                for(let i=0; i<this.NKIDS; ++i) {
+                for(let i=0; i<this.NTABS; ++i) {
                     if(i != 1) arr.push(i);
                 }
                 this.openSomeTabs(arr);
             });
+
+            it('maps open tab->chrome',()=>{
+                expect(M.chromeIdxOfTab(this.win_node_id, 0)).toBe(0);
+                for(let i=2; i<this.NTABS; ++i) {
+                    expect(M.chromeIdxOfTab(this.win_node_id, i)).toBe(i-1);
+                }
+            });
+            it('maps open chrome->tab',()=>{
+                expect(M.treeIdxByChromeIdx(this.win_node_id, 0)).toBe(0);
+                for(let i=1; i<this.NTABS-1; ++i) {
+                    expect(M.treeIdxByChromeIdx(this.win_node_id, i)).toBe(i+1);
+                }
+            });
+            it('maps new-tab chrome->tab',()=>{
+                expect(M.treeIdxByChromeIdx(this.win_node_id, this.NTABS-1)).toBe(this.NTABS);
+            });
+
             afterAll(()=>{this.closeAllTabs();});
         });
 
         describe('all but next-to-last tab open',()=>{
             beforeAll(()=>{
                 let arr = [];
-                for(let i=0; i<this.NKIDS; ++i) {
-                    if(i != this.NKIDS-2) arr.push(i);
+                for(let i=0; i<this.NTABS; ++i) {
+                    if(i != this.NTABS-2) arr.push(i);
                 }
                 this.openSomeTabs(arr);
             });
+
+            it('maps open tab->chrome',()=>{
+                for(let i=0; i<this.NTABS-2; ++i) {
+                    expect(M.chromeIdxOfTab(this.win_node_id, i)).toBe(i);
+                }
+                expect(M.chromeIdxOfTab(this.win_node_id, this.NTABS-1)).toBe(this.NTABS-2);
+            });
+            it('maps open chrome->tab',()=>{
+                for(let i=0; i<this.NTABS-2; ++i) {
+                    expect(M.treeIdxByChromeIdx(this.win_node_id, i)).toBe(i);
+                }
+                expect(M.treeIdxByChromeIdx(this.win_node_id, this.NTABS-2)).toBe(this.NTABS-1);
+            });
+            it('maps new-tab chrome->tab',()=>{
+                expect(M.treeIdxByChromeIdx(this.win_node_id, this.NTABS-1)).toBe(this.NTABS);
+            });
+
             afterAll(()=>{this.closeAllTabs();});
         });
 
         describe('all but last tab open',()=>{
             beforeAll(()=>{
                 let arr = [];
-                for(let i=0; i<this.NKIDS; ++i) {
-                    if(i != this.NKIDS-1) arr.push(i);
+                for(let i=0; i<this.NTABS; ++i) {
+                    if(i != this.NTABS-1) arr.push(i);
                 }
                 this.openSomeTabs(arr);
             });
+
+            it('maps open tab->chrome',()=>{
+                for(let i=0; i<this.NTABS-1; ++i) {
+                    expect(M.chromeIdxOfTab(this.win_node_id, i)).toBe(i);
+                }
+            });
+            it('maps open chrome->tab',()=>{
+                for(let i=0; i<this.NTABS-1; ++i) {
+                    expect(M.treeIdxByChromeIdx(this.win_node_id, i)).toBe(i);
+                }
+            });
+            it('maps new-tab chrome->tab',()=>{
+                expect(M.treeIdxByChromeIdx(this.win_node_id, this.NTABS-1)).toBe(this.NTABS-1);
+                // it pushes the last tab down to slot NTABS.
+            });
+
             afterAll(()=>{this.closeAllTabs();});
         });
 

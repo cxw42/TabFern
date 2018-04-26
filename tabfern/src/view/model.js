@@ -655,7 +655,7 @@
     module.treeIdxByChromeIdx = function treeIdxByChromeIdx(win_nodey, cidx)
     {
         let win_node = T.treeobj.get_node(win_nodey);
-        if(!win_node) return false;
+        if(!win_node || !Number.isInteger(cidx) || cidx<0 ) return false;
 
         // Window can't be partly open if it's closed
         if(!D.windows.by_node_id(win_node.id, 'isOpen')) return false;
@@ -699,6 +699,7 @@
 
         let tree_idx;
         if(typeof tree_item !== 'string') {
+            if(!Number.isInteger(tree_item)) return false;
             tree_idx = Number(tree_item);
         } else {
             tree_idx = win_node.children.indexOf(tree_item);
