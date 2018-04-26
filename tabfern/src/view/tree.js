@@ -1237,7 +1237,9 @@ var loadSavedWindowsFromData = (function(){
     let versionLoaders = { 0: loadSaveDataV0, 1: loadSaveDataV1 };
 
     /// Populate the tree from the save data.
-    return function(data)
+    /// TODO throw on failure, so that the caller can report the details of
+    /// the error if desired.
+    return function loadSavedWindowsFromData_inner(data)
     {
         let succeeded = false;
         let loader_retval;      // # of wins loaded
@@ -1275,7 +1277,7 @@ var loadSavedWindowsFromData = (function(){
             succeeded = true;
         }
         return (succeeded ? loader_retval : false);
-    }
+    } //loadSavedWindowsFromData_inner
 })(); //loadSavedWindowsFromData
 
 /// Load the saved windows from local storage - used as part of initialization.
@@ -2409,7 +2411,7 @@ function hamRestoreFromBackup()
             let parsed = JSON.parse(text);
             ok = loadSavedWindowsFromData(parsed);
             if(!ok) {
-                window.alert("I couldn't load the file " + filename + ': ' + e);
+                window.alert("I couldn't load the file " + filename);
             }
         } catch(e) {
             window.alert("File " + filename + ' is not something I can '+
