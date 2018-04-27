@@ -1202,8 +1202,8 @@ function connectChromeWindowToTreeWindowItem(cwin, existing_win, options = {})
         let ctab = cwin.tabs[idx];
 
         // Do we need these?
-        ctab.url = ctab.url || 'about:blank';
-        ctab.title = ctab.title || '## Unknown title ##';
+        ctab.url = ctab.url || tab_val.raw_url || 'about:blank';
+        ctab.title = ctab.title || tab_val.raw_title || '## Unknown title ##';
 
         let pinned = tab_val.isPinned;
         M.markTabAsOpen(tab_node_id, ctab);
