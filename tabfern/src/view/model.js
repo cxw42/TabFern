@@ -652,7 +652,10 @@
     /// @pre The window must be open.
     /// @param win_nodey {mixed} The window in question
     /// @param cidx {nonnegative integer} the Chrome ctab.index
-    module.treeIdxByChromeIdx = function treeIdxByChromeIdx(win_nodey, cidx)
+    /// @param openerTabId {optional integer} The ctab ID of the opener,
+    ///                                         if any.
+    module.treeIdxByChromeIdx = function treeIdxByChromeIdx(win_nodey, cidx,
+                                            openerTabId)
     {
         let win_node = T.treeobj.get_node(win_nodey);
         if(!win_node || !Number.isInteger(cidx) || cidx<0 ) return false;
@@ -660,6 +663,16 @@
         // Window can't be partly open if it's closed
         if(!D.windows.by_node_id(win_node.id, 'isOpen')) return false;
         let nkids = win_node.children.length;
+
+        // Put it just after the opener tab ID, if possible
+        OPENER: if(openerTabId) {
+            let openerVal = D.tabs.by_tab_id(openerTabId);
+            if(!openerVal) break OPENER;
+            let tree_idx = win_node.children.indexOf(openerVal.node_id);
+            if(tree_idx===-1) break OPENER;
+
+            return tree_idx+1;
+        }
 
         // Build a node list as if all the open tabs were packed together
         let orig_idx = [];

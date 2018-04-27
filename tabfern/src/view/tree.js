@@ -2157,7 +2157,8 @@ var tabOnCreated = (function(){
             log.info('   - That tab already exists.');
 
             // Just put it where it now belongs.
-            let treeidx = M.treeIdxByChromeIdx(win_node_id, ctab.index);
+            let treeidx = M.treeIdxByChromeIdx(win_node_id, ctab.index,
+                    ctab.openerTabId);
             if(treeidx !== false) { // tabOnCreated => the tab should exist
                 T.treeobj.because('chrome', 'move_node',
                     tab_val.node_id, win_node_id, treeidx);
@@ -2173,7 +2174,8 @@ var tabOnCreated = (function(){
         } else {        // Not a duplicate
             // Figure out where it's going to go.  This is for the benefit
             // of tab grouping in partly-open windows.
-            let treeidx = M.treeIdxByChromeIdx(win_node_id, ctab.index);
+            let treeidx = M.treeIdxByChromeIdx(win_node_id, ctab.index,
+                            ctab.openerTabId);
 
             let tab_node_id = createNodeForTab(ctab, win_node_id);
 

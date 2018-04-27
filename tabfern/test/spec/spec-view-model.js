@@ -270,7 +270,7 @@ describe('view/model', function() {
                     let should_open =
                             (!which_tabs || which_tabs.indexOf(idx)!==-1);
                     if(should_open) {
-                        let fake_ctab = {id: idx+1,     // can't be 0
+                        let fake_ctab = {id: idx+1000,  // can't be 0
                             windowId: this.win_val.win_id,
                             index: idx,
                             url: `http://example.com/${idx}`,
@@ -560,6 +560,34 @@ describe('view/model', function() {
             it('maps new-tab chrome->tab',()=>{
                 expect(M.treeIdxByChromeIdx(this.win_node_id, this.NTABS-1)).toBe(this.NTABS-1);
                 // it pushes the last tab down to slot NTABS.
+            });
+
+            afterAll(()=>{this.closeAllTabs();});
+        });
+
+        // }}}2
+        // Special cases ================================== {{{2
+        describe('special cases',()=>{
+            let tabs=[0,1,7,8];
+            beforeAll(()=>{this.openSomeTabs(tabs);});
+
+            it('identity-maps tree indices to Chrome indices', ()=>{
+                let cidx=0;
+                tabs.forEach( (item, idx)=>{
+                    expect(M.chromeIdxOfTab(this.win_node_id, item)).toBe(cidx++);
+                });
+            });
+
+            it('identity-maps Chrome indices to tree indices', ()=>{
+                for(let cidx=0; cidx<tabs.length; ++cidx) {
+                    expect(M.treeIdxByChromeIdx(this.win_node_id, cidx)).toBe(tabs[cidx]);
+                }
+            });
+
+            it('Puts new tabs right after the old tabs', ()=>{
+                expect(M.treeIdxByChromeIdx(this.win_node_id, 2, 1001)).toBe(2);
+                expect(M.treeIdxByChromeIdx(this.win_node_id, 3, 1007)).toBe(8);
+                expect(M.treeIdxByChromeIdx(this.win_node_id, 3, 1008)).toBe(9);
             });
 
             afterAll(()=>{this.closeAllTabs();});
