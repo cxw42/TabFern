@@ -286,6 +286,8 @@ describe('view/model', function() {
                     .expect(vn.val.isOpen).toBe(should_open);
                 }); //foreach tab
 
+                M.updateTabIndexValues(this.win_node_id);
+
             }; //openSomeTabs()
 
             this.closeAllTabs = function closeAllTabs() {
@@ -567,7 +569,7 @@ describe('view/model', function() {
 
         // }}}2
         // Special cases ================================== {{{2
-        describe('special cases',()=>{
+        describe('(special case)',()=>{
             let tabs=[0,1,7,8];
             beforeAll(()=>{this.openSomeTabs(tabs);});
 
@@ -588,6 +590,53 @@ describe('view/model', function() {
                 expect(M.treeIdxByChromeIdx(this.win_node_id, 2, 1001)).toBe(2);
                 expect(M.treeIdxByChromeIdx(this.win_node_id, 3, 1007)).toBe(8);
                 expect(M.treeIdxByChromeIdx(this.win_node_id, 3, 1008)).toBe(9);
+            });
+
+            it('puts two new tabs in order after the opener tab', ()=>{
+                // tree indices 0, 1, 7, 8 are open, with ctab tab_ids
+                // 1000, 1001, 1007, 1008.
+
+                this.new_tabs=[];
+                for(let new_tab_cnt = 0; new_tab_cnt < 2; ++new_tab_cnt) {
+
+                    // Tab 1001 opens a new ctab
+                    let cidx = 2 + new_tab_cnt;
+                    let treeidx = M.treeIdxByChromeIdx(this.win_node_id,
+                                    cidx,
+                                    1001);              // opener
+                    since(`Tabs open left to right (new tab ${new_tab_cnt})`)
+                    .expect(treeidx).toBe(2+new_tab_cnt);
+
+                    this.new_tabs[new_tab_cnt] = M.vnRezTab(this.win_val);
+                    expect(this.new_tabs[new_tab_cnt]).toBeTruthy();
+                    let fake_ctab = {id: 100101 + new_tab_cnt,
+                        windowId: this.win_val.win_id,
+                        index: cidx,
+                        url: `http://example.com/${100101+new_tab_cnt}`,
+                        title: `Fake tab ${100101+new_tab_cnt}`,
+                        // no favIconUrl; no pinned (=> not pinned)
+                    };
+                        // Open 2nd time through:
+                        // 1000, 1001, 100101, 100102, 1007, 1008
+                    M.markTabAsOpen(this.new_tabs[new_tab_cnt].val,
+                            fake_ctab);
+                        // Now it's open, but not in the right place.
+
+                    T.treeobj.because('chrome','move_node',
+                            this.new_tabs[new_tab_cnt].node_id,
+                            this.win_node_id, treeidx
+                    );
+                        // Now it's in the right place
+
+                    M.updateTabIndexValues(this.win_node_id);
+                } //foreach new tab
+
+                // Cleanup
+                for(let new_tab_cnt = 0; new_tab_cnt < 2; ++new_tab_cnt) {
+                    D.tabs.remove_value(this.new_tabs[new_tab_cnt].val);
+                    T.treeobj.because('chrome','delete_node',
+                            this.new_tabs[new_tab_cnt].node_id);
+                }
             });
 
             afterAll(()=>{this.closeAllTabs();});

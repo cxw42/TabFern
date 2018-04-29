@@ -622,7 +622,7 @@
 
         let old_hash = D.windows.by_node_id(win_node.id, 'ordered_url_hash'); //DEBUG
 
-        M.updateOrderedURLHash(win_node.id);
+        module.updateOrderedURLHash(win_node.id);
 
         let new_hash = D.windows.by_node_id(win_node.id, 'ordered_url_hash'); //DEBUG
         log.trace(`win ${win_node.id} hash from ${old_hash} to ${new_hash}`); //DEBUG
