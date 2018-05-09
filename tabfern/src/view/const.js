@@ -53,6 +53,7 @@
         INIT_TIME_ALLOWED_MS:  3000,  // After this time, if init isn't done,
                                             // display an error message.
         INIT_MSG_SEL:  'div#init-incomplete',     // Selector for that message
+        INIT_PROGRESS_SEL:  'div#init-progress',     // Selector for the x/y progress indicator
 
         ACTION_GROUP_WIN_CLASS: 'tf-action-group',   // Class on action-group div
         ACTION_BUTTON_WIN_CLASS: 'tf-action-button', // Class on action buttons (<i>)

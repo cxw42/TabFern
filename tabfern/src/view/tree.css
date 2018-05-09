@@ -53,6 +53,11 @@
     color: #f33;
 }
 
+#init-progress {
+    display: none;      /* initially */
+    color: #f33;
+}
+
 li.ephemeral-recovered, .tfs-recovered {
     background: darkslategray !important;
 }
