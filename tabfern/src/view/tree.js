@@ -1284,7 +1284,10 @@ var loadSavedWindowsFromData = (function(){
 /// @param {function} next_action If provided, will be called when loading
 ///                     is complete.
 function loadSavedWindowsIntoTree(next_action) {
+    $(K.INIT_PROGRESS_SEL).text("5/13");
+
     chrome.storage.local.get(K.STORAGE_KEY, function(items) {
+        $(K.INIT_PROGRESS_SEL).text("6/13");
 
         READIT:
         if(isLastError()) {
@@ -3403,6 +3406,7 @@ let custom_bg_color = false;
 /// Initialization that happens before the full DOM is loaded
 function preLoadInit()
 {
+    $(K.INIT_PROGRESS_SEL).text("1/13");
     if(getBoolSetting(CFG_HIDE_HORIZONTAL_SCROLLBARS)) {
         document.querySelector('html').classList += ' tf--feature--hide-horizontal-scrollbars';
     }
@@ -3487,6 +3491,7 @@ function preLoadInit()
 /// Beginning of the onload initialization.
 function basicInit(done)
 {
+    $(K.INIT_PROGRESS_SEL).text("2/13");
     log.info('TabFern tree.js initializing view - ' + TABFERN_VERSION);
 
     Hamburger = Modules.hamburger('#hamburger-menu', getHamburgerMenuItems
@@ -3519,6 +3524,7 @@ function basicInit(done)
 /// Called after ASQ.try(chrome.runtime.sendMessage)
 function createMainTreeIfWinIdReceived_catch(done, win_id_msg_or_error)
 {
+    $(K.INIT_PROGRESS_SEL).text("4/13");
     if(ASQH.is_asq_try_err(win_id_msg_or_error)) {
         // This is fatal
         return done.fail("Couldn't get win ID: " + win_id_msg_or_error.catch);
@@ -3562,6 +3568,7 @@ function createMainTreeIfWinIdReceived_catch(done, win_id_msg_or_error)
             drivers: [Modules.dmauro_keypress]
         },
         function initialized(err) {
+            $(K.INIT_PROGRESS_SEL).text("5/13");
             if ( err ) {
                 console.log({['Failed loading a shortcut driver!  Initializing '+
                             'context menu with no shortcut driver']:err});
@@ -3577,6 +3584,7 @@ function createMainTreeIfWinIdReceived_catch(done, win_id_msg_or_error)
 
 function addOpenWindowsToTree(done, cwins)
 {
+    $(K.INIT_PROGRESS_SEL).text("8/13");
     let dat = {};
     let focused_win_id;
 
@@ -3621,6 +3629,7 @@ function addOpenWindowsToTree(done, cwins)
 
 function addEventListeners(done)
 {
+    $(K.INIT_PROGRESS_SEL).text("9/13");
     // At this point, the saved and open windows have been loaded into the
     // tree.  Therefore, we can position the action groups.  We already
     // saved the position, so do not need to specify it here.
@@ -3694,6 +3703,7 @@ function moveWinToLastPositionIfAny_catch(done, items_or_err)
     // If there was an error (e.g., nonexistent key), just
     // accept the default size.
 
+    $(K.INIT_PROGRESS_SEL).text("11/13");
     if(!ASQH.is_asq_try_err(items_or_err)) {
         let parsed = items_or_err[K.LOCN_KEY];
         if( (parsed !== null) && (typeof parsed === 'object') ) {
@@ -3723,12 +3733,17 @@ function moveWinToLastPositionIfAny_catch(done, items_or_err)
 /// completed successfully.
 function initTreeFinal(done)
 {
-    //return; // DEBUG - don't save
+    $(K.INIT_PROGRESS_SEL).text("12/13");
+
+    // Tests of different ways of failing init - for debugging only
+    //throw new Error("oops");      // DEBUG
+    //return;                       // DEBUG - don't save
 
     if(!was_loading_error) {
         did_init_complete = true;
         // Assume the document is loaded by this point.
-        $(K.INIT_MSG_SEL).css('display','none');
+        $(K.INIT_MSG_SEL).remove();
+        $(K.INIT_PROGRESS_SEL).remove();
             // just in case initialization took a long time, and the message
             // already appeared.
 
@@ -3768,7 +3783,17 @@ function initIncompleteWarning()
 {
     if(!did_init_complete) {
         // Assume the document is loaded by this point.
-        $(K.INIT_MSG_SEL).css('display','block');
+        if(K && K.INIT_MSG_SEL) {
+            $(K.INIT_MSG_SEL).css('display','block');
+        } else {
+            window.setTimeout(initIncompleteWarning, 500);
+        }
+
+        if(K && K.INIT_PROGRESS_SEL) {
+            $(K.INIT_PROGRESS_SEL).css('display','block');
+        } else {
+            window.setTimeout(initIncompleteWarning, 500);
+        }
     }
 } //initIncompleteWarning()
 
@@ -3789,6 +3814,8 @@ function main(...args)
 
     local_init();
 
+    $(K.INIT_PROGRESS_SEL).text("0/13");
+
     // Timer to display the warning message if initialization doesn't complete
     // quickly enough.
     window.setTimeout(initIncompleteWarning, K.INIT_TIME_ALLOWED_MS);
@@ -3804,28 +3831,36 @@ function main(...args)
     // Run the main init steps once the page has loaded
     let s = ASQ();
     callbackOnLoad(s.errfcb());
+    $(K.INIT_PROGRESS_SEL).text("waiting for browser");
 
     s.then(basicInit)
     .try((done)=>{
         // Get our Chrome-extensions-API window ID from the background page.
         // I don't know a way to get this directly from the JS window object.
         // TODO maybe getCurrent?  Not sure if that's reliable.
+        $(K.INIT_PROGRESS_SEL).text("3/13");
         chrome.runtime.sendMessage({msg:MSG_GET_VIEW_WIN_ID}, ASQH.CC(done));
     })
     .then(createMainTreeIfWinIdReceived_catch)
     .then(loadSavedWindowsIntoTree)
     .then((done)=>{
+        $(K.INIT_PROGRESS_SEL).text("7/13");
         chrome.windows.getAll({'populate': true}, ASQH.CC(done));
     })
     .then(addOpenWindowsToTree)
     .then(addEventListeners)
     .try((done)=>{
+        $(K.INIT_PROGRESS_SEL).text("10/13");
         // Find out where the view was before, if anywhere
         chrome.storage.local.get(K.LOCN_KEY, ASQH.CC(done));
     })
     .then(moveWinToLastPositionIfAny_catch)
     .then(initTreeFinal)
-    //.or(TODO show "couldn't load" in the popup)
+    .or((err)=>{
+        $(K.INIT_MSG_SEL).text(
+            $(K.INIT_MSG_SEL).text() + "\n" + err
+        )
+    });
     ;
 
 } // main()
