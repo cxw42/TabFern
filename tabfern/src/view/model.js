@@ -622,6 +622,8 @@
 
         let old_hash = D.windows.by_node_id(win_node.id, 'ordered_url_hash'); //DEBUG
 
+        // TODO do we need this, or can we use a dirty flag to avoid
+        // recomputing?
         module.updateOrderedURLHash(win_node.id);
 
         let new_hash = D.windows.by_node_id(win_node.id, 'ordered_url_hash'); //DEBUG
@@ -649,6 +651,7 @@
 
     /// Convert a Chrome tab index to an index in the tree for a window,
     /// even if the window is partly open.
+    /// Used when tabs are created, attached, or moved.
     /// @pre The window must be open.
     /// @param win_nodey {mixed} The window in question
     /// @param cidx {nonnegative integer} the Chrome ctab.index
@@ -664,15 +667,15 @@
         if(!D.windows.by_node_id(win_node.id, 'isOpen')) return false;
         let nkids = win_node.children.length;
 
-        // Put it just after the opener tab ID, if possible
-        OPENER: if(openerTabId) {
-            let openerVal = D.tabs.by_tab_id(openerTabId);
-            if(!openerVal) break OPENER;
-            let tree_idx = win_node.children.indexOf(openerVal.node_id);
-            if(tree_idx===-1) break OPENER;
-
-            return tree_idx+1;
-        }
+//        // Put it just after the opener tab ID, if possible
+//        OPENER: if(openerTabId) {
+//            let openerVal = D.tabs.by_tab_id(openerTabId);
+//            if(!openerVal) break OPENER;
+//            let tree_idx = win_node.children.indexOf(openerVal.node_id);
+//            if(tree_idx===-1) break OPENER;
+//
+//            return tree_idx+1;
+//        }
 
         // Build a node list as if all the open tabs were packed together
         let orig_idx = [];
@@ -688,7 +691,12 @@
         // Pick the cidx from that list
         if(cidx >= orig_idx.length) {           // New tab off the end
             return 1 + orig_idx[orig_idx.length-1];
-        } else {                                // Tab that exists
+
+        } else if(cidx>0) {                     // Tab that exists, not the 1st
+            // Group it to the left rather than the right if there's a gap
+            return orig_idx[cidx-1]+1;  // i.e., after the previous tab's node
+
+        } else {                                // New first tab
             return orig_idx[cidx];
         }
 

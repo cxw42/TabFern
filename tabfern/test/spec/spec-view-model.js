@@ -501,8 +501,10 @@ describe('view/model', function() {
             });
             it('maps open chrome->tab',()=>{
                 expect(M.treeIdxByChromeIdx(this.win_node_id, 0)).toBe(0);
-                for(let i=1; i<this.NTABS-1; ++i) {
-                    expect(M.treeIdxByChromeIdx(this.win_node_id, i)).toBe(i+1);
+                expect(M.treeIdxByChromeIdx(this.win_node_id, 1)).toBe(1);
+                    // because it groups to the left
+                for(let i=2; i<this.NTABS-1; ++i) {
+/**/                expect(M.treeIdxByChromeIdx(this.win_node_id, i)).toBe(i+1);
                 }
             });
             it('maps new-tab chrome->tab',()=>{
@@ -528,10 +530,13 @@ describe('view/model', function() {
                 expect(M.chromeIdxOfTab(this.win_node_id, this.NTABS-1)).toBe(this.NTABS-2);
             });
             it('maps open chrome->tab',()=>{
+                // open tree indices: 0 1 2 3 4 5 6 7   9
+                // insert posns:     0 1 2 3 4 5 6 7 8 9 10
+                // cidx:              0 1 2 3 4 5 6 7   8
                 for(let i=0; i<this.NTABS-2; ++i) {
                     expect(M.treeIdxByChromeIdx(this.win_node_id, i)).toBe(i);
                 }
-                expect(M.treeIdxByChromeIdx(this.win_node_id, this.NTABS-2)).toBe(this.NTABS-1);
+/**/            expect(M.treeIdxByChromeIdx(this.win_node_id, this.NTABS-2)).toBe(this.NTABS-1);
             });
             it('maps new-tab chrome->tab',()=>{
                 expect(M.treeIdxByChromeIdx(this.win_node_id, this.NTABS-1)).toBe(this.NTABS);
@@ -582,14 +587,14 @@ describe('view/model', function() {
 
             it('identity-maps Chrome indices to tree indices', ()=>{
                 for(let cidx=0; cidx<tabs.length; ++cidx) {
-                    expect(M.treeIdxByChromeIdx(this.win_node_id, cidx)).toBe(tabs[cidx]);
+/**/                expect(M.treeIdxByChromeIdx(this.win_node_id, cidx)).toBe(tabs[cidx]);
                 }
             });
 
             it('Puts new tabs right after the old tabs', ()=>{
                 expect(M.treeIdxByChromeIdx(this.win_node_id, 2, 1001)).toBe(2);
                 expect(M.treeIdxByChromeIdx(this.win_node_id, 3, 1007)).toBe(8);
-                expect(M.treeIdxByChromeIdx(this.win_node_id, 3, 1008)).toBe(9);
+/**/            expect(M.treeIdxByChromeIdx(this.win_node_id, 3, 1008)).toBe(9);
             });
 
             it('puts two new tabs in order after the opener tab', ()=>{
