@@ -110,11 +110,19 @@
         })
         .then(function open_tab(done, new_win){
             win_id = new_win.id;
-            tab0_id = new_win.tabs[0].id;
+            // Chrome automatically creates a tab in a window, but
+            // Vivaldi does not.  Handle either.
+            if(new_win.tabs && new_win.tabs.length) {
+                tab0_id = new_win.tabs[0].id;
+            }
             chrome.tabs.create({windowId: win_id, url: url}, ASQH.CC(done));
         })
         .then(function remove_old_tab(done){
-            chrome.tabs.remove(tab0_id, ASQH.CC(done));
+            if(tab0_id) {
+                chrome.tabs.remove(tab0_id, ASQH.CC(done));
+            } else {
+                done();
+            }
         })
         .or(function(err){log_orig.error({'Load error':err, url});})
         ;
