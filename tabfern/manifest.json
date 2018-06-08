@@ -40,5 +40,10 @@
   ],
   "web_accessible_resources": [
     "assets/*"
-  ]
+  ],
+  "commands": {
+    "reveal-view": {
+      "description": "Open the TabFern window"
+    }
+  }
 }

@@ -10,6 +10,7 @@ function createPicker($$)
         showInput: true,
         allowEmpty:true,
         showInitial: true,
+        preferredFormat: 'hex',
         color: getStringSetting(CFGS_SCROLLBAR_COLOR),
     });
 
