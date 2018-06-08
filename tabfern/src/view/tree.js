@@ -3027,6 +3027,14 @@ var treeCheckCallback = (function()
             .or((err)=>{
                 // Doesn't fire for invalid moves of pinned tabs in Chrome 63
                 L.log.warn({[`Couldn't move tab ${val.tab_id}`]:err});
+
+                // TODO #123: If the move failed, put the tree item back
+                // where it was before.  E.g., in Vivaldi, dragging a tab's
+                // tree item from a regular window into the Settings window
+                // moves the tab in the tree, but we get here with message
+                // "Tabs can only be moved to and from normal windows,"
+                // and the tab doesn't actually move in the view.
+
             });
 
         } else {

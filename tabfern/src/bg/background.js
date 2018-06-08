@@ -60,7 +60,7 @@ function moveTabFernViewToWindow(reference_cwin)
 // https://stackoverflow.com/users/930675/sean-bannister
 
 // When the icon is clicked in Chrome
-chrome.browserAction.onClicked.addListener(function(tab) {
+let onClickedListener = function(tab) {
 
     // If viewWindowID is undefined then there isn't a popup currently open.
     if (typeof viewWindowID === "undefined") {        // Open the popup
@@ -72,7 +72,7 @@ chrome.browserAction.onClicked.addListener(function(tab) {
 
     // Set a timer to bring the window to the front on another click
     // that follows fairly shortly.
-    {
+    if(tab) {
         let clickListener = function(tab) {
             if(viewWindowID && tab.windowId) {
                 chrome.windows.get(tab.windowId, moveTabFernViewToWindow);
@@ -89,7 +89,17 @@ chrome.browserAction.onClicked.addListener(function(tab) {
         chrome.browserAction.onClicked.addListener(clickListener);
     }
 
-});
+} //onClickedListener()
+
+chrome.browserAction.onClicked.addListener(onClickedListener);
+
+let onCommandListener = function(cmd) {
+    console.log("Received command " + cmd);
+    if(cmd == 'reveal-view') {
+        onClickedListener(null);    // null => no tab, so no summon
+    }
+} //onCommandListener()
+chrome.commands.onCommand.addListener(onCommandListener);
 
 // When a window is closed
 chrome.windows.onRemoved.addListener(function(windowId) {
