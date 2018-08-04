@@ -3712,7 +3712,11 @@ function moveWinToLastPositionIfAny_catch(done, items_or_err)
     // accept the default size.
 
     $(K.INIT_PROGRESS_SEL).text("11/13");
-    if(!ASQH.is_asq_try_err(items_or_err)) {
+    if(ASQH.is_asq_try_err(items_or_err)) {
+        log.warn({"Couldn't get saved location":items_or_err});
+    } else { //we have a location
+        log.info({"Got saved location":items_or_err});
+
         let parsed = items_or_err[K.LOCN_KEY];
         if( (parsed !== null) && (typeof parsed === 'object') ) {
             // + and || are to provide some sensible defaults - thanks to
@@ -3727,9 +3731,20 @@ function moveWinToLastPositionIfAny_catch(done, items_or_err)
                     , 'height': Math.max(+parsed.height || 600, 200)
                 };
             last_saved_size = $.extend({}, size_data);
-            chrome.windows.update(my_winid, size_data, ignore_chrome_error);
-        }
-    } //endif no error
+            chrome.windows.update(my_winid, size_data,
+                (win)=>{
+                    if(isLastError()) {
+                        log.error(`Could not open window: ${chrome.runtime.lastError}`);
+                    } else {
+                        log.info({"Updated window size":win});
+                    }
+                }
+            );
+        } else {
+            log.warn({"Could not parse size from":items_or_err})
+        } //endif got an item else
+
+    } //endif storage.local.get worked
 
     // Start the detection of moved or resized windows
     setTimeout(timedResizeDetector, K.RESIZE_DETECTOR_INTERVAL_MS);
