@@ -281,12 +281,16 @@ bar (it will start with "file://")</li>
                 "text":
 `<ul>
 <li class="gold-star">TabFern now has <b>500</b> users!!!
-<b>Thank you</b> for using and helping the project!</li>
+<b>Thank you</b> for using TabFern and helping the project!</li>
 <li>Tooltips on the action buttons.  ${issue(117)}</li>
 <li>${settings} Appearance ${gt} Tooltips now has options to show the
 URL and title of each item in a tooltip on that item.  This way you can
 see URLs in the tree, and you can see long titles without having
 to scroll.  ${issue(104)}</li>
+<li>Basic TabFern functionality is now also available on the 
+<a href="https://vivaldi.com/">Vivaldi</a> browser.  Vivaldi uses the
+Chrome Web Store just like Chrome itself does, so installation in Vivaldi
+is the same as installation in Chrome.  ${issue(123)}</li>
 </ul>`
             },
             {
