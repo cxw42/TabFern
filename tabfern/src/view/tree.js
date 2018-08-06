@@ -1479,10 +1479,22 @@ function treeOnSelect(_evt_unused, evt_data)
     }
 
     if(is_tab && node_val.isOpen) {   // An open tab
-        chrome.tabs.highlight({
-            windowId: node_val.win_id,
-            tabs: [node_val.index]     // Jump to the clicked-on tab
-        }, ignore_chrome_error);
+
+        if(BROWSER_TYPE === 'ff') {
+            ASQ().promise(
+                browser.tabs.update(node_val.tab_id,{active:true})
+            )
+            .or((err)=>{
+                log.warn({"Could not highlight tab":node_val,err});
+            });
+
+        } else {    //Chrome
+            chrome.tabs.highlight({
+                windowId: node_val.win_id,
+                tabs: [node_val.index]     // Jump to the clicked-on tab
+            }, ignore_chrome_error);
+        }
+
         //log.info('flagging treeonselect' + node.id);
         T.treeobj.flag_node(node);
         win_id = node_val.win_id;
@@ -1522,20 +1534,31 @@ function treeOnSelect(_evt_unused, evt_data)
         for(let child_id of win_node.children) {
             let child_val = D.tabs.by_node_id(child_id);
             urls.push(child_val.raw_url);
+            // TODO: in Firefox, you can't call window.create with a URL of
+            // about:addons or about:debugging.
         }
 
         // Open the window
         window_is_being_restored = true;
+        let create_data = {
+            url: urls
+          , left: newWinSize.left
+          , top: newWinSize.top
+          , width: newWinSize.width
+          , height: newWinSize.height
+        }
+        if(BROWSER_TYPE !== 'ff') {
+            create_data.focused = true;
+        }
+        log.info({'Creating window': create_data});
+
         chrome.windows.create(
-            {
-                url: urls
-              , focused: true
-              , left: newWinSize.left
-              , top: newWinSize.top
-              , width: newWinSize.width
-              , height: newWinSize.height
-            },
+            create_data,
             function(cwin) {
+                // TODO: in Firefox, I'm not sure if this gets called after
+                // an error.  Try to open a saved window with a tab
+                // for about:addons or about:debugging to trigger an error.
+
                 // Note: In testing, this happens after the winOnCreated,
                 // tabOnCreated, and tabOnActivated events.  I don't know
                 // if that's guaranteed, though.
@@ -3864,6 +3887,8 @@ function main(...args)
     let s = ASQ();
     callbackOnLoad(s.errfcb());
     $(K.INIT_PROGRESS_SEL).text("waiting for browser");
+    // Note: on one test on Firefox, the rest of the chain never fired.
+    // Not sure why.
 
     s.then(basicInit)
     .try((done)=>{

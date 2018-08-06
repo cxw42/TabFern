@@ -92,6 +92,8 @@ const CFG_DEFAULTS = {
 // Chrome code.  Hopefully in the future I can test for null/undefined
 // in either browser, and get rid of this block.
 
+BROWSER_TYPE=null;  // unknown
+
 (function(win){
     let isLastError_chrome =
         ()=>{return (typeof(chrome.runtime.lastError) !== 'undefined');};
@@ -104,6 +106,7 @@ const CFG_DEFAULTS = {
             (info)=>{   // fullfillment
                 if(info.name === 'Firefox') {
                     win.isLastError = isLastError_firefox;
+                    BROWSER_TYPE = 'ff';
                 } else {
                     win.isLastError = isLastError_chrome;
                 }
@@ -114,6 +117,7 @@ const CFG_DEFAULTS = {
             }
         );
     } else {    // Chrome
+        BROWSER_TYPE = 'chrome';
         win.isLastError = isLastError_chrome;
     }
 })(window);
