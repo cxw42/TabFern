@@ -2566,9 +2566,11 @@ function hamRestoreFromBackup()
             let parsed = JSON.parse(text);
             ok = loadSavedWindowsFromData(parsed);
             if(!ok) {
+                log.warn({'Could not load file':e});
                 window.alert("I couldn't load the file " + filename);
             }
         } catch(e) {
+            log.warn({'Could not load file (exception thrown)':e});
             window.alert("File " + filename + ' is not something I can '+
                 'understand as a TabFern save file.  Parse error code was: ' +
                 e);
@@ -2582,8 +2584,14 @@ function hamRestoreFromBackup()
         }
     } //processFile()
 
-    let importer = new Modules.importer(document, '.tabfern');
-    importer.getFileAsString(processFile);
+    try {
+        let importer = new Modules.importer(document, '.tabfern');
+        importer.getFileAsString(processFile);
+    } catch(e) {
+        log.warn({'Could not run importer':e});
+        window.alert('Unexpected error while trying to load the file.  ' +
+            'Parse error code was: ' + e);
+    }
 } //hamRestoreFromBackup()
 
 function hamRestoreLastDeleted()
@@ -3889,9 +3897,10 @@ function moveWinToLastPositionIfAny_catch(done, items_or_err)
 
     $(K.INIT_PROGRESS_SEL).text("11/13");
     if(ASQH.is_asq_try_err(items_or_err)) {
-        log.warn({"Couldn't get saved location":items_or_err});
+        log.warn({"Couldn't get saved location":$.extend({},items_or_err)});
+        // Note: $.extend() used to force evaluation at the time of logging
     } else { //we have a location
-        log.info({"Got saved location":items_or_err});
+        log.info({"Got saved location":$.extend({},items_or_err)});
 
         let parsed = items_or_err[K.LOCN_KEY];
         if( (parsed !== null) && (typeof parsed === 'object') ) {
@@ -3912,12 +3921,12 @@ function moveWinToLastPositionIfAny_catch(done, items_or_err)
                     if(isLastError()) {
                         log.error(`Could not open window: ${chrome.runtime.lastError}`);
                     } else {
-                        log.info({"Updated window size":win});
+                        log.info({"Updated window size":$.extend({},win)});
                     }
                 }
             );
         } else {
-            log.warn({"Could not parse size from":items_or_err})
+            log.warn({"Could not parse size from":$.extend({},items_or_err)})
         } //endif got an item else
 
     } //endif storage.local.get worked
