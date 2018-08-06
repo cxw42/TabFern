@@ -724,12 +724,12 @@ function actionEditTabBullet(node_id, node, unused_action_id, unused_action_el)
     saveTree();
 } //actionEditTabBullet
 
-/// Close the tab and save - NOT YET IMPLEMENTED
-function actionCloseTabAndSave(node_id, node, unused_action_id, unused_action_el)
-{
-    // TODO actionCloseTabButDoNotSave(node_id, node, unused_action_id, unused_action_el);
-    saveTree();
-} //actionCloseTabAndSave
+///// Close the tab and save - NOT YET IMPLEMENTED
+//function actionCloseTabAndSave(node_id, node, unused_action_id, unused_action_el)
+//{
+//    // TODO actionCloseTabButDoNotSave(node_id, node, unused_action_id, unused_action_el);
+//    saveTree();
+//} //actionCloseTabAndSave
 
 /// Delete a tab's entry in the tree.
 /// @param node_id {string} the ID of the node to delete
@@ -879,15 +879,15 @@ function addTabNodeActions(tab_node_id)
         dataset: { action: 'editBullet' }
     });
 
-    T.treeobj.add_action(tab_node_id, {
-        id: 'closeTab',
-        class: 'fff-picture-delete ' + K.ACTION_BUTTON_WIN_CLASS,
-        text: '\xa0',
-        grouped: true,
-        title: "Close and save",
-        callback: actionCloseTabAndSave,
-        dataset: { action: 'closeTab' }
-    });
+//    T.treeobj.add_action(tab_node_id, {
+//        id: 'closeTab',
+//        class: 'fff-picture-delete ' + K.ACTION_BUTTON_WIN_CLASS,
+//        text: '\xa0',
+//        grouped: true,
+//        title: "Close and save",
+//        callback: actionCloseTabAndSave,
+//        dataset: { action: 'closeTab' }
+//    });
 
     T.treeobj.add_action(tab_node_id, {
         id: 'deleteTab',
@@ -1441,8 +1441,8 @@ function treeOnSelect(_evt_unused, evt_data)
                 // Tabs
                 case 'editBullet':
                     actionEditTabBullet(node.id, node, null, null); break;
-                case 'closeTab':
-                    actionCloseTabAndSave(node.id, node, null, null);
+//                case 'closeTab':
+//                    actionCloseTabAndSave(node.id, node, null, null);
                 case 'deleteTab':
                     actionDeleteTab(node.id, node, null, null, evt_data.event);
                         // as deleteWindow, above.
@@ -2667,14 +2667,14 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
             },
         };
 
-        if(tab_val.isOpen) {
-            tabItems.closeItem = {
-                    label: 'Close and remember',
-                    icon: 'fff-picture-delete',
-                    action:
-                        function(){actionCloseTabAndSave(node.id,node,null,null);}
-                };
-        }
+//        if(tab_val.isOpen) {
+//            tabItems.closeItem = {
+//                    label: 'Close and remember',
+//                    icon: 'fff-picture-delete',
+//                    action:
+//                        function(){actionCloseTabAndSave(node.id,node,null,null);}
+//                };
+//        }
 
 
         return tabItems;

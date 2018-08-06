@@ -127,7 +127,7 @@
                 "tab": i18n.get("Appearance"),
                 "group": '',
                 "type": "description",
-                "text": i18n.get("Refresh the TabFern window to apply changes to these options."),
+                "text": i18n.get("Refresh the TabFern window to apply changes to these options.  To refresh, click TabFern's title bar and hit F5."),
             },
             {
                 "tab": i18n.get("Appearance"),
@@ -275,11 +275,13 @@ bar (it will start with "file://")</li>
             // Changelog                                          {{{1
             {
                 "tab": i18n.get("What's new?"),
-                "group": `Version 0.2.0${brplain('2018-xx-xx')}`,
+                "group": `Version 0.1.17${brplain('2018-xx-xx')}`,
                 'group_html':true,
                 "type": "description",
                 "text":
 `<ul>
+<li class="gold-star">TabFern now has <b>500</b> users!!!
+<b>Thank you</b> for using and helping the project!</li>
 <li>Tooltips on the action buttons.  ${issue(117)}</li>
 <li>${settings} Appearance ${gt} Tooltips now has options to show the
 URL and title of each item in a tooltip on that item.  This way you can
