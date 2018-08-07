@@ -287,10 +287,16 @@ bar (it will start with "file://")</li>
 URL and title of each item in a tooltip on that item.  This way you can
 see URLs in the tree, and you can see long titles without having
 to scroll.  ${issue(104)}</li>
-<li>Basic TabFern functionality is now also available on the 
-<a href="https://vivaldi.com/">Vivaldi</a> browser.  Vivaldi uses the
+<li><a href="https://vivaldi.com/">Vivaldi</a> support:
+Basic TabFern functionality is now also available on the Vivaldi
+browser.  Vivaldi uses the
 Chrome Web Store just like Chrome itself does, so installation in Vivaldi
 is the same as installation in Chrome.  ${issue(123)}</li>
+<li><a href="https://getfirefox.com">Firefox Quantum</a> support:
+If you're a developer, you can now load TabFern as a temporary add-on
+and get at least the basic save/load/tab-switching.  (Note that you can't
+manipulate <tt>about:debugging</tt> because it's special to Firefox.)
+${issue(100)}</li>
 </ul>`
             },
             {
