@@ -1550,40 +1550,48 @@ function treeOnSelect(_evt_unused, evt_data)
         if(BROWSER_TYPE !== 'ff') {
             create_data.focused = true;
         }
+
+        let win_create_cbk = function win_create_cbk(cwin) {
+            // TODO: in Firefox, I'm not sure if this gets called after
+            // an error.  Try to open a saved window with a tab
+            // for about:addons or about:debugging to trigger an error.
+
+            // Note: In testing, this happens after the winOnCreated,
+            // tabOnCreated, and tabOnActivated events.  I don't know
+            // if that's guaranteed, though.
+            window_is_being_restored = false;
+
+            if(isLastError()) {
+                window.alert(
+                    `Could not open window: ${chrome.runtime.lastError}`);
+                return;     // with the state in the tree unchanged
+            }
+
+            // Update the tree and node mappings
+            log.info('Adding nodeid map for winid ' + cwin.id);
+            connectChromeWindowToTreeWindowItem(
+                cwin,
+                { val: win_val, node: win_node },
+                { repin: true }
+            );
+
+            // Set the highlights in the tree appropriately
+            T.treeobj.flag_node(win_node.id);
+            flagOnlyCurrentTab(cwin);
+
+        }; //win_create_cbk callback
+
         log.info({'Creating window': create_data});
 
-        chrome.windows.create(
-            create_data,
-            function(cwin) {
-                // TODO: in Firefox, I'm not sure if this gets called after
-                // an error.  Try to open a saved window with a tab
-                // for about:addons or about:debugging to trigger an error.
+        try {
+            chrome.windows.create(create_data, win_create_cbk);
 
-                // Note: In testing, this happens after the winOnCreated,
-                // tabOnCreated, and tabOnActivated events.  I don't know
-                // if that's guaranteed, though.
-                window_is_being_restored = false;
-
-                if(isLastError()) {
-                    window.alert(
-                        `Could not open window: ${chrome.runtime.lastError}`);
-                    return;     // with the state in the tree unchanged
-                }
-
-                // Update the tree and node mappings
-                log.info('Adding nodeid map for winid ' + cwin.id);
-                connectChromeWindowToTreeWindowItem(
-                    cwin,
-                    { val: win_val, node: win_node },
-                    { repin: true }
-                );
-
-                // Set the highlights in the tree appropriately
-                T.treeobj.flag_node(win_node.id);
-                flagOnlyCurrentTab(cwin);
-
-            } //create callback
-        ); //windows.created
+        } catch(e) {
+            log.warn({'Could not create window': e, create_data});
+            window_is_being_restored = false;
+            window.alert("Unable to create window: " + e);
+            return;
+        }
 
     } else {    // it's a node type we don't know how to handle.
         log.error('treeOnSelect: Unknown node ' + node);
