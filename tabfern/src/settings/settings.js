@@ -1,10 +1,13 @@
 /// An object to hold the settings for later programmatic access
 let settingsobj;
 
+/// jQuery alias, since $ is mootools
+let $$ = jQuery;
+
 // Color picker //////////////////////////////////////////////////// {{{1
 
 /// Create the color picker for the scrollbar color.
-let createPicker = function createPicker($$) {
+let createPicker = function createPicker() {
     let picker = $$('#scrollbar-color-picker-label');
 
     // Replace the manifest entry with the color picker
@@ -44,7 +47,11 @@ let createPicker = function createPicker($$) {
 /// TODO automate keeping this in sync with common.js.
 function saveSettingsToObject()
 {
-    return {};
+    let retval = { __proto__: null };
+    for(let key in CFG_DEFAULTS) {
+        retval[key] = getRawSetting(key);
+    }
+    return Object.seal(retval);
 } //saveSettingsToObject
 
 /// Export the settings
@@ -63,24 +70,76 @@ function exportSettings(evt_unused)
 /// Assign settings from an object we have loaded.
 /// TODO automate keeping this in sync with common.js.
 function loadSettingsFromObject(obj) {
-    return true;
+    let ok = true;
+    log.info({'Loading settings from':obj});
+
+    for(let key in CFG_DEFAULTS) {
+        if(!obj[key]) {
+            log.info(`Setting ${key} not found`);
+            continue;   // not an error
+        }
+
+        // Get the value
+        let val;
+        try {
+            val = JSON.parse(String(obj[key]));
+        } catch(e) {
+            log.warn(`Non-JSON value for ${key} - skipping`);
+            ok = false;
+            continue;
+        }
+
+        // Confirm its type
+        if(typeof val !== typeof CFG_DEFAULTS[key]) {
+            log.warn(`Setting ${key}: value is a ${typeof val} but should be `+
+                    `a ${typeof CFG_DEFAULTS[key]} - skipping`);
+            ok = false;
+            continue;
+        }
+
+        // TODO add value-specific checks, e.g., for well-formedness.
+
+        // Set the value
+        if(typeof val === 'boolean' || typeof val === 'string') {
+            // We already checked that val is of the correct type above,
+            // so we can go ahead and set it.
+            setSetting(key, val);
+        } else {    // This shouldn't happen, so it's a log.error if it does.
+            log.error(`Unexpected type ${typeof val} for ${key} - skipping`);
+            ok = false;
+            continue;
+        }
+
+    } //foreach key
+
+    return ok;
 } //loadSettingsFromObject
 
 /// Import the settings
 function importSettings(evt_unused)
 {
     function processFile(text, filename) {
+        let spinner;
         try {
+            spinner = new Spinner().spin(
+                $$('#import-settings').parent()[0]
+            );
             let parsed = JSON.parse(text);
             let ok = loadSettingsFromObject(parsed);
             if(!ok) {
-                window.alert("I couldn't load the file " + filename);
+                window.alert("I encountered an error while loading the file " +
+                                filename);
+            } else {
+                let elem = $$('<div>').text(
+                        "Settings loaded from " + filename);
+                $$('#import-settings').after(elem);
             }
         } catch(e) {
             window.alert("File " + filename + ' is not something I can '+
                 'understand as a TabFern settings file.  Parse error code was: ' +
                 e);
         }
+        if(spinner) spinner.stop();
     } //processFile()
 
     let importer = Fileops.Importer(document, '.tabfern_settings');
@@ -92,8 +151,6 @@ function importSettings(evt_unused)
 
 function main()
 {
-    let $$ = jQuery;    // since $ is mootools
-
     // Option 1: Use the manifest:
     new FancySettings.initWithManifest(function (settings) {
         settingsobj = settings;
@@ -103,7 +160,7 @@ function main()
 
         // ----------------------------
         // Finish creating the page
-        createPicker($$);   // Skinny-scrollbar color picker
+        createPicker();   // Skinny-scrollbar color picker
 
         // ----------------------------
         // Hook up events
