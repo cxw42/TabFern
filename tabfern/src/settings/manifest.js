@@ -5,7 +5,7 @@
 (function(root){
     // Shortcuts for frequently-used items
     function icon(cls) { return `<i class="${cls}"></i>`; }
-    function issue(num) { return `(<a href="https://github.com/cxw42/TabFern/issues/${num|0}">#${num|0}</a>)`; }
+    function issue(num, noparen) { return `${noparen ? '' : '('}<a href="https://github.com/cxw42/TabFern/issues/${num|0}">#${num|0}</a>${noparen ? '' : ')'}`; }
     function brplain(text){return `<br/><span class="plain">${text}</span>`;}
 
     let ham = icon('fa fa-bars');
@@ -297,6 +297,7 @@ If you're a developer, you can now load TabFern as a temporary add-on
 and get at least the basic save/load/tab-switching.  (Note that you can't
 manipulate <tt>about:debugging</tt> because it's special to Firefox.)
 ${issue(100)}</li>
+<li>Bugfixes: ${issue(128,true)}</li>
 </ul>`
             },
             {

@@ -641,12 +641,17 @@ function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el,
     } //doDeletion()
 
     // Prompt for confirmation, if necessary
-    if( is_internal ||
+    let no_confirmation = !!is_internal;
+
+    no_confirmation = no_confirmation ||
         (win_val.keep === K.WIN_KEEP &&
-            !getBoolSetting(CFG_CONFIRM_DEL_OF_SAVED)) ||
+            !getBoolSetting(CFG_CONFIRM_DEL_OF_SAVED));
+
+    no_confirmation = no_confirmation ||
         (win_val.keep === K.WIN_NOKEEP &&
             !getBoolSetting(CFG_CONFIRM_DEL_OF_UNSAVED))
-    ) { // No confirmation required - just do it
+
+    if(no_confirmation) { // No confirmation required - just do it
         doDeletion();
 
     } else {    // Confirmation required
@@ -772,21 +777,35 @@ function actionDeleteTab(node_id, node, unused_action_id, unused_action_el,
     // Prompt for confirmation, if necessary
     let is_keep = (parent_val.keep === K.WIN_KEEP);
     let is_nokeep = (parent_val.keep === K.WIN_NOKEEP);
+    let delete_prompt = 'Delete tab "' + M.get_html_label(tab_val) + '"'
+
+    // General rule...
     let need_confirmation = (
         (is_keep && getBoolSetting(CFG_CONFIRM_DEL_OF_SAVED_TABS)) ||
         (is_nokeep && getBoolSetting(CFG_CONFIRM_DEL_OF_UNSAVED_TABS))
     );
 
-    if( !need_confirmation ||
-        (/^((chrome:\/\/newtab\/?)|(about:blank))$/i.test(tab_val.raw_url))
-    ) {
+    // ... but we don't usually need confirmation for empty tabs...
+    if(/^((chrome:\/\/newtab\/?)|(about:blank))$/i.test(tab_val.raw_url)) {
+        need_confirmation = false;
+    }
+
+    // ... except when such a tab (or any tab being deleted) is the last
+    // tab in its window.  In that case, check the window settings as well.
+    if(parent_node.children.length === 1) {
+        if( (is_keep && getBoolSetting(CFG_CONFIRM_DEL_OF_SAVED)) ||
+            (is_nokeep && getBoolSetting(CFG_CONFIRM_DEL_OF_UNSAVED)) ) {
+            need_confirmation = true;
+            delete_prompt += " and its window";
+        }
+    }
+
+    if(!need_confirmation) {
         // No confirmation required - just do it
         doDeletion();
 
     } else {    // Confirmation required
-        showConfirmationModalDialog(
-            'Delete tab "' + M.get_html_label(tab_val) + '"?'
-        )
+        showConfirmationModalDialog(delete_prompt + '?')
 
         // Processing after the dialog closes
         .val((result)=>{
