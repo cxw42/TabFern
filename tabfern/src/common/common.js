@@ -39,51 +39,61 @@ const MSG_EDIT_TAB_NOTE = 'editTabNote';
 //////////////////////////////////////////////////////////////////////////
 // Names of settings, and their defaults //
 
+/// An array to build the defaults in.  Every property must have a default,
+/// since the defaults array is also used to identify properties to be
+/// saved/loaded.  The JS types of the defaults must match the types
+/// of the properties.
+let _DEF = { __proto__: null };
+
 // Booleans
 const CFG_ENB_CONTEXT_MENU = 'ContextMenu.Enabled';
+_DEF[CFG_ENB_CONTEXT_MENU] = true;
 const CFG_RESTORE_ON_LAST_DELETED = 'open-tree-on-restore-last-deleted';
+_DEF[CFG_RESTORE_ON_LAST_DELETED] = false;
 const CFG_JUMP_WITH_SORT_OPEN_TOP = 'jump-to-top-when-sort-open-to-top';
+_DEF[CFG_JUMP_WITH_SORT_OPEN_TOP] = true;
 const CFG_COLLAPSE_ON_STARTUP = 'collapse-trees-on-startup';
+_DEF[CFG_COLLAPSE_ON_STARTUP] = true;
 const CFG_OPEN_TOP_ON_STARTUP = 'open-to-top-on-startup';
+_DEF[CFG_OPEN_TOP_ON_STARTUP] = false;
 const CFG_HIDE_HORIZONTAL_SCROLLBARS = 'hide-horizontal-scrollbars';
+_DEF[CFG_HIDE_HORIZONTAL_SCROLLBARS] = true;
 const CFG_SKINNY_SCROLLBARS = 'skinny-scrollbars';
+_DEF[CFG_SKINNY_SCROLLBARS] = false;
 const CFG_NEW_WINS_AT_TOP = 'open-new-windows-at-top';
+_DEF[CFG_NEW_WINS_AT_TOP] = true;
 const CFG_SHOW_TREE_LINES = 'show-tree-lines';
+_DEF[CFG_SHOW_TREE_LINES] = false;
 const CFG_CONFIRM_DEL_OF_SAVED = 'confirm-del-of-saved-wins';
+_DEF[CFG_CONFIRM_DEL_OF_SAVED] = true;
 const CFG_CONFIRM_DEL_OF_UNSAVED = 'confirm-del-of-unsaved-wins';
+_DEF[CFG_CONFIRM_DEL_OF_UNSAVED] = false;
 const CFG_CONFIRM_DEL_OF_SAVED_TABS = 'confirm-del-of-saved-tabs';
+_DEF[CFG_CONFIRM_DEL_OF_SAVED_TABS] = true;
 const CFG_CONFIRM_DEL_OF_UNSAVED_TABS = 'confirm-del-of-unsaved-tabs';
+_DEF[CFG_CONFIRM_DEL_OF_UNSAVED_TABS] = false;
 const CFG_URL_IN_TOOLTIP = 'tooltip-has-url';
+_DEF[CFG_URL_IN_TOOLTIP] = false;
 const CFG_TITLE_IN_TOOLTIP = 'tooltip-has-title';
+_DEF[CFG_TITLE_IN_TOOLTIP] = false;
+
+// Not yet implemented - pending #35.  Whether to open closed tabs when
+// you click on the tree item for a partially-open window.
+//const CFG_OPEN_REST_ON_CLICK = 'open-rest-on-win-click',
+//        CFG_OROC_DO = true,
+//        CFG_OROC_DO_NOT = false;
+//_DEF[CFG_OPEN_REST_ON_CLICK] = CFG_OROC_DO_NOT;
 
 // Strings, including limited-choice controls such as radio buttons and dropdowns.
 const CFGS_BACKGROUND = 'window-background';
-const CFGS_SCROLLBAR_COLOR = 'skinny-scrollbar-color';
-const CFG_OPEN_REST_ON_CLICK = 'open-rest-on-win-click',
-        CFG_OROC_DO = 'yes',
-        CFG_OROC_DO_NOT = 'no';
+_DEF[CFGS_BACKGROUND] = '';
 const CFGS_THEME_NAME = 'theme-name';
+_DEF[CFGS_THEME_NAME] = 'default-dark';
+const CFGS_SCROLLBAR_COLOR = 'skinny-scrollbar-color';
+_DEF[CFGS_SCROLLBAR_COLOR] = '';
 
-const CFG_DEFAULTS = {
-    __proto__: null,
-    [CFG_ENB_CONTEXT_MENU]: true,
-    [CFG_RESTORE_ON_LAST_DELETED]: false,
-    [CFG_JUMP_WITH_SORT_OPEN_TOP]: true,
-    [CFG_COLLAPSE_ON_STARTUP]: true,
-    [CFG_OPEN_TOP_ON_STARTUP]: false,
-    [CFG_HIDE_HORIZONTAL_SCROLLBARS]: true,
-    [CFG_SKINNY_SCROLLBARS]: false,
-    [CFG_NEW_WINS_AT_TOP]: true,
-    [CFG_SHOW_TREE_LINES]: false,
-    [CFG_CONFIRM_DEL_OF_SAVED]: true,
-    [CFG_CONFIRM_DEL_OF_UNSAVED]: false,
-    [CFG_CONFIRM_DEL_OF_SAVED_TABS]: true,
-    [CFG_CONFIRM_DEL_OF_UNSAVED_TABS]: false,
-    [CFGS_THEME_NAME]: 'default-dark',
-    [CFGS_SCROLLBAR_COLOR]: '',     // none by default
-    [CFG_URL_IN_TOOLTIP]: false,
-    [CFG_TITLE_IN_TOOLTIP]: false,
-};
+/// The default values for the configuration settings.
+const CFG_DEFAULTS = Object.seal(_DEF);
 
 //////////////////////////////////////////////////////////////////////////
 // Test for Firefox //
@@ -127,6 +137,12 @@ BROWSER_TYPE=null;  // unknown
 // Setting-related functions //
 
 const SETTING_PREFIX = 'store.settings.';
+
+/// Get the raw value of a setting.  Returns null if the key doesn't exist.
+function getRawSetting(setting_name)
+{
+    return localStorage.getItem(SETTING_PREFIX + setting_name);
+} //getSetting
 
 /// Get the string value of a setting, if it is a string.
 function getStringSetting(setting_name, default_value = undefined)
@@ -186,10 +202,11 @@ function haveSetting(setting_name)
 /// @param setting_value {mixed} The value, which must be JSON.stringifiable.
 function setSetting(setting_name, setting_value)
 {
+    // TODO handle exceptions in some reasonable way.
     localStorage.setItem(
         SETTING_PREFIX + setting_name,
         JSON.stringify(setting_value)
-    );
+    );  // JSON stringify so we can store more than just strings.
 } //setSetting
 
 /// Set a setting only if it's not already there.  Parameters are as
