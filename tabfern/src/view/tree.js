@@ -1136,13 +1136,6 @@ function connectChromeWindowToTreeWindowItem(cwin, existing_win, options = {})
 
     // If we reach here, cwin.tabs.length === existing_win.node.children.length.
 
-    // TODO However, there may be other tabs not listed in cwin.
-    // Check the tabs in the window to make sure they match what we expect.
-    // See commit 70638829e5c35a8c86b556dc62ddb3920e4a5e92,
-    // at src/view/view.js:858.  See also
-    // https://bugs.chromium.org/p/chromium/issues/detail?id=762951
-    // I am not sure how much of this can/should be done on the current tick.
-
     for(let idx=0; idx < cwin.tabs.length; ++idx) {
         let tab_node_id = existing_win.node.children[idx];
         let tab_val = D.tabs.by_node_id(tab_node_id);
@@ -1168,6 +1161,49 @@ function connectChromeWindowToTreeWindowItem(cwin, existing_win, options = {})
     // Since we got here, we know that it was a match.
 
     T.treeobj.redraw_node(existing_win.node);
+
+    // Sometimes, Chrome will open extra tabs that are not listed in cwin.
+    // Check the tabs in the window to make sure they match what we expect,
+    // and prune any we don't.
+    // See commit 70638829e5c35a8c86b556dc62ddb3920e4a5e92,
+    // at tabfern/src/view/tree.js:997.  See also
+    // https://bugs.chromium.org/p/chromium/issues/detail?id=762951 .
+
+    let expected_tab_count = existing_win.node.children.length;
+
+    ASQH.NowCC( (cc)=>{ chrome.windows.get(cwin.id, {populate: true}, cc); } )
+
+    .or((err)=>{
+        log.warn({'Could not get tabs in window': cwin, err});
+    })
+
+    .then( (done, inner_cwin)=>{
+        if(inner_cwin.tabs.length > expected_tab_count) {
+            log.warn('Win ' + inner_cwin.id + ': expected ' +
+                    expected_tab_count + ' tabs; got ' +
+                    inner_cwin.tabs.length + ' tabs --- pruning.');
+
+            let to_prune=[];
+
+            // Assume that the unexpected tabs are all at the right-hand
+            // end, since that's the only behaviour I've observed.
+
+            for(let tab_idx = expected_tab_count;
+                tab_idx < inner_cwin.tabs.length;
+                ++tab_idx) {
+                to_prune.push(inner_cwin.tabs[tab_idx].id);
+            } //foreach extra tab
+
+            log.warn('Pruning ' + to_prune);
+            chrome.tabs.remove(to_prune, ASQH.CC(done));
+        } //endif we have extra tabs
+    })
+
+    .or((err)=>{
+        log.warn({'Could not prune tabs in window': cwin, err});
+    })
+    ;
+
     return true;
 } //connectChromeWindowToTreeWindowItem()
 
