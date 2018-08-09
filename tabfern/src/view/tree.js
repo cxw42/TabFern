@@ -1135,6 +1135,14 @@ function connectChromeWindowToTreeWindowItem(cwin, existing_win, options = {})
     }
 
     // If we reach here, cwin.tabs.length === existing_win.node.children.length.
+
+    // TODO However, there may be other tabs not listed in cwin.
+    // Check the tabs in the window to make sure they match what we expect.
+    // See commit 70638829e5c35a8c86b556dc62ddb3920e4a5e92,
+    // at src/view/view.js:858.  See also
+    // https://bugs.chromium.org/p/chromium/issues/detail?id=762951
+    // I am not sure how much of this can/should be done on the current tick.
+
     for(let idx=0; idx < cwin.tabs.length; ++idx) {
         let tab_node_id = existing_win.node.children[idx];
         let tab_val = D.tabs.by_node_id(tab_node_id);
@@ -2418,6 +2426,12 @@ function hamAboutWindow()
     K.openWindowForURL('https://cxw42.github.io/TabFern/');
 } //hamAboutWindow()
 
+/// Reload the TabFern window (or, at least, the tree iframe)
+function hamReloadTree()
+{
+    window.location.reload(true);
+} //hamReloadTree()
+
 /// Open the Settings window.  If ShowWhatIsNew, also updates the K.LASTVER_KEY
 /// information used by checkWhatIsNew().
 function hamSettings()
@@ -2592,6 +2606,13 @@ function getHamburgerMenuItems(node, _unused_proxyfunc, e)
             separator_after: true,
         };
     } //endif is_devel_mode
+
+    items.reloadItem = {
+        label: 'Reload',
+        action: hamReloadTree,
+        icon: 'fa fa-refresh',
+        separator_after: true,
+    };
 
     items.infoItem = {
             label: "Online info",

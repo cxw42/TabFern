@@ -314,6 +314,9 @@ If you're a developer, you can now load TabFern as a temporary add-on
 and get at least the basic save/load/tab-switching.  (Note that you can't
 manipulate <tt>about:debugging</tt> because it's special to Firefox.)
 ${issue(100)}</li>
+<li>There is now a "Reload" option on the menu
+(${ham} ${gt} ${icon('fa fa-refresh')} Reload), in case TabFern
+and Chrome get out of sync.  ${issue(127)}</li>
 <li>Bugfixes: ${issue(128,true)}</li>
 </ul>`
             },
