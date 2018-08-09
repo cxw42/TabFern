@@ -76,6 +76,8 @@ const CFG_URL_IN_TOOLTIP = 'tooltip-has-url';
 _DEF[CFG_URL_IN_TOOLTIP] = false;
 const CFG_TITLE_IN_TOOLTIP = 'tooltip-has-title';
 _DEF[CFG_TITLE_IN_TOOLTIP] = false;
+const CFG_PRUNE_NEW_WINDOWS = 'prune-new-windows';
+_DEF[CFG_PRUNE_NEW_WINDOWS] = false;
 
 // Not yet implemented - pending #35.  Whether to open closed tabs when
 // you click on the tree item for a partially-open window.

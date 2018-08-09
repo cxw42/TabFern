@@ -80,12 +80,13 @@
         ],
         [ //other data
             'win',          // the actual Window record from chrome
-                // TODO remove this --- win_id should be enough
+                // TODO? remove this --- win_id should be enough
             'raw_title',    // the window's title (e.g., "Window")
             'isOpen',       // whether the window is open or not
             'keep',         // whether the window should be saved or not
             //'raw_bullet',   // User-provided text (brief).  null => none
                 // Not currently used.
+            'prune_data',   // {timer_id,cwin} of a setTimeout used for pruning
         ]);
 
     /// Find a node's value in the model, regardless of type.

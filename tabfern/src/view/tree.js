@@ -248,6 +248,104 @@ function unflagAllWindows() {
 };
 
 ////////////////////////////////////////////////////////////////////////// }}}1
+// Chrome-related utilities // {{{1
+
+/// Check the tabs in the window to make sure they match what we expect,
+/// and prune any we don't expect.
+/// This is because sometimes Chrome opens extra tabs but doesn't tell the
+/// chrome.windows.create callback about them.
+/// See https://bugs.chromium.org/p/chromium/issues/detail?id=762951 .
+/// See also commit 70638829e5c35a8c86b556dc62ddb3920e4a5e92,
+/// at tabfern/src/view/tree.js:997.
+///
+/// @param cwin The Chrome window
+/// @param expected_tab_count {Number}  How many tabs to keep, or 0 to leave
+///             the window empty except for a chrome://newtab.
+function pruneWindow(cwin, expected_tab_count)
+{
+    if(!cwin || +expected_tab_count < 0) return;
+    let count = +expected_tab_count || 1;   // 0 => one tab
+
+    ASQH.NowCC( (cc)=>{ chrome.windows.get(cwin.id, {populate: true}, cc); } )
+
+    .or((err)=>{
+        L.log.warn({'Could not get tabs in window': cwin, err});
+    })
+
+    .then( (done, inner_cwin)=>{
+
+        if(inner_cwin.tabs.length === 0) {
+            //chrome.tabs.create( {windowId: inner_cwin.id, index: 0} );
+            done.fail({"I can't check for pruning in zero-tab window":inner_cwin});
+            return;
+        }
+
+        let win_val = D.windows.by_win_id(inner_cwin.id);
+
+        // Make sure the first tab is a new tab, if desired.
+        // However, if this is a saved window, don't mess with tab 0.
+        if( expected_tab_count === 0 &&
+            !(win_val && win_val.keep === K.WIN_KEEP)
+        ) {
+            // Note: this is problematic if the last window to be open was a
+            // saved window, since this races against the merge check in
+            // tabOnCreated.  That is the reason for pruneWindowSetTimer().
+            let tabid = inner_cwin.tabs[0].id;
+
+            ASQH.NowCC( (cc)=> {
+                log.info(`Setting tab ${tabid} to chrome:newtab`);
+                chrome.tabs.update(tabid, {url: 'chrome://newtab'}, cc)
+            })
+
+            // I tried the following, but it didn't help.
+//            // See if the merge beat us to the punch.  There is still
+//            // a race, but maybe this will help.
+//            .then( (done2)=>{
+//                let win_val = D.windows.by_win_id(inner_cwin.id);
+//                if(!win_val || win_val.keep !== K.WIN_KEEP) {
+//                    done2();
+//
+//                } else {
+//                    // We might have merged, so put the URL back to
+//                    // what it was.
+//                    let tab_url = D.tabs.by_tab_id(tabid, 'raw_url');
+//                    chrome.tabs.update(tabid, {url: tab_url}, ASQH.CC(done2));
+//                }
+//            })
+            ;
+        } //endif the caller wanted tab 0 === chrome://newtab
+
+        if(inner_cwin.tabs.length <= count) {
+            done();     // No need to prune --- we're done
+            return;
+        }
+
+        L.log.warn('Win ' + inner_cwin.id + ': expected ' +
+                count + ' tabs; got ' +
+                inner_cwin.tabs.length + ' tabs --- pruning.');
+
+        let to_prune=[];
+
+        // Assume that the unexpected tabs are all at the right-hand
+        // end, since that's the only behaviour I've observed.
+
+        for(let tab_idx = count;
+            tab_idx < inner_cwin.tabs.length;
+            ++tab_idx) {
+            to_prune.push(inner_cwin.tabs[tab_idx].id);
+        } //foreach extra tab
+
+        L.log.warn('Pruning ' + to_prune);
+        chrome.tabs.remove(to_prune, ASQH.CC(done));
+    })
+
+    .or((err)=>{
+        L.log.warn({'Could not prune tabs in window': cwin, err});
+    })
+    ;
+} //pruneWindow
+
+////////////////////////////////////////////////////////////////////////// }}}1
 // UI Controls // {{{1
 
 /// Show a confirmation dialog with Yes/No/Cancel, and Do not ask again.
@@ -1002,6 +1100,41 @@ function addWindowNodeActions(win_node_id)
 
 } //addWindowNodeActions
 
+/// Set a timer to prune the window later.
+/// @param win_val  The value for the window
+/// @param cwin     (Optional) The Chrome window.  If not provided, the
+///                 one stashed in win_val (if any) will be used.
+let pruneWindowSetTimer = function(win_val, cwin) {
+    log.debug({"Bump of prune timer requested for":win_val, cwin});
+    if(!win_val.prune_data) {
+        win_val.prune_data = {timer_id: undefined, cwin: cwin || undefined};
+    }
+
+    if(win_val.prune_data.timer_id) {
+        window.clearTimeout(win_val.prune_data.timer_id);
+        win_val.prune_data.timer_id = undefined;
+    }
+
+    log.debug({"   Bumping prune timer for":win_val, cwin});
+    win_val.prune_data.timer_id = window.setTimeout(
+        ()=>{
+            if(!win_val.prune_data.cwin) return;
+            if(!did_init_complete) {
+                log.info({'Still initializing, so skipping prune-to-0 check of':
+                                win_val.prune_data.cwin});
+                return;
+            }
+
+            log.info({'Checking for pruning-to-0 of':win_val.prune_data.cwin});
+            pruneWindow(win_val.prune_data.cwin, 0);
+                // 0 => only leave a chrome://newtab there
+            win_val.prune_data = undefined;
+                // Once pruning is done, don't leave stale data around.
+        },
+        K.WIN_PRUNE_TIMER_MS    // UGLY HACK - give the merge check time to run
+    );
+} //pruneWindowSetTimer
+
 /// Create a tree node for open Chrome window #cwin.
 /// @returns the tree-node ID, or falsy on error.
 function createNodeForWindow(cwin, keep)
@@ -1016,7 +1149,7 @@ function createNodeForWindow(cwin, keep)
     if(!node_id) return false;    //sanity check
 
     M.markWinAsOpen(val, cwin);
-    if(keep) {
+    if(keep === K.WIN_KEEP) {
         M.remember(node_id, false);
     } else {
         M.mark_win_as_unsaved(val, false);
@@ -1029,6 +1162,11 @@ function createNodeForWindow(cwin, keep)
             log.info('   ' + tab.id.toString() + ': ' + tab.title);
             createNodeForTab(tab, node_id);     //TODO handle errors
         }
+    }
+
+    // Remove extra tabs if the user wants
+    if(getBoolSetting(CFG_PRUNE_NEW_WINDOWS)) {
+        pruneWindowSetTimer(val, cwin);
     }
 
     return node_id;
@@ -1162,47 +1300,8 @@ function connectChromeWindowToTreeWindowItem(cwin, existing_win, options = {})
 
     T.treeobj.redraw_node(existing_win.node);
 
-    // Sometimes, Chrome will open extra tabs that are not listed in cwin.
-    // Check the tabs in the window to make sure they match what we expect,
-    // and prune any we don't.
-    // See commit 70638829e5c35a8c86b556dc62ddb3920e4a5e92,
-    // at tabfern/src/view/tree.js:997.  See also
-    // https://bugs.chromium.org/p/chromium/issues/detail?id=762951 .
-
-    let expected_tab_count = existing_win.node.children.length;
-
-    ASQH.NowCC( (cc)=>{ chrome.windows.get(cwin.id, {populate: true}, cc); } )
-
-    .or((err)=>{
-        log.warn({'Could not get tabs in window': cwin, err});
-    })
-
-    .then( (done, inner_cwin)=>{
-        if(inner_cwin.tabs.length > expected_tab_count) {
-            log.warn('Win ' + inner_cwin.id + ': expected ' +
-                    expected_tab_count + ' tabs; got ' +
-                    inner_cwin.tabs.length + ' tabs --- pruning.');
-
-            let to_prune=[];
-
-            // Assume that the unexpected tabs are all at the right-hand
-            // end, since that's the only behaviour I've observed.
-
-            for(let tab_idx = expected_tab_count;
-                tab_idx < inner_cwin.tabs.length;
-                ++tab_idx) {
-                to_prune.push(inner_cwin.tabs[tab_idx].id);
-            } //foreach extra tab
-
-            log.warn('Pruning ' + to_prune);
-            chrome.tabs.remove(to_prune, ASQH.CC(done));
-        } //endif we have extra tabs
-    })
-
-    .or((err)=>{
-        log.warn({'Could not prune tabs in window': cwin, err});
-    })
-    ;
+    // Prune any extra tabs Chrome may have created due to bugs.
+    pruneWindow(cwin, existing_win.node.children.length);
 
     return true;
 } //connectChromeWindowToTreeWindowItem()
@@ -1690,49 +1789,50 @@ function treeOnSelect(_evt_unused, evt_data)
 ////////////////////////////////////////////////////////////////////////// }}}1
 // Chrome window/tab callbacks // {{{1
 
-function winOnCreated(win)
+function winOnCreated(cwin)
 {
-    log.info({'Window created': win.id,
+    log.info({'Window created': cwin.id,
                 "Restore?": (window_is_being_restored ? "yes" : "no"),
-                win
+                cwin
             });
     //log.info('clearing flags winoncreated');
 
     T.treeobj.clear_flags();
+
     if(window_is_being_restored) {
-        return;     // don't create an extra copy
-    }
+        return;     // don't create an extra copy - the chrome.window.create
+    }               // callback in treeOnSelect will handle it.
 
     // Save the window's size
-    if(win.type === 'normal') {
-        winSizes[win.id] = getWindowSizeFromWindowRecord(win);
-        newWinSize = winSizes[win.id];
+    if(cwin.type === 'normal') {
+        winSizes[cwin.id] = getWindowSizeFromWindowRecord(cwin);
+        newWinSize = winSizes[cwin.id];
             // Chrome appears to use the last-resized window as its size
             // template even when you haven't closed it, so do similarly.
             // ... Well, maybe the last-resized window with a non-blank tab ---
             // not entirely sure.
     }
 
-    createNodeForWindow(win, K.WIN_NOKEEP);
+    createNodeForWindow(cwin, K.WIN_NOKEEP);
     saveTree();     // for now, brute-force save on any change.
 } //winOnCreated
 
 /// Update the tree when the user closes a browser window
-function winOnRemoved(win_id)
+function winOnRemoved(cwin_id)
 {
-    if(win_id == my_winid) return;  // does this happen?
+    if(cwin_id == my_winid) return;  // does this happen?
 
-    log.info({'Window removed': win_id});
+    log.info({'Window removed': cwin_id});
 
     // Stash the size of the window being closed as the size for
     // reopened windows.
-    if(win_id in winSizes) {
-        // TODO only do this is win_id's type is "normal"
-        newWinSize = winSizes[win_id];
-        delete winSizes[win_id];
+    if(cwin_id in winSizes) {
+        // TODO only do this is cwin_id's type is "normal"
+        newWinSize = winSizes[cwin_id];
+        delete winSizes[cwin_id];
     }
 
-    let node_val = D.windows.by_win_id(win_id);
+    let node_val = D.windows.by_win_id(cwin_id);
     if(!node_val) return;   // e.g., already closed
     let node_id = node_val.node_id;
     if(!node_id) return;
@@ -1972,15 +2072,18 @@ var tabOnCreated = (function(){
 
     /// Make an ASQ step that will check if the window matches an existing
     /// window.
-    function make_merge_check_step(ctab)
+    function make_merge_check_step(ctab, win_val)
     {
         return function merge_check_inner(check_done) {
             //DEBUG
             log.debug({[`merge check tab ${ctab.id} win ${ctab.windowId}`]:
                         ctab});
 
+
             let seq = ASQH.NowCCTry((cc)=>{
                 chrome.windows.get(ctab.windowId,{populate:true}, cc);
+                // If there's a prune pending, give the merge time to work
+                pruneWindowSetTimer(win_val);
             });
 
             seq.then((done, cwin_or_err)=>{
@@ -2094,11 +2197,15 @@ var tabOnCreated = (function(){
     {
         log.info({'Tab created': ctab.id, ctab});
 
-        let win_node_id = D.windows.by_win_id(ctab.windowId, 'node_id')
+        let win_val = D.windows.by_win_id(ctab.windowId);
+        let win_node_id = win_val ? win_val.node_id : undefined;
         if(!win_node_id) {
             log.info(`Unknown window ID ${ctab.windowId} - ignoring`);
             return;
         }
+
+        // If there's a prune pending, give the merge time to work
+        pruneWindowSetTimer(win_val);
 
         let tab_node_id;
 
@@ -2144,7 +2251,7 @@ var tabOnCreated = (function(){
 
             // Design decision: after creating the node, check if it's a
             // duplicate.
-            seq.try(make_merge_check_step(ctab));
+            seq.try(make_merge_check_step(ctab, win_val));
                 // .try => always run the following saveTree
 
             seq.then((done)=>{saveTree(true, done);});
@@ -2472,6 +2579,9 @@ function hamReloadTree()
 /// information used by checkWhatIsNew().
 function hamSettings()
 {
+    // TODO: figure out the interaction of pruning with openWindowForURL.
+    // Currently, pruning zeros out the Settings window, too.
+
     // Actually open the window
     K.openWindowForURL(chrome.extension.getURL(
         '/src/settings/index.html' +

@@ -446,7 +446,8 @@
             raw_title: null,
             raw_bullet: null,
             isOpen: false,
-            keep: undefined
+            keep: undefined,
+            prune_data: undefined
         });
 
         if(!val) {
