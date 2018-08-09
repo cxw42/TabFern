@@ -105,11 +105,13 @@
     /// Open a new window with a given URL.  Also remove the default
     /// tab that appears because we are letting the window open at the
     /// default size.  Yes, this is a bit like a FOUC, but oh well.
+    /// @return An ASQ instance
     module.openWindowForURL = function(url) {
         let win_id;     // TODO is there a better way to pass data down
                         // the sequence?
         let tab0_id;    ///< The tab automatically created with the window
 
+        let seq =
         ASQH.NowCC((cc)=>{
             chrome.windows.create(cc);
         })
@@ -134,6 +136,8 @@
 
         // To start the sequence paused, use `let seq = ASQ().duplicate()` above
         // instead of just ASQ().  Then, to fire it off, `seq.unpause();`.
+
+        return seq;
 
     } //openWindowForURL
 

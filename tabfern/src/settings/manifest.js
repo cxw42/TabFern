@@ -139,7 +139,6 @@
                 "label": i18n.get('Prompt for confirmation before deleting <b>tabs</b> in <b>unsaved</b> windows'),
             },
 
-/*
             {
                 "tab": i18n.get("Behaviour"),
                 "group": i18n.get("When Chrome..."),
@@ -147,7 +146,6 @@
                 "type": "checkbox",
                 "label": i18n.get("Adds extra tabs to a new window I've just opened, get rid of them!"),
             },
-*/
 
             // Appearance
             {

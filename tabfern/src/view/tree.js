@@ -85,6 +85,9 @@ var currently_focused_winid = null;
 /// tabs to carry the node ID for confirmation.
 var window_is_being_restored = false;
 
+/// HACK to not prune windows we create!
+var do_not_prune_right_now = false;
+
 /// The size of the last-closed window, to be used as the
 /// size of newly-opened windows (whence the name).
 /// Should always have a valid value.
@@ -102,6 +105,11 @@ var ShowWhatIsNew = false;
 
 /// Array of URLs of the last-deleted window
 var lastDeletedWindow;
+
+/// Node ID of the last-closed saved window --- merging is prohibited with
+/// this node.  It's the last-closed saved and not the last-closed overall
+/// because nodes for unsaved windows disappear with their windows.
+var lastSavedClosedWindow_node_id = undefined;
 
 /// Did initialization complete successfully?
 var did_init_complete = false;
@@ -263,7 +271,7 @@ function unflagAllWindows() {
 ///             the window empty except for a chrome://newtab.
 function pruneWindow(cwin, expected_tab_count)
 {
-    if(!cwin || +expected_tab_count < 0) return;
+    if(!cwin || +expected_tab_count < 0 || do_not_prune_right_now) return;
     let count = +expected_tab_count || 1;   // 0 => one tab
 
     ASQH.NowCC( (cc)=>{ chrome.windows.get(cwin.id, {populate: true}, cc); } )
@@ -1115,6 +1123,8 @@ let pruneWindowSetTimer = function(win_val, cwin) {
         win_val.prune_data.timer_id = undefined;
     }
 
+    if(do_not_prune_right_now) return;
+
     log.debug({"   Bumping prune timer for":win_val, cwin});
     win_val.prune_data.timer_id = window.setTimeout(
         ()=>{
@@ -1125,6 +1135,7 @@ let pruneWindowSetTimer = function(win_val, cwin) {
                 return;
             }
 
+            if(do_not_prune_right_now) return;
             log.info({'Checking for pruning-to-0 of':win_val.prune_data.cwin});
             pruneWindow(win_val.prune_data.cwin, 0);
                 // 0 => only leave a chrome://newtab there
@@ -1165,7 +1176,7 @@ function createNodeForWindow(cwin, keep)
     }
 
     // Remove extra tabs if the user wants
-    if(getBoolSetting(CFG_PRUNE_NEW_WINDOWS)) {
+    if(getBoolSetting(CFG_PRUNE_NEW_WINDOWS) && !do_not_prune_right_now) {
         pruneWindowSetTimer(val, cwin);
     }
 
@@ -1836,6 +1847,11 @@ function winOnRemoved(cwin_id)
     if(!node_val) return;   // e.g., already closed
     let node_id = node_val.node_id;
     if(!node_id) return;
+
+    if(node_val.keep === K.WIN_KEEP) {
+        lastSavedClosedWindow_node_id = node_id;
+    }
+
     let node = T.treeobj.get_node(node_id);
     if(!node) return;
 
@@ -2094,8 +2110,9 @@ var tabOnCreated = (function(){
 
                 let cwin = cwin_or_err;
                 let merge_to_win = winAlreadyExistsInTree(cwin);
-                MERGE: if(merge_to_win && merge_to_win.val &&
-                    !merge_to_win.val.isOpen    // don't hijack other open wins
+                MERGE: if(merge_to_win && merge_to_win.val
+                    && !merge_to_win.val.isOpen // don't hijack other open wins
+                    && merge_to_win.val.node_id
                 ) {
                     log.info({
                         [`merge ${cwin.id} Found merge target in tree for`]: cwin,
@@ -2112,6 +2129,12 @@ var tabOnCreated = (function(){
                     let merge_from_win_val = D.windows.by_win_id(cwin.id);
                     if(!merge_from_win_val) {
                         log.debug(`merge ${cwin.id}: bail - could not get merge_from_win_val`);
+                        break MERGE;
+                    }
+
+                    if(merge_to_win.val.node_id === lastSavedClosedWindow_node_id) {
+                        log.info(`merge ${cwin.id}: bail - I ` +
+                            "won't merge with the most-recently-closed window");
                         break MERGE;
                     }
 
@@ -2563,10 +2586,25 @@ function timedResizeDetector()
 ////////////////////////////////////////////////////////////////////////// }}}1
 // Hamburger menu // {{{1
 
+/// Open a window, setting do_not_prune_right_now around the call.
+let open_window_with_url = function(url) {
+    do_not_prune_right_now = true;
+    let seq =
+        K.openWindowForURL(url || 'about:blank');
+    seq
+    .val(()=>{
+        do_not_prune_right_now = false;
+    })
+    .or(()=>{
+        do_not_prune_right_now = false;
+    });
+    return seq;
+};
+
 /// Open a new window with the TabFern homepage.
 function hamAboutWindow()
 {
-    K.openWindowForURL('https://cxw42.github.io/TabFern/');
+    open_window_with_url('https://cxw42.github.io/TabFern/');
 } //hamAboutWindow()
 
 /// Reload the TabFern window (or, at least, the tree iframe)
@@ -2579,11 +2617,8 @@ function hamReloadTree()
 /// information used by checkWhatIsNew().
 function hamSettings()
 {
-    // TODO: figure out the interaction of pruning with openWindowForURL.
-    // Currently, pruning zeros out the Settings window, too.
-
     // Actually open the window
-    K.openWindowForURL(chrome.extension.getURL(
+    open_window_with_url(chrome.extension.getURL(
         '/src/settings/index.html' +
         (ShowWhatIsNew ? '#open=last' : ''))
     );
@@ -2702,7 +2737,7 @@ function hamSorter(compare_fn)
 
 function hamRunJasmineTests()
 {
-    K.openWindowForURL(chrome.extension.getURL('/test/index.html'));
+    open_window_with_url(chrome.extension.getURL('/test/index.html'));
 } // hamRunJasmineTests
 
 function hamSortOpenToTop()
@@ -3539,7 +3574,7 @@ function checkWhatIsNew(selector)
                 { [K.LASTVER_KEY]: 'installed, but no version viewed yet' },
                 function() {
                     ignore_chrome_error();
-                    K.openWindowForURL('https://cxw42.github.io/TabFern/#usage');
+                    open_window_with_url('https://cxw42.github.io/TabFern/#usage');
                 }
             );
         }
