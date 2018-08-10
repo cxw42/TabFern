@@ -1148,7 +1148,7 @@ let pruneWindowSetTimer = function(win_val, cwin) {
 
 /// Create a tree node for open Chrome window #cwin.
 /// @returns the tree-node ID, or falsy on error.
-function createNodeForWindow(cwin, keep)
+function createNodeForWindow(cwin, keep, no_prune)
 {
     if(!cwin || !cwin.id) return;
 
@@ -1176,7 +1176,9 @@ function createNodeForWindow(cwin, keep)
     }
 
     // Remove extra tabs if the user wants
-    if(getBoolSetting(CFG_PRUNE_NEW_WINDOWS) && !do_not_prune_right_now) {
+    if(!no_prune && !do_not_prune_right_now
+        && getBoolSetting(CFG_PRUNE_NEW_WINDOWS)
+    ) {
         pruneWindowSetTimer(val, cwin);
     }
 
@@ -3879,7 +3881,7 @@ function addOpenWindowsToTree(done, cwins)
         if(!existing_win || (existing_win.val && existing_win.val.isOpen)) {
             // Doesn't exist, or the duplicate is already open (e.g., if two
             // windows are open with the same set of tabs)
-            createNodeForWindow(cwin, K.WIN_NOKEEP);
+            createNodeForWindow(cwin, K.WIN_NOKEEP, true);  //true=>no pruning
         } else {
             connectChromeWindowToTreeWindowItem(cwin, existing_win);
         } //endif window already exists
