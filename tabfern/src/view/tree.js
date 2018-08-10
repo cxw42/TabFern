@@ -2430,38 +2430,63 @@ function tabOnRemoved(tabid, removeinfo)
 
     // If the window is closing, do not remove the tab records.
     // The cleanup will be handled by winOnRemoved().
-    if(removeinfo.isWindowClosing) return;
+    if(removeinfo.isWindowClosing) {
+        log.debug({'Window is closing, so nothing to do':tabid,removeinfo});
+        return;
         // TODO also mark this as non-recovered, maybe?
+    }
 
     let window_node_id = D.windows.by_win_id(removeinfo.windowId, 'node_id');
-    if(!window_node_id) return;
+    if(!window_node_id) {
+        log.debug({'Bailing - no window_node_id':tabid,removeinfo});
+        return;
+    }
 
     {   // Keep the locals here out of the scope of the closure below.
         // Get the parent (window)
         let window_node = T.treeobj.get_node(window_node_id);
-        if(!window_node) return;
+        if(!window_node) {
+            log.debug({'Bailing - no window_node':tabid,removeinfo});
+            return;
+        }
 
         // Get the tab's node
         let tab_node_id = D.tabs.by_tab_id(tabid, 'node_id');
-        if(!tab_node_id) return;
+        if(!tab_node_id) {
+            log.debug({'Bailing - no tab_node_id':tabid,removeinfo});
+            return;
+        }
         let tab_node = T.treeobj.get_node(tab_node_id);
-        if(!tab_node) return;
+        if(!tab_node) {
+            log.debug({'Bailing - no tab_node':tabid,removeinfo});
+            return;
+        }
 
         // Remove the node
         let tab_val = D.tabs.by_tab_id(tabid);
 
         // See if it's a tab we have already marked as removed.  If so,
         // whichever code marked it is responsible, and we're off the hook.
-        if(!tab_val || tab_val.tab_id === K.NONE) return;
+        if(!tab_val || tab_val.tab_id === K.NONE) {
+            log.debug({'Bailing - no tab_val with tab_id':tab_val, tabid, removeinfo});
+            return;
+        }
 
+        log.debug({'Removing value':tab_val,tabid,removeinfo});
         D.tabs.remove_value(tab_val);
             // So any events that are triggered won't try to look for a
             // nonexistent tab.
+
+        log.debug({'Removing tree node':tab_node,tabid,removeinfo});
         T.treeobj.because('chrome','delete_node',tab_node);
     }
 
+    log.debug({'Updating tab index values':window_node_id,tabid,removeinfo});
+
     // Refresh the tab.index values for the remaining tabs
     updateTabIndexValues(window_node_id);
+
+    log.debug({'Tab index values updated':window_node_id,tabid,removeinfo});
 
     saveTree();
 } //tabOnRemoved
