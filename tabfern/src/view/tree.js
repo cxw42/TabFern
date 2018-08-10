@@ -300,27 +300,18 @@ function pruneWindow(cwin, expected_tab_count)
             // tabOnCreated.  That is the reason for pruneWindowSetTimer().
             let tabid = inner_cwin.tabs[0].id;
 
-            ASQH.NowCC( (cc)=> {
+            let seq = ASQ();    // for error reporting
+            // Don't change chrome: URLs, since those might be things
+            // like History (Ctl+H).
+            if(!inner_cwin.tabs[0].url.match(/^chrome:/i)) {
                 log.info(`Setting tab ${tabid} to chrome:newtab`);
-                chrome.tabs.update(tabid, {url: 'chrome://newtab'}, cc)
-            })
+                chrome.tabs.update(tabid, {url: 'chrome://newtab'},
+                        ASQH.CCgo(seq));
+            }
+            // Currently we don't have anything else to do, so there's no
+            // seq.then() calls.  However, using seq still causes asynquence
+            // to report any errors in the chrome.tabs.update() call.
 
-            // I tried the following, but it didn't help.
-//            // See if the merge beat us to the punch.  There is still
-//            // a race, but maybe this will help.
-//            .then( (done2)=>{
-//                let win_val = D.windows.by_win_id(inner_cwin.id);
-//                if(!win_val || win_val.keep !== K.WIN_KEEP) {
-//                    done2();
-//
-//                } else {
-//                    // We might have merged, so put the URL back to
-//                    // what it was.
-//                    let tab_url = D.tabs.by_tab_id(tabid, 'raw_url');
-//                    chrome.tabs.update(tabid, {url: tab_url}, ASQH.CC(done2));
-//                }
-//            })
-            ;
         } //endif the caller wanted tab 0 === chrome://newtab
 
         if(inner_cwin.tabs.length <= count) {
