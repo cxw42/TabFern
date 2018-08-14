@@ -326,6 +326,8 @@ ${issue(100)}</li>
 <li>There is now a "Reload" option on the menu
 (${ham} ${gt} ${icon('fa fa-refresh')} Reload), in case TabFern
 and Chrome get out of sync.  ${issue(127)}</li>
+<li>When you open the TF window, it moves back to its last position 
+more quickly.  ${issue(134)}</li>
 <li>Bugfixes: ${issue(128,true)}</li>
 </ul>`
             },

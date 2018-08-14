@@ -131,6 +131,41 @@ var Bypasser;
 ////////////////////////////////////////////////////////////////////////// }}}1
 // Module setup, and utilities // {{{1
 
+// Initialization support
+let init_step_num = 0;
+const LAST_INIT_STEP = 13;
+
+/// Update the initialization status counter
+let next_init_step = function(where) {
+    ++init_step_num;
+
+    let msg =
+        `${init_step_num}/${LAST_INIT_STEP}${where ? (': ' + where): ''}`;
+    log.info({Initialization:msg})
+
+    let elem = $(K.INIT_PROGRESS_SEL);
+    if(elem.css('display') !== 'block') return;
+
+    elem.text(msg);
+
+    elem.hide().show(1);
+        // Force redraw - thanks to
+        // https://stackoverflow.com/users/122543/juank and
+        // https://stackoverflow.com/users/402517/l-poellabauer
+        // at https://stackoverflow.com/a/8840703/2877364 .
+        // I used (1) instead of (0) since I saw it not work once with (0).
+
+}; //next_init_step
+
+/// Tell me if I forgot to update LAST_INIT_STEP
+let check_init_step_count = function() {
+    if(init_step_num !== LAST_INIT_STEP) {
+        let msg = `Step count was ${init_step_num} - update LAST_INIT_STEP`;
+        log.warn(msg);
+        window.alert(msg);
+    }
+}; //check_init_step_count
+
 /// Init those of our globals that don't require any data to be loaded.
 /// Call after Modules has been populated.
 function local_init()
@@ -1450,10 +1485,10 @@ var loadSavedWindowsFromData = (function(){
 /// @param {function} next_action If provided, will be called when loading
 ///                     is complete.
 function loadSavedWindowsIntoTree(next_action) {
-    $(K.INIT_PROGRESS_SEL).text("5/13");
+    next_init_step('Load saved windows');
 
     chrome.storage.local.get(K.STORAGE_KEY, function(items) {
-        $(K.INIT_PROGRESS_SEL).text("6/13");
+        next_init_step('Got save data');
 
         READIT:
         if(isLastError()) {
@@ -3685,14 +3720,16 @@ function delete_all_closed_nodes(are_you_sure)
 } //delete_all_closed_nodes
 
 ////////////////////////////////////////////////////////////////////////// }}}1
-// Startup / shutdown // {{{1
+// Startup / shutdown details // {{{1
+
+// Initialization routines // {{{2
 
 let custom_bg_color = false;
 
 /// Initialization that happens before the full DOM is loaded
 function preLoadInit()
 {
-    $(K.INIT_PROGRESS_SEL).text("1/13");
+    next_init_step('preload');
     if(getBoolSetting(CFG_HIDE_HORIZONTAL_SCROLLBARS)) {
         document.querySelector('html').classList += ' tf--feature--hide-horizontal-scrollbars';
     }
@@ -3777,7 +3814,7 @@ function preLoadInit()
 /// Beginning of the onload initialization.
 function basicInit(done)
 {
-    $(K.INIT_PROGRESS_SEL).text("2/13");
+    next_init_step('basic initialization');
     log.info('TabFern tree.js initializing view - ' + TABFERN_VERSION);
 
     Hamburger = Modules.hamburger('#hamburger-menu', getHamburgerMenuItems
@@ -3810,7 +3847,7 @@ function basicInit(done)
 /// Called after ASQ.try(chrome.runtime.sendMessage)
 function createMainTreeIfWinIdReceived_catch(done, win_id_msg_or_error)
 {
-    $(K.INIT_PROGRESS_SEL).text("4/13");
+    next_init_step('create main tree');
     if(ASQH.is_asq_try_err(win_id_msg_or_error)) {
         // This is fatal
         return done.fail("Couldn't get win ID: " + win_id_msg_or_error.catch);
@@ -3854,7 +3891,7 @@ function createMainTreeIfWinIdReceived_catch(done, win_id_msg_or_error)
             drivers: [Modules.dmauro_keypress]
         },
         function initialized(err) {
-            $(K.INIT_PROGRESS_SEL).text("5/13");
+            next_init_step('context-menu support');
             if ( err ) {
                 console.log({['Failed loading a shortcut driver!  Initializing '+
                             'context menu with no shortcut driver']:err});
@@ -3868,9 +3905,57 @@ function createMainTreeIfWinIdReceived_catch(done, win_id_msg_or_error)
     );
 } //createMainTreeIfWinIdReceived_catch()
 
+/// Called after ASQ.try(chrome.storage.local.get(LOCN_KEY))
+function moveWinToLastPositionIfAny_catch(done, items_or_err)
+{   // move the popup window to its last position/size.
+    // If there was an error (e.g., nonexistent key), just
+    // accept the default size.
+
+    next_init_step('reposition window');
+    if(ASQH.is_asq_try_err(items_or_err)) {
+        log.warn({"Couldn't get saved location":$.extend({},items_or_err)});
+        // Note: $.extend() used to force evaluation at the time of logging
+    } else { //we have a location
+        log.info({"Got saved location":$.extend({},items_or_err)});
+
+        let parsed = items_or_err[K.LOCN_KEY];
+        if( (parsed !== null) && (typeof parsed === 'object') ) {
+            // + and || are to provide some sensible defaults - thanks to
+            // https://stackoverflow.com/a/7540412/2877364 by
+            // https://stackoverflow.com/users/113716/user113716
+            let size_data =
+                {
+                      'left': +parsed.left || 0
+                    , 'top': +parsed.top || 0
+                    , 'width': Math.max(+parsed.width || 300, 100)
+                        // don't let it shrink too small, in case something went wrong
+                    , 'height': Math.max(+parsed.height || 600, 200)
+                };
+            last_saved_size = $.extend({}, size_data);
+            chrome.windows.update(my_winid, size_data,
+                (win)=>{
+                    if(isLastError()) {
+                        log.error(`Could not move window: ${chrome.runtime.lastError}`);
+                    } else {
+                        log.info({"Updated window size":$.extend({},win)});
+                    }
+                }
+            );
+        } else {
+            log.warn({"Could not parse size from":$.extend({},items_or_err)})
+        } //endif got an item else
+
+    } //endif storage.local.get worked
+
+    // Start the detection of moved or resized windows
+    setTimeout(timedResizeDetector, K.RESIZE_DETECTOR_INTERVAL_MS);
+
+    done();
+} //moveWinToLastPositionIfAny_catch()
+
 function addOpenWindowsToTree(done, cwins)
 {
-    $(K.INIT_PROGRESS_SEL).text("8/13");
+    next_init_step('add open windows to tree');
     let dat = {};
     let focused_win_id;
 
@@ -3915,7 +4000,7 @@ function addOpenWindowsToTree(done, cwins)
 
 function addEventListeners(done)
 {
-    $(K.INIT_PROGRESS_SEL).text("9/13");
+    next_init_step('add event listeners');
     // At this point, the saved and open windows have been loaded into the
     // tree.  Therefore, we can position the action groups.  We already
     // saved the position, so do not need to specify it here.
@@ -3983,59 +4068,11 @@ function addEventListeners(done)
     done();
 } //addEventListeners
 
-/// Called after ASQ.try(chrome.storage.local.get(LOCN_KEY))
-function moveWinToLastPositionIfAny_catch(done, items_or_err)
-{   // move the popup window to its last position/size.
-    // If there was an error (e.g., nonexistent key), just
-    // accept the default size.
-
-    $(K.INIT_PROGRESS_SEL).text("11/13");
-    if(ASQH.is_asq_try_err(items_or_err)) {
-        log.warn({"Couldn't get saved location":$.extend({},items_or_err)});
-        // Note: $.extend() used to force evaluation at the time of logging
-    } else { //we have a location
-        log.info({"Got saved location":$.extend({},items_or_err)});
-
-        let parsed = items_or_err[K.LOCN_KEY];
-        if( (parsed !== null) && (typeof parsed === 'object') ) {
-            // + and || are to provide some sensible defaults - thanks to
-            // https://stackoverflow.com/a/7540412/2877364 by
-            // https://stackoverflow.com/users/113716/user113716
-            let size_data =
-                {
-                      'left': +parsed.left || 0
-                    , 'top': +parsed.top || 0
-                    , 'width': Math.max(+parsed.width || 300, 100)
-                        // don't let it shrink too small, in case something went wrong
-                    , 'height': Math.max(+parsed.height || 600, 200)
-                };
-            last_saved_size = $.extend({}, size_data);
-            chrome.windows.update(my_winid, size_data,
-                (win)=>{
-                    if(isLastError()) {
-                        log.error(`Could not open window: ${chrome.runtime.lastError}`);
-                    } else {
-                        log.info({"Updated window size":$.extend({},win)});
-                    }
-                }
-            );
-        } else {
-            log.warn({"Could not parse size from":$.extend({},items_or_err)})
-        } //endif got an item else
-
-    } //endif storage.local.get worked
-
-    // Start the detection of moved or resized windows
-    setTimeout(timedResizeDetector, K.RESIZE_DETECTOR_INTERVAL_MS);
-
-    done();
-} //moveWinToLastPositionIfAny_catch()
-
 /// The last function to be called after all other initialization has
 /// completed successfully.
 function initTreeFinal(done)
 {
-    $(K.INIT_PROGRESS_SEL).text("12/13");
+    next_init_step('finalize');
 
     // Tests of different ways of failing init - for debugging only
     //throw new Error("oops");      // DEBUG
@@ -4061,7 +4098,8 @@ function initTreeFinal(done)
     done();
 } //initTreeFinal()
 
-// ----------------------------------------------
+// ---------------------------------------------- }}}2
+// Shutdown routines // {{{2
 
 /// Save the tree on window.unload
 function shutdownTree()
@@ -4079,6 +4117,9 @@ function shutdownTree()
         saveTree(false);    // false => don't save visible, non-saved windows
     }
 } //shutdownTree()
+
+// ---------------------------------------------- }}}2
+// Error reporting // {{{2
 
 /// Show a warning if initialization hasn't completed.
 function initIncompleteWarning()
@@ -4099,8 +4140,10 @@ function initIncompleteWarning()
     }
 } //initIncompleteWarning()
 
-//////////////////////////////////////////////////////////////////////////
-// MAIN //
+// }}}2
+
+//////////////////////////////////////////////////////////////////////// }}}1
+// MAIN // {{{1
 
 function main(...args)
 {
@@ -4116,7 +4159,8 @@ function main(...args)
 
     local_init();
 
-    $(K.INIT_PROGRESS_SEL).text("0/13");
+    //$(K.INIT_PROGRESS_SEL).css('display','block');  //DEBUG
+    $(K.INIT_PROGRESS_SEL).text("waiting for browser");
 
     // Timer to display the warning message if initialization doesn't complete
     // quickly enough.
@@ -4133,33 +4177,38 @@ function main(...args)
     // Run the main init steps once the page has loaded
     let s = ASQ();
     callbackOnLoad(s.errfcb());
-    $(K.INIT_PROGRESS_SEL).text("waiting for browser");
     // Note: on one test on Firefox, the rest of the chain never fired.
     // Not sure why.
 
     s.then(basicInit)
+
     .try((done)=>{
         // Get our Chrome-extensions-API window ID from the background page.
         // I don't know a way to get this directly from the JS window object.
         // TODO maybe getCurrent?  Not sure if that's reliable.
-        $(K.INIT_PROGRESS_SEL).text("3/13");
+        next_init_step('get window ID');
         chrome.runtime.sendMessage({msg:MSG_GET_VIEW_WIN_ID}, ASQH.CC(done));
     })
     .then(createMainTreeIfWinIdReceived_catch)
-    .then(loadSavedWindowsIntoTree)
-    .then((done)=>{
-        $(K.INIT_PROGRESS_SEL).text("7/13");
-        chrome.windows.getAll({'populate': true}, ASQH.CC(done));
-    })
-    .then(addOpenWindowsToTree)
-    .then(addEventListeners)
+
     .try((done)=>{
-        $(K.INIT_PROGRESS_SEL).text("10/13");
+        next_init_step('get saved location');
         // Find out where the view was before, if anywhere
         chrome.storage.local.get(K.LOCN_KEY, ASQH.CC(done));
     })
     .then(moveWinToLastPositionIfAny_catch)
+
+    .then(loadSavedWindowsIntoTree)
+    .then((done)=>{
+        next_init_step('get open windows');
+        chrome.windows.getAll({'populate': true}, ASQH.CC(done));
+    })
+    .then(addOpenWindowsToTree)
+    .then(addEventListeners)
     .then(initTreeFinal)
+
+    .val(check_init_step_count)
+
     .or((err)=>{
         $(K.INIT_MSG_SEL).text(
             $(K.INIT_MSG_SEL).text() + "\n" + err
