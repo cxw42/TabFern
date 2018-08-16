@@ -143,9 +143,9 @@
         if(val.raw_title !== null) {    // window or tab
             return val.raw_title;
         } else if(val.keep) {           // default title for saved window
-            return 'Saved tabs';
+            return _T('labelSavedTabs');
         } else if(val.ty === K.IT_WIN) {    // def. title for ephem. win.
-            return 'Unsaved';
+            return _T('labelUnsaved');
         } else {                        // e.g., tabs with no raw_title.
             // TODO see if this makes sense.
             return "** no title **";
@@ -165,15 +165,15 @@
         T.treeobj.del_multitype(node, K.NST_SAVED);
 
         if(adjust_title && (val.raw_title !== null)) {
-            if(val.raw_title === 'Saved tabs') {
-                val.raw_title = 'Unsaved';
+            if(val.raw_title === _T('labelSavedTabs')) {
+                val.raw_title = _T('labelUnsaved');
             } else {
                 val.raw_title =
                     module.remove_unsaved_markers(val.raw_title) +
-                    ' (Unsaved)';
+                    ` (${_T('labelUnsaved')})`;
             }
         }
-        // If raw_title is null, get_raw_text() will return 'Unsaved',
+        // If raw_title is null, get_raw_text() will return _T('Unsaved'),
         // so we don't need to manually assign text here.
 
         module.refresh_label(val.node_id);
@@ -191,7 +191,8 @@
     module.remove_unsaved_markers = function(str) {
         if(!str) return str;
         str = str.toString();
-        let re = /(\s+\(Unsaved\)){1,}\s*$/i;
+        let re = new RegExp('(\\s+\\(' + _T('labelUnsaved') +
+                                                        '\\)){1,}\\s*$','i');
         let matches = str.match(re);
         if(matches && matches.index > 0) {
             return str.slice(0, matches.index);

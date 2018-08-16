@@ -603,8 +603,8 @@ function actionRenameWindow(node_id, node, unused_action_id, unused_action_el)
 
     // A bit of a hack --- if the user hits OK on the default text for a
     // no-name window, change it to "Saved tabs."  TODO find a better way.
-    if(win_name === 'Unsaved' || win_name === '') {
-        win_val.raw_title = 'Saved tabs';
+    if(win_name === _T('labelUnsaved') || win_name === '') {
+        win_val.raw_title = _T('labelSavedTabs');
     } else {
         win_val.raw_title = win_name;
     }

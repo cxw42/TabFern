@@ -1,5 +1,17 @@
 {
-  "l10nTabName": {
+  "labelUnsaved": {
+    "message": "Unsaved"
+    ,"description":"The label in the tree for an unsaved window"
+  }
+  ,"labelSavedTabs": {
+    "message": "Saved tabs"
+    ,"description":"The label in the tree for a saved window without a user-provided name"
+  }
+  ,"IgnoreBelowHere___________________________________________________": {
+    "message":"ignore"
+    ,"description":"The lines below here are samples and not actually used."
+  }
+  ,"l10nTabName": {
     "message":"Localization"
     ,"description":"name of the localization tab"
   }
@@ -63,4 +75,5 @@
     "message":"You can even set <span class='code'>data-l10n</span> on things like the &lt;title&gt; tag, which lets you have translatable page titles, or fieldset &lt;legend&gt; tags, or anywhere else - the default <span class='code'>Boil.localize()</span> behavior will check every tag in the document, not just the body."
     ,"description":"inform about places which may not be obvious, like <title>, etc"
   }
-}
+  ,"modeline":{"description":"Keep the following on the last line of the file",
+    "message":" // vi: set ts=2 sts=2 sw=2 et ai fenc=utf8 ff=dos: //"}}

@@ -287,6 +287,9 @@ function loadCSS(doc, url, before) {
 //////////////////////////////////////////////////////////////////////////
 // Miscellaneous functions //
 
+/// Shortcut for i18n.  Call _T("name") to pull the localized "name".
+var _T = chrome.i18n.getMessage;
+
 /// Ignore a Chrome callback error, and suppress Chrome's
 /// `runtime.lastError` diagnostic.  Use this as a Chrome callback.
 function ignore_chrome_error() { void chrome.runtime.lastError; }
