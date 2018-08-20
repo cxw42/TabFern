@@ -1,4 +1,4 @@
-{ "encoding": { "message": "-*- coding: utf-8 -*- схема", "description": "en" }
+{ "encoding": { "message": "-*- coding: utf-8 -*- схема", "description": "ru" }
   , "labelUnsaved": {
     "message": "Unsaved"
     ,"description":"The label in the tree for an unsaved window"

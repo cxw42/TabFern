@@ -1,10 +1,10 @@
-{ "encoding": { "message": "-*- coding: utf-8 -*- схема", "description": "en" }
+{ "encoding": { "message": "-*- coding: utf-8 -*- Grüße!", "description": "de" }
   , "labelUnsaved": {
-    "message": "Unsaved"
+    "message": "Nicht gespeichert"
     ,"description":"The label in the tree for an unsaved window"
   }
   ,"labelSavedTabs": {
-    "message": "Saved tabs"
+    "message": "Gespeicherte Tabs"
     ,"description":"The label in the tree for a saved window without a user-provided name"
   }
   ,"IgnoreBelowHere___________________________________________________": {
