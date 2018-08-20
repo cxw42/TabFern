@@ -628,7 +628,7 @@
         if(!val || !node_id) return false;
 
         if(val.isOpen || val.tab) {
-            log.info({'Refusing to re-mark already-open tab as open':val});
+            log.info({'Refusing to re-mark already-open tab as open at ctab':ctab,val});
             return false;
         }
 

@@ -1058,8 +1058,13 @@ function addTabNodeActions(tab_node_id)
 function createNodeForTab(ctab, parent_node_id)
 {
     let {node_id, val} = M.vnRezTab(parent_node_id);
-    if(!node_id) return false;
-    M.markTabAsOpen(val, ctab);
+    if(!node_id) {
+        log.debug({"<M> Could not create record for ctab":ctab,parent_node_id});
+        return false;
+    }
+    if(!M.markTabAsOpen(val, ctab)) {
+        log.debug({"<M> Could not mark tab as open":ctab,val});
+    }
 
     addTabNodeActions(node_id);
 
@@ -1073,7 +1078,10 @@ function createNodeForTab(ctab, parent_node_id)
 function createNodeForClosedTabV1(tab_data_v1, parent_node_id)
 {
     let {node_id, val} = M.vnRezTab(parent_node_id);
-    if(!node_id) return false;
+    if(!node_id) {
+        log.debug({"<M> Could not create record for closed tab":tab_data_v1,parent_node_id});
+        return false;
+    }
 
     // Copy properties into the details
     copyTruthyProperties(val, tab_data_v1,
@@ -1183,7 +1191,10 @@ function createNodeForWindow(cwin, keep, no_prune)
 
     let is_first = (!!cwin && getBoolSetting(CFG_NEW_WINS_AT_TOP));
     let {node_id, val} = M.vnRezWin(is_first);
-    if(!node_id) return false;    //sanity check
+    if(!node_id) {      //sanity check
+        log.debug({"<M> Could not create tree node for open cwin":cwin,keep,no_prune});
+        return false;
+    }
 
     M.markWinAsOpen(val, cwin);
     if(keep === K.WIN_KEEP) {
@@ -1224,14 +1235,22 @@ function createNodeForClosedWindowV1(win_data_v1)
     // Make a node for a closed window.  The node is marked KEEP.
     // TODO don't mark it keep if it's ephemeral and still open.
     let {node_id, val} = M.vnRezWin();
-    if(!node_id) return false;
-    M.remember(node_id, false);         // Closed windows are KEEP by design
+    if(!node_id) {
+        log.debug({"<M> Could not create node for closed window":win_data_v1});
+        return false;
+    }
+
+    if(!M.remember(node_id, false)) {   // Closed windows are KEEP by design
+        log.debug({"<M> Could not mark closed window as KEEP":win_data_v1, node_id, val});
+    }
 
     // TODO restore ordered_url_hash
 
     // Mark recovered windows
     if(is_ephemeral) {
-        M.add_subtype(node_id, K.NST_RECOVERED);
+        if(!M.add_subtype(node_id, K.NST_RECOVERED)) {
+            log.debug({"<M> Could not add subtype RECOVERED":node_id, val, win_data_v1});
+        }
     }
 
     // Update the item details
@@ -2327,6 +2346,8 @@ function tabOnUpdated(tabid, changeinfo, ctab)
 
     let node = T.treeobj.get_node(tab_node_id);
     tab_node_val.isOpen = true;     //lest there be any doubt
+
+    log.debug({"   Details for updated ctab":tabid,tab_node_val,node});
 
     // Caution: changeinfo doesn't always have all the changed information.
     // Therefore, we check changeinfo and ctab.
