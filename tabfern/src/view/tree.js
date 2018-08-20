@@ -2847,7 +2847,7 @@ function getHamburgerMenuItems(node, _unused_proxyfunc, e)
     // Add development-specific items, if any
     if(is_devel_mode) {
         items.splitItem = {
-            label: 'Split test',
+            label: _T('menuSplitTest'),
             action: function(){
                 if(window.parent && window.parent.doSplit)
                     window.parent.doSplit();
@@ -2855,7 +2855,7 @@ function getHamburgerMenuItems(node, _unused_proxyfunc, e)
         };
 
         items.jasmineItem = {
-            label: 'Run Jasmine tests',
+            label: _T('menuJasmineTests'),
             action: hamRunJasmineTests,
             icon: 'fa fa-fort-awesome',
             separator_after: true,
@@ -2863,20 +2863,21 @@ function getHamburgerMenuItems(node, _unused_proxyfunc, e)
     } //endif is_devel_mode
 
     items.reloadItem = {
-        label: 'Reload',
+        label: _T('menuReload'),
         action: hamReloadTree,
         icon: 'fa fa-refresh',
         separator_after: true,
     };
 
     items.infoItem = {
-            label: "Online info",
+            label: _T('menuOnlineInfo'),
             title: "The TabFern web site, with a basic usage guide and the credits",
+                // TODO also _T() the title fields throughout
             action: hamAboutWindow,
             icon: 'fa fa-info',
         };
     items.settingsItem = {
-            label: "Settings and offline help",
+            label: _T('menuSettings'),
             title: "Also lists the features introduced with each version!",
             action: hamSettings,
             icon: 'fa fa-cog' + (ShowWhatIsNew ? ' tf-notification' : ''),
@@ -2886,58 +2887,54 @@ function getHamburgerMenuItems(node, _unused_proxyfunc, e)
 
     if(Array.isArray(lastDeletedWindow) && lastDeletedWindow.length>0) {
         items.restoreLastDeletedItem = {
-            label: "Restore last deleted",
+            label: _T('menuRestoreLastDeleted'),
             action: hamRestoreLastDeleted,
         };
     }
 
     items.backupItem = {
-            label: "Backup now",
+            label: _T('menuBackupNow'),
             icon: 'fa fa-floppy-o',
             action: hamBackup,
         };
     items.restoreItem = {
-            label: "Load contents of a backup",
+            label: _T('menuLoadBackupContents'),
             action: hamRestoreFromBackup,
             icon: 'fa fa-folder-open-o',
             separator_after: true,
         };
 
     items.sortItem = {
-            label: 'Sort',
+            label: _T('menuSort'),
             icon: 'fa fa-sort',
             submenu: {
                 openToTopItem: {
-                    label: 'Open windows to top',
+                    label: _T('menuSortOpenToTop'),
                     title: 'Sort ascending by window name, case-insensitive, '+
                             'and put the open windows at the top of the list.',
                     action: hamSortOpenToTop,
                     icon: 'fff-text-padding-top'
                 },
                 azItem: {
-                    label: 'A-Z',
+                    label: _T('menuSortAZ'),
                     title: 'Sort ascending by window name, case-insensitive',
                     action: hamSorter(Modules['view/sorts'].compare_node_text),
                     icon: 'fa fa-sort-alpha-asc',
                 },
                 zaItem: {
-                    label: 'Z-A',
+                    label: _T('menuSortZA'),
                     title: 'Sort descending by window name, case-insensitive',
                     action: hamSorter(Modules['view/sorts'].compare_node_text_desc),
                     icon: 'fa fa-sort-alpha-desc',
                 },
                 numItem09: {
-                    label: '0-9',
+                    label: _T('menuSort09'),
                     title: 'Sort ascending by window name, numeric, case-insensitive',
                     action: hamSorter(Modules['view/sorts'].compare_node_num),
                     icon: 'fa fa-sort-numeric-asc',
                 },
-                // Test of sub-submenus --- jstree doesn't seem to correctly
-                // constrain them to the viewport.
-                //test: { label: 'test', submenu:
-                //  { foo: {label:'foo'},bar:{label:'bar'},bat:{label:'bat'} }},
                 numItem90: {
-                    label: '9-0',
+                    label: _T('menuSort90'),
                     title: 'Sort descending by window name, numeric, case-insensitive',
                     action: hamSorter(Modules['view/sorts'].compare_node_num_desc),
                     icon: 'fa fa-sort-numeric-desc',
@@ -2946,12 +2943,12 @@ function getHamburgerMenuItems(node, _unused_proxyfunc, e)
         }; //sortItem
 
     items.expandItem = {
-            label: "Expand all",
+            label: _T('menuExpandAll'),
             icon: 'fa fa-plus-square',
             action: hamExpandAll,
         };
     items.collapseItem = {
-            label: "Collapse all",
+            label: _T('menuCollapseAll'),
             icon: 'fa fa-minus-square',
             action: hamCollapseAll,
         };
