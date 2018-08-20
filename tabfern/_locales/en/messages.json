@@ -1,5 +1,5 @@
-{
-  "labelUnsaved": {
+{ "encoding": { "message": "-*- coding: utf-8 -*- схема" }
+  , "labelUnsaved": {
     "message": "Unsaved"
     ,"description":"The label in the tree for an unsaved window"
   }
