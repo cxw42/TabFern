@@ -1,6 +1,6 @@
 {
   "name": "tabfern",
-  "version": "0.1.17.1",
+  "version": "0.1.17.2",
   "description": "Google Chrome extension for displaying, saving, and managing tabs",
   "main": "src/view/main.js",
   "directories": {

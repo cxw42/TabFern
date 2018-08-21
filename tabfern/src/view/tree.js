@@ -597,7 +597,7 @@ function actionRenameWindow(node_id, node, unused_action_id, unused_action_el)
     if(!win_val) return;
 
     // TODO replace window.prompt with an in-DOM GUI.
-    let win_name = window.prompt('New window name?',
+    let win_name = window.prompt(_T('dlgpNewWindowName'),
             M.remove_unsaved_markers(M.get_raw_text(win_val)));
     if(win_name === null) return;   // user cancelled
 
@@ -1025,7 +1025,7 @@ function addTabNodeActions(tab_node_id)
         // "Actually" event check in treeOnSelect.
         //html: `<img src="/assets/icons/pencil.png" class=${K.ACTION_BUTTON_WIN_CLASS} />`,
         grouped: true,
-        title: 'Add/edit label',
+        title: _T('ttEditTab'),
         callback: actionEditTabBullet,
         dataset: { action: 'editBullet' }
     });
@@ -1045,7 +1045,7 @@ function addTabNodeActions(tab_node_id)
         class: 'fff-cross ' + K.ACTION_BUTTON_WIN_CLASS,
         text: '\xa0',
         grouped: true,
-        title: "Delete (close; don't save)",
+        title: _T('ttDeleteTab'),
         callback: actionDeleteTab,
         dataset: { action: 'deleteTab' }
     });
@@ -1115,7 +1115,7 @@ function addWindowNodeActions(win_node_id)
         class: 'fff-pencil ' + K.ACTION_BUTTON_WIN_CLASS,
         text: '\xa0',
         grouped: true,
-        title: 'Edit text',
+        title: _T('ttEditWin'),
         callback: actionRenameWindow,
         dataset: { action: 'renameWindow' }
     });
@@ -1125,7 +1125,7 @@ function addWindowNodeActions(win_node_id)
         class: 'fff-picture-delete ' + K.ACTION_BUTTON_WIN_CLASS,
         text: '\xa0',
         grouped: true,
-        title: "Close and save",
+        title: _T('ttCloseWin'),
         callback: actionCloseWindowAndSave,
         dataset: { action: 'closeWindow' }
     });
@@ -1135,7 +1135,7 @@ function addWindowNodeActions(win_node_id)
         class: 'fff-cross ' + K.ACTION_BUTTON_WIN_CLASS,
         text: '\xa0',
         grouped: true,
-        title: "Delete (close; don't save)",
+        title: _T('ttDeleteWin'),
         callback: actionDeleteWindow,
         dataset: { action: 'deleteWindow' }
     });
@@ -2988,11 +2988,11 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
     if(nodeType === K.IT_TAB) {
         let tabItems = {
             toggleBorderItem: {
-                label: 'Toggle top border',
+                label: _T('menuToggleTopBorder'),
                 action: function(){actionToggleTabTopBorder(node.id, node, null, null)}
             },
             editBulletItem: {
-                label: 'Add/edit a note',
+                label: _T('menuAddEditNote'),
                 icon: 'fff-pencil',
 
                 // Use K.nextTickRunner so the context menu can be
@@ -3014,13 +3014,13 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
 
 
         return tabItems;
-    }
+    } //endif K.IT_TAB
 
     if(nodeType === K.IT_WIN) {
         let winItems = {};
 
         winItems.renameItem = {
-                label: 'Rename',
+                label: _T('menuRename'),
                 icon: 'fff-pencil',
 
                 // Use K.nextTickRunner so the context menu can be
@@ -3033,16 +3033,16 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
         // Forget/Remember
         if( win_val.isOpen && (win_val.keep === K.WIN_KEEP) ) {
             winItems.forgetItem = {
-                label: "Forget but don't close",
-                title: "Do not save this window when it is closed",
+                label: _T('menuForget'),
+                title: _T('menuttForget'),
                 icon: 'fa fa-chain-broken',
                 action:
                     function(){actionForgetWindow(node.id, node, null, null);}
             };
         } else if( win_val.isOpen && (win_val.keep === K.WIN_NOKEEP) ) {
             winItems.rememberItem = {
-                label: "Remember",
-                title: "Save this window when it is closed",
+                label: _T('menuRemember'),
+                title: _T('menuttRemember'),
                 icon: 'fa fa-link',
                 action:
                     function(){actionRememberWindow(node.id, node, null, null);}
@@ -3051,7 +3051,7 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
 
         if(win_val.isOpen) {
             winItems.closeItem = {
-                    label: 'Close and remember',
+                    label: _T('menuCloseAndRemember'),
                     icon: 'fff-picture-delete',
                     action:
                         function(){actionCloseWindowAndSave(node.id,node,null,null);}
@@ -3059,7 +3059,7 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
         }
 
         winItems.deleteItem = {
-                label: 'Delete',
+                label: _T('menuDelete'),
                 icon: 'fff-cross',
                 separator_before: true,
                 action:

@@ -153,6 +153,8 @@ function main()
 {
     // Option 1: Use the manifest:
     new FancySettings.initWithManifest(function (settings) {
+        $$('#settings-label').text(_T('wsSettings'));
+
         settingsobj = settings;
         //settings.manifest.myButton.addEvent("action", function () {
         //    alert("You clicked me!");

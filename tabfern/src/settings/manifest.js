@@ -16,7 +16,9 @@
 // Settings {{{2
     // Assign the settings
     root.manifest = {
-        "name": "Settings - ver. "+TABFERN_VERSION+' - TabFern',
+        "name":
+            `${_T('wsSettings')} - ${_T('wsShortName')} (v${TABFERN_VERSION})`,
+
         "icon": "/assets/fern16.png",
         "settings": [
 
@@ -326,7 +328,7 @@ ${issue(100)}</li>
 <li>There is now a "Reload" option on the menu
 (${ham} ${gt} ${icon('fa fa-refresh')} Reload), in case TabFern
 and Chrome get out of sync.  ${issue(127)}</li>
-<li>When you open the TF window, it moves back to its last position 
+<li>When you open the TF window, it moves back to its last position
 more quickly.  ${issue(134)}</li>
 <li>Bugfixes: ${issue(128,true)}</li>
 </ul>`
