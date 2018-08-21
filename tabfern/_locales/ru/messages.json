@@ -1,11 +1,11 @@
 { "encoding": { "message": "-*- coding: utf-8 -*- схема", "description": "ru" }
   , "label_text": { "message": "--------------------------------------------" }
   , "labelUnsaved": {
-    "message": "Unsaved"
+    "message": "несохронённые вешалки"
     ,"description":"The label in the tree for an unsaved window"
   }
   ,"labelSavedTabs": {
-    "message": "Saved tabs"
+    "message": "Сохронённые вешалки"
     ,"description":"The label in the tree for a saved window without a user-provided name"
   }
   , "menu_text": { "message": "--------------------------------------------" }
@@ -22,11 +22,11 @@
     ,"description":"The menu item to reload the TabFern window"
   }
   , "menuOnlineInfo": {
-    "message": "Online info"
+    "message": "онлайновая информация"
     ,"description":"The menu item to open the blue and yellow 'About' Web page"
   }
   , "menuSettings": {
-    "message": "Settings and offline help"
+    "message": "установки и автономная помощь"
     ,"description":"The menu item to open the Settings page"
   }
   , "menuRestoreLastDeleted": {
@@ -34,15 +34,15 @@
     ,"description":"The menu item to restore the last-deleted window"
   }
   , "menuBackupNow": {
-    "message": "Backup now"
+    "message": "резервировать сейчас"
     ,"description":"The menu item to save a copy of the tree to disk"
   }
   , "menuLoadBackupContents": {
-    "message": "Load contents of a backup"
+    "message": "загрузить содержания резерва"
     ,"description":"The menu item to load tree items from disk"
   }
   , "menuSort": {
-    "message": "Sort"
+    "message": "сортировка"
     ,"description":"The text of the submenu with the sort options"
   }
   , "menuSortOpenToTop": {
@@ -66,11 +66,11 @@
     ,"description":"The sort-submenu item to sort in reverse numerical order"
   }
   , "menuExpandAll": {
-    "message": "Expand all"
+    "message": "увеличивать содержания"
     ,"description":"The menu item to expand all trees"
   }
   , "menuCollapseAll": {
-    "message": "Collapse all"
+    "message": "уменьшить содержания"
     ,"description":"The menu item to collapse all trees"
   }
   ,"IgnoreBelowHere___________________________________________________": {
