@@ -98,7 +98,7 @@
             return module.VN_NONE;
         }
         return {val, node_id};
-    }; //vn_by_vorny
+    }; //vn_by_vorny()
 
     /// Determine whether a model has given subtype(s).
     /// @param vorny {mixed} The item
@@ -115,7 +115,7 @@
             if(!T.treeobj.has_multitype(node_id, ty)) return false;
         }
         return true;
-    }; //has_subtype
+    }; //has_subtype()
 
     // }}}1
     // Data-access routines //////////////////////////////////////////// {{{1
@@ -142,7 +142,7 @@
 
         if(val.raw_title !== null) {    // window or tab
             return val.raw_title;
-        } else if(val.keep) {           // default title for saved window
+        } else if(val.keep === K.WIN_KEEP) { // default title for saved window
             return _T('labelSavedTabs');
         } else if(val.ty === K.IT_WIN) {    // def. title for ephem. win.
             return _T('labelUnsaved');
@@ -191,15 +191,20 @@
     module.remove_unsaved_markers = function(str) {
         if(!str) return str;
         str = str.toString();
-        let re = new RegExp('(\\s+\\(' + _T('labelUnsaved') +
-                                                        '\\)){1,}\\s*$','i');
+        let re = new RegExp(
+            `((${_T('labelUnsaved')})|` +   // Just the "Unsaved" text
+            `(\\s+\\(${_T('labelUnsaved')}\\)){1,})\\s*$`,  // Postfix "(Unsaved)"
+            'u');  // u=> unicode
+            // Not using 'i' anymore per
+            // https://mathiasbynens.be/notes/es6-unicode-regex#recommendations
+
         let matches = str.match(re);
         if(matches && matches.index > 0) {
             return str.slice(0, matches.index);
         } else {
             return str;
         }
-    };
+    }; //remove_unsaved_markers()
 
     /// Get the HTML for the node's label.  The output can be passed
     /// directly to jstree.rename_node().
@@ -238,7 +243,7 @@
 
         retval += Esc.escape(raw_text);
         return retval;
-    }; //get_html_label
+    }; //get_html_label()
 
     // }}}1
     // Item manipulation /////////////////////////////////////////////// {{{1
@@ -268,7 +273,7 @@
         }
 
         return true;
-    }; //refresh_tooltip
+    }; //refresh_tooltip()
 
     /// Update the tree-node text for an item from its details record.
     /// @param node_id {string} the node's ID (which doubles as the item's id)
@@ -280,7 +285,7 @@
         let retval = T.treeobj.rename_node(node, module.get_html_label(val));
 
         return retval;
-    };
+    }; //refresh_label()
 
     /// Update the icon of #vorny
     /// @param vorny {Mixed} The item
@@ -323,7 +328,7 @@
         // generic page icon so we don't keep hitting the favIconUrl.
 
         return true;
-    }; //refresh_icon
+    }; //refresh_icon()
 
     /// Mark the window identified by #win_node_id as to be kept.
     /// @param win_vorny {mixed} The window node
@@ -339,8 +344,18 @@
         T.treeobj.add_multitype(node, K.NST_SAVED);
 
         if(cleanup_title) {
-            val.raw_title = module.remove_unsaved_markers(
-                    module.get_raw_text(val));
+            let new_title =
+                    module.remove_unsaved_markers(module.get_raw_text(val));
+            if( new_title === _T('labelSavedTabs') ||
+                new_title === _T('labelUnsaved')
+            ) {
+                // If it's the default text, don't treat it as a user entry.
+                // It will be labelUnsaved if the user right-clicked on a
+                // fresh unsaved window and selected Remember.
+                val.raw_title = null;
+            } else {
+                val.raw_title = new_title;
+            }
         }
 
         module.refresh_label(node_id);
@@ -372,7 +387,7 @@
             blake.update(databuf);
         }
         return blake.hexDigest();
-    }; //orderedHashOfStrings
+    }; //orderedHashOfStrings()
 
     /// Update the given node's ordered_url_hash to reflect its current children.
     /// @return {Boolean} True if the ordered_url_hash was set or was
@@ -461,7 +476,7 @@
         module.refresh_tooltip(val);
 
         return {val, node_id};
-    }; //vnRezWin
+    }; //vnRezWin()
 
     /// Add a model node/item for a tab, with the given parent.
     /// Does not process Chrome widgets.  Instead, assumes the tab is
@@ -507,7 +522,7 @@
         module.refresh_tooltip(val);
 
         return {val, node_id};
-    }; //vnRezTab
+    }; //vnRezTab()
 
     // }}}1
     // Updating model items //////////////////////////////////////////// {{{1
@@ -527,7 +542,7 @@
                 // TODO report failure to add a type?
         }
         return true;
-    }; //add_subtype
+    }; //add_subtype()
 
     /// Remove a subtype (K.NST_*) from an item.
     /// @param vorny {mixed} The item
@@ -544,7 +559,7 @@
                 // TODO report failure to remove a type?
         }
         return true;
-    }; //add_subtype
+    }; //del_subtype()
 
     // TODO? implement this?
 //    /// Modify #vorny with all the changes from #deltas in one go.
@@ -568,7 +583,7 @@
 //        for(let fn of updates) {
 //            module[fn](vorny);
 //        }
-//    }; //change
+//    }; //change()
 
     // }}}1
     // Attaching Chrome widgets to model items ///////////////////////// {{{1
@@ -611,7 +626,7 @@
         module.refresh_tooltip(val);
 
         return true;
-    }; //markWinAsOpen
+    }; //markWinAsOpen()
 
     /// Attach a Chrome tab to an existing tab item.
     /// Updates the item, but does not touch the Chrome tab.
@@ -659,7 +674,7 @@
         T.treeobj.open_node(node.parent);
 
         return true;
-    }; //markTabAsOpen
+    }; //markTabAsOpen()
 
     // }}}1
     // Removing Chrome widgets from model items //////////////////////// {{{1
@@ -694,7 +709,7 @@
         module.refresh_tooltip(val);
 
         return true;
-    }; //markWinAsClosed
+    }; //markWinAsClosed()
 
     /// Remove the connection between #tab_vorny and its Chrome tab.
     /// Use this when the Chrome tab has been closed.
@@ -734,7 +749,7 @@
         // raw_title or raw_url.
 
         return true;
-    }; //markTabAsClosed
+    }; //markTabAsClosed()
 
     // }}}1
     // Removing model items //////////////////////////////////////////// {{{1
@@ -757,7 +772,7 @@
         T.treeobj.delete_node(node_id);
 
         return true;
-    }; //eraseTab
+    }; //eraseTab()
 
     /// Delete a window from the tree and the details.  This will also
     /// erase any remaining child nodes of #win_vorny from the
@@ -787,7 +802,7 @@
         T.treeobj.delete_node(node_id);
 
         return true;
-    }; //eraseWin
+    }; //eraseWin()
 
     // }}}1
 
