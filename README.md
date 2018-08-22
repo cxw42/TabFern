@@ -62,9 +62,11 @@ Copyright (c) 2017 Chris White and contributors.  CC-BY-SA 4.0 International.
 See [LICENSE.md](LICENSE.md) for details, which are controlling in case of any
 difference between that file and this section.
 
-Contributors:
+Contributors (in alphabetical order, case-insensitive):
 
  - [Jasmine Hegman](https://github.com/r4j4h)
+ - [Procyon-b](https://github.com/Procyon-b)
+ - [rwexmd](https://github.com/rwexmd)
 
 Originally inspired by
 [Tabs Outliner](https://chrome.google.com/webstore/detail/tabs-outliner/eggkanocgddhmamlbiijnphhppkpkmkl)

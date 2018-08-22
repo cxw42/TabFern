@@ -291,7 +291,7 @@
     }
   }
   , "errCouldNotParseFile": {
-    "message": "File $FILENAME$ is not something I can understand as a TabFern save file.  Pars error code was: $ERR$"
+    "message": "File $FILENAME$ is not something I can understand as a TabFern save file.  Parse error code was: $ERR$"
     ,"description":"Error message from hamRestoreFromBackup()"
     ,"placeholders":{
       "filename": {
