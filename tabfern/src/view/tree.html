@@ -49,7 +49,8 @@
 
         <!-- Modal dialog ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
         <!-- rmodal sets display:none on .modal automatically, so we don't
-             have to here. -->
+             have to here.  Note that the text below will be replaced from
+             the localized messages.json. -->
         <div id="confirm-dialog" class="modal">
             <div class="modal-dialog">
                 <form class="form-horizontal" method="get">
@@ -61,7 +62,7 @@
                         <input type="checkbox" name="cbNotAgain"
                             id="cbNotAgain"
                             class="form-control col-0p5" />
-                        <label for="cbNotAgain"
+                        <label id="labelNotAgain" for="cbNotAgain"
                             class="control-label col-xs-4 col-5">
                             Don't ask again
                             (<abbr title="You can change this in Settings | Behaviour">note</abbr>)
@@ -69,16 +70,17 @@
                         <!-- note: don't use <button type=submit>, which
                             reloads the page. -->
                         <div class="col-3">&nbsp;</div>
-                        <button data-which="yes"
+                        <button id="confirm-dialog-yes" data-which="yes"
                             class="btn btn-primary col-1"
                             type="button" accesskey="y">
                             <span class="accel">Y</span>es
                         </button>
-                        <button data-which="no" class="btn col-1"
+                        <button id="confirm-dialog-no" data-which="no"
+                            class="btn col-1"
                             type="button" accesskey="n">
                             <span class="accel">N</span>o
                         </button>
-                        <button data-which="cancel"
+                        <button id="confirm-dialog-cancel" data-which="cancel"
                             class="btn btn-default col-1" type="button"
                             accesskey="c">
                             <span class="accel">C</span>ancel

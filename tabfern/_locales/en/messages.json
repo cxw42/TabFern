@@ -14,7 +14,7 @@
     ,"description":"The title for the Settings window"
   }
   , "tooltip_text": { "message": "--------------------------------------------"
-                        ,"description": "Text for tooltips" }
+                        ,"description": "Text for tooltips, other than menu tooltips" }
   , "ttEditTab": {
     "message": "Add/edit label"
     ,"description":"Tooltip for the pencil button on a tab's tree entry"
@@ -40,6 +40,44 @@
   , "dlgpNewWindowName": {
     "message": "New window name?"
     ,"description":"Prompt for the user to enter a window name"
+  }
+  , "dlgpTabNote": {
+    "message": "Note for tab \"$TITLE$\"?"
+    ,"description":"Prompt for the user to enter a note for a tab"
+    ,"placeholders":{
+      "title": {
+        "content": "$1"
+        ,"example": "(this is the title of the Web page open in that tab)"
+      }
+    }
+  }
+  , "dlgYesHTML": {
+    "message": "<span class=\"accel\">Y</span>es"
+    ,"description":"HTML code for a 'Yes' dialog button.  Includes a <span class=\"accel\" if there is an accelerator key."
+  }
+  , "dlgYesAccelerator": {
+    "message": "y"
+    ,"description":"Accelerator (access key) for a 'Yes' dialog button."
+  }
+  , "dlgNoHTML": {
+    "message": "<span class=\"accel\">N</span>o"
+    ,"description":"HTML code for a 'No' dialog button.  Includes a <span class=\"accel\" if there is an accelerator key."
+  }
+  , "dlgNoAccelerator": {
+    "message": "n"
+    ,"description":"Accelerator (access key) for a 'No' dialog button."
+  }
+  , "dlgCancelHTML": {
+    "message": "<span class=\"accel\">C</span>ancel"
+    ,"description":"HTML code for a 'Cancel' dialog button.  Includes a <span class=\"accel\" if there is an accelerator key."
+  }
+  , "dlgCancelAccelerator": {
+    "message": "c"
+    ,"description":"Accelerator (access key) for a 'Yes' dialog button."
+  }
+  , "dlgDoNotAskAgainHTML": {
+    "message": "Don't ask again (<abbr title=\"You can change this in Settings | Behaviour\">note</abbr>)"
+    ,"description":"HTML code for the 'Do not ask again' checkbox.  The (<abbr>...</abbr>) part is an explanation that pops up when the user hovers the mouse over the word 'note'."
   }
   , "label_text": { "message": "--------------------------------------------"
                         ,"description": "Text for tree labels" }

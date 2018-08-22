@@ -397,7 +397,20 @@ function showConfirmationModalDialog(message_html) {
     let cleanup_cbk = cleanup.errfcb();  // pause the sequence
 
     // Modified from the rmodal sample at https://rmodal.js.org/
-    $('#confirm-dialog-question').html(message_html);
+    let jqdlg = $('#confirm-dialog');
+    jqdlg.find('#confirm-dialog-question').html(message_html);
+
+    // i18n
+    jqdlg.find('#confirm-dialog-yes')
+        .attr('accesskey',_T('dlgYesAccelerator'))
+        .html(_T('dlgYesHTML'));
+    jqdlg.find('#confirm-dialog-no')
+        .attr('accesskey',_T('dlgNoAccelerator'))
+        .html(_T('dlgNoHTML'));
+    jqdlg.find('#confirm-dialog-cancel')
+        .attr('accesskey',_T('dlgCancelAccelerator'))
+        .html(_T('dlgCancelHTML'));
+    jqdlg.find('#labelNotAgain').html(_T('dlgDoNotAskAgainHTML'));
 
     dlg = new (Modules['rmodal'])(
         document.getElementById('confirm-dialog'),
@@ -845,7 +858,7 @@ function actionEditTabBullet(node_id, node, unused_action_id, unused_action_el)
     if(!val || val.ty !== K.IT_TAB) return;
 
     // TODO replace window.prompt with an in-DOM GUI.
-    let question = `Note for tab "${val.raw_title}"?`;
+    let question = _T('dlgpTabNote', val.raw_title);
     let new_bullet = window.prompt(question, val.raw_bullet || '');
     if(new_bullet === null) return;   // user cancelled
 
