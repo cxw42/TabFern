@@ -1,5 +1,86 @@
 { "encoding": { "message": "-*- coding: utf-8 -*- Grüße!", "description": "de" }
-  , "label_text": { "message": "--------------------------------------------" }
+  , "name_text": { "message": "-----------------------------------------"
+                        ,"description": "Text for the Chrome Web Store listing and window titles" }
+  , "wsLongName": {
+    "message": "TabFern tab manager and backup tool"
+    ,"description":"The long name at the top of the Chrome Web Store window"
+  }
+  , "wsShortName": {
+    "message": "TabFern"
+    ,"description":"The short name, for the TabFern window title bar"
+  }
+  , "wsSettings": {
+    "message": "Settings"
+    ,"description":"The title for the Settings window"
+  }
+  , "tooltip_text": { "message": "--------------------------------------------"
+                        ,"description": "Text for tooltips, other than menu tooltips" }
+  , "ttEditTab": {
+    "message": "Add/edit label"
+    ,"description":"Tooltip for the pencil button on a tab's tree entry"
+  }
+  , "ttDeleteTab": {
+    "message": "Delete (close; don't save)"
+    ,"description":"Tooltip for the X button on a tab's tree entry"
+  }
+  , "ttEditWin": {
+    "message": "Edit text"
+    ,"description":"Tooltip for the pencil button on a window's tree entry"
+  }
+  , "ttCloseWin": {
+    "message": "Close and save"
+    ,"description":"Tooltip for the close button on a window's tree entry"
+  }
+  , "ttDeletewin": {
+    "message": "Delete (close; don't save)"
+    ,"description":"Tooltip for the X button on a window's tree entry"
+  }
+  , "dialog_text": { "message": "--------------------------------------------"
+                        ,"description": "Text for dialog boxes" }
+  , "dlgpNewWindowName": {
+    "message": "New window name?"
+    ,"description":"Prompt for the user to enter a window name"
+  }
+  , "dlgpTabNote": {
+    "message": "Note for tab \"$TITLE$\"?"
+    ,"description":"Prompt for the user to enter a note for a tab"
+    ,"placeholders":{
+      "title": {
+        "content": "$1"
+        ,"example": "(this is the title of the Web page open in that tab)"
+      }
+    }
+  }
+  , "dlgYesHTML": {
+    "message": "<span class=\"accel\">Y</span>es"
+    ,"description":"HTML code for a 'Yes' dialog button.  Includes a <span class=\"accel\" if there is an accelerator key."
+  }
+  , "dlgYesAccelerator": {
+    "message": "y"
+    ,"description":"Accelerator (access key) for a 'Yes' dialog button."
+  }
+  , "dlgNoHTML": {
+    "message": "<span class=\"accel\">N</span>o"
+    ,"description":"HTML code for a 'No' dialog button.  Includes a <span class=\"accel\" if there is an accelerator key."
+  }
+  , "dlgNoAccelerator": {
+    "message": "n"
+    ,"description":"Accelerator (access key) for a 'No' dialog button."
+  }
+  , "dlgCancelHTML": {
+    "message": "<span class=\"accel\">C</span>ancel"
+    ,"description":"HTML code for a 'Cancel' dialog button.  Includes a <span class=\"accel\" if there is an accelerator key."
+  }
+  , "dlgCancelAccelerator": {
+    "message": "c"
+    ,"description":"Accelerator (access key) for a 'Yes' dialog button."
+  }
+  , "dlgDoNotAskAgainHTML": {
+    "message": "Don't ask again (<abbr title=\"You can change this in Settings | Behaviour\">note</abbr>)"
+    ,"description":"HTML code for the 'Do not ask again' checkbox.  The (<abbr>...</abbr>) part is an explanation that pops up when the user hovers the mouse over the word 'note'."
+  }
+  , "label_text": { "message": "--------------------------------------------"
+                        ,"description": "Text for tree labels" }
   , "labelUnsaved": {
     "message": "Nicht gespeichert"
     ,"description":"The label in the tree for an unsaved window"
@@ -8,14 +89,15 @@
     "message": "Gespeicherte Tabs"
     ,"description":"The label in the tree for a saved window without a user-provided name"
   }
-  , "menu_text": { "message": "--------------------------------------------" }
+  , "menu_text": { "message": "--------------------------------------------"
+                        ,"description": "Text for the hamburger and context menus" }
   , "menuSplitTest": {
     "message": "Split test"
     ,"description":"The item in the hamburger (≡) menu for a split test."
   }
   , "menuJasmineTests": {
     "message": "Run Jasmine tests"
-    ,"description":"The menu item for to run tests using the 'Jasmine' program."
+    ,"description":"The menu item to run tests using the 'Jasmine' program."
   }
   , "menuReload": {
     "message": "Reload"
@@ -73,6 +155,44 @@
     "message": "Collapse all"
     ,"description":"The menu item to collapse all trees"
   }
+  , "menuToggleTopBorder": {
+    "message": "Toggle top border"
+    ,"description":"The context-menu item to toggle the top border on a tab's tree entry"
+  }
+  , "menuAddEditNote": {
+    "message": "Add/edit a note"
+    ,"description":"The context-menu item to add or edit a tab's note"
+  }
+  , "menuRename": {
+    "message": "Rename"
+    ,"description":"The context-menu item to rename a window's tree entry"
+  }
+  , "menuForget": {
+    "message": "Forget but don't close"
+    ,"description":"The context-menu item to mark a window as unsaved"
+  }
+  , "menuttForget": {
+    "message": "Do not save this window when it is closed"
+    ,"description":"The context-menu tooltip to mark a window as unsaved"
+  }
+  , "menuRemember": {
+    "message": "Remember"
+    ,"description":"The context-menu item to mark a window as saved"
+  }
+  , "menuttRemember": {
+    "message":  "Save this window when it is closed"
+    ,"description":"The context-menu tooltip to mark a window as saved"
+  }
+  , "menuCloseAndRemember": {
+    "message": "Close and remember"
+    ,"description":"The context-menu item to mark a window as saved, then close it"
+  }
+  , "menuDelete": {
+    "message": "Delete"
+    ,"description":"The context-menu item to delete a window or tab's tree item"
+  }
+  , "settings_text": { "message": "--------------------------------------------"
+                        ,"description": "Text for the Settings page" }
   ,"IgnoreBelowHere___________________________________________________": {
     "message":"ignore"
     ,"description":"The lines below here do not need translation."

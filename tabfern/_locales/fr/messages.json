@@ -1,4 +1,4 @@
-{ "encoding": { "message": "-*- coding: utf-8 -*- схема", "description": "ru" }
+{ "encoding": { "message": "-*- coding: utf-8 -*- drôles d'œufs abîmés", "description": "fr" }
   , "name_text": { "message": "-----------------------------------------"
                         ,"description": "Text for the Chrome Web Store listing and window titles" }
   , "wsLongName": {
@@ -82,11 +82,11 @@
   , "label_text": { "message": "--------------------------------------------"
                         ,"description": "Text for tree labels" }
   , "labelUnsaved": {
-    "message": "несохронённые вешалки"
+    "message": "Unsaved"
     ,"description":"The label in the tree for an unsaved window"
   }
   ,"labelSavedTabs": {
-    "message": "Сохронённые вешалки"
+    "message": "Saved tabs"
     ,"description":"The label in the tree for a saved window without a user-provided name"
   }
   , "menu_text": { "message": "--------------------------------------------"
@@ -104,11 +104,11 @@
     ,"description":"The menu item to reload the TabFern window"
   }
   , "menuOnlineInfo": {
-    "message": "онлайновая информация"
+    "message": "Online info"
     ,"description":"The menu item to open the blue and yellow 'About' Web page"
   }
   , "menuSettings": {
-    "message": "установки и автономная помощь"
+    "message": "Settings and offline help"
     ,"description":"The menu item to open the Settings page"
   }
   , "menuRestoreLastDeleted": {
@@ -116,15 +116,15 @@
     ,"description":"The menu item to restore the last-deleted window"
   }
   , "menuBackupNow": {
-    "message": "резервировать сейчас"
+    "message": "Backup now"
     ,"description":"The menu item to save a copy of the tree to disk"
   }
   , "menuLoadBackupContents": {
-    "message": "загрузить содержания резерва"
+    "message": "Load contents of a backup"
     ,"description":"The menu item to load tree items from disk"
   }
   , "menuSort": {
-    "message": "сортировка"
+    "message": "Sort"
     ,"description":"The text of the submenu with the sort options"
   }
   , "menuSortOpenToTop": {
@@ -148,11 +148,11 @@
     ,"description":"The sort-submenu item to sort in reverse numerical order"
   }
   , "menuExpandAll": {
-    "message": "увеличивать содержания"
+    "message": "Expand all"
     ,"description":"The menu item to expand all trees"
   }
   , "menuCollapseAll": {
-    "message": "уменьшить содержания"
+    "message": "Collapse all"
     ,"description":"The menu item to collapse all trees"
   }
   , "menuToggleTopBorder": {
