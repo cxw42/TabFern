@@ -2591,11 +2591,22 @@ function tabOnAttached(tabid, attachinfo)
     updateTabIndexValues(new_win_val.node_id);
 } //tabOnAttached
 
+/// Handle tab replacement, which can occur with preloads.  E.g., #129.
 function tabOnReplaced(addedTabId, removedTabId)
 {
-    // Do we get this?
-    log.warn('Tab being replaced: added ' + addedTabId + '; removed ' +
+    log.info('Tab being replaced: added ' + addedTabId + '; removed ' +
                 removedTabId);
+    let tab_val = D.tabs.by_tab_id(removedTabId);
+    if(!tab_val) {
+        log.warn('onReplaced: No tab found for removed' +
+                    `tab ID ${removedTabId} - bailing`);
+        return;
+    }
+
+    D.tabs.change_key(tab_val, 'tab_id', addedTabId);
+    log.info({
+        [`Tab replacement ${removedTabId}->${addedTabId}: new value`]:tab_val
+    });
 } //tabOnReplaced
 
 ////////////////////////////////////////////////////////////////////////// }}}1
