@@ -1,4 +1,5 @@
 { "encoding": { "message": "-*- coding: utf-8 -*- схема", "description": "en" }
+
   , "name_text": { "message": "-----------------------------------------"
                         ,"description": "Text for the Chrome Web Store listing and window titles" }
   , "wsLongName": {
@@ -13,6 +14,7 @@
     "message": "Settings"
     ,"description":"The title for the Settings window"
   }
+
   , "tooltip_text": { "message": "--------------------------------------------"
                         ,"description": "Text for tooltips, other than menu tooltips" }
   , "ttEditTab": {
@@ -35,6 +37,7 @@
     "message": "Delete (close; don't save)"
     ,"description":"Tooltip for the X button on a window's tree entry"
   }
+
   , "dialog_text": { "message": "--------------------------------------------"
                         ,"description": "Text for dialog boxes" }
   , "dlgpNewWindowName": {
@@ -51,6 +54,37 @@
       }
     }
   }
+  , "dlgpDeleteWindow": {
+    "message": "Delete window \"$TITLE$\"?"
+    ,"description":"Prompt for whether the user wants to delete a window"
+    ,"placeholders":{
+      "title": {
+        "content": "$1"
+        ,"example": "(this is the title of the window that will be deleted)"
+      }
+    }
+  }
+  , "dlgpDeleteTab": {
+    "message": "Delete tab \"$TITLE$\"?"
+    ,"description":"Prompt for whether the user wants to delete a tab"
+    ,"placeholders":{
+      "title": {
+        "content": "$1"
+        ,"example": "(this is the title of the tab that will be deleted)"
+      }
+    }
+  }
+  , "dlgpDeleteTabAndWindow": {
+    "message": "Delete tab \"$TITLE$\" and its window?"
+    ,"description":"Prompt for whether the user wants to delete the last tab in a window"
+    ,"placeholders":{
+      "title": {
+        "content": "$1"
+        ,"example": "(this is the title of the tab that will be deleted)"
+      }
+    }
+  }
+
   , "dlgYesHTML": {
     "message": "<span class=\"accel\">Y</span>es"
     ,"description":"HTML code for a 'Yes' dialog button.  Includes a <span class=\"accel\" if there is an accelerator key."
@@ -79,6 +113,7 @@
     "message": "Don't ask again (<abbr title=\"You can change this in Settings | Behaviour\">note</abbr>)"
     ,"description":"HTML code for the 'Do not ask again' checkbox.  The (<abbr>...</abbr>) part is an explanation that pops up when the user hovers the mouse over the word 'note'."
   }
+
   , "label_text": { "message": "--------------------------------------------"
                         ,"description": "Text for tree labels" }
   , "labelUnsaved": {
@@ -89,6 +124,23 @@
     "message": "Saved tabs"
     ,"description":"The label in the tree for a saved window without a user-provided name"
   }
+  ,"labelRecoveredTabs": {
+    "message": "Recovered tabs"
+    ,"description":"The label in the tree for a window that was autosaved"
+  }
+  ,"labelRecoveredTabsPostfix": {
+    "message": " (Recovered)"
+    ,"description":"Added to the end of the label in the tree for a window that was autosaved"
+  }
+  ,"labelUnknownTitle": {
+    "message": "## Unknown title ##"
+    ,"description": "Label for a tab's tree node if we can't find a title for it"
+  }
+  ,"labelBlankTabTitle": {
+    "message": "Tab"
+    ,"description": "Label for a tab's tree node if we can't find a title for it on an update"
+  }
+
   , "menu_text": { "message": "--------------------------------------------"
                         ,"description": "Text for the hamburger and context menus" }
   , "menuSplitTest": {
@@ -191,8 +243,81 @@
     "message": "Delete"
     ,"description":"The context-menu item to delete a window or tab's tree item"
   }
+
+  , "error_text": { "message": "--------------------------------------------"
+                        ,"description": "Text for error messages" }
+  , "errCouldNotSave": {
+    "message": "I couldn't save the tree: $ERR$"
+    ,"description":"Error message from saveTree()"
+    ,"placeholders":{
+      "err": {
+        "content": "$1"
+        ,"example": "(this is the error message from Chrome)"
+      }
+    }
+  }
+  , "errCouldNotOpenWindow": {
+    "message": "I couldn't open the window: $ERR$"
+    ,"description":"Error message from win_create_cbk()"
+    ,"placeholders":{
+      "err": {
+        "content": "$1"
+        ,"example": "(this is the error message from Chrome)"
+      }
+    }
+  }
+  , "errCouldNotCreateWindow": {
+    "message": "I couldn't create the window: $ERR$"
+    ,"description":"Error message from treeOnSelect()"
+    ,"placeholders":{
+      "err": {
+        "content": "$1"
+        ,"example": "(this is the error message from Chrome)"
+      }
+    }
+  }
+  , "errCouldNotLoadFile": {
+    "message": "I couldn't load $FILENAME$: $ERR$"
+    ,"description":"Error message from hamRestoreFromBackup()"
+    ,"placeholders":{
+      "filename": {
+        "content": "$1"
+        ,"example": "(this is the file the user wanted to load)"
+      }
+      , "err": {
+        "content": "$2"
+        ,"example": "(this is the error message from Chrome)"
+      }
+    }
+  }
+  , "errCouldNotParseFile": {
+    "message": "File $FILENAME$ is not something I can understand as a TabFern save file.  Pars error code was: $ERR$"
+    ,"description":"Error message from hamRestoreFromBackup()"
+    ,"placeholders":{
+      "filename": {
+        "content": "$1"
+        ,"example": "(this is the file the user wanted to load)"
+      }
+      , "err": {
+        "content": "$2"
+        ,"example": "(this is the exception from Chrome)"
+      }
+    }
+  }
+  , "errCouldNotRunImporter": {
+    "message": "Unexpected error while trying to load the file.  Error code was: $ERR$"
+    ,"description":"Error message from hamRestoreFromBackup()"
+    ,"placeholders":{
+      "err": {
+        "content": "$1"
+        ,"example": "(this is the exception from Chrome)"
+      }
+    }
+  }
+
   , "settings_text": { "message": "--------------------------------------------"
                         ,"description": "Text for the Settings page" }
+
   ,"IgnoreBelowHere___________________________________________________": {
     "message":"ignore"
     ,"description":"The lines below here do not need translation."

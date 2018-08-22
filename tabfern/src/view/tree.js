@@ -579,8 +579,7 @@ function saveTree(save_ephemeral_windows = true, cbk = undefined)
                 return;     // Saved OK
             }
             //else there was an error
-            let msg = "TabFern: couldn't save: " +
-                            chrome.runtime.lastError.toString();
+            let msg = _T('errCouldNotSave', chrome.runtime.lastError.toString());
             log.error(msg);
             window.alert(msg);     // The user needs to know
             if(typeof cbk === 'function') cbk(new Error(msg));
@@ -801,9 +800,9 @@ function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el,
 
     } else {    // Confirmation required
 
-        showConfirmationModalDialog(
-            'Delete window "' + M.get_raw_text(win_val) + '"?'
-        )
+        (showConfirmationModalDialog(
+            _T('dlgpDeleteWindow', M.get_raw_text(win_val))
+        ))
 
         // Processing after the dialog closes
         .val((result)=>{
@@ -920,9 +919,9 @@ function actionDeleteTab(node_id, node, unused_action_id, unused_action_el,
     } //doDeletion()
 
     // Prompt for confirmation, if necessary
+    let prompt_name = 'dlgpDeleteTab';  // in messages.json
     let is_keep = (parent_val.keep === K.WIN_KEEP);
     let is_nokeep = (parent_val.keep === K.WIN_NOKEEP);
-    let delete_prompt = 'Delete tab "' + M.get_html_label(tab_val) + '"'
 
     // General rule...
     let need_confirmation = (
@@ -941,7 +940,7 @@ function actionDeleteTab(node_id, node, unused_action_id, unused_action_el,
         if( (is_keep && getBoolSetting(CFG_CONFIRM_DEL_OF_SAVED)) ||
             (is_nokeep && getBoolSetting(CFG_CONFIRM_DEL_OF_UNSAVED)) ) {
             need_confirmation = true;
-            delete_prompt += " and its window";
+            prompt_name = 'dlgpDeleteTabAndWindow';
         }
     }
 
@@ -950,7 +949,9 @@ function actionDeleteTab(node_id, node, unused_action_id, unused_action_el,
         doDeletion();
 
     } else {    // Confirmation required
-        showConfirmationModalDialog(delete_prompt + '?')
+        (showConfirmationModalDialog(
+            _T(prompt_name, M.get_html_label(tab_val)))
+        )
 
         // Processing after the dialog closes
         .val((result)=>{
@@ -1269,9 +1270,9 @@ function createNodeForClosedWindowV1(win_data_v1)
     // Update the item details
     let new_title;
     if( is_ephemeral && (typeof win_data_v1.raw_title !== 'string') ) {
-        new_title = 'Recovered tabs';
+        new_title = _T('labelRecoveredTabs');
     } else if(is_ephemeral) {   // and raw_title is a string
-        new_title = String(win_data_v1.raw_title) + ' (Recovered)';
+        new_title = String(win_data_v1.raw_title) + _T('labelRecoveredTabsPostfix');
     } else {    // not ephemeral
         let n = win_data_v1.raw_title;
         new_title = (typeof n === 'string') ? n : null;
@@ -1354,7 +1355,7 @@ function connectChromeWindowToTreeWindowItem(cwin, existing_win, options = {})
 
         // Do we need these?
         ctab.url = ctab.url || tab_val.raw_url || 'about:blank';
-        ctab.title = ctab.title || tab_val.raw_title || '## Unknown title ##';
+        ctab.title = ctab.title || tab_val.raw_title || _T('labelUnknownTitle');
 
         let pinned = tab_val.isPinned;
         M.markTabAsOpen(tab_node_id, ctab);
@@ -1517,7 +1518,7 @@ var loadSavedWindowsFromData = (function(){
 /// @param {function} next_action If provided, will be called when loading
 ///                     is complete.
 function loadSavedWindowsIntoTree(next_action) {
-    next_init_step('Load saved windows');
+    next_init_step('Load saved windows');       // TODO _T() the step names
 
     chrome.storage.local.get(K.STORAGE_KEY, function(items) {
         next_init_step('Got save data');
@@ -1795,8 +1796,8 @@ function treeOnSelect(_evt_unused, evt_data)
             window_is_being_restored = false;
 
             if(isLastError()) {
-                window.alert(
-                    `Could not open window: ${chrome.runtime.lastError}`);
+                window.alert(_T('errCouldNotOpenWindow',
+                                    chrome.runtime.lastError));
                 return;     // with the state in the tree unchanged
             }
 
@@ -1822,7 +1823,7 @@ function treeOnSelect(_evt_unused, evt_data)
         } catch(e) {
             log.warn({'Could not create window': e, create_data});
             window_is_being_restored = false;
-            window.alert("Unable to create window: " + e);
+            window.alert(_T('errCouldNotCreateWindow',e));
             return;
         }
 
@@ -2234,7 +2235,7 @@ var tabOnCreated = (function(){
             hash = url.hash.slice(1);
             if(!hash) return false;
 
-            if(url.href.split("#")[0] !==
+            if(url.href.split('#')[0] !==
                 chrome.runtime.getURL('/src/view/newtab.html')
             ) {
                 return false;
@@ -2391,7 +2392,7 @@ function tabOnUpdated(tabid, changeinfo, ctab)
     }
 
     // title
-    let new_raw_title = changeinfo.title || ctab.title || 'Tab';
+    let new_raw_title = changeinfo.title || ctab.title || _T('labelBlankTabTitle');
     if(new_raw_title !== tab_node_val.raw_title) {
         dirty = true;
         should_refresh_label = true;
@@ -2757,14 +2758,14 @@ function hamRestoreFromBackup()
             let parsed = JSON.parse(text);
             ok = loadSavedWindowsFromData(parsed);
             if(!ok) {
-                log.warn({'Could not load file':e});
-                window.alert("I couldn't load the file " + filename);
+                let errmsg = _T('errCouldNotLoadFile', filename, e);
+                log.warn({[errmsg]:e});
+                window.alert(errmsg);
             }
         } catch(e) {
-            log.warn({'Could not load file (exception thrown)':e});
-            window.alert("File " + filename + ' is not something I can '+
-                'understand as a TabFern save file.  Parse error code was: ' +
-                e);
+            let errmsg = _T('errCouldNotParseFile');
+            log.warn({[errmsg + ' (exception thrown)']:e});
+            window.alert(errmsg);
         }
 
         // If we were successful, save.  Otherwise, a reload of the extension
@@ -2779,9 +2780,9 @@ function hamRestoreFromBackup()
         let importer = new Modules.importer(document, '.tabfern');
         importer.getFileAsString(processFile);
     } catch(e) {
-        log.warn({'Could not run importer':e});
-        window.alert('Unexpected error while trying to load the file.  ' +
-            'Parse error code was: ' + e);
+        let errmsg = _T('errCouldNotRunImporter', e);
+        log.warn({[errmsg]:e});
+        window.alert(errmsg);
     }
 } //hamRestoreFromBackup()
 
@@ -2792,7 +2793,8 @@ function hamRestoreLastDeleted()
     // Make v0 save data from the last-deleted-window URLs, just because
     // v0 is convenient, and the backward-compatibility guarantee of
     // loadSavedWindowsFromData means we won't have to refactor this.
-    let tabs=[]
+    let tabs=[];
+    // TODO RESUME HERE --- convert user-facing text to _T()
     for(let url of lastDeletedWindow) {
         tabs.push({text: 'Restored', url: url});
     }
