@@ -2,7 +2,7 @@
   , "name_text": { "message": "-----------------------------------------"
                         ,"description": "Text for the Chrome Web Store listing and window titles" }
   , "wsLongName": {
-    "message": "TabFern tab manager and backup tool"
+    "message": "TabFern gestionnaire d'onglet et outil de sauvegarde"
     ,"description":"The long name at the top of the Chrome Web Store window"
   }
   , "wsShortName": {
@@ -10,41 +10,41 @@
     ,"description":"The short name, for the TabFern window title bar"
   }
   , "wsSettings": {
-    "message": "Settings"
+    "message": "Paramètres"
     ,"description":"The title for the Settings window"
   }
 
   , "tooltip_text": { "message": "--------------------------------------------"
                         ,"description": "Text for tooltips, other than menu tooltips" }
   , "ttEditTab": {
-    "message": "Add/edit label"
+    "message": "Ajouter/éditer étiquette"
     ,"description":"Tooltip for the pencil button on a tab's tree entry"
   }
   , "ttDeleteTab": {
-    "message": "Delete (close; don't save)"
+    "message": "Supprimer (fermer; ne pas sauver)"
     ,"description":"Tooltip for the X button on a tab's tree entry"
   }
   , "ttEditWin": {
-    "message": "Edit text"
+    "message": "Editer texte"
     ,"description":"Tooltip for the pencil button on a window's tree entry"
   }
   , "ttCloseWin": {
-    "message": "Close and save"
+    "message": "Fermer et sauver"
     ,"description":"Tooltip for the close button on a window's tree entry"
   }
   , "ttDeletewin": {
-    "message": "Delete (close; don't save)"
+    "message": "Supprimer (fermer; ne pas sauver)"
     ,"description":"Tooltip for the X button on a window's tree entry"
   }
 
   , "dialog_text": { "message": "--------------------------------------------"
                         ,"description": "Text for dialog boxes" }
   , "dlgpNewWindowName": {
-    "message": "New window name?"
+    "message": "Nom de la nouvelle fenêtre ?"
     ,"description":"Prompt for the user to enter a window name"
   }
   , "dlgpTabNote": {
-    "message": "Note for tab \"$TITLE$\"?"
+    "message": "Note pour l'onglet \"$TITLE$\" ?"
     ,"description":"Prompt for the user to enter a note for a tab"
     ,"placeholders":{
       "title": {
@@ -54,7 +54,7 @@
     }
   }
   , "dlgpDeleteWindow": {
-    "message": "Delete window \"$TITLE$\"?"
+    "message": "Supprimer la fenêtre \"$TITLE$\" ?"
     ,"description":"Prompt for whether the user wants to delete a window"
     ,"placeholders":{
       "title": {
@@ -64,7 +64,7 @@
     }
   }
   , "dlgpDeleteTab": {
-    "message": "Delete tab \"$TITLE$\"?"
+    "message": "Supprimer l'onglet \"$TITLE$\" ?"
     ,"description":"Prompt for whether the user wants to delete a tab"
     ,"placeholders":{
       "title": {
@@ -74,7 +74,7 @@
     }
   }
   , "dlgpDeleteTabAndWindow": {
-    "message": "Delete tab \"$TITLE$\" and its window?"
+    "message": "Supprimer l'onglet \"$TITLE$\" et sa fenêtre ?"
     ,"description":"Prompt for whether the user wants to delete the last tab in a window"
     ,"placeholders":{
       "title": {
@@ -85,15 +85,15 @@
   }
 
   , "dlgYesHTML": {
-    "message": "<span class=\"accel\">Y</span>es"
+    "message": "<span class=\"accel\">O</span>ui"
     ,"description":"HTML code for a 'Yes' dialog button.  Includes a <span class=\"accel\" if there is an accelerator key."
   }
   , "dlgYesAccelerator": {
-    "message": "y"
+    "message": "o"
     ,"description":"Accelerator (access key) for a 'Yes' dialog button."
   }
   , "dlgNoHTML": {
-    "message": "<span class=\"accel\">N</span>o"
+    "message": "<span class=\"accel\">N</span>on"
     ,"description":"HTML code for a 'No' dialog button.  Includes a <span class=\"accel\" if there is an accelerator key."
   }
   , "dlgNoAccelerator": {
@@ -101,42 +101,42 @@
     ,"description":"Accelerator (access key) for a 'No' dialog button."
   }
   , "dlgCancelHTML": {
-    "message": "<span class=\"accel\">C</span>ancel"
+    "message": "<span class=\"accel\">A</span>nnuler"
     ,"description":"HTML code for a 'Cancel' dialog button.  Includes a <span class=\"accel\" if there is an accelerator key."
   }
   , "dlgCancelAccelerator": {
-    "message": "c"
+    "message": "a"
     ,"description":"Accelerator (access key) for a 'Yes' dialog button."
   }
   , "dlgDoNotAskAgainHTML": {
-    "message": "Don't ask again (<abbr title=\"You can change this in Settings | Behaviour\">note</abbr>)"
+    "message": "Ne plus demander (<abbr title=\"Vous pouvez changer ceci dans Paramètres | Comportement\">note</abbr>)"
     ,"description":"HTML code for the 'Do not ask again' checkbox.  The (<abbr>...</abbr>) part is an explanation that pops up when the user hovers the mouse over the word 'note'."
   }
 
   , "label_text": { "message": "--------------------------------------------"
                         ,"description": "Text for tree labels" }
   , "labelUnsaved": {
-    "message": "Unsaved"
+    "message": "Non enregistré"
     ,"description":"The label in the tree for an unsaved window"
   }
   ,"labelSavedTabs": {
-    "message": "Saved tabs"
+    "message": "Onglets enregistrés"
     ,"description":"The label in the tree for a saved window without a user-provided name"
   }
   ,"labelRecoveredTabs": {
-    "message": "Recovered tabs"
+    "message": "Onglets récupérés"
     ,"description":"The label in the tree for a window that was autosaved"
   }
   ,"labelRecoveredTabsPostfix": {
-    "message": " (Recovered)"
+    "message": " (Récupéré)"
     ,"description":"Added to the end of the label in the tree for a window that was autosaved"
   }
   ,"labelUnknownTitle": {
-    "message": "## Unknown title ##"
+    "message": "## Titre inconnu ##"
     ,"description": "Label for a tab's tree node if we can't find a title for it"
   }
   ,"labelBlankTabTitle": {
-    "message": "Tab"
+    "message": "Onglet"
     ,"description": "Label for a tab's tree node if we can't find a title for it on an update"
   }
 
@@ -147,39 +147,39 @@
     ,"description":"The item in the hamburger (≡) menu for a split test."
   }
   , "menuJasmineTests": {
-    "message": "Run Jasmine tests"
+    "message": "Exécuter Jasmine tests"
     ,"description":"The menu item to run tests using the 'Jasmine' program."
   }
   , "menuReload": {
-    "message": "Reload"
+    "message": "Recharger"
     ,"description":"The menu item to reload the TabFern window"
   }
   , "menuOnlineInfo": {
-    "message": "Online info"
+    "message": "Info en ligne"
     ,"description":"The menu item to open the blue and yellow 'About' Web page"
   }
   , "menuSettings": {
-    "message": "Settings and offline help"
+    "message": "Paramètres et aide hors ligne"
     ,"description":"The menu item to open the Settings page"
   }
   , "menuRestoreLastDeleted": {
-    "message": "Restore last deleted"
+    "message": "Restaurer dernier effacement"
     ,"description":"The menu item to restore the last-deleted window"
   }
   , "menuBackupNow": {
-    "message": "Backup now"
+    "message": "Sauvegarder backup maintenant"
     ,"description":"The menu item to save a copy of the tree to disk"
   }
   , "menuLoadBackupContents": {
-    "message": "Load contents of a backup"
+    "message": "Charger le contenu d'un backup"
     ,"description":"The menu item to load tree items from disk"
   }
   , "menuSort": {
-    "message": "Sort"
+    "message": "Trier"
     ,"description":"The text of the submenu with the sort options"
   }
   , "menuSortOpenToTop": {
-    "message": "Open windows to top"
+    "message": "Ouvrir les fenêtres en haut"
     ,"description":"The sort-submenu item to sort open windows to the top"
   }
   , "menuSortAZ": {
@@ -199,54 +199,54 @@
     ,"description":"The sort-submenu item to sort in reverse numerical order"
   }
   , "menuExpandAll": {
-    "message": "Expand all"
+    "message": "Développer tout"
     ,"description":"The menu item to expand all trees"
   }
   , "menuCollapseAll": {
-    "message": "Collapse all"
+    "message": "Cacher tout"
     ,"description":"The menu item to collapse all trees"
   }
   , "menuToggleTopBorder": {
-    "message": "Toggle top border"
+    "message": "Alterner affichage bordure supérieure"
     ,"description":"The context-menu item to toggle the top border on a tab's tree entry"
   }
   , "menuAddEditNote": {
-    "message": "Add/edit a note"
+    "message": "Ajouter/éditer une note"
     ,"description":"The context-menu item to add or edit a tab's note"
   }
   , "menuRename": {
-    "message": "Rename"
+    "message": "Renommer"
     ,"description":"The context-menu item to rename a window's tree entry"
   }
   , "menuForget": {
-    "message": "Forget but don't close"
+    "message": "Oublier mais ne pas fermer"
     ,"description":"The context-menu item to mark a window as unsaved"
   }
   , "menuttForget": {
-    "message": "Do not save this window when it is closed"
+    "message": "Ne pas sauver cette fenêtre quand elle est fermée"
     ,"description":"The context-menu tooltip to mark a window as unsaved"
   }
   , "menuRemember": {
-    "message": "Remember"
+    "message": "Se souvenir"
     ,"description":"The context-menu item to mark a window as saved"
   }
   , "menuttRemember": {
-    "message":  "Save this window when it is closed"
+    "message":  "Sauver cette fenêtre quand elle est fermée"
     ,"description":"The context-menu tooltip to mark a window as saved"
   }
   , "menuCloseAndRemember": {
-    "message": "Close and remember"
+    "message": "Fermer et se souvenir"
     ,"description":"The context-menu item to mark a window as saved, then close it"
   }
   , "menuDelete": {
-    "message": "Delete"
+    "message": "Supprimer"
     ,"description":"The context-menu item to delete a window or tab's tree item"
   }
 
   , "error_text": { "message": "--------------------------------------------"
                         ,"description": "Text for error messages" }
   , "errCouldNotSave": {
-    "message": "I couldn't save the tree: $ERR$"
+    "message": "Je n'ai pas pu sauver l'arborescence: $ERR$"
     ,"description":"Error message from saveTree()"
     ,"placeholders":{
       "err": {
@@ -256,7 +256,7 @@
     }
   }
   , "errCouldNotOpenWindow": {
-    "message": "I couldn't open the window: $ERR$"
+    "message": "Je n'ai pas pu ouvrir la fenêtre: $ERR$"
     ,"description":"Error message from win_create_cbk()"
     ,"placeholders":{
       "err": {
@@ -266,7 +266,7 @@
     }
   }
   , "errCouldNotCreateWindow": {
-    "message": "I couldn't create the window: $ERR$"
+    "message": "Je n'ai pas pu créer la fenêtre: $ERR$"
     ,"description":"Error message from treeOnSelect()"
     ,"placeholders":{
       "err": {
@@ -276,7 +276,7 @@
     }
   }
   , "errCouldNotLoadFile": {
-    "message": "I couldn't load $FILENAME$: $ERR$"
+    "message": "Je n'ai pas pu charger $FILENAME$: $ERR$"
     ,"description":"Error message from hamRestoreFromBackup()"
     ,"placeholders":{
       "filename": {
@@ -290,7 +290,7 @@
     }
   }
   , "errCouldNotParseFile": {
-    "message": "File $FILENAME$ is not something I can understand as a TabFern save file.  Pars error code was: $ERR$"
+    "message": "Je ne comprend pas le fichier $FILENAME$ comme étant un fichier de sauvegarde de TabFern.  L'erreur d'analyse est: $ERR$"
     ,"description":"Error message from hamRestoreFromBackup()"
     ,"placeholders":{
       "filename": {
@@ -304,7 +304,7 @@
     }
   }
   , "errCouldNotRunImporter": {
-    "message": "Unexpected error while trying to load the file.  Error code was: $ERR$"
+    "message": "Erreur inattendue pendant que j'essayais de charger le fichier.  Le code d'erreur est: $ERR$"
     ,"description":"Error message from hamRestoreFromBackup()"
     ,"placeholders":{
       "err": {
