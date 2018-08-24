@@ -47,7 +47,7 @@ let _DEF = { __proto__: null };
 
 /// An array of validators, used when loading settings.  Each is a function
 /// that returns a valid value for that setting, or `undefined` to use the
-/// default.
+/// default.  NOTE: returning "undefined" will trigger a warning on the console.
 let _VAL = { __proto__: null };
 let _vbool = (v)=>{ return ((typeof v === 'boolean')?v:undefined)};
 
@@ -116,6 +116,13 @@ const CFG_PRUNE_NEW_WINDOWS = 'prune-new-windows';
 _DEF[CFG_PRUNE_NEW_WINDOWS] = false;
 _VAL[CFG_PRUNE_NEW_WINDOWS] = _vbool;
 
+/// Not actually a setting, but an indicator that we loaded settings OK.
+/// Used by src/settings/main.js.
+const SETTINGS_LOADED_OK = '__settings_loaded_OK';
+_DEF[SETTINGS_LOADED_OK] = false;
+_VAL[SETTINGS_LOADED_OK] = ()=>{return undefined;}
+
+
 
 // Not yet implemented - pending #35.  Whether to open closed tabs when
 // you click on the tree item for a partially-open window.
@@ -128,6 +135,7 @@ _VAL[CFG_PRUNE_NEW_WINDOWS] = _vbool;
 const CFGS_BACKGROUND = 'window-background';
 _DEF[CFGS_BACKGROUND] = '';
 _VAL[CFGS_BACKGROUND] = (v)=>{
+    if(!v) return '';
     if(Validation.isValidColor(v)) return v;
     if(Validation.isValidURL(v,
                     ['file', 'https', 'data', 'chrome-extension'])) return v;
@@ -143,6 +151,7 @@ _VAL[CFGS_THEME_NAME] = (v)=>{
 const CFGS_SCROLLBAR_COLOR = 'skinny-scrollbar-color';
 _DEF[CFGS_SCROLLBAR_COLOR] = '';
 _VAL[CFGS_SCROLLBAR_COLOR] = (v)=>{
+    if(!v) return '';
     return ((Validation.isValidColor(v)) ? v : undefined);
 };
 

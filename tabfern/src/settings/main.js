@@ -81,6 +81,9 @@ function exportSettings(evt_unused)
 /// TODO automate keeping this in sync with common.js.
 function loadSettingsFromObject(obj) {
     let ok = true;
+    let errmsgs = '';
+    function stash(m) { errmsgs += `<li>${m}</li>`; }
+
     log.info({'Loading settings from':obj});
 
     for(let key in CFG_DEFAULTS) {
@@ -94,24 +97,30 @@ function loadSettingsFromObject(obj) {
         try {
             val = JSON.parse(String(obj[key]));
         } catch(e) {
-            log.warn(`Non-JSON value for ${key} - skipping`);
+            let m = `Non-JSON value for ${key} - skipping`;
+            log.warn(m);
+            stash(m);
             ok = false;
             continue;
         }
 
         // Confirm its type
         if(typeof val !== typeof CFG_DEFAULTS[key]) {
-            log.warn(`Setting ${key}: value is a ${typeof val} but should be `+
-                    `a ${typeof CFG_DEFAULTS[key]} - skipping`);
+            let m = `Setting ${key}: value is a ${typeof val} but should be `+
+                    `a ${typeof CFG_DEFAULTS[key]} - skipping`;
+            log.warn(m);
+            stash(m);
             ok = false;
             continue;
         }
 
-        // TODO add value-specific checks, e.g., for well-formedness.
+        // Run value-specific checks, e.g., for well-formedness.
         if(CFG_VALIDATORS[key]) {
             let val_output = CFG_VALIDATORS[key](val);
             if(val_output === undefined) {
-                log.warn(`Setting ${key}: Value ${val} failed validation`);
+                let m = `Setting ${key}: Value ${val} failed validation`;
+                log.warn(m);
+                //stash(m); // Not user-facing
                 val = CFG_DEFAULTS[key];
             } else {
                 val = val_output;
@@ -124,14 +133,16 @@ function loadSettingsFromObject(obj) {
             // so we can go ahead and set it.
             setSetting(key, val);
         } else {    // This shouldn't happen, so it's a log.error if it does.
-            log.error(`Unexpected type ${typeof val} for ${key} - skipping`);
+            let m = `Unexpected type ${typeof val} for ${key} - skipping`;
+            log.error(m);
+            stash(m);
             ok = false;
             continue;
         }
 
     } //foreach key
 
-    return ok;
+    return {ok, errmsgs};
 } //loadSettingsFromObject
 
 /// Import the settings
@@ -144,18 +155,21 @@ function importSettings(evt_unused)
                 $$('#import-settings').parent()[0]
             );
             let parsed = JSON.parse(text);
-            let ok = loadSettingsFromObject(parsed);
+            let {ok, errmsgs} = loadSettingsFromObject(parsed);
             if(!ok) {
-                window.alert("I encountered an error while loading the file " +
-                                filename);
+                let elem = $$('<div>').html(
+                    '<p>I encountered error(s) while loading the file ' +
+                    `'${filename}':</p><ul>${errmsgs}</ul>`);
+                $$('#import-settings').after(elem);
+
             } else {    // success
-                //let elem = $$('<div>').text(
-                //        "Settings loaded from " + filename);
-                //$$('#import-settings').after(elem);
+                // Let ourselves know, after reload, that it worked
+                setSetting(SETTINGS_LOADED_OK, true);
 
                 // refresh all the controls by reloading
                 window.location.reload(true);
             }
+
         } catch(e) {
             window.alert("File " + filename + ' is not something I can '+
                 'understand as a TabFern settings file.  Parse error code was: ' +
@@ -164,6 +178,7 @@ function importSettings(evt_unused)
         if(spinner) spinner.stop();
     } //processFile()
 
+    setSetting(SETTINGS_LOADED_OK, false);
     let importer = Fileops.Importer(document, '.tabfern_settings');
     importer.getFileAsString(processFile);
 } //importSettings()
@@ -191,6 +206,11 @@ function main()
         $$('#import-settings').on('click', importSettings);
         $$('#export-settings').on('click', exportSettings);
 
+        if(getBoolSetting(SETTINGS_LOADED_OK)) {
+            let elem = $$('<div>').text("Settings loaded");
+            $$('#import-settings').after(elem);
+            setSetting(SETTINGS_LOADED_OK, false);
+        }
         // ----------------------------
         // open tab specified in a query parm, if known.
         // See https://stackoverflow.com/a/12151322/2877364

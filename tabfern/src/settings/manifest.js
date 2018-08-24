@@ -43,7 +43,7 @@
                 "name": "export-settings",
                 "id": "export-settings",
                 "type": "button",
-                "text": "Export settings to file"
+                "text": "Save settings to a file"
             },
             {
                 "tab": i18n.get("Welcome / Help"),
@@ -51,7 +51,7 @@
                 "name": "import-settings",
                 "id": "import-settings",
                 "type": "button",
-                "text": "Import settings from file"
+                "text": "Load settings from a file"
             },
 
             // Behaviour.  Yeah, there's a "u" in there!
@@ -147,6 +147,13 @@
                 "name": CFG_PRUNE_NEW_WINDOWS,
                 "type": "checkbox",
                 "label": i18n.get("Adds extra tabs to a new window I've just opened, get rid of them!"),
+            },
+            {
+                "tab": i18n.get("Behaviour"),
+                "group": i18n.get("When Chrome..."),
+                'group_html':true,
+                "type": "description",
+                "text": i18n.get("Note: use this option only if you need it &mdash; it may not behave exactly as you would expect."),
             },
 
             // Appearance
@@ -315,6 +322,10 @@ bar (it will start with "file://")</li>
 URL and title of each item in a tooltip on that item.  This way you can
 see URLs in the tree, and you can see long titles without having
 to scroll.  ${issue(104)}</li>
+<li>You can now save and load settings from the ${i18n.get("Welcome / Help")}
+tab.  ${issue(92)}</li>
+<li>When you open the TF window, it moves back to its last position
+more quickly.  ${issue(134)}</li>
 <li><a href="https://vivaldi.com/">Vivaldi</a> support:
 Basic TabFern functionality is now also available on the Vivaldi
 browser.  Vivaldi uses the
@@ -328,8 +339,6 @@ ${issue(100)}</li>
 <li>There is now a "Reload" option on the menu
 (${ham} ${gt} ${icon('fa fa-refresh')} Reload), in case TabFern
 and Chrome get out of sync.  ${issue(127)}</li>
-<li>When you open the TF window, it moves back to its last position
-more quickly.  ${issue(134)}</li>
 <li>Bugfixes: ${issue(128,true)}</li>
 </ul>`
             },
