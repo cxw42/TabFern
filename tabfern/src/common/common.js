@@ -45,39 +45,77 @@ const MSG_EDIT_TAB_NOTE = 'editTabNote';
 /// of the properties.
 let _DEF = { __proto__: null };
 
+/// An array of validators, used when loading settings.  Each is a function
+/// that returns a valid value for that setting, or `undefined` to use the
+/// default.
+let _VAL = { __proto__: null };
+let _vbool = (v)=>{ return ((typeof v === 'boolean')?v:undefined)};
+
 // Booleans
 const CFG_ENB_CONTEXT_MENU = 'ContextMenu.Enabled';
 _DEF[CFG_ENB_CONTEXT_MENU] = true;
+_VAL[CFG_ENB_CONTEXT_MENU] = _vbool;
+
 const CFG_RESTORE_ON_LAST_DELETED = 'open-tree-on-restore-last-deleted';
 _DEF[CFG_RESTORE_ON_LAST_DELETED] = false;
+_VAL[CFG_RESTORE_ON_LAST_DELETED] = _vbool;
+
 const CFG_JUMP_WITH_SORT_OPEN_TOP = 'jump-to-top-when-sort-open-to-top';
 _DEF[CFG_JUMP_WITH_SORT_OPEN_TOP] = true;
+_VAL[CFG_JUMP_WITH_SORT_OPEN_TOP] = _vbool;
+
 const CFG_COLLAPSE_ON_STARTUP = 'collapse-trees-on-startup';
 _DEF[CFG_COLLAPSE_ON_STARTUP] = true;
+_VAL[CFG_COLLAPSE_ON_STARTUP] = _vbool;
+
 const CFG_OPEN_TOP_ON_STARTUP = 'open-to-top-on-startup';
 _DEF[CFG_OPEN_TOP_ON_STARTUP] = false;
+_VAL[CFG_OPEN_TOP_ON_STARTUP] = _vbool;
+
 const CFG_HIDE_HORIZONTAL_SCROLLBARS = 'hide-horizontal-scrollbars';
 _DEF[CFG_HIDE_HORIZONTAL_SCROLLBARS] = true;
+_VAL[CFG_HIDE_HORIZONTAL_SCROLLBARS] = _vbool;
+
 const CFG_SKINNY_SCROLLBARS = 'skinny-scrollbars';
 _DEF[CFG_SKINNY_SCROLLBARS] = false;
+_VAL[CFG_SKINNY_SCROLLBARS] = _vbool;
+
 const CFG_NEW_WINS_AT_TOP = 'open-new-windows-at-top';
 _DEF[CFG_NEW_WINS_AT_TOP] = true;
+_VAL[CFG_NEW_WINS_AT_TOP] = _vbool;
+
 const CFG_SHOW_TREE_LINES = 'show-tree-lines';
 _DEF[CFG_SHOW_TREE_LINES] = false;
+_VAL[CFG_SHOW_TREE_LINES] = _vbool;
+
 const CFG_CONFIRM_DEL_OF_SAVED = 'confirm-del-of-saved-wins';
 _DEF[CFG_CONFIRM_DEL_OF_SAVED] = true;
+_VAL[CFG_CONFIRM_DEL_OF_SAVED] = _vbool;
+
 const CFG_CONFIRM_DEL_OF_UNSAVED = 'confirm-del-of-unsaved-wins';
 _DEF[CFG_CONFIRM_DEL_OF_UNSAVED] = false;
+_VAL[CFG_CONFIRM_DEL_OF_UNSAVED] = _vbool;
+
 const CFG_CONFIRM_DEL_OF_SAVED_TABS = 'confirm-del-of-saved-tabs';
 _DEF[CFG_CONFIRM_DEL_OF_SAVED_TABS] = true;
+_VAL[CFG_CONFIRM_DEL_OF_SAVED_TABS] = _vbool;
+
 const CFG_CONFIRM_DEL_OF_UNSAVED_TABS = 'confirm-del-of-unsaved-tabs';
 _DEF[CFG_CONFIRM_DEL_OF_UNSAVED_TABS] = false;
+_VAL[CFG_CONFIRM_DEL_OF_UNSAVED_TABS] = _vbool;
+
 const CFG_URL_IN_TOOLTIP = 'tooltip-has-url';
 _DEF[CFG_URL_IN_TOOLTIP] = false;
+_VAL[CFG_URL_IN_TOOLTIP] = _vbool;
+
 const CFG_TITLE_IN_TOOLTIP = 'tooltip-has-title';
 _DEF[CFG_TITLE_IN_TOOLTIP] = false;
+_VAL[CFG_TITLE_IN_TOOLTIP] = _vbool;
+
 const CFG_PRUNE_NEW_WINDOWS = 'prune-new-windows';
 _DEF[CFG_PRUNE_NEW_WINDOWS] = false;
+_VAL[CFG_PRUNE_NEW_WINDOWS] = _vbool;
+
 
 // Not yet implemented - pending #35.  Whether to open closed tabs when
 // you click on the tree item for a partially-open window.
@@ -89,13 +127,28 @@ _DEF[CFG_PRUNE_NEW_WINDOWS] = false;
 // Strings, including limited-choice controls such as radio buttons and dropdowns.
 const CFGS_BACKGROUND = 'window-background';
 _DEF[CFGS_BACKGROUND] = '';
+_VAL[CFGS_BACKGROUND] = (v)=>{
+    if(Validation.isValidColor(v)) return v;
+    if(Validation.isValidURL(v,
+                    ['file', 'https', 'data', 'chrome-extension'])) return v;
+    return undefined;
+};
+
 const CFGS_THEME_NAME = 'theme-name';
 _DEF[CFGS_THEME_NAME] = 'default-dark';
+_VAL[CFGS_THEME_NAME] = (v)=>{
+    return (( v === 'default-dark' || v === 'default') ? v : undefined);
+};
+
 const CFGS_SCROLLBAR_COLOR = 'skinny-scrollbar-color';
 _DEF[CFGS_SCROLLBAR_COLOR] = '';
+_VAL[CFGS_SCROLLBAR_COLOR] = (v)=>{
+    return ((Validation.isValidColor(v)) ? v : undefined);
+};
 
 /// The default values for the configuration settings.
 const CFG_DEFAULTS = Object.seal(_DEF);
+const CFG_VALIDATORS = Object.seal(_VAL);
 
 //////////////////////////////////////////////////////////////////////////
 // Test for Firefox //

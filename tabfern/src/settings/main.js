@@ -10,13 +10,18 @@ let $$ = jQuery;
 let createPicker = function createPicker() {
     let picker = $$('#scrollbar-color-picker-label');
 
+    let orig_color = getStringSetting(CFGS_SCROLLBAR_COLOR);
+    if(!Validation.isValidColor(orig_color)) {
+        orig_color = CFG_DEFAULTS[CFGS_SCROLLBAR_COLOR];
+    }
+
     // Replace the manifest entry with the color picker
     $$(picker).spectrum({
         showInput: true,
         allowEmpty:true,
         showInitial: true,
         preferredFormat: 'hex',
-        color: getStringSetting(CFGS_SCROLLBAR_COLOR),
+        color: orig_color,
     });
 
     // Add the text that would otherwise have gone in the manifest
@@ -36,7 +41,12 @@ let createPicker = function createPicker() {
             colorstring = String(newcolor.toString());
         }
 
-        setSetting(CFGS_SCROLLBAR_COLOR, colorstring);
+        if(!colorstring || Validation.isValidColor(colorstring)) {
+            setSetting(CFGS_SCROLLBAR_COLOR, colorstring);
+        } else {
+            console.log('Invalid color');
+            $$(picker).spectrum('set',orig_color);
+        }
     });
 }; //createPicker
 
@@ -98,6 +108,15 @@ function loadSettingsFromObject(obj) {
         }
 
         // TODO add value-specific checks, e.g., for well-formedness.
+        if(CFG_VALIDATORS[key]) {
+            let val_output = CFG_VALIDATORS[key](val);
+            if(val_output === undefined) {
+                log.warn(`Setting ${key}: Value ${val} failed validation`);
+                val = CFG_DEFAULTS[key];
+            } else {
+                val = val_output;
+            }
+        }
 
         // Set the value
         if(typeof val === 'boolean' || typeof val === 'string') {
@@ -129,10 +148,13 @@ function importSettings(evt_unused)
             if(!ok) {
                 window.alert("I encountered an error while loading the file " +
                                 filename);
-            } else {
-                let elem = $$('<div>').text(
-                        "Settings loaded from " + filename);
-                $$('#import-settings').after(elem);
+            } else {    // success
+                //let elem = $$('<div>').text(
+                //        "Settings loaded from " + filename);
+                //$$('#import-settings').after(elem);
+
+                // refresh all the controls by reloading
+                window.location.reload(true);
             }
         } catch(e) {
             window.alert("File " + filename + ' is not something I can '+

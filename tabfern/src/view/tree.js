@@ -61,7 +61,7 @@ let Module_dependencies = [
 
     // Modules of TabFern itself
     'view/const', 'view/item_details', 'view/sorts', 'view/item_tree',
-    'view/model', 'common/validation'
+    'view/model',
 ];
 
 /// Make short names in Modules for some modules.  shortname => longname
@@ -3818,34 +3818,28 @@ function preLoadInit()
         body.classList += ` jstree-${getThemeName()}`;
     }
 
-    // Apply custom background, if any
+    // Apply custom background, if any.
+    // NOTE: need to keep this logic in sync with the validator for
+    // CFGS_BACKGROUND in src/common/common.js.  TODO remove this duplication.
     BG: if(haveSetting(CFGS_BACKGROUND)) {
         let bg = getStringSetting(CFGS_BACKGROUND, '').trim();
 
         if(bg.length < 2) break BG;     // no valid color is one character
 
-        if(Modules['common/validation'].isValidColor(bg)) {
+        if(Validation.isValidColor(bg)) {
             custom_bg_color = bg;
             break BG;
         }
 
-        // not a color --- try to parse it as a URL
-        try {
-            let url = new URL(bg);
-            if(url.protocol === "file:" ||
-                    //url.protocol === "http:" ||
+        // not a color --- try to parse it as a URL.
+        if(Validation.isValidURL(bg,
+                    ['file', 'https', 'data', 'chrome-extension'])) {
                     // For now, disallow http so we don't have to worry
                     // about HTTP-hijacking attacks.  I don't know of any
                     // attack vectors in CSS background images off-hand,
                     // but that doesn't mean there aren't any :) .
-                    url.protocol === "https:" ||
-                    url.protocol === "data:" ||
-                    url.protocol === "chrome-extension:") {
-                custom_bg_color = `url("${url.href}")`;
-            }
+            custom_bg_color = `url("${bg}")`;
             break BG;
-        } catch(e) {
-            // do nothing
         }
     } //endif have a background setting
 
