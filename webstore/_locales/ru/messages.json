@@ -1,5 +1,4 @@
-{ "encoding": { "message": "-*- coding: utf-8 -*- схема", "description": "en" }
-
+{ "encoding": { "message": "-*- coding: utf-8 -*- схема", "description": "ru" }
   , "name_text": { "message": "-----------------------------------------"
                         ,"description": "Text for the Chrome Web Store listing and window titles" }
   , "wsLongName": {
@@ -117,11 +116,11 @@
   , "label_text": { "message": "--------------------------------------------"
                         ,"description": "Text for tree labels" }
   , "labelUnsaved": {
-    "message": "Unsaved"
+    "message": "несохронённые вешалки"
     ,"description":"The label in the tree for an unsaved window"
   }
   ,"labelSavedTabs": {
-    "message": "Saved tabs"
+    "message": "Сохронённые вешалки"
     ,"description":"The label in the tree for a saved window without a user-provided name"
   }
   ,"labelRecoveredTabs": {
@@ -156,11 +155,11 @@
     ,"description":"The menu item to reload the TabFern window"
   }
   , "menuOnlineInfo": {
-    "message": "Online info"
+    "message": "онлайновая информация"
     ,"description":"The menu item to open the blue and yellow 'About' Web page"
   }
   , "menuSettings": {
-    "message": "Settings and offline help"
+    "message": "установки и автономная помощь"
     ,"description":"The menu item to open the Settings page"
   }
   , "menuRestoreLastDeleted": {
@@ -168,15 +167,15 @@
     ,"description":"The menu item to restore the last-deleted window"
   }
   , "menuBackupNow": {
-    "message": "Backup now"
+    "message": "резервировать сейчас"
     ,"description":"The menu item to save a copy of the tree to disk"
   }
   , "menuLoadBackupContents": {
-    "message": "Load contents of a backup"
+    "message": "загрузить содержания резерва"
     ,"description":"The menu item to load tree items from disk"
   }
   , "menuSort": {
-    "message": "Sort"
+    "message": "сортировка"
     ,"description":"The text of the submenu with the sort options"
   }
   , "menuSortOpenToTop": {
@@ -200,11 +199,11 @@
     ,"description":"The sort-submenu item to sort in reverse numerical order"
   }
   , "menuExpandAll": {
-    "message": "Expand all"
+    "message": "увеличивать содержания"
     ,"description":"The menu item to expand all trees"
   }
   , "menuCollapseAll": {
-    "message": "Collapse all"
+    "message": "уменьшить содержания"
     ,"description":"The menu item to collapse all trees"
   }
   , "menuToggleTopBorder": {
@@ -291,7 +290,7 @@
     }
   }
   , "errCouldNotParseFile": {
-    "message": "File $FILENAME$ is not something I can understand as a TabFern save file.  Parse error code was: $ERR$"
+    "message": "File $FILENAME$ is not something I can understand as a TabFern save file.  Pars error code was: $ERR$"
     ,"description":"Error message from hamRestoreFromBackup()"
     ,"placeholders":{
       "filename": {

@@ -10045,7 +10045,7 @@
                         }
                         let val = idx[key_val];
 
-                        if( (field_name===null) ||
+                        if( (field_name == null) ||
                             (typeof field_name === 'undefined') ) {
                             return val;
                         } else if(field_name in val) {

@@ -1,5 +1,4 @@
-{ "encoding": { "message": "-*- coding: utf-8 -*- схема", "description": "en" }
-
+{ "encoding": { "message": "-*- coding: utf-8 -*- Grüße!", "description": "de" }
   , "name_text": { "message": "-----------------------------------------"
                         ,"description": "Text for the Chrome Web Store listing and window titles" }
   , "wsLongName": {
@@ -117,11 +116,11 @@
   , "label_text": { "message": "--------------------------------------------"
                         ,"description": "Text for tree labels" }
   , "labelUnsaved": {
-    "message": "Unsaved"
+    "message": "Nicht gespeichert"
     ,"description":"The label in the tree for an unsaved window"
   }
   ,"labelSavedTabs": {
-    "message": "Saved tabs"
+    "message": "Gespeicherte Tabs"
     ,"description":"The label in the tree for a saved window without a user-provided name"
   }
   ,"labelRecoveredTabs": {
@@ -291,7 +290,7 @@
     }
   }
   , "errCouldNotParseFile": {
-    "message": "File $FILENAME$ is not something I can understand as a TabFern save file.  Parse error code was: $ERR$"
+    "message": "File $FILENAME$ is not something I can understand as a TabFern save file.  Pars error code was: $ERR$"
     ,"description":"Error message from hamRestoreFromBackup()"
     ,"placeholders":{
       "filename": {

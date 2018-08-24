@@ -194,6 +194,7 @@
 
         jstreeTypes[K.IT_WIN] = {
             li_attr: { 'class': WIN_CLASS },
+            //a_attr: { 'title': 'Unsaved window' },    //maybe?
             //icon: 'clear-icon',  // We will overlay the actual icon in the CSS
         };
 
