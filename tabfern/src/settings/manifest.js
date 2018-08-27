@@ -13,7 +13,7 @@
     let settings = `${ham} ${gt} Settings ${gt}`;
     let refresh_message = " (refresh the TabFern window after you change this to make the change take effect)"
 
-// Settings {{{2
+    // Settings {{{2
     // Assign the settings
     root.manifest = {
         "name":
@@ -306,7 +306,42 @@ bar (it will start with "file://")</li>
                 "text": "X or + or don't show when these are dynamic"
             },
 
-// }}}2
+    // }}}2
+    // Credits {{{2
+            {
+                "tab": i18n.get("Credits and thanks"),
+                "group": 'TabFern',
+                'group_html':true,
+                "type": "description",
+                "text":
+`TabFern is by Chris White (<a href="https://devwrench.wordpress.com">blog</a>,
+<a href="https://github.com/cxw42/">GitHub</a>).  I greatly appreciate
+the following contributors!  If I have accidentally missed you, please let
+me know so I can correct the omission.  All names below are in alphabetical
+order.`
+            },
+
+            {
+                "tab": i18n.get("Credits and thanks"),
+                "group": i18n.get("Programming"),
+                'group_html':true,
+                "type": "description",
+                "text":
+`<ul><li><a href="https://github.com/r4j4h/">Jasmine Hegman</a></li></ul>`
+            },
+            {
+                "tab": i18n.get("Credits and thanks"),
+                "group": i18n.get("Translation"),
+                'group_html':true,
+                "type": "description",
+                "text":
+`<ul>
+<li><a href="https://github.com/Procyon-b/">Procyon-b</a> (French)</li>
+<li><a href="https://github.com/rwexmd/">rwexmd</a> (Russian)</li>
+</ul>`
+            },
+
+    // }}}2
             // Changelog                                          {{{1
             {
                 "tab": i18n.get("What's new?"),
@@ -317,6 +352,8 @@ bar (it will start with "file://")</li>
 `<ul>
 <li class="gold-star">TabFern now has <b>500</b> users!!!
 <b>Thank you</b> for using TabFern and helping the project!</li>
+<li>Partial translations into French and Russian.  My thanks to the
+translators!  Please see the new Credits tab.  ${issue(135)}</li>
 <li>Tooltips on the action buttons.  ${issue(117)}</li>
 <li>${settings} Appearance ${gt} Tooltips now has options to show the
 URL and title of each item in a tooltip on that item.  This way you can
@@ -339,7 +376,7 @@ ${issue(100)}</li>
 <li>There is now a "Reload" option on the menu
 (${ham} ${gt} ${icon('fa fa-refresh')} Reload), in case TabFern
 and Chrome get out of sync.  ${issue(127)}</li>
-<li>Bugfixes: ${issue(128,true)}</li>
+<li>Bugfixes: ${issue(128,true)}, ${issue(129,true)}</li>
 </ul>`
             },
             {
