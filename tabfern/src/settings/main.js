@@ -2,7 +2,9 @@
 let settingsobj;
 
 /// jQuery alias, since $ is mootools
-let $$ = jQuery;
+if(!$$ && jQuery) {
+    window.$$ = jQuery;
+}
 
 // Color picker //////////////////////////////////////////////////// {{{1
 

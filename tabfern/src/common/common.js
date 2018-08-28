@@ -11,7 +11,7 @@ console.log('TabFern common.js loading');
 
 /// The TabFern extension friendly version number.  Displayed in the
 /// title bar of the popup window, so lowercase (no shouting!).
-const TABFERN_VERSION='0.1.17-pre.3'  //' alpha \u26a0'
+window.TABFERN_VERSION='0.1.17-pre.3'  //' alpha \u26a0'
     // When you change this, also update:
     //  - manifest.json: both the version and version_name
     //  - package.json
@@ -33,8 +33,8 @@ const TABFERN_VERSION='0.1.17-pre.3'  //' alpha \u26a0'
 // { msg: <one of the below constants> [, anything else] }
 // For responses, response:true is also included.
 
-const MSG_GET_VIEW_WIN_ID = 'getViewWindowID';
-const MSG_EDIT_TAB_NOTE = 'editTabNote';
+window.MSG_GET_VIEW_WIN_ID = 'getViewWindowID';
+window.MSG_EDIT_TAB_NOTE = 'editTabNote';
 
 //////////////////////////////////////////////////////////////////////////
 // Names of settings, and their defaults //
@@ -52,73 +52,73 @@ let _VAL = { __proto__: null };
 let _vbool = (v)=>{ return ((typeof v === 'boolean')?v:undefined)};
 
 // Booleans
-const CFG_ENB_CONTEXT_MENU = 'ContextMenu.Enabled';
+window.CFG_ENB_CONTEXT_MENU = 'ContextMenu.Enabled';
 _DEF[CFG_ENB_CONTEXT_MENU] = true;
 _VAL[CFG_ENB_CONTEXT_MENU] = _vbool;
 
-const CFG_RESTORE_ON_LAST_DELETED = 'open-tree-on-restore-last-deleted';
+window.CFG_RESTORE_ON_LAST_DELETED = 'open-tree-on-restore-last-deleted';
 _DEF[CFG_RESTORE_ON_LAST_DELETED] = false;
 _VAL[CFG_RESTORE_ON_LAST_DELETED] = _vbool;
 
-const CFG_JUMP_WITH_SORT_OPEN_TOP = 'jump-to-top-when-sort-open-to-top';
+window.CFG_JUMP_WITH_SORT_OPEN_TOP = 'jump-to-top-when-sort-open-to-top';
 _DEF[CFG_JUMP_WITH_SORT_OPEN_TOP] = true;
 _VAL[CFG_JUMP_WITH_SORT_OPEN_TOP] = _vbool;
 
-const CFG_COLLAPSE_ON_STARTUP = 'collapse-trees-on-startup';
+window.CFG_COLLAPSE_ON_STARTUP = 'collapse-trees-on-startup';
 _DEF[CFG_COLLAPSE_ON_STARTUP] = true;
 _VAL[CFG_COLLAPSE_ON_STARTUP] = _vbool;
 
-const CFG_OPEN_TOP_ON_STARTUP = 'open-to-top-on-startup';
+window.CFG_OPEN_TOP_ON_STARTUP = 'open-to-top-on-startup';
 _DEF[CFG_OPEN_TOP_ON_STARTUP] = false;
 _VAL[CFG_OPEN_TOP_ON_STARTUP] = _vbool;
 
-const CFG_HIDE_HORIZONTAL_SCROLLBARS = 'hide-horizontal-scrollbars';
+window.CFG_HIDE_HORIZONTAL_SCROLLBARS = 'hide-horizontal-scrollbars';
 _DEF[CFG_HIDE_HORIZONTAL_SCROLLBARS] = true;
 _VAL[CFG_HIDE_HORIZONTAL_SCROLLBARS] = _vbool;
 
-const CFG_SKINNY_SCROLLBARS = 'skinny-scrollbars';
+window.CFG_SKINNY_SCROLLBARS = 'skinny-scrollbars';
 _DEF[CFG_SKINNY_SCROLLBARS] = false;
 _VAL[CFG_SKINNY_SCROLLBARS] = _vbool;
 
-const CFG_NEW_WINS_AT_TOP = 'open-new-windows-at-top';
+window.CFG_NEW_WINS_AT_TOP = 'open-new-windows-at-top';
 _DEF[CFG_NEW_WINS_AT_TOP] = true;
 _VAL[CFG_NEW_WINS_AT_TOP] = _vbool;
 
-const CFG_SHOW_TREE_LINES = 'show-tree-lines';
+window.CFG_SHOW_TREE_LINES = 'show-tree-lines';
 _DEF[CFG_SHOW_TREE_LINES] = false;
 _VAL[CFG_SHOW_TREE_LINES] = _vbool;
 
-const CFG_CONFIRM_DEL_OF_SAVED = 'confirm-del-of-saved-wins';
+window.CFG_CONFIRM_DEL_OF_SAVED = 'confirm-del-of-saved-wins';
 _DEF[CFG_CONFIRM_DEL_OF_SAVED] = true;
 _VAL[CFG_CONFIRM_DEL_OF_SAVED] = _vbool;
 
-const CFG_CONFIRM_DEL_OF_UNSAVED = 'confirm-del-of-unsaved-wins';
+window.CFG_CONFIRM_DEL_OF_UNSAVED = 'confirm-del-of-unsaved-wins';
 _DEF[CFG_CONFIRM_DEL_OF_UNSAVED] = false;
 _VAL[CFG_CONFIRM_DEL_OF_UNSAVED] = _vbool;
 
-const CFG_CONFIRM_DEL_OF_SAVED_TABS = 'confirm-del-of-saved-tabs';
+window.CFG_CONFIRM_DEL_OF_SAVED_TABS = 'confirm-del-of-saved-tabs';
 _DEF[CFG_CONFIRM_DEL_OF_SAVED_TABS] = true;
 _VAL[CFG_CONFIRM_DEL_OF_SAVED_TABS] = _vbool;
 
-const CFG_CONFIRM_DEL_OF_UNSAVED_TABS = 'confirm-del-of-unsaved-tabs';
+window.CFG_CONFIRM_DEL_OF_UNSAVED_TABS = 'confirm-del-of-unsaved-tabs';
 _DEF[CFG_CONFIRM_DEL_OF_UNSAVED_TABS] = false;
 _VAL[CFG_CONFIRM_DEL_OF_UNSAVED_TABS] = _vbool;
 
-const CFG_URL_IN_TOOLTIP = 'tooltip-has-url';
+window.CFG_URL_IN_TOOLTIP = 'tooltip-has-url';
 _DEF[CFG_URL_IN_TOOLTIP] = false;
 _VAL[CFG_URL_IN_TOOLTIP] = _vbool;
 
-const CFG_TITLE_IN_TOOLTIP = 'tooltip-has-title';
+window.CFG_TITLE_IN_TOOLTIP = 'tooltip-has-title';
 _DEF[CFG_TITLE_IN_TOOLTIP] = false;
 _VAL[CFG_TITLE_IN_TOOLTIP] = _vbool;
 
-const CFG_PRUNE_NEW_WINDOWS = 'prune-new-windows';
+window.CFG_PRUNE_NEW_WINDOWS = 'prune-new-windows';
 _DEF[CFG_PRUNE_NEW_WINDOWS] = false;
 _VAL[CFG_PRUNE_NEW_WINDOWS] = _vbool;
 
 /// Not actually a setting, but an indicator that we loaded settings OK.
 /// Used by src/settings/main.js.
-const SETTINGS_LOADED_OK = '__settings_loaded_OK';
+window.SETTINGS_LOADED_OK = '__settings_loaded_OK';
 _DEF[SETTINGS_LOADED_OK] = false;
 _VAL[SETTINGS_LOADED_OK] = ()=>{return undefined;}
 
@@ -132,7 +132,7 @@ _VAL[SETTINGS_LOADED_OK] = ()=>{return undefined;}
 //_DEF[CFG_OPEN_REST_ON_CLICK] = CFG_OROC_DO_NOT;
 
 // Strings, including limited-choice controls such as radio buttons and dropdowns.
-const CFGS_BACKGROUND = 'window-background';
+window.CFGS_BACKGROUND = 'window-background';
 _DEF[CFGS_BACKGROUND] = '';
 _VAL[CFGS_BACKGROUND] = (v)=>{
     if(!v) return '';
@@ -142,13 +142,13 @@ _VAL[CFGS_BACKGROUND] = (v)=>{
     return undefined;
 };
 
-const CFGS_THEME_NAME = 'theme-name';
+window.CFGS_THEME_NAME = 'theme-name';
 _DEF[CFGS_THEME_NAME] = 'default-dark';
 _VAL[CFGS_THEME_NAME] = (v)=>{
     return (( v === 'default-dark' || v === 'default') ? v : undefined);
 };
 
-const CFGS_SCROLLBAR_COLOR = 'skinny-scrollbar-color';
+window.CFGS_SCROLLBAR_COLOR = 'skinny-scrollbar-color';
 _DEF[CFGS_SCROLLBAR_COLOR] = '';
 _VAL[CFGS_SCROLLBAR_COLOR] = (v)=>{
     if(!v) return '';
@@ -156,8 +156,8 @@ _VAL[CFGS_SCROLLBAR_COLOR] = (v)=>{
 };
 
 /// The default values for the configuration settings.
-const CFG_DEFAULTS = Object.seal(_DEF);
-const CFG_VALIDATORS = Object.seal(_VAL);
+window.CFG_DEFAULTS = Object.seal(_DEF);
+window.CFG_VALIDATORS = Object.seal(_VAL);
 
 //////////////////////////////////////////////////////////////////////////
 // Test for Firefox //
@@ -167,7 +167,7 @@ const CFG_VALIDATORS = Object.seal(_VAL);
 // Chrome code.  Hopefully in the future I can test for null/undefined
 // in either browser, and get rid of this block.
 
-BROWSER_TYPE=null;  // unknown
+window.BROWSER_TYPE=null;  // unknown
 
 (function(win){
     let isLastError_chrome =
@@ -181,7 +181,7 @@ BROWSER_TYPE=null;  // unknown
             (info)=>{   // fullfillment
                 if(info.name === 'Firefox') {
                     win.isLastError = isLastError_firefox;
-                    BROWSER_TYPE = 'ff';
+                    window.BROWSER_TYPE = 'ff';
                 } else {
                     win.isLastError = isLastError_chrome;
                 }
@@ -192,7 +192,7 @@ BROWSER_TYPE=null;  // unknown
             }
         );
     } else {    // Chrome
-        BROWSER_TYPE = 'chrome';
+        window.BROWSER_TYPE = 'chrome';
         win.isLastError = isLastError_chrome;
     }
 })(window);
@@ -200,16 +200,16 @@ BROWSER_TYPE=null;  // unknown
 //////////////////////////////////////////////////////////////////////////
 // Setting-related functions //
 
-const SETTING_PREFIX = 'store.settings.';
+window.SETTING_PREFIX = 'store.settings.';
 
 /// Get the raw value of a setting.  Returns null if the key doesn't exist.
-function getRawSetting(setting_name)
+window.getRawSetting = function getRawSetting(setting_name)
 {
     return localStorage.getItem(SETTING_PREFIX + setting_name);
 } //getSetting
 
 /// Get the string value of a setting, if it is a string.
-function getStringSetting(setting_name, default_value = undefined)
+window.getStringSetting = function getStringSetting(setting_name, default_value = undefined)
 {
     if(typeof default_value === 'undefined' && setting_name in CFG_DEFAULTS) {
         default_value = CFG_DEFAULTS[setting_name];
@@ -232,7 +232,7 @@ function getStringSetting(setting_name, default_value = undefined)
 } //getStringSetting
 
 /// Get a boolean setting from the settings page, which uses HTML5 localStorage.
-function getBoolSetting(setting_name, default_value = undefined)
+window.getBoolSetting = function getBoolSetting(setting_name, default_value = undefined)
 {
     if(typeof default_value === 'undefined' && setting_name in CFG_DEFAULTS) {
         default_value = CFG_DEFAULTS[setting_name];
@@ -255,7 +255,7 @@ function getBoolSetting(setting_name, default_value = undefined)
 } //getBoolSetting
 
 /// Find out whether the given setting from the settings page exists.
-function haveSetting(setting_name)
+window.haveSetting = function haveSetting(setting_name)
 {
     if(!setting_name) return false;
     return (SETTING_PREFIX + setting_name) in localStorage;
@@ -264,7 +264,7 @@ function haveSetting(setting_name)
 /// Set a setting (wow!).
 /// @param setting_name {String} The name, without the leading SETTING_PREFIX
 /// @param setting_value {mixed} The value, which must be JSON.stringifiable.
-function setSetting(setting_name, setting_value)
+window.setSetting = function setSetting(setting_name, setting_value)
 {
     // TODO handle exceptions in some reasonable way.
     localStorage.setItem(
@@ -275,13 +275,13 @@ function setSetting(setting_name, setting_value)
 
 /// Set a setting only if it's not already there.  Parameters are as
 /// setSetting().
-function setSettingIfNonexistent(setting_name, setting_value)
+window.setSettingIfNonexistent = function setSettingIfNonexistent(setting_name, setting_value)
 {
     if(!haveSetting(setting_name)) setSetting(setting_name, setting_value);
 }
 
 /// Custom getter for theme names.  This enforces known themes.
-function getThemeName()
+window.getThemeName = function getThemeName()
 {
     let theme = getStringSetting(CFGS_THEME_NAME);
     if( theme === 'default' || theme === 'default-dark') return theme;
@@ -296,7 +296,7 @@ function getThemeName()
 /// @param {String} url URL of script to load
 /// @param {String} [type] Type of Script tag. Default: text/javascript
 /// @param {Function} callback Set as callback for BOTH onreadystatechange and onload
-function asyncAppendScriptToHead(document, url, callback, type = 'text/javascript')
+window.asyncAppendScriptToHead = function asyncAppendScriptToHead(document, url, callback, type = 'text/javascript')
 {
     // Adding the script tag to the head as suggested before
     var head = document.getElementsByTagName('head')[0];
@@ -316,7 +316,7 @@ function asyncAppendScriptToHead(document, url, callback, type = 'text/javascrip
 
 /// Invoke a callback only when the document is loaded.  Does not pass any
 /// parameters to the callback.
-function callbackOnLoad(callback)
+window.callbackOnLoad = function callbackOnLoad(callback)
 {
     if(document.readyState !== 'complete') {
         // Thanks to https://stackoverflow.com/a/28093606/2877364 by
@@ -333,7 +333,7 @@ function callbackOnLoad(callback)
 /// @param url {String}
 /// @param before {DOM Node} Optional --- if provided, the new sheet
 /// will be inserted before #before.
-function loadCSS(doc, url, before) {
+window.loadCSS = function loadCSS(doc, url, before) {
     let link = doc.createElement("link");
     link.type = "text/css";
     link.rel = "stylesheet";
@@ -350,11 +350,11 @@ function loadCSS(doc, url, before) {
 // Miscellaneous functions //
 
 /// Shortcut for i18n.  Call _T("name") to pull the localized "name".
-var _T = chrome.i18n.getMessage;
+window._T = chrome.i18n.getMessage;
 
 /// Ignore a Chrome callback error, and suppress Chrome's
 /// `runtime.lastError` diagnostic.  Use this as a Chrome callback.
-function ignore_chrome_error() { void chrome.runtime.lastError; }
+window.ignore_chrome_error = function ignore_chrome_error() { void chrome.runtime.lastError; }
 
 /// Deep-compare two objects for memberwise equality.  However, if either
 /// object contains a pointer to the other, this will return false rather
@@ -364,7 +364,7 @@ function ignore_chrome_error() { void chrome.runtime.lastError; }
 /// @param obj2 The other object to compare
 /// Modified from https://gist.github.com/nicbell/6081098 by
 /// https://gist.github.com/nicbell
-function ObjectCompare(obj1, obj2) {
+window.ObjectCompare = function ObjectCompare(obj1, obj2) {
     if( (typeof obj1 !== 'object') || (typeof obj2 !== 'object') ) {
         return obj1 === obj2;
     }

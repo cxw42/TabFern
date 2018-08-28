@@ -2,25 +2,14 @@
 /// NOTE: does NOT use common.js routines, so that common.js can use it.
 
 (function (root, factory) {
-    let imports=[];
-
     if (typeof define === 'function' && define.amd) {
         // AMD
-        define(imports, factory);
+        define([], factory);
     } else if (typeof exports === 'object') {
-        // Node, CommonJS-like
-        let requirements = [];
-        for(let modulename of imports) {
-            requirements.push(require(modulename));
-        }
-        module.exports = factory(...requirements);
+        module.exports = factory();
     } else {
         // Browser globals (root is `window`)
-        let requirements = [];
-        for(let modulename of imports) {
-            requirements.push(root[modulename]);
-        }
-        root.Validation = factory(...requirements);
+        root.Validation = factory();
     }
 }(this, function () {
     "use strict";

@@ -166,6 +166,7 @@
 
         if(adjust_title && (val.raw_title !== null)) {
             if(val.raw_title === _T('labelSavedTabs')) {
+                // TODO also if it's "Recovered tabs"
                 val.raw_title = _T('labelUnsaved');
             } else {
                 val.raw_title =

@@ -39,7 +39,18 @@
   },
   "devDependencies": {
     "benchmark": "^2.1.4",
+    "css-loader": "^1.0.0",
+    "extract-text-webpack-plugin": "^3.0.2",
+    "file-loader": "^2.0.0",
+    "html-webpack-plugin": "^3.2.0",
+    "imports-loader": "^0.8.0",
     "jasmine2-custom-message": "^0.8.4",
-    "seedrandom": "^2.4.3"
+    "jquery-migrate": "^3.0.1",
+    "mini-css-extract-plugin": "^0.4.2",
+    "script-loader": "^0.7.2",
+    "seedrandom": "^2.4.3",
+    "style-loader": "^0.23.0",
+    "webpack": "^4.17.1",
+    "webpack-cli": "^3.1.0"
   }
 }

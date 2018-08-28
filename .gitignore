@@ -40,3 +40,6 @@ tags
 
 # dependencies
 /node_modules/
+
+# Webpack experiment output directories
+*-packed
