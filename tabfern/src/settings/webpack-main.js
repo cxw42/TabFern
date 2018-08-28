@@ -17,7 +17,7 @@ require('../../js/tinycolor.js');
 require('../../js/import-file.js');
 require('../../js/export-file.js');
 
-require('imports-loader?this=>window!./lib/mootools-core.js');   // now $ is mootools
+//require('imports-loader?this=>window!./lib/mootools-core.js');   // now $ is mootools
 require('./lib/store.js');
 require('./js/classes/tab.js');
 require('./js/classes/setting.js');
@@ -27,9 +27,10 @@ require('imports-loader?this=>window!./i18n.js');
 require('imports-loader?this=>window!./js/i18n.js');
 
 //require('imports-loader?i18n=./js/i18n.js!./manifest.js');
-require('./manifest.js');
+require('imports-loader?this=>window!./manifest.js');
 
-require('imports-loader?manifest=../../manifest.js!./js/classes/fancy-settings.js');
+//require('imports-loader?manifest=../../manifest.js!./js/classes/fancy-settings.js');
+require('./js/classes/fancy-settings.js');
     // ../.. because imports-loader uses the path of the file being imported
     // as the base.  TODO fixme - use an alias or something cleaner for
     // the manifest file.
@@ -43,5 +44,6 @@ require('../../js/spectrum.js');
 //import '../../js/jquery-noconflict.js';
                 // now $ is back to mootools - use jQuery() instead of $
 
-require('imports-loader?manifest=./manifest,$$=jquery!./main.js');
+require('imports-loader?manifest=./manifest,$$=jquery,Validation=../common/validation!./main.js');
+    // TODO shim Fileops
 

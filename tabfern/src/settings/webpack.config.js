@@ -17,8 +17,9 @@ const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 //var ExtractTextPlugin = require("extract-text-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 
-var config_HTMLWebpackPlugin = new HtmlWebpackPlugin({
+var plugin_MakeHTML = new HtmlWebpackPlugin({
     filename: 'index.html', //output name
 
     template: 'index.template.html',
@@ -30,7 +31,11 @@ var config_HTMLWebpackPlugin = new HtmlWebpackPlugin({
 //    filename: 'styles.css'
 //});
 
-var config_MiniCssExtractPlugin = new MiniCssExtractPlugin();
+var plugin_BundleCSS = new MiniCssExtractPlugin();
+
+var plugin_CopyMootools = new CopyWebpackPlugin([
+    './lib/mootools-core.js'
+]);
 
 //var config_CommonsChunkPlugin = new webpack.optimize.CommonsChunkPlugin({
 //    name: 'vendor',
@@ -129,10 +134,10 @@ module.exports = {
     },
     plugins: [
         //config_CommonsChunkPlugin,
-        config_HTMLWebpackPlugin,
-        config_MiniCssExtractPlugin,
+        plugin_MakeHTML,
+        plugin_BundleCSS,
+        plugin_CopyMootools,
     ],
 }
-
 
 // vi: set ts=4 sts=4 sw=4 et ai fo=cql: //

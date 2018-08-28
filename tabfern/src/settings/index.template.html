@@ -17,6 +17,12 @@
   <% for (var css in htmlWebpackPlugin.files.css) { %>
   <!--link href="<%= htmlWebpackPlugin.files.css[css] %>" rel="stylesheet"-->
   <% } %>
+
+  <%
+  // Files copied over by copy-webpack-plugin.  I could not get
+  // mootools-core to load through the Webpack mechanism.
+  %>
+  <script src="mootools-core.js"></script>
 </head>
 <body class="no-select">
         <%
