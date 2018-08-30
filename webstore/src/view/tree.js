@@ -401,16 +401,21 @@ function showConfirmationModalDialog(message_html) {
     jqdlg.find('#confirm-dialog-question').html(message_html);
 
     // i18n
+    const KEY_YES = _T('dlgYesAccelerator');
+    const KEY_NO = _T('dlgNoAccelerator');
+    const KEY_CANCEL = _T('dlgCancelAccelerator');
+
     jqdlg.find('#confirm-dialog-yes')
-        .attr('accesskey',_T('dlgYesAccelerator'))
+        .attr('accesskey', KEY_YES)
         .html(_T('dlgYesHTML'));
     jqdlg.find('#confirm-dialog-no')
-        .attr('accesskey',_T('dlgNoAccelerator'))
+        .attr('accesskey', KEY_NO)
         .html(_T('dlgNoHTML'));
     jqdlg.find('#confirm-dialog-cancel')
-        .attr('accesskey',_T('dlgCancelAccelerator'))
+        .attr('accesskey', KEY_CANCEL)
         .html(_T('dlgCancelHTML'));
-    jqdlg.find('#labelNotAgain').html(_T('dlgDoNotAskAgainHTML'));
+    jqdlg.find('#labelNotAgain')
+        .html(_T('dlgDoNotAskAgainHTML'));
 
     dlg = new (Modules['rmodal'])(
         document.getElementById('confirm-dialog'),
@@ -455,11 +460,11 @@ function showConfirmationModalDialog(message_html) {
                     ev.key.toLowerCase(): null;
 
         // Send the events on the next cycle.  Not sure if this is required.
-        if(key === 'y') {
+        if(key === KEY_YES) {
             ASQ().val(()=>{$("#confirm-dialog .btn[data-which='yes']").click();});
-        } else if(key === 'n') {
+        } else if(key === KEY_NO) {
             ASQ().val(()=>{$("#confirm-dialog .btn[data-which='no']").click();});
-        } else if(key === 'c') {
+        } else if(key === KEY_CANCEL) {
             ASQ().val(()=>{$("#confirm-dialog .btn[data-which='cancel']").click();});
         } else {
             dlg.keydown(ev);
