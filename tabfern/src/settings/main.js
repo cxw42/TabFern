@@ -1,3 +1,6 @@
+/// main.js: Main file for TabFern settings page
+/// Copyright (c) 2017--2018 Chris White
+
 /// An object to hold the settings for later programmatic access
 let settingsobj;
 
@@ -193,9 +196,6 @@ function main()
         $$('#settings-label').text(_T('wsSettings'));
 
         settingsobj = settings;
-        //settings.manifest.myButton.addEvent("action", function () {
-        //    alert("You clicked me!");
-        //});
 
         // ----------------------------
         // Finish creating the page
@@ -206,18 +206,26 @@ function main()
         $$('#import-settings').on('click', importSettings);
         $$('#export-settings').on('click', exportSettings);
 
+        let is_settings_load = false;
         if(getBoolSetting(SETTINGS_LOADED_OK)) {
+            is_settings_load = true;
             let elem = $$('<div>').text("Settings loaded");
             $$('#import-settings').after(elem);
             setSetting(SETTINGS_LOADED_OK, false);
         }
+
         // ----------------------------
         // open tab specified in a query parm, if known.
         // See https://stackoverflow.com/a/12151322/2877364
         // Use location.hash instead of location.search since Chrome doesn't
         // seem to navigate to chrome-extension://...&... .
+        //
+        // Note: if we have come from a settings-load event, don't change
+        // tabs.  Load-settings is on the first tab, which is the
+        // one activated by default.
+
         let searchParams = new URLSearchParams(window.location.hash.slice(1));
-        if(searchParams.has('open')) {
+        if(!is_settings_load && searchParams.has('open')) {
             let whichtab = -1;  // If other than -1, select that tab
 
             let openval = String(searchParams.get('open'));     // Do we need the explicit String()?
@@ -240,60 +248,9 @@ function main()
                 settingsobj.tabs[tabNames[whichtab]].bundle.activate();
             }
 
-        } //endif &open=... parameter specified
+        } //endif #open=... parameter specified
     });
 
-    // Option 2: Do everything manually:
-    /*
-    var settings = new FancySettings("My Extension", "icon.png");
-
-    var username = settings.create({
-        "tab": i18n.get("information"),
-        "group": i18n.get("login"),
-        "name": "username",
-        "type": "text",
-        "label": i18n.get("username"),
-        "text": i18n.get("x-characters")
-    });
-
-    var password = settings.create({
-        "tab": i18n.get("information"),
-        "group": i18n.get("login"),
-        "name": "password",
-        "type": "text",
-        "label": i18n.get("password"),
-        "text": i18n.get("x-characters-pw"),
-        "masked": true
-    });
-
-    var myDescription = settings.create({
-        "tab": i18n.get("information"),
-        "group": i18n.get("login"),
-        "name": "myDescription",
-        "type": "description",
-        "text": i18n.get("description")
-    });
-
-    var myButton = settings.create({
-        "tab": "Information",
-        "group": "Logout",
-        "name": "myButton",
-        "type": "button",
-        "label": "Disconnect:",
-        "text": "Logout"
-    });
-
-    // ...
-
-    myButton.addEvent("action", function () {
-        alert("You clicked me!");
-    });
-
-    settings.align([
-        username,
-        password
-    ]);
-    */
 } //main()
 
 window.addEvent("domready", main);

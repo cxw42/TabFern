@@ -345,6 +345,15 @@ order.`
             // Changelog                                          {{{1
             {
                 "tab": i18n.get("What's new?"),
+                "group": `Version 0.1.18${brplain('2018-xx-xx')}`,
+                'group_html':true,
+                "type": "description",
+                "text":
+`<ul>
+</ul>`,
+            },
+            {
+                "tab": i18n.get("What's new?"),
                 "group": `Version 0.1.17${brplain('2018-09-02')}`,
                 'group_html':true,
                 "type": "description",
