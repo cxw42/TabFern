@@ -153,7 +153,7 @@
                 "group": i18n.get("When Chrome..."),
                 'group_html':true,
                 "type": "description",
-                "text": i18n.get("Note: use this option only if you need it &mdash; it may not behave exactly as you would expect."),
+                "text": i18n.get("\u26a0 use this option only if you need it &mdash; it may not behave exactly as you would expect."),
             },
 
             // Appearance
@@ -345,13 +345,15 @@ order.`
             // Changelog                                          {{{1
             {
                 "tab": i18n.get("What's new?"),
-                "group": `Version 0.1.17${brplain('2018-xx-xx')}`,
+                "group": `Version 0.1.17${brplain('2018-09-02')}`,
                 'group_html':true,
                 "type": "description",
                 "text":
 `<ul>
 <li class="gold-star">TabFern now has <b>500</b> users!!!
 <b>Thank you</b> for using TabFern and helping the project!</li>
+<li>The first version of TabFern was released one year ago today.
+\u{1F382}</li>
 <li>Partial translations into French and Russian.  My thanks to the
 translators!  Please see the new Credits tab.  ${issue(135)}</li>
 <li>Tooltips on the action buttons.  ${issue(117)}</li>
