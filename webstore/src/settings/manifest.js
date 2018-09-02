@@ -5,7 +5,7 @@
 (function(root){
     // Shortcuts for frequently-used items
     function icon(cls) { return `<i class="${cls}"></i>`; }
-    function issue(num) { return `(<a href="https://github.com/cxw42/TabFern/issues/${num|0}">#${num|0}</a>)`; }
+    function issue(num, noparen) { return `${noparen ? '' : '('}<a href="https://github.com/cxw42/TabFern/issues/${num|0}">#${num|0}</a>${noparen ? '' : ')'}`; }
     function brplain(text){return `<br/><span class="plain">${text}</span>`;}
 
     let ham = icon('fa fa-bars');
@@ -13,10 +13,12 @@
     let settings = `${ham} ${gt} Settings ${gt}`;
     let refresh_message = " (refresh the TabFern window after you change this to make the change take effect)"
 
-// Settings {{{2
+    // Settings {{{2
     // Assign the settings
     root.manifest = {
-        "name": "Settings - ver. "+TABFERN_VERSION+' - TabFern',
+        "name":
+            `${_T('wsSettings')} - ${_T('wsShortName')} (v${TABFERN_VERSION})`,
+
         "icon": "/assets/fern16.png",
         "settings": [
 
@@ -34,6 +36,22 @@
                         '<p>The tabs at the left have settings and, at the bottom'+
                         ' of the list, information about recent feature additions'+
                         ' or changes.</p>'
+            },
+            {
+                "tab": i18n.get("Welcome / Help"),
+                "group": i18n.get("Import/Export"),
+                "name": "export-settings",
+                "id": "export-settings",
+                "type": "button",
+                "text": "Save settings to a file"
+            },
+            {
+                "tab": i18n.get("Welcome / Help"),
+                "group": i18n.get("Import/Export"),
+                "name": "import-settings",
+                "id": "import-settings",
+                "type": "button",
+                "text": "Load settings from a file"
             },
 
             // Behaviour.  Yeah, there's a "u" in there!
@@ -107,6 +125,7 @@
                 "type": "checkbox",
                 "label": i18n.get('Prompt for confirmation before deleting <b>unsaved</b> windows'),
             },
+
             {
                 "tab": i18n.get("Behaviour"),
                 "group": i18n.get("Deleting tabs"),
@@ -122,7 +141,28 @@
                 "label": i18n.get('Prompt for confirmation before deleting <b>tabs</b> in <b>unsaved</b> windows'),
             },
 
+            {
+                "tab": i18n.get("Behaviour"),
+                "group": i18n.get("When Chrome..."),
+                "name": CFG_PRUNE_NEW_WINDOWS,
+                "type": "checkbox",
+                "label": i18n.get("Adds extra tabs to a new window I've just opened, get rid of them!"),
+            },
+            {
+                "tab": i18n.get("Behaviour"),
+                "group": i18n.get("When Chrome..."),
+                'group_html':true,
+                "type": "description",
+                "text": i18n.get("\u26a0 use this option only if you need it &mdash; it may not behave exactly as you would expect."),
+            },
+
             // Appearance
+            {
+                "tab": i18n.get("Appearance"),
+                "group": '',
+                "type": "description",
+                "text": i18n.get("Refresh the TabFern window to apply changes to these options.  To refresh, click TabFern's title bar and hit F5."),
+            },
             {
                 "tab": i18n.get("Appearance"),
                 "group": i18n.get("Scrollbars"),
@@ -149,18 +189,13 @@
             },
             {
                 "tab": i18n.get("Appearance"),
-                "group": i18n.get("Scrollbars"),
-                "type": "description",
-                "text": i18n.get("Refresh the TabFern window to apply changes to these options."),
-            },
-            // Maybe add some theming options here?
-            {
-                "tab": i18n.get("Appearance"),
                 "group": i18n.get("Tree"),
                 "name": CFG_SHOW_TREE_LINES,
                 "type": "checkbox",
-                "label": i18n.get('Show connecting lines between nodes' + refresh_message),
+                "label": i18n.get('Show connecting lines between nodes'),
             },
+
+            // Theming options
             {
                 "tab": i18n.get("Appearance"),
                 "group": i18n.get("Theme"),
@@ -184,8 +219,7 @@
                 "group": i18n.get("Theme"),
                 "type": "description",
                 "text":
-`${refresh_message}<br/>
-The background can be specified as a CSS color name, rgb(r,g,b), hsl(h,s,l),
+`The background can be specified as a CSS color name, rgb(r,g,b), hsl(h,s,l),
 or a URL (data, https, chrome-extension, or file).
 To use images from your local disk (file):
 <ul>
@@ -193,6 +227,21 @@ To use images from your local disk (file):
 <li>Open the image you want in Chrome and copy the address out of the address
 bar (it will start with "file://")</li>
 <li>Paste the "file://..." URL into the box above.</li>`
+            },
+
+            {
+                "tab": i18n.get("Appearance"),
+                "group": i18n.get("Tooltips"),
+                "name": CFG_URL_IN_TOOLTIP,
+                "type": "checkbox",
+                "label": i18n.get("Show URL in each item's tooltip"),
+            },
+            {
+                "tab": i18n.get("Appearance"),
+                "group": i18n.get("Tooltips"),
+                "name": CFG_TITLE_IN_TOOLTIP,
+                "type": "checkbox",
+                "label": i18n.get("Show page title in each item's tooltip"),
             },
 
             // Features
@@ -257,8 +306,81 @@ bar (it will start with "file://")</li>
                 "text": "X or + or don't show when these are dynamic"
             },
 
-// }}}2
+    // }}}2
+    // Credits {{{2
+            {
+                "tab": i18n.get("Credits and thanks"),
+                "group": 'TabFern',
+                'group_html':true,
+                "type": "description",
+                "text":
+`TabFern is by Chris White (<a href="https://devwrench.wordpress.com">blog</a>,
+<a href="https://github.com/cxw42/">GitHub</a>).  I greatly appreciate
+the following contributors!  If I have accidentally missed you, please let
+me know so I can correct the omission.  All names below are in alphabetical
+order.`
+            },
+
+            {
+                "tab": i18n.get("Credits and thanks"),
+                "group": i18n.get("Programming"),
+                'group_html':true,
+                "type": "description",
+                "text":
+`<ul><li><a href="https://github.com/r4j4h/">Jasmine Hegman</a></li></ul>`
+            },
+            {
+                "tab": i18n.get("Credits and thanks"),
+                "group": i18n.get("Translation"),
+                'group_html':true,
+                "type": "description",
+                "text":
+`<ul>
+<li><a href="https://github.com/Procyon-b/">Procyon-b</a> (French)</li>
+<li><a href="https://github.com/rwexmd/">rwexmd</a> (Russian)</li>
+</ul>`
+            },
+
+    // }}}2
             // Changelog                                          {{{1
+            {
+                "tab": i18n.get("What's new?"),
+                "group": `Version 0.1.17${brplain('2018-09-02')}`,
+                'group_html':true,
+                "type": "description",
+                "text":
+`<ul>
+<li class="gold-star">TabFern now has <b>500</b> users!!!
+<b>Thank you</b> for using TabFern and helping the project!</li>
+<li>The first version of TabFern was released one year ago today.
+\u{1F382}</li>
+<li>Partial translations into French and Russian.  My thanks to the
+translators!  Please see the new Credits tab.  ${issue(135)}</li>
+<li>Tooltips on the action buttons.  ${issue(117)}</li>
+<li>${settings} Appearance ${gt} Tooltips now has options to show the
+URL and title of each item in a tooltip on that item.  This way you can
+see URLs in the tree, and you can see long titles without having
+to scroll.  ${issue(104)}</li>
+<li>You can now save and load settings from the ${i18n.get("Welcome / Help")}
+tab.  ${issue(92)}</li>
+<li>When you open the TF window, it moves back to its last position
+more quickly.  ${issue(134)}</li>
+<li><a href="https://vivaldi.com/">Vivaldi</a> support:
+Basic TabFern functionality is now also available on the Vivaldi
+browser.  Vivaldi uses the
+Chrome Web Store just like Chrome itself does, so installation in Vivaldi
+is the same as installation in Chrome.  ${issue(123)}</li>
+<li><a href="https://getfirefox.com">Firefox Quantum</a> support:
+If you're a developer, you can now load TabFern as a temporary add-on
+and get at least the basic save/load/tab-switching.  (Note that you can't
+manipulate <tt>about:debugging</tt> because it's special to Firefox.)
+${issue(100)}</li>
+<li>There is now a "Reload" option on the menu
+(${ham} ${gt} ${icon('fa fa-refresh')} Reload), in case TabFern
+and Chrome get out of sync.  ${issue(127)}</li>
+<li>Bugfixes: ${issue(128,true)}, ${issue(129,true)}</li>
+</ul>`
+            },
             {
                 "tab": i18n.get("What's new?"),
                 "group": `Version 0.1.16${brplain('2018-03-08')}`,

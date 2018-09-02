@@ -1,4 +1,5 @@
-// validation.js: Data-validation routines
+/// validation.js: Data-validation routines.
+/// NOTE: does NOT use common.js routines, so that common.js can use it.
 
 (function (root, factory) {
     let imports=[];
@@ -44,7 +45,25 @@
             const RE = /^(rgb|hsl)a?\((-?[\d\.]+%?(deg|rad|grad|turn)?[,\s]+){2,3}[\s\/]*[\d\.]+%?\)$/i;
             return RE.test(color);
         }
-    } //isValidColor
+    }; //isValidColor
+
+    /// Validate a URL.
+    /// @param test_url The URL to test
+    /// @param allowed_schemes {Optional array} If provided, only those schemes
+    ///                                         (no colons) are allowed.
+    module.isValidURL = function(test_url, allowed_schemes) {
+        try {
+            let url = new URL(String(test_url));
+
+            if(Array.isArray(allowed_schemes)) {
+                let scheme = url.protocol.replace(/:$/,'');
+                if(allowed_schemes.indexOf(scheme) === -1) return false;
+            }
+
+            return true;
+        } catch(e) { }  // nop
+        return false;
+    }; //isValidURL
 
     return module;
 }));

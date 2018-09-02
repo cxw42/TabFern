@@ -53,6 +53,12 @@
         INIT_TIME_ALLOWED_MS:  3000,  // After this time, if init isn't done,
                                             // display an error message.
         INIT_MSG_SEL:  'div#init-incomplete',     // Selector for that message
+        INIT_PROGRESS_SEL:  'div#init-progress',     // Selector for the x/y progress indicator
+
+        /// How long to wait after a winOnCreated or tabOnCreated before
+        /// checking whether pruning is required.  This is to give merge
+        /// detection priority over pruning.
+        WIN_PRUNE_TIMER_MS: 200,
 
         ACTION_GROUP_WIN_CLASS: 'tf-action-group',   // Class on action-group div
         ACTION_BUTTON_WIN_CLASS: 'tf-action-button', // Class on action buttons (<i>)
@@ -99,27 +105,67 @@
     /// Open a new window with a given URL.  Also remove the default
     /// tab that appears because we are letting the window open at the
     /// default size.  Yes, this is a bit like a FOUC, but oh well.
-    module.openWindowForURL = function(url) {
+    /// @return An ASQ instance
+    module.openWindowForURL = function(desired_url) {
         let win_id;     // TODO is there a better way to pass data down
                         // the sequence?
-        let tab0_id;    ///< The tab automatically created with the window
+//        let tab0_id;    ///< The tab automatically created with the window
 
+        let seq =
         ASQH.NowCC((cc)=>{
             chrome.windows.create(cc);
         })
         .then(function open_tab(done, new_win){
             win_id = new_win.id;
-            tab0_id = new_win.tabs[0].id;
-            chrome.tabs.create({windowId: win_id, url: url}, ASQH.CC(done));
+            // Chrome automatically creates a tab in a window, but
+            // Vivaldi does not.  Handle either.
+//            if(new_win.tabs && new_win.tabs.length) {
+//                tab0_id = new_win.tabs[0].id;
+//            }
+            chrome.tabs.create({windowId: win_id, url: desired_url},
+                                ASQH.CC(done));
         })
-        .then(function remove_old_tab(done){
-            chrome.tabs.remove(tab0_id, ASQH.CC(done));
+        .then(function get_all_tabs(done){
+            chrome.windows.get(win_id, {populate: true}, ASQH.CC(done));
         })
-        .or(function(err){log_orig.error({'Load error':err, url});})
+        .then(function remove_all_other_tabs(done, cwin){
+            if(!cwin) {
+                done.fail("Could not query tabs");
+                return;
+            }
+
+            let gates = [];
+
+            for(let tab of cwin.tabs) {
+                if(tab.url != desired_url) {
+                    gates.push((done_gate)=>{
+                        log.info({'Pruning undesired tab': tab});
+                        chrome.tabs.remove(tab.id, ASQH.CC(done_gate));
+                    });
+                }
+            } //foreach tab
+
+//            if(tab0_id) {
+//                chrome.tabs.remove(tab0_id, ASQH.CC(done));
+//            } else {
+//                done();
+//            }
+            if(gates.length === 0) {
+                done();
+                return;
+            } else {
+                let gate_seq = ASQ();
+                gate_seq.all.apply(gate_seq, gates);
+                gate_seq.pipe(done);
+            }
+        })
+        .or(function(err){log_orig.error({'Load error':err, desired_url});})
         ;
 
         // To start the sequence paused, use `let seq = ASQ().duplicate()` above
         // instead of just ASQ().  Then, to fire it off, `seq.unpause();`.
+
+        return seq;
 
     } //openWindowForURL
 

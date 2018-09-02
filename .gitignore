@@ -24,11 +24,13 @@ core
 /*_history
 tags
 /webstore.zip
+foo.*
 
 # Output directories
 /build*
 /doc/
 /dist/
+*-packed/
 
 # Test outputs
 *.e

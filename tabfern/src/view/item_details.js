@@ -35,8 +35,10 @@
     let module = {};
 
     /// Map between open-tab IDs and node IDs.
-    /// Design decision: no fields named "parent" so I can distinguish
-    /// jstree node records from multidex values.
+    /// Design decisions:
+    /// - No fields named `parent` so I can distinguish jstree node
+    ///     records from multidex values.
+    /// - All types of records have `raw_title` and `isOpen` fields.
     module.tabs = multidex(
         K.IT_TAB, //type
         [ //keys
@@ -47,6 +49,7 @@
             'win_id',       // from Chrome
             'index',        // in the current window
             'tab',          // the actual Tab record from Chrome
+                // TODO remove this --- tab_id should be enough
             'being_opened', // true if we are manually opening the Chrome tab
             'raw_url',      // the tab's URL
             'raw_title',    // the tab's title.  null => default.
@@ -77,11 +80,13 @@
         ],
         [ //other data
             'win',          // the actual Window record from chrome
+                // TODO? remove this --- win_id should be enough
             'raw_title',    // the window's title (e.g., "Window")
             'isOpen',       // whether the window is open or not
             'keep',         // whether the window should be saved or not
             //'raw_bullet',   // User-provided text (brief).  null => none
                 // Not currently used.
+            'prune_data',   // {timer_id,cwin} of a setTimeout used for pruning
         ]);
 
     /// Find a node's value in the model, regardless of type.
