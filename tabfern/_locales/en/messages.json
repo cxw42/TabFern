@@ -84,6 +84,14 @@
       }
     }
   }
+  , "dlgpTextToReplace": {
+    "message": "Text to replace?  (/.../ for regex)"
+    ,"description":"Prompt for the user to enter text to replace"
+  }
+  , "dlgpReplacementText": {
+    "message": "Replacement text?"
+    ,"description":"Prompt for the user to enter text to replace"
+  }
 
   , "dlgYesHTML": {
     "message": "<span class=\"accel\">Y</span>es"
@@ -242,6 +250,14 @@
   , "menuDelete": {
     "message": "Delete"
     ,"description":"The context-menu item to delete a window or tab's tree item"
+  }
+  , "menuURLSubstitute": {
+    "message": "Replace in URLs"
+    ,"description":"The context-menu item to make a replacement in the URL of each tab in the window"
+  }
+  , "menuttURLSubstitute": {
+    "message": "Make a text replacement in all of the URLs in this window"
+    ,"description":"The context-menu tooltip for menuURLSubstitute"
   }
 
   , "error_text": { "message": "--------------------------------------------"

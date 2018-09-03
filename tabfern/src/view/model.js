@@ -145,7 +145,7 @@
         } else if(val.ty === K.IT_WIN) {    // def. title for ephem. win.
             return _T('labelUnsaved');
         } else {                        // e.g., tabs with no raw_title.
-            // TODO see if this makes sense.
+            // TODO see if this makes sense.  Maybe show the URL instead?
             return "** no title **";
         }
     }; //get_raw_text()

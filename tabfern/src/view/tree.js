@@ -209,6 +209,12 @@ function copyTruthyProperties(dest, source, property_names, modifier)
     return dest;
 } //copyTruthyProperties
 
+/// Escape text for use in a regex.  By Mozilla Contributors (CC-BY-SA 2.5+), from
+/// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions
+function escapeRegExp(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+} //escapeRegExp
+
 ////////////////////////////////////////////////////////////////////////// }}}1
 // DOM Manipulation // {{{1
 
@@ -593,6 +599,64 @@ function saveTree(save_ephemeral_windows = true, cbk = undefined)
         }
     ); //storage.local.set
 } //saveTree()
+
+////////////////////////////////////////////////////////////////////////// }}}1
+// Other actions // {{{1
+
+/// Make a string replacement on the URLs of all the tabs in a window
+/// @param node_id {string} the ID of the window's node
+/// @param node {Object} the window's node
+function actionURLSubstitute(node_id, node, unused_action_id, unused_action_el)
+{
+    let win_val = D.windows.by_node_id(node_id);
+    if(!win_val) return;
+
+    // TODO replace window.prompt with an in-DOM GUI.
+    let old_text = window.prompt(_T('dlgpTextToReplace'));
+    if(old_text === null) return;   // user cancelled
+
+    let new_text = window.prompt(_T('dlgpReplacementText'));
+    if(new_text === null) return;   // user cancelled
+
+    if(!old_text) return;   // search pattern is required
+
+    // TODO URL escaping of new_text?
+
+    let findregex;
+    if(old_text.length > 1 && old_text[0]==='/' &&
+            old_text[old_text.length-1]==='/') {            // Regex
+        findregex = new RegExp(old_text.slice(1, -1));  // drop the slashes
+            // TODO support flags as well
+    } else {                                                // Literal
+        findregex = new RegExp(escapeRegExp(old_text));
+    }
+
+    for(let tab_node_id of node.children) {
+        let tab_val = D.tabs.by_node_id(tab_node_id);
+        if(!tab_val || !tab_val.tab_id) continue;
+        let new_url = tab_val.raw_url.replace(findregex, new_text);
+            // TODO URL escaping?
+        if(new_url === tab_val.raw_url) continue;
+
+        if(win_val.isOpen) {
+            // Make the change and let tabOnUpdated update the model.
+            ASQH.NowCC((cc)=>{      // ASQ for error reporting
+                chrome.tabs.update(tab_val.tab_id, {url: new_url}, cc);
+            });
+        } else {
+            tab_val.raw_url = new_url;
+            M.refresh_label(tab_val);   // do what tabOnUpdated() would
+            M.refresh_icon(tab_val);
+            M.refresh_tooltip(tab_val);
+        }
+    } // foreach child
+
+    // If the window is closed, update the hash.  Otherwise, tabOnUpdated()
+    // handled it.
+    if(!win_val.isOpen) {
+        M.updateOrderedURLHash(win_val);
+    }
+} //actionURLSubstitute
 
 ////////////////////////////////////////////////////////////////////////// }}}1
 // jstree-action callbacks // {{{1
@@ -2373,6 +2437,11 @@ function tabOnUpdated(tabid, changeinfo, ctab)
     // Caution: changeinfo doesn't always have all the changed information.
     // Therefore, we check changeinfo and ctab.
 
+    // TODO refactor the following into a separate routine that can be
+    // used to update closed or open tabs' tree items.  Maybe move it
+    // to model.js as well.  This will reduce code duplication, e.g., in
+    // actionURLSubstitute.
+
     // URL
     let new_raw_url = changeinfo.url || ctab.url || 'about:blank';
     if(new_raw_url !== tab_node_val.raw_url) {
@@ -3097,6 +3166,15 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
                 separator_before: true,
                 action:
                     function(){actionDeleteWindow(node.id, node, null, null);}
+            };
+
+        winItems.urlSubstituteItem = {
+                label: _T('menuURLSubstitute'),
+                title: _T('menuttURLSubstitute'),
+                icon: 'arrow-switch',
+                separator_before: true,
+                action:
+                    function(){actionURLSubstitute(node.id, node, null, null);}
             };
 
         return winItems;
