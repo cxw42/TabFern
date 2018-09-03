@@ -77,7 +77,7 @@ function exportSettings(evt_unused)
     let filename = 'TabFern settings backup ' + date_tag + '.tabfern_settings';
 
     let saved_info = saveSettingsToObject();
-    Fileops.Export(document, JSON.stringify(saved_info), filename);
+    ExportFile(document, JSON.stringify(saved_info), filename);
 } //exportSettings()
 
 /// Assign settings from an object we have loaded.
@@ -182,7 +182,7 @@ function importSettings(evt_unused)
     } //processFile()
 
     setSetting(SETTINGS_LOADED_OK, false);
-    let importer = Fileops.Importer(document, '.tabfern_settings');
+    let importer = ImportFile(document, '.tabfern_settings');
     importer.getFileAsString(processFile);
 } //importSettings()
 

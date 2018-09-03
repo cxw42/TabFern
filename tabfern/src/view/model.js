@@ -17,27 +17,25 @@
 // Boilerplate {{{1
 
 (function (root, factory) {
-    let imports=['jquery','jstree','loglevel', 'view/const',
-                    'view/item_details', 'view/item_tree', 'justhtmlescape',
-                    'buffer', 'blake2s'];
-
     if (typeof define === 'function' && define.amd) {
         // AMD
-        define(imports, factory);
+        define(['jquery','jstree','loglevel', 'view/const',
+                    'view/item_details', 'view/item_tree', 'justhtmlescape',
+                    'buffer', 'blake2s'], factory);
     } else if (typeof exports === 'object') {
         // Node, CommonJS-like
-        let requirements = [];
-        for(let modulename of imports) {
-            requirements.push(require(modulename));
-        }
-        module.exports = factory(...requirements);
+        module.exports = factory(
+            require('jquery'), require('jstree'), require('loglevel'),
+            require('view/const'), require('view/item_details'),
+            require('view/item_tree'), require('justhtmlescape'),
+            require('buffer'), require('blake2s')
+        );
     } else {
         // Browser globals (root is `window`)
-        let requirements = [];
-        for(let modulename of imports) {
-            requirements.push(root[modulename]);
-        }
-        root.tabfern_item = factory(...requirements);
+        root.M = factory(
+            root.$, root.$.jstree, root.log, root.K,
+            root.D, root.T, root.JustHTMLEscape, root.Buffer, root.BLAKE2s
+        );
     }
 }(this, function ($, _unused_jstree_placeholder_, log, K, D, T, Esc,
                     Buffer, BLAKE2s) {

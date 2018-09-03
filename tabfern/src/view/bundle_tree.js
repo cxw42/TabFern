@@ -9183,7 +9183,7 @@
 	else {
 		factory(jQuery, jQuery.jstree);
 	}
-}(function ($, jstree, undefined) {
+}(function ($, _jstree_unused, undefined) {
 	"use strict";
 
 	if($.jstree.plugins.multitype) { return; }
@@ -10092,7 +10092,7 @@
 /// Adapted from https://github.com/janl/mustache.js/blob/master/mustache.js
 /// MIT license --- see end of file
 
-// Defines HTMLEscaper, which has escape(text) and unescape(text) functions.
+// Returns { escape(text), unescape(text) }.
 
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
@@ -10103,7 +10103,7 @@
         module.exports = factory();
     } else {
         // Browser globals (root is window)
-        root.HTMLEscaper = factory();
+        root.JustHTMLEscape = factory();
     }
 }(this, function () {
 
@@ -13907,25 +13907,15 @@ ASQ.wrap = function $$wrap(fn, opts) {
 // asq-helpers.js: Helpers for asynquence and Chrome callbacks.
 
 (function (root, factory) {
-    let imports=['asynquence-contrib'];
-
     if (typeof define === 'function' && define.amd) {
         // AMD
-        define('asq-helpers',imports, factory);
+        define('asq-helpers', ['asynquence-contrib'], factory);
     } else if (typeof exports === 'object') {
         // Node, CommonJS-like
-        let requirements = [];
-        for(let modulename of imports) {
-            requirements.push(require(modulename));
-        }
-        module.exports = factory(...requirements);
+        module.exports = factory(require('asynquence-contrib'));
     } else {
         // Browser globals (root is `window`)
-        let requirements = [];
-        for(let modulename of imports) {
-            requirements.push(root[modulename]);
-        }
-        root.ASQH = factory(...requirements);
+        root.ASQH = factory(root.ASQ);
     }
 }(this, function (ASQ) {
     "use strict";
@@ -16737,8 +16727,7 @@ Combo options available and their defaults:
         module.exports = factory();
     } else {
         // Browser globals (root is window)
-        root.Fileops = root.Fileops || {};
-        root.Fileops.Importer = factory();
+        root.ImportFile = factory();
     }
 }(this, function () {
 
@@ -16825,10 +16814,9 @@ Combo options available and their defaults:
         module.exports = factory();
     } else {
         // Browser globals (root is window)
-        root.Fileops = root.Fileops || {};
-        root.Fileops.Export = factory();
+        root.ExportFile = factory();
     }
-}(this, function ($) {
+}(this, function () {
 
     /// Save the given text to the given filename.  This is what is returned
     /// by the module loader.

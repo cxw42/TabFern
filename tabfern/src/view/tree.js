@@ -2,7 +2,9 @@
 // Copyright (c) cxw42, 2017--2018
 // See /doc/design.md for information about notation and organization.
 
-// TODO break more of this into separate modules
+// This is not a module.  That is so that its internals are available for
+// console inspection and debugging.  That may change in the future.
+// TODO break more of this into separate modules.
 
 console.log(`=============================================================
 Loading TabFern ${TABFERN_VERSION}`);
@@ -4188,6 +4190,8 @@ function initIncompleteWarning()
 //////////////////////////////////////////////////////////////////////// }}}1
 // MAIN // {{{1
 
+/// The main function.  Called once RequireJS has loaded all the
+/// dependencies.
 function main(...args)
 {
     // Hack: Copy the loaded modules into our Modules global

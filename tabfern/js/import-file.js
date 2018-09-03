@@ -11,8 +11,7 @@
         module.exports = factory();
     } else {
         // Browser globals (root is window)
-        root.Fileops = root.Fileops || {};
-        root.Fileops.Importer = factory();
+        root.ImportFile = factory();
     }
 }(this, function () {
 

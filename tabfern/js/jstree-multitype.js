@@ -20,7 +20,7 @@
 	else {
 		factory(jQuery, jQuery.jstree);
 	}
-}(function ($, jstree, undefined) {
+}(function ($, _jstree_unused, undefined) {
 	"use strict";
 
 	if($.jstree.plugins.multitype) { return; }

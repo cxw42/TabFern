@@ -2,7 +2,7 @@
 // in this file.
 // ** Not currently a require.js module so that it can be used in contexts
 // ** where require.js is not available (e.g., background.js).
-// ** TODO make this a UMD module?
+// ** TODO extract at least the settings portion into a UMD module.
 
 console.log('TabFern common.js loading');
 

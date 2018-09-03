@@ -2,29 +2,29 @@
 // Copyright (c) 2017 Chris White, Jasmine Hegman.
 
 (function (root, factory) {
-    let imports=['jquery','jstree','jstree-actions', 'jstree-flagnode',
-                    'jstree-because', 'loglevel', 'view/const',
-                    'jstree-multitype', 'jstree-redraw-event' ];
-
     if (typeof define === 'function' && define.amd) {
         // AMD
-        define(imports, factory);
+        define([ 'jquery','jstree','jstree-actions', 'jstree-flagnode',
+                    'jstree-because', 'loglevel', 'view/const',
+                    'jstree-multitype', 'jstree-redraw-event' ], factory);
     } else if (typeof exports === 'object') {
         // Node, CommonJS-like
-        let requirements = [];
-        for(let modulename of imports) {
-            requirements.push(require(modulename));
-        }
-        module.exports = factory(...requirements);
+        module.exports = factory(
+            require('jquery'), require('jstree'), require('jstree-actions'),
+            require('jstree-flagnode'), require('jstree-because'),
+            require('loglevel'), require('view/const'),
+            require('jstree-multitype'), require('jstree-redraw-event')
+        );
     } else {
         // Browser globals (root is `window`)
-        let requirements = [];
-        for(let modulename of imports) {
-            requirements.push(root[modulename]);
-        }
-        root.tabfern_item_tree = factory(...requirements);
+        root.T = factory(
+            root.$, root.$.jstree, root.jstree.plugins.actions,
+            root.jstree.plugins.flagnode, root.jstree.plugins.because,
+            root.log, root.K,
+            root.jstree.plugins.multitype, root.jstree.plugins.redraw_event
+        );
     }
-}(this, function ($, _jstree, _actions, _flagnode, _because, log_orig, K, multitype ) {
+}(this, function ($, _jstree, _actions, _flagnode, _because, log_orig, K, _multitype, _redraw_event ) {
     "use strict";
 
     function loginfo(...args) { log_orig.info('TabFern view/item_tree.js: ', ...args); };
