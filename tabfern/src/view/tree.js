@@ -49,7 +49,7 @@ let Module_dependencies = [
     'loglevel', 'hamburger', 'bypasser', 'multidex', 'justhtmlescape',
     'signals', 'export-file', 'import-file',
     'asynquence-contrib', 'asq-helpers', 'rmodal',
-    'tinycolor',
+    'tinycolor', 'spin-packed',
 
     // Shimmed modules.  Refer to these via Modules or *without* the
     // `window.` prefix so it will be easier to refactor references
@@ -4312,8 +4312,18 @@ function main(...args)
     // Note: on one test on Firefox, the rest of the chain never fired.
     // Not sure why.
 
+    // Start a spinner if loading takes more than 1 s
+    let spinner = new Spinner();
+    let spin_starter = function() {
+        if(spinner) spinner.spin($('#tabfern-container')[0]);
+    };
+    //let spin_timer = window.setTimeout(spin_starter, 1000);
+
     s.then(determine_devel_mode)
     .then(basicInit)
+
+    .val(spin_starter)
+        // for now, always start --- loadSavedWindowsIntoTree is synchronous
 
     .try((done)=>{
         // Get our Chrome-extensions-API window ID from the background page.
@@ -4341,6 +4351,13 @@ function main(...args)
     .then(initTreeFinal)
 
     .val(check_init_step_count)
+
+    // Stop the spinner, if it started
+    .val(()=>{
+        spinner.stop();
+        spinner = null;
+        //clearTimeout(spin_timer);
+    })
 
     .or((err)=>{
         $(K.INIT_MSG_SEL).text(
