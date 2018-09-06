@@ -183,15 +183,6 @@ function local_init()
     M = Modules['view/model'];
     ASQ = Modules['asynquence-contrib'];
     ASQH = Modules['asq-helpers'];
-
-    // Check development status.  Thanks to
-    // https://stackoverflow.com/a/12833511/2877364 by
-    // https://stackoverflow.com/users/1143495/konrad-dzwinel and
-    // https://stackoverflow.com/users/934239/xan
-    chrome.management.getSelf(function(info){
-        if(info.installType === 'development') is_devel_mode = true;
-    });
-
 } //init()
 
 /// Copy properties named #property_names from #source to #dest.
@@ -3935,7 +3926,22 @@ function preLoadInit()
 
 } //preLoadInit
 
-/// Beginning of the onload initialization.
+// Beginning of the onload initialization.
+
+/// Check development status in an ASQ step.  Thanks to
+/// https://stackoverflow.com/a/12833511/2877364 by
+/// https://stackoverflow.com/users/1143495/konrad-dzwinel and
+/// https://stackoverflow.com/users/934239/xan
+function determine_devel_mode(done)
+{
+    ASQH.NowCC((cc)=>{ chrome.management.getSelf(cc); })
+    .val((info)=>{
+        is_devel_mode = (info.installType === 'development');
+    })
+    .pipe(done);
+} //determine_devel_mode()
+
+/// Initialization we can do before we have our window ID
 function basicInit(done)
 {
     next_init_step('basic initialization');
@@ -4302,11 +4308,12 @@ function main(...args)
 
     // Run the main init steps once the page has loaded
     let s = ASQ();
-    callbackOnLoad(s.errfcb());
+    callbackOnLoad(s.errfcb());     // Just using errfcb() to kick off s.
     // Note: on one test on Firefox, the rest of the chain never fired.
     // Not sure why.
 
-    s.then(basicInit)
+    s.then(determine_devel_mode)
+    .then(basicInit)
 
     .try((done)=>{
         // Get our Chrome-extensions-API window ID from the background page.
