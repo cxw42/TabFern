@@ -223,6 +223,10 @@
     "message": "Add/edit a note"
     ,"description":"The context-menu item to add or edit a tab's note"
   }
+  , "menuAddEditNoteThisTab": {
+    "message": "Add/edit a note for the current tab"
+    ,"description":"The extension-menu item to add or edit the current tab's note"
+  }
   , "menuRename": {
     "message": "Rename"
     ,"description":"The context-menu item to rename a window's tree entry"

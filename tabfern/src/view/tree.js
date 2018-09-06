@@ -636,6 +636,7 @@ function actionURLSubstitute(node_id, node, unused_action_id, unused_action_el)
         if(!tab_val || !tab_val.tab_id) continue;
         let new_url = tab_val.raw_url.replace(findregex, new_text);
             // TODO URL escaping?
+            // TODO also replace in favicon URL?
         if(new_url === tab_val.raw_url) continue;
 
         if(win_val.isOpen) {

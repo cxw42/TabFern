@@ -133,7 +133,7 @@ function editNoteOnClick(info, tab)
 } //editNoteOnClick
 
 chrome.contextMenus.create({
-    id: 'editNote', title: 'Add/edit a note for the current tab',
+    id: 'editNote', title: _T('menuAddEditNoteThisTab'),
     contexts: ['browser_action'], onclick: editNoteOnClick
 });
 
@@ -165,14 +165,6 @@ chrome.runtime.onMessage.addListener(messageListener);
 //var settings = new Store('settings', {
 //     'sample_setting': 'This is how you use Store.js to remember values'
 //});
-
-
-////example of using a message handler from the inject scripts
-//chrome.extension.onMessage.addListener(
-//  function(request, sender, sendResponse) {
-//      chrome.pageAction.show(sender.tab.id);
-//    sendResponse();
-//  });
 
 //////////////////////////////////////////////////////////////////////////
 // MAIN //
