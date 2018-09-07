@@ -12,10 +12,10 @@
         <!-- Stylesheets -->
         <link id="favicon" rel="icon" href="/assets/fern16.png">
         <link href="/assets/fontawesome/css/font-awesome.css" rel="stylesheet" type="text/css" />
-        <link rel="stylesheet" href="lib/default.css" media="screen">
+        <link rel="stylesheet" href="css/default.css" media="screen">
         <link rel="stylesheet" href="css/main.css" media="screen">
         <link rel="stylesheet" href="css/setting.css" media="screen">
-        <link rel="stylesheet" href="custom.css" media="screen">
+        <link rel="stylesheet" href="css/custom.css" media="screen">
         <link rel="stylesheet" href="/assets/css/icons.css" media="screen">
         <link rel="stylesheet" href="/assets/css/spectrum.css" media="screen">
         <link rel="stylesheet" href="/assets/css/spinjs.css" media="screen">
@@ -30,23 +30,22 @@
         <script src="/js/import-file.js"></script>
         <script src="/js/export-file.js"></script>
 
-        <script src="lib/mootools-core.js"></script>    <!-- now $ is mootools -->
         <script src="lib/store.js"></script>
+
+        <script src="/js/jquery.js"></script>   <!-- now $ is jQuery -->
+        <script src="/js/spectrum.js"></script>
+        <script src="/js/jquery-noconflict.js"></script>
+            <!-- now $ is available for mootools - use jQuery() instead of $ -->
+
+        <script src="lib/mootools-core.js"></script>    <!-- now $ is mootools -->
         <script src="js/classes/tab.js"></script>
         <script src="js/classes/setting.js"></script>
         <script src="js/classes/search.js"></script>
         <script src="js/classes/fancy-settings.js"></script>
 
-        <script src="i18n.js"></script>
-        <script src="js/i18n.js"></script>
         <script src="manifest.js"></script>
-
-        <script src="/js/jquery.js"></script>   <!-- now $ is jQuery -->
-        <script src="/js/spectrum.js"></script>
-        <script src="/js/jquery-noconflict.js"></script>
-            <!-- now $ is back to mootools - use jQuery() instead of $ -->
-
         <script src="main.js"></script>
+
     </head>
     <body class="no-select">
         <div id="sidebar" class="fancy">

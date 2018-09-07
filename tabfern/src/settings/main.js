@@ -28,8 +28,8 @@ let createPicker = function createPicker() {
     });
 
     // Add the text that would otherwise have gone in the manifest
-    let newlabel = $$('<span>').text(i18n.get(
-            'Skinny-scrollbar color ("X" for the default): '))
+    let newlabel = $$('<span>').text(
+            'Skinny-scrollbar color ("X" for the default): ')   // TODO i18n
         .addClass('setting label');
     $$(picker).before(newlabel);
 
