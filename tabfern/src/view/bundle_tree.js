@@ -9768,16 +9768,23 @@
 	if($.jstree.plugins.redraw_event) { return; }
 
 	$.jstree.plugins.redraw_event = function (options, parent) {
-		//this._data.redraw_event = {reason: undefined};
+		this._data.redraw_event = {suppress: false};
 
 		/// Redraw.
 		/// @param {DOM object} obj The node being redrawn
 		/// @return the object, if the parent was able to redraw it.
 		this.redraw_node = function(obj, deep, callback, force_render) {
-			obj = parent.redraw_node.apply(this, arguments);
-			this.trigger('redraw_event', {obj: obj});
+			if(!this._data.redraw_event.suppress) {
+				obj = parent.redraw_node.apply(this, arguments);
+				this.trigger('redraw_event', {obj: obj});
+			}
 			return obj;
 		}; //redraw_node
+
+		/// Suppress redraw temporarily.  EXPERIMENTAL.
+		this.suppress_redraw = function(whether_to) {
+			this._data.redraw_event.suppress = !!whether_to;
+		}
 
 	};
 }));

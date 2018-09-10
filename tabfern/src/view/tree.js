@@ -1568,11 +1568,28 @@ var loadSavedWindowsFromData = (function(){
 
             // Load it
             if(vernum in versionLoaders) {
-                loader_retval = versionLoaders[vernum](data);
-            } else {
+
+                try {
+                    T.treeobj.suppress_redraw(true);        // EXPERIMENTAL
+                    loader_retval = versionLoaders[vernum](data);
+
+                } catch(e) {
+                    log.error(
+                        `Error loading version-${vernum} save data: ${e}`);
+                    loader_retval = false;
+                    // Continue out of the catch block so the
+                    // suppress_redraw(false) will be called.
+                }
+
+                T.treeobj.suppress_redraw(false);           // EXPERIMENTAL
+                T.treeobj.redraw(true);     // Just in case the experiment
+                                            // had different results than
+                                            // we expected!
+
+            } else {    // unknown version
                 log.error("I don't know how to load save data from version " + vernum);
                 break READIT;
-            }
+            } //endif known version else
 
             if(loader_retval === false) {
                 log.error("There was a problem loading save data of version " + vernum);
