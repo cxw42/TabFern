@@ -512,7 +512,7 @@ function saveTree(save_ephemeral_windows = true, cbk = undefined)
 
     // Get the raw data for the whole tree.  Can't use $(...) because closed
     // tree nodes aren't in the DOM.
-    let root_node = T.treeobj.get_node($.jstree.root);    //from get_json() src
+    let root_node = T.root_node();
     if(!root_node || !root_node.children) {
         if(typeof cbk === 'function') cbk(new Error("Can't get root node"));
         return;
@@ -889,6 +889,14 @@ function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el,
 
     } //endif confirmation required
 } //actionDeleteWindow
+
+/// Move a window to the top of the tree.
+function actionMoveWinToTop(node_id, node, unused_action_id, unused_action_el)
+{
+    if(!node) return;
+    T.treeobj.move_node(node, T.root_node(), 1);
+        // 1 => after the holding pen
+} //actionMoveWinToTop
 
 /// Toggle the top border on a node.  This is a hack until I can add
 /// dividers.
@@ -2119,7 +2127,7 @@ function initFocusHandler()
         else change_from = FC_FROM_OPEN;
 
         // Uncomment if you are debugging focus-change behaviour
-        //log.info({change_from, old_win_id, change_to, win_id});
+        log.info({change_from, old_win_id, change_to, win_id});
 
         let same_window = (old_win_id === win_id);
         previously_focused_winid = win_id;
@@ -2873,7 +2881,7 @@ function hamRestoreLastDeleted()
     if(typeof wins_loaded === 'number' && wins_loaded > 0) {
         // We loaded the window successfully.  Open it, if the user wishes.
         if(getBoolSetting(CFG_RESTORE_ON_LAST_DELETED, false)) {
-            let root = T.treeobj.get_node($.jstree.root);
+            let root = T.root_node();
             let node_id = root.children[root.children.length-1];
             T.treeobj.select_node(node_id);
         }
@@ -2896,7 +2904,7 @@ function hamCollapseAll()
 function hamSorter(compare_fn)
 {
     return function() {
-        let arr = T.treeobj.get_node($.jstree.root).children;
+        let arr = T.root_node().children;
         Modules['view/sorts'].stable_sort(arr, compare_fn);
             // children[] holds node IDs, so compare_fn will always get strings.
         T.treeobj.redraw(true);   // true => full redraw
@@ -3106,7 +3114,6 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
 //                };
 //        }
 
-
         return tabItems;
     } //endif K.IT_TAB
 
@@ -3150,6 +3157,18 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
                     action:
                         function(){actionCloseWindowAndSave(node.id,node,null,null);}
                 };
+        }
+
+        {   // If not the first item, add "Move to top"
+            let parent_node = T.treeobj.get_node(node.parent);
+            if(parent_node.children[1] !== node.id) {
+                // children[1], not [0], because [0] is the holding pen.
+                winItems.toTopItem = {
+                    label: _T('menuMoveToTop'),
+                    icon: 'fff-text-padding-top',
+                    action: ()=>{actionMoveWinToTop(node.id,node,null,null);},
+                };
+            }
         }
 
         winItems.deleteItem = {
@@ -3827,7 +3846,7 @@ function delete_all_closed_nodes(are_you_sure)
 {
     if(!are_you_sure) return;
 
-    let root = T.treeobj.get_node($.jstree.root);
+    let root = T.root_node();
     if(!root) return
 
     for(let i=root.children.length-1; i>0; --i) {

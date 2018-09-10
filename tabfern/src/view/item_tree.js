@@ -1,7 +1,7 @@
 // view/item_tree.js: Item tree view and related utilities for TabFern
 // Copyright (c) 2017 Chris White, Jasmine Hegman.
 
-(function (root, factory) {
+(function (root, factory) {     // Boilerplate {{{1
     if (typeof define === 'function' && define.amd) {
         // AMD
         define([ 'jquery','jstree','jstree-actions', 'jstree-flagnode',
@@ -28,13 +28,20 @@
     "use strict";
 
     function loginfo(...args) { log_orig.info('TabFern view/item_tree.js: ', ...args); };
+// }}}1
 
     /// The module we are creating
     let module = {
         treeobj: null,      ///< The jstree instance
     };
 
-    // --- Scrolling support ---
+    // --- General --- {{{1
+
+    /// Easy access to the tree root
+    module.root_node = () => { return T.treeobj.get_node($.jstree.root); }
+
+    // }}}1
+    // --- Scrolling support --- {{{1
 
     /// The most recently seen right edge
     module.last_r_edge = undefined;
@@ -173,6 +180,9 @@
         //jq_tree.on('after_close.jstree', module.rjustify_action_group_at);
     }; //install_resize_detector
 
+    // }}}1
+    // --- Tree creation --- {{{1
+
     // CSS classes
     const WIN_CLASS = 'tf-window'; // class on all <li>s representing windows
     const TAB_CLASS = 'tf-tab';    // class on all <li>s representing tabs
@@ -307,8 +317,9 @@
         // Or maybe make vscroll a jstree plugin?
 
     }; //module.create()
+    // }}}1
 
     return module;
 }));
 
-// vi: set ts=4 sts=4 sw=4 et ai fo-=o fo-=r: //
+// vi: set ts=4 sts=4 sw=4 et ai fo-=o fo-=r fdm=marker: //

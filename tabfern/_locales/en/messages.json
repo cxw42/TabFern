@@ -263,6 +263,10 @@
     "message": "Make a text replacement in all of the URLs in this window"
     ,"description":"The context-menu tooltip for menuURLSubstitute"
   }
+  , "menuMoveToTop": {
+    "message": "Move to top"
+    ,"description":"The context-menu item to move a window's tree item to the top of the tree"
+  }
 
   , "error_text": { "message": "--------------------------------------------"
                         ,"description": "Text for error messages" }
