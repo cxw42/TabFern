@@ -423,6 +423,7 @@ function showConfirmationModalDialog(message_html) {
 
             afterOpen: function() {
                 $('#confirm-dialog .btn-primary').focus();
+                    // Note: focus is set but not visible in Chrome 69 - #142
                 //console.log('opened');
             },
 
@@ -1570,7 +1571,9 @@ var loadSavedWindowsFromData = (function(){
             if(vernum in versionLoaders) {
 
                 try {
+/* // TEMPORARILY REMOVED
                     T.treeobj.suppress_redraw(true);        // EXPERIMENTAL
+*/
                     loader_retval = versionLoaders[vernum](data);
 
                 } catch(e) {
@@ -1581,10 +1584,12 @@ var loadSavedWindowsFromData = (function(){
                     // suppress_redraw(false) will be called.
                 }
 
+/* // TEMPORARILY REMOVED
                 T.treeobj.suppress_redraw(false);           // EXPERIMENTAL
                 T.treeobj.redraw(true);     // Just in case the experiment
                                             // had different results than
                                             // we expected!
+*/
 
             } else {    // unknown version
                 log.error("I don't know how to load save data from version " + vernum);
@@ -2143,7 +2148,7 @@ function initFocusHandler()
         else if(old_win_id === WINID_NONE) change_from = FC_FROM_NONE;
         else change_from = FC_FROM_OPEN;
 
-        // Uncomment if you are debugging focus-change behaviour
+        // Uncomment if you are debugging focus-change behaviour TODO RESUME HERE
         log.info({change_from, old_win_id, change_to, win_id});
 
         let same_window = (old_win_id === win_id);
@@ -3196,6 +3201,7 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
                     function(){actionDeleteWindow(node.id, node, null, null);}
             };
 
+/* // TEMPORARILY REMOVED
         winItems.urlSubstituteItem = {
                 label: _T('menuURLSubstitute'),
                 title: _T('menuttURLSubstitute'),
@@ -3204,6 +3210,7 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
                 action:
                     function(){actionURLSubstitute(node.id, node, null, null);}
             };
+*/
 
         return winItems;
     } //endif K.IT_WIN
