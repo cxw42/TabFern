@@ -173,7 +173,10 @@ chrome.runtime.onMessage.addListener(messageListener);
 window.addEventListener('load',
     function() {
         console.log('TabFern: background window loaded');
-        setTimeout(loadView, 500);
+        if(getBoolSetting(CFG_POPUP_ON_STARTUP)) {
+            console.log('Opening popup window');
+            setTimeout(loadView, 500);
+        }
     },
     { 'once': true }
 );

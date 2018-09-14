@@ -73,6 +73,19 @@
             // Behaviour.  Yeah, there's a "u" in there!
             {
                 "tab": future_i18n("Behaviour"),
+                "group": future_i18n("When Chrome starts..."),
+                "name": CFG_POPUP_ON_STARTUP,
+                "type": "checkbox",
+                "label": future_i18n("Open the TabFern window automatically"),
+            },
+            {
+                "tab": future_i18n("Behaviour"),
+                "group": future_i18n("When Chrome starts..."),
+                "type": "description",
+                "text": future_i18n("You can open the TabFern window any time by clicking the fern icon next to the address bar."),
+            },
+            {
+                "tab": future_i18n("Behaviour"),
                 "group": future_i18n("On startup or refresh..."),
                 "name": CFG_COLLAPSE_ON_STARTUP,
                 "type": "checkbox",
@@ -278,6 +291,7 @@ bar (it will start with "file://")</li>
                 "label": "Enable key mapping" + refresh_message,
             },
 
+/*
             {
                 "tab": "Key Mappings",
                 "group": "Persistence Control",
@@ -323,6 +337,7 @@ bar (it will start with "file://")</li>
                 "type": "button",
                 "text": "X or + or don't show when these are dynamic"
             },
+*/
 
     // }}}2
     // Credits {{{2
@@ -368,6 +383,11 @@ order.`
                 "type": "description",
                 "text":
 `<ul>
+<li>New menu item to move a window to the top of the tree: right-click the
+window's entry in the tree and choose "Move to top." ${issue(58)}</li>
+<li>New option to choose whether to open the TabFern window automatically
+when you start Chrome (on ${ham} ${gt} Settings ${gt} Behaviour).
+${issue(143)} </li>
 </ul>`,
             },
             {
