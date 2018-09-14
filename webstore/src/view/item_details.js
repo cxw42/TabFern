@@ -6,25 +6,22 @@
 // Copyright (c) 2017 Chris White, Jasmine Hegman.
 
 (function (root, factory) {
-    let imports=['jquery','jstree','loglevel', 'multidex', 'view/const' ];
-
     if (typeof define === 'function' && define.amd) {
         // AMD
-        define(imports, factory);
+        define([ 'jquery','jstree','loglevel', 'multidex', 'view/const' ],
+                factory);
     } else if (typeof exports === 'object') {
         // Node, CommonJS-like
-        let requirements = [];
-        for(let modulename of imports) {
-            requirements.push(require(modulename));
-        }
-        module.exports = factory(...requirements);
+        module.exports = factory(
+            require('jquery'), require('jstree'), require('loglevel'),
+            require('multidex'), require('view/const')
+        );
     } else {
         // Browser globals (root is `window`)
-        let requirements = [];
-        for(let modulename of imports) {
-            requirements.push(root[modulename]);
-        }
-        root.tabfern_item_details = factory(...requirements);
+        root.D = factory(
+            root.$, root.$.jstree, root.log,
+            root.multidex, root.K
+        );
     }
 }(this, function ($, _unused_jstree_placeholder_, log, multidex, K ) {
     "use strict";

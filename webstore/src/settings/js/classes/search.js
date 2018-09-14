@@ -8,7 +8,7 @@
         "index": [],
         "groups": {},
         
-        "initialize": function (search, searchResultContainer) {
+        "initialize": function (search, searchResultContainer, nothingFoundMessage) {
             var setting,
                 find;
             
@@ -20,7 +20,7 @@
             setting = new Setting(this.searchResultContainer);
             this.nothingFound = setting.create({
                 "type": "description",
-                "text": (i18n.get("nothing-found") || "No matches were found.")
+                "text": (nothingFoundMessage || "No matches were found.")
             });
             this.nothingFound.bundle.set("id", "nothing-found");
             

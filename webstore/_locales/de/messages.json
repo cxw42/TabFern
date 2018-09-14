@@ -214,6 +214,10 @@
     "message": "Notiz hinzufügen oder bearbeiten"
     ,"description":"The context-menu item to add or edit a tab's note"
   }
+  , "menuAddEditNoteThisTab": {
+    "message": "Notiz für den aktuellen Tab hinzufügen oder bearbeiten"
+    ,"description":"The extension-menu item to add or edit the current tab's note"
+  }
   , "menuRename": {
     "message": "Umbenennen"
     ,"description":"The context-menu item to rename a window's tree entry"

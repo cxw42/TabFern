@@ -60,6 +60,10 @@
     background-image: url("/assets/icons/text_padding_top.png");
 }
 
+.jstree-themeicon-custom.arrow-switch, .vakata-context .arrow-switch {
+    background-image: url("/assets/icons/arrow_switch.png");
+}
+
 /* Class for icons with no content.  Used in jstree.set_icon() when the
  * icon is actually being set using CSS.
  */
@@ -91,12 +95,9 @@
     content: url("/assets/icons/cross.png");
 }
 
-/* Background sizes in context menu are different.  TODO fix this --- it is
- * an ugly hack. */
-.vakata-context .fff-pencil,
-.vakata-context .fff-cross,
-.vakata-context .fff-picture-delete,
-.vakata-context .fff-text-padding-top {
+/* Background sizes of icons in context menu are different.  Note: Need the
+ * `li a` to make it specific enough. */
+.vakata-context li a i {
     background-repeat: no-repeat;
     background-position: center center;
 }

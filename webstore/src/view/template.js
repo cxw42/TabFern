@@ -1,3 +1,5 @@
+// Template for less-repetitive UMD module using spread operator.
+// Not sure if all the tooling can handle it, though.
 // TODO.js:
 // Copyright (c) 2017 Chris White, Jasmine Hegman.
 

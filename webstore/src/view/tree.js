@@ -2,7 +2,9 @@
 // Copyright (c) cxw42, 2017--2018
 // See /doc/design.md for information about notation and organization.
 
-// TODO break more of this into separate modules
+// This is not a module.  That is so that its internals are available for
+// console inspection and debugging.  That may change in the future.
+// TODO break more of this into separate modules.
 
 console.log(`=============================================================
 Loading TabFern ${TABFERN_VERSION}`);
@@ -47,7 +49,7 @@ let Module_dependencies = [
     'loglevel', 'hamburger', 'bypasser', 'multidex', 'justhtmlescape',
     'signals', 'export-file', 'import-file',
     'asynquence-contrib', 'asq-helpers', 'rmodal',
-    'tinycolor',
+    'tinycolor', 'spin-packed',
 
     // Shimmed modules.  Refer to these via Modules or *without* the
     // `window.` prefix so it will be easier to refactor references
@@ -181,15 +183,6 @@ function local_init()
     M = Modules['view/model'];
     ASQ = Modules['asynquence-contrib'];
     ASQH = Modules['asq-helpers'];
-
-    // Check development status.  Thanks to
-    // https://stackoverflow.com/a/12833511/2877364 by
-    // https://stackoverflow.com/users/1143495/konrad-dzwinel and
-    // https://stackoverflow.com/users/934239/xan
-    chrome.management.getSelf(function(info){
-        if(info.installType === 'development') is_devel_mode = true;
-    });
-
 } //init()
 
 /// Copy properties named #property_names from #source to #dest.
@@ -206,6 +199,12 @@ function copyTruthyProperties(dest, source, property_names, modifier)
     }
     return dest;
 } //copyTruthyProperties
+
+/// Escape text for use in a regex.  By Mozilla Contributors (CC-BY-SA 2.5+), from
+/// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions
+function escapeRegExp(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+} //escapeRegExp
 
 ////////////////////////////////////////////////////////////////////////// }}}1
 // DOM Manipulation // {{{1
@@ -424,6 +423,7 @@ function showConfirmationModalDialog(message_html) {
 
             afterOpen: function() {
                 $('#confirm-dialog .btn-primary').focus();
+                    // Note: focus is set but not visible in Chrome 69 - #142
                 //console.log('opened');
             },
 
@@ -513,7 +513,7 @@ function saveTree(save_ephemeral_windows = true, cbk = undefined)
 
     // Get the raw data for the whole tree.  Can't use $(...) because closed
     // tree nodes aren't in the DOM.
-    let root_node = T.treeobj.get_node($.jstree.root);    //from get_json() src
+    let root_node = T.root_node();
     if(!root_node || !root_node.children) {
         if(typeof cbk === 'function') cbk(new Error("Can't get root node"));
         return;
@@ -591,6 +591,65 @@ function saveTree(save_ephemeral_windows = true, cbk = undefined)
         }
     ); //storage.local.set
 } //saveTree()
+
+////////////////////////////////////////////////////////////////////////// }}}1
+// Other actions // {{{1
+
+/// Make a string replacement on the URLs of all the tabs in a window
+/// @param node_id {string} the ID of the window's node
+/// @param node {Object} the window's node
+function actionURLSubstitute(node_id, node, unused_action_id, unused_action_el)
+{
+    let win_val = D.windows.by_node_id(node_id);
+    if(!win_val) return;
+
+    // TODO replace window.prompt with an in-DOM GUI.
+    let old_text = window.prompt(_T('dlgpTextToReplace'));
+    if(old_text === null) return;   // user cancelled
+
+    let new_text = window.prompt(_T('dlgpReplacementText'));
+    if(new_text === null) return;   // user cancelled
+
+    if(!old_text) return;   // search pattern is required
+
+    // TODO URL escaping of new_text?
+
+    let findregex;
+    if(old_text.length > 1 && old_text[0]==='/' &&
+            old_text[old_text.length-1]==='/') {            // Regex
+        findregex = new RegExp(old_text.slice(1, -1));  // drop the slashes
+            // TODO support flags as well
+    } else {                                                // Literal
+        findregex = new RegExp(escapeRegExp(old_text));
+    }
+
+    for(let tab_node_id of node.children) {
+        let tab_val = D.tabs.by_node_id(tab_node_id);
+        if(!tab_val || !tab_val.tab_id) continue;
+        let new_url = tab_val.raw_url.replace(findregex, new_text);
+            // TODO URL escaping?
+            // TODO also replace in favicon URL?
+        if(new_url === tab_val.raw_url) continue;
+
+        if(win_val.isOpen) {
+            // Make the change and let tabOnUpdated update the model.
+            ASQH.NowCC((cc)=>{      // ASQ for error reporting
+                chrome.tabs.update(tab_val.tab_id, {url: new_url}, cc);
+            });
+        } else {
+            tab_val.raw_url = new_url;
+            M.refresh_label(tab_val);   // do what tabOnUpdated() would
+            M.refresh_icon(tab_val);
+            M.refresh_tooltip(tab_val);
+        }
+    } // foreach child
+
+    // If the window is closed, update the hash.  Otherwise, tabOnUpdated()
+    // handled it.
+    if(!win_val.isOpen) {
+        M.updateOrderedURLHash(win_val);
+    }
+} //actionURLSubstitute
 
 ////////////////////////////////////////////////////////////////////////// }}}1
 // jstree-action callbacks // {{{1
@@ -831,6 +890,14 @@ function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el,
 
     } //endif confirmation required
 } //actionDeleteWindow
+
+/// Move a window to the top of the tree.
+function actionMoveWinToTop(node_id, node, unused_action_id, unused_action_el)
+{
+    if(!node) return;
+    T.treeobj.move_node(node, T.root_node(), 1);
+        // 1 => after the holding pen
+} //actionMoveWinToTop
 
 /// Toggle the top border on a node.  This is a hack until I can add
 /// dividers.
@@ -1502,11 +1569,32 @@ var loadSavedWindowsFromData = (function(){
 
             // Load it
             if(vernum in versionLoaders) {
-                loader_retval = versionLoaders[vernum](data);
-            } else {
+
+                try {
+/* // TEMPORARILY REMOVED
+                    T.treeobj.suppress_redraw(true);        // EXPERIMENTAL
+*/
+                    loader_retval = versionLoaders[vernum](data);
+
+                } catch(e) {
+                    log.error(
+                        `Error loading version-${vernum} save data: ${e}`);
+                    loader_retval = false;
+                    // Continue out of the catch block so the
+                    // suppress_redraw(false) will be called.
+                }
+
+/* // TEMPORARILY REMOVED
+                T.treeobj.suppress_redraw(false);           // EXPERIMENTAL
+                T.treeobj.redraw(true);     // Just in case the experiment
+                                            // had different results than
+                                            // we expected!
+*/
+
+            } else {    // unknown version
                 log.error("I don't know how to load save data from version " + vernum);
                 break READIT;
-            }
+            } //endif known version else
 
             if(loader_retval === false) {
                 log.error("There was a problem loading save data of version " + vernum);
@@ -2060,8 +2148,8 @@ function initFocusHandler()
         else if(old_win_id === WINID_NONE) change_from = FC_FROM_NONE;
         else change_from = FC_FROM_OPEN;
 
-        // Uncomment if you are debugging focus-change behaviour
-        //log.info({change_from, old_win_id, change_to, win_id});
+        // Uncomment if you are debugging focus-change behaviour TODO RESUME HERE
+        log.info({change_from, old_win_id, change_to, win_id});
 
         let same_window = (old_win_id === win_id);
         previously_focused_winid = win_id;
@@ -2370,6 +2458,11 @@ function tabOnUpdated(tabid, changeinfo, ctab)
 
     // Caution: changeinfo doesn't always have all the changed information.
     // Therefore, we check changeinfo and ctab.
+
+    // TODO refactor the following into a separate routine that can be
+    // used to update closed or open tabs' tree items.  Maybe move it
+    // to model.js as well.  This will reduce code duplication, e.g., in
+    // actionURLSubstitute.
 
     // URL
     let new_raw_url = changeinfo.url || ctab.url || 'about:blank';
@@ -2810,7 +2903,7 @@ function hamRestoreLastDeleted()
     if(typeof wins_loaded === 'number' && wins_loaded > 0) {
         // We loaded the window successfully.  Open it, if the user wishes.
         if(getBoolSetting(CFG_RESTORE_ON_LAST_DELETED, false)) {
-            let root = T.treeobj.get_node($.jstree.root);
+            let root = T.root_node();
             let node_id = root.children[root.children.length-1];
             T.treeobj.select_node(node_id);
         }
@@ -2833,7 +2926,7 @@ function hamCollapseAll()
 function hamSorter(compare_fn)
 {
     return function() {
-        let arr = T.treeobj.get_node($.jstree.root).children;
+        let arr = T.root_node().children;
         Modules['view/sorts'].stable_sort(arr, compare_fn);
             // children[] holds node IDs, so compare_fn will always get strings.
         T.treeobj.redraw(true);   // true => full redraw
@@ -3043,7 +3136,6 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
 //                };
 //        }
 
-
         return tabItems;
     } //endif K.IT_TAB
 
@@ -3089,6 +3181,18 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
                 };
         }
 
+        {   // If not the first item, add "Move to top"
+            let parent_node = T.treeobj.get_node(node.parent);
+            if(parent_node.children[1] !== node.id) {
+                // children[1], not [0], because [0] is the holding pen.
+                winItems.toTopItem = {
+                    label: _T('menuMoveToTop'),
+                    icon: 'fff-text-padding-top',
+                    action: ()=>{actionMoveWinToTop(node.id,node,null,null);},
+                };
+            }
+        }
+
         winItems.deleteItem = {
                 label: _T('menuDelete'),
                 icon: 'fff-cross',
@@ -3096,6 +3200,17 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
                 action:
                     function(){actionDeleteWindow(node.id, node, null, null);}
             };
+
+/* // TEMPORARILY REMOVED
+        winItems.urlSubstituteItem = {
+                label: _T('menuURLSubstitute'),
+                title: _T('menuttURLSubstitute'),
+                icon: 'arrow-switch',
+                separator_before: true,
+                action:
+                    function(){actionURLSubstitute(node.id, node, null, null);}
+            };
+*/
 
         return winItems;
     } //endif K.IT_WIN
@@ -3755,7 +3870,7 @@ function delete_all_closed_nodes(are_you_sure)
 {
     if(!are_you_sure) return;
 
-    let root = T.treeobj.get_node($.jstree.root);
+    let root = T.root_node();
     if(!root) return
 
     for(let i=root.children.length-1; i>0; --i) {
@@ -3854,7 +3969,22 @@ function preLoadInit()
 
 } //preLoadInit
 
-/// Beginning of the onload initialization.
+// Beginning of the onload initialization.
+
+/// Check development status in an ASQ step.  Thanks to
+/// https://stackoverflow.com/a/12833511/2877364 by
+/// https://stackoverflow.com/users/1143495/konrad-dzwinel and
+/// https://stackoverflow.com/users/934239/xan
+function determine_devel_mode(done)
+{
+    ASQH.NowCC((cc)=>{ chrome.management.getSelf(cc); })
+    .val((info)=>{
+        is_devel_mode = (info.installType === 'development');
+    })
+    .pipe(done);
+} //determine_devel_mode()
+
+/// Initialization we can do before we have our window ID
 function basicInit(done)
 {
     next_init_step('basic initialization');
@@ -4188,6 +4318,8 @@ function initIncompleteWarning()
 //////////////////////////////////////////////////////////////////////// }}}1
 // MAIN // {{{1
 
+/// The main function.  Called once RequireJS has loaded all the
+/// dependencies.
 function main(...args)
 {
     // Hack: Copy the loaded modules into our Modules global
@@ -4219,11 +4351,22 @@ function main(...args)
 
     // Run the main init steps once the page has loaded
     let s = ASQ();
-    callbackOnLoad(s.errfcb());
+    callbackOnLoad(s.errfcb());     // Just using errfcb() to kick off s.
     // Note: on one test on Firefox, the rest of the chain never fired.
     // Not sure why.
 
-    s.then(basicInit)
+    // Start a spinner if loading takes more than 1 s
+    let spinner = new Spinner();
+    let spin_starter = function() {
+        if(spinner) spinner.spin($('#tabfern-container')[0]);
+    };
+    //let spin_timer = window.setTimeout(spin_starter, 1000);
+
+    s.then(determine_devel_mode)
+    .then(basicInit)
+
+    .val(spin_starter)
+        // for now, always start --- loadSavedWindowsIntoTree is synchronous
 
     .try((done)=>{
         // Get our Chrome-extensions-API window ID from the background page.
@@ -4251,6 +4394,13 @@ function main(...args)
     .then(initTreeFinal)
 
     .val(check_init_step_count)
+
+    // Stop the spinner, if it started
+    .val(()=>{
+        spinner.stop();
+        spinner = null;
+        //clearTimeout(spin_timer);
+    })
 
     .or((err)=>{
         $(K.INIT_MSG_SEL).text(

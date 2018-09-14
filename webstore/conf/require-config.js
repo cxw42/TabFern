@@ -50,10 +50,6 @@ var require = {
             exports: 'BLAKE2s'
         }
     },
-    async: {
-        useHash: true   // #callback=x rather than ?callback=x since Chrome
-                        // won't load files with ?
-    },
 };
 
 // vi: set ts=4 sts=4 sw=4 et ai fo-=o fo-=r: //

@@ -2,26 +2,23 @@
 // Copyright (c) 2017 Chris White, Jasmine Hegman.
 
 (function (root, factory) {
-    let imports=['jquery','jstree','loglevel', 'view/const', 'view/item_tree',
-                 'view/item_details'];
-
     if (typeof define === 'function' && define.amd) {
         // AMD
-        define(imports, factory);
+        define(['jquery', 'jstree','loglevel', 'view/const', 'view/item_tree',
+                 'view/item_details'], factory);
     } else if (typeof exports === 'object') {
         // Node, CommonJS-like
-        let requirements = [];
-        for(let modulename of imports) {
-            requirements.push(require(modulename));
-        }
-        module.exports = factory(...requirements);
+        module.exports = factory(
+            require('jquery'), require('jstree'), require('loglevel'),
+            require('view/const'), require('view/item_tree'),
+            require('view/item_details'),
+        );
     } else {
         // Browser globals (root is `window`)
-        let requirements = [];
-        for(let modulename of imports) {
-            requirements.push(root[modulename]);
-        }
-        root.tabfern_sorts = factory(...requirements);
+        root.sorts = factory(
+            root.$, root.$.jstree, root.log,
+            root.K, root.T, root.D
+        );
     }
 }(this, function ($, _unused_jstree_placeholder_, log_orig, K, T, D ) {
     "use strict";

@@ -84,6 +84,14 @@
       }
     }
   }
+  , "dlgpTextToReplace": {
+    "message": "Text to replace?  (/.../ for regex)"
+    ,"description":"Prompt for the user to enter text to replace"
+  }
+  , "dlgpReplacementText": {
+    "message": "Replacement text?"
+    ,"description":"Prompt for the user to enter text to replace"
+  }
 
   , "dlgYesHTML": {
     "message": "<span class=\"accel\">Y</span>es"
@@ -215,6 +223,10 @@
     "message": "Add/edit a note"
     ,"description":"The context-menu item to add or edit a tab's note"
   }
+  , "menuAddEditNoteThisTab": {
+    "message": "Add/edit a note for the current tab"
+    ,"description":"The extension-menu item to add or edit the current tab's note"
+  }
   , "menuRename": {
     "message": "Rename"
     ,"description":"The context-menu item to rename a window's tree entry"
@@ -242,6 +254,18 @@
   , "menuDelete": {
     "message": "Delete"
     ,"description":"The context-menu item to delete a window or tab's tree item"
+  }
+  , "menuURLSubstitute": {
+    "message": "Replace in URLs"
+    ,"description":"The context-menu item to make a replacement in the URL of each tab in the window"
+  }
+  , "menuttURLSubstitute": {
+    "message": "Make a text replacement in all of the URLs in this window"
+    ,"description":"The context-menu tooltip for menuURLSubstitute"
+  }
+  , "menuMoveToTop": {
+    "message": "Move to top"
+    ,"description":"The context-menu item to move a window's tree item to the top of the tree"
   }
 
   , "error_text": { "message": "--------------------------------------------"
