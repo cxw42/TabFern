@@ -55,6 +55,16 @@
             },
             {
                 "tab": future_i18n("Welcome / Help"),
+                "group": future_i18n("Incognito mode"),
+                "type": "description",
+                "text":
+`TabFern cannot see Incognito windows or tabs, and is not yet tested in
+Incognito mode.  If you would like Incognito support in TabFern, please
+vote at ${issue(125,true)}.
+`,
+            },
+            {
+                "tab": future_i18n("Welcome / Help"),
                 "group": future_i18n("Import/Export"),
                 "name": "export-settings",
                 "id": "export-settings",
