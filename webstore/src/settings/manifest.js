@@ -293,6 +293,7 @@ bar (it will start with "file://")</li>
                 "type": "checkbox",
                 "label": "Enable right-click menus" + refresh_message,
             },
+/*
             {
                 "tab": "Features",
                 "group": "Key Mapping",
@@ -301,7 +302,6 @@ bar (it will start with "file://")</li>
                 "label": "Enable key mapping" + refresh_message,
             },
 
-/*
             {
                 "tab": "Key Mappings",
                 "group": "Persistence Control",
