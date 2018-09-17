@@ -11,10 +11,9 @@
         module.exports = factory();
     } else {
         // Browser globals (root is window)
-        root.Fileops = root.Fileops || {};
-        root.Fileops.Export = factory();
+        root.ExportFile = factory();
     }
-}(this, function ($) {
+}(this, function () {
 
     /// Save the given text to the given filename.  This is what is returned
     /// by the module loader.

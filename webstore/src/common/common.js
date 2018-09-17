@@ -2,16 +2,17 @@
 // in this file.
 // ** Not currently a require.js module so that it can be used in contexts
 // ** where require.js is not available (e.g., background.js).
-// ** TODO make this a UMD module?
+// ** TODO split this into UMD modules so the pieces can be loaded with or
+//    without require.js.
 
 console.log('TabFern common.js loading');
 
 //////////////////////////////////////////////////////////////////////////
-// General constants //
+// General constants // {{{1
 
 /// The TabFern extension friendly version number.  Displayed in the
 /// title bar of the popup window, so lowercase (no shouting!).
-const TABFERN_VERSION='0.1.17';
+const TABFERN_VERSION='0.1.18';
     // When you change this, also update:
     //  - manifest.json: both the version and version_name
     //  - package.json
@@ -20,14 +21,14 @@ const TABFERN_VERSION='0.1.17';
 // Design decision: version numbers follow semver.org.
 // In the Chrome manifest, the version_name attribute tracks the above.
 // The version attribute, `x.y.z.w`, which is compared in numeric order L-R,
-// is as follows: x.y.z track the above.  w is the "-pre." number.
+// is as follows: x.y.z track the above.  w is the "-pre." or "-rc." number.
 // A release to the Chrome Web Store has w=1337.
 // E.g., 1.2.3-pre.4 is `version='1.2.3.4'`, and 1.2.3 (release) is
 // `version='1.2.3.1337'`.
 // If you get up to -pre.1336, just bump the `z` value and reset `w` :) .
 
-//////////////////////////////////////////////////////////////////////////
-// Messages between parts of TabFern //
+////////////////////////////////////////////////////////////////////////// }}}1
+// Messages between parts of TabFern // {{{1
 
 // The format of a message is
 // { msg: <one of the below constants> [, anything else] }
@@ -36,8 +37,8 @@ const TABFERN_VERSION='0.1.17';
 const MSG_GET_VIEW_WIN_ID = 'getViewWindowID';
 const MSG_EDIT_TAB_NOTE = 'editTabNote';
 
-//////////////////////////////////////////////////////////////////////////
-// Names of settings, and their defaults //
+////////////////////////////////////////////////////////////////////////// }}}1
+// Names of settings, and their defaults // {{{1
 
 /// An array to build the defaults in.  Every property must have a default,
 /// since the defaults array is also used to identify properties to be
@@ -51,7 +52,11 @@ let _DEF = { __proto__: null };
 let _VAL = { __proto__: null };
 let _vbool = (v)=>{ return ((typeof v === 'boolean')?v:undefined)};
 
-// Booleans
+// Booleans {{{2
+const CFG_POPUP_ON_STARTUP = 'open-popup-on-chrome-startup';
+_DEF[CFG_POPUP_ON_STARTUP] = true;
+_VAL[CFG_POPUP_ON_STARTUP] = _vbool;
+
 const CFG_ENB_CONTEXT_MENU = 'ContextMenu.Enabled';
 _DEF[CFG_ENB_CONTEXT_MENU] = true;
 _VAL[CFG_ENB_CONTEXT_MENU] = _vbool;
@@ -122,8 +127,6 @@ const SETTINGS_LOADED_OK = '__settings_loaded_OK';
 _DEF[SETTINGS_LOADED_OK] = false;
 _VAL[SETTINGS_LOADED_OK] = ()=>{return undefined;}
 
-
-
 // Not yet implemented - pending #35.  Whether to open closed tabs when
 // you click on the tree item for a partially-open window.
 //const CFG_OPEN_REST_ON_CLICK = 'open-rest-on-win-click',
@@ -131,7 +134,8 @@ _VAL[SETTINGS_LOADED_OK] = ()=>{return undefined;}
 //        CFG_OROC_DO_NOT = false;
 //_DEF[CFG_OPEN_REST_ON_CLICK] = CFG_OROC_DO_NOT;
 
-// Strings, including limited-choice controls such as radio buttons and dropdowns.
+// }}}2
+// Strings and limited-choice controls such as radio buttons and dropdowns. {{{2
 const CFGS_BACKGROUND = 'window-background';
 _DEF[CFGS_BACKGROUND] = '';
 _VAL[CFGS_BACKGROUND] = (v)=>{
@@ -155,12 +159,13 @@ _VAL[CFGS_SCROLLBAR_COLOR] = (v)=>{
     return ((Validation.isValidColor(v)) ? v : undefined);
 };
 
+// }}}2
 /// The default values for the configuration settings.
 const CFG_DEFAULTS = Object.seal(_DEF);
 const CFG_VALIDATORS = Object.seal(_VAL);
 
-//////////////////////////////////////////////////////////////////////////
-// Test for Firefox //
+////////////////////////////////////////////////////////////////////////// }}}1
+// Test for Firefox // {{{1
 // Not sure if I need this, but I'm playing it safe for now.  Firefox returns
 // null rather than undefined in chrome.runtime.lastError when there is
 // no error.  This is to test for null in Firefox without changing my
@@ -197,8 +202,8 @@ BROWSER_TYPE=null;  // unknown
     }
 })(window);
 
-//////////////////////////////////////////////////////////////////////////
-// Setting-related functions //
+////////////////////////////////////////////////////////////////////////// }}}1
+// Setting-related functions // {{{1
 
 const SETTING_PREFIX = 'store.settings.';
 
@@ -288,8 +293,8 @@ function getThemeName()
     else return CFG_DEFAULTS[CFGS_THEME_NAME];
 } //getThemeName
 
-//////////////////////////////////////////////////////////////////////////
-// DOM-related functions //
+////////////////////////////////////////////////////////////////////////// }}}1
+// DOM-related functions // {{{1
 
 /// Append a <script> to the <head> of #document.
 /// @param {Document} document
@@ -346,8 +351,8 @@ function loadCSS(doc, url, before) {
     }
 } //loadCSS
 
-//////////////////////////////////////////////////////////////////////////
-// Miscellaneous functions //
+////////////////////////////////////////////////////////////////////////// }}}1
+// Miscellaneous functions // {{{1
 
 /// Shortcut for i18n.  Call _T("name") to pull the localized "name".
 var _T = chrome.i18n.getMessage;
@@ -405,4 +410,5 @@ function ObjectCompare(obj1, obj2) {
     return true;
 } //ObjectCompare
 
-// vi: set ts=4 sts=4 sw=4 et ai fo-=o: //
+/// }}}1
+// vi: set ts=4 sts=4 sw=4 et ai fo-=o fdm=marker fdl=0: //

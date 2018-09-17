@@ -2,26 +2,22 @@
 // Copyright (c) 2017 Chris White, Jasmine Hegman.
 
 (function (root, factory) {
-    let imports=['jquery','jstree','loglevel','asynquence-contrib',
-                    'asq-helpers' ];
-
     if (typeof define === 'function' && define.amd) {
         // AMD
-        define(imports, factory);
+        define([ 'jquery', 'jstree', 'loglevel', 'asynquence-contrib',
+                    'asq-helpers' ], factory);
     } else if (typeof exports === 'object') {
         // Node, CommonJS-like
-        let requirements = [];
-        for(let modulename of imports) {
-            requirements.push(require(modulename));
-        }
-        module.exports = factory(...requirements);
+        module.exports = factory(
+            require('jquery'), require('jstree'), require('loglevel'),
+            require('asynquence-contrib'), require('asq-helpers')
+        );
     } else {
         // Browser globals (root is `window`)
-        let requirements = [];
-        for(let modulename of imports) {
-            requirements.push(root[modulename]);
-        }
-        root.tabfern_const = factory(...requirements);
+        root.K = factory(
+            root.$, root.$.jstree, root.log,
+            root.ASQ, root.ASQH
+        );
     }
 }(this, function ($, _unused_jstree_placeholder_, log_orig, ASQ, ASQH ) {
     "use strict";

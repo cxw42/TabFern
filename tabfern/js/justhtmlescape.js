@@ -3,7 +3,7 @@
 /// Adapted from https://github.com/janl/mustache.js/blob/master/mustache.js
 /// MIT license --- see end of file
 
-// Defines HTMLEscaper, which has escape(text) and unescape(text) functions.
+// Returns { escape(text), unescape(text) }.
 
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
@@ -14,7 +14,7 @@
         module.exports = factory();
     } else {
         // Browser globals (root is window)
-        root.HTMLEscaper = factory();
+        root.JustHTMLEscape = factory();
     }
 }(this, function () {
 

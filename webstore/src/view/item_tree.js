@@ -1,40 +1,47 @@
 // view/item_tree.js: Item tree view and related utilities for TabFern
 // Copyright (c) 2017 Chris White, Jasmine Hegman.
 
-(function (root, factory) {
-    let imports=['jquery','jstree','jstree-actions', 'jstree-flagnode',
-                    'jstree-because', 'loglevel', 'view/const',
-                    'jstree-multitype', 'jstree-redraw-event' ];
-
+(function (root, factory) {     // Boilerplate {{{1
     if (typeof define === 'function' && define.amd) {
         // AMD
-        define(imports, factory);
+        define([ 'jquery','jstree','jstree-actions', 'jstree-flagnode',
+                    'jstree-because', 'loglevel', 'view/const',
+                    'jstree-multitype', 'jstree-redraw-event' ], factory);
     } else if (typeof exports === 'object') {
         // Node, CommonJS-like
-        let requirements = [];
-        for(let modulename of imports) {
-            requirements.push(require(modulename));
-        }
-        module.exports = factory(...requirements);
+        module.exports = factory(
+            require('jquery'), require('jstree'), require('jstree-actions'),
+            require('jstree-flagnode'), require('jstree-because'),
+            require('loglevel'), require('view/const'),
+            require('jstree-multitype'), require('jstree-redraw-event')
+        );
     } else {
         // Browser globals (root is `window`)
-        let requirements = [];
-        for(let modulename of imports) {
-            requirements.push(root[modulename]);
-        }
-        root.tabfern_item_tree = factory(...requirements);
+        root.T = factory(
+            root.$, root.$.jstree, root.jstree.plugins.actions,
+            root.jstree.plugins.flagnode, root.jstree.plugins.because,
+            root.log, root.K,
+            root.jstree.plugins.multitype, root.jstree.plugins.redraw_event
+        );
     }
-}(this, function ($, _jstree, _actions, _flagnode, _because, log_orig, K, multitype ) {
+}(this, function ($, _jstree, _actions, _flagnode, _because, log_orig, K, _multitype, _redraw_event ) {
     "use strict";
 
     function loginfo(...args) { log_orig.info('TabFern view/item_tree.js: ', ...args); };
+// }}}1
 
     /// The module we are creating
     let module = {
         treeobj: null,      ///< The jstree instance
     };
 
-    // --- Scrolling support ---
+    // --- General --- {{{1
+
+    /// Easy access to the tree root
+    module.root_node = () => { return T.treeobj.get_node($.jstree.root); }
+
+    // }}}1
+    // --- Scrolling support --- {{{1
 
     /// The most recently seen right edge
     module.last_r_edge = undefined;
@@ -173,6 +180,9 @@
         //jq_tree.on('after_close.jstree', module.rjustify_action_group_at);
     }; //install_resize_detector
 
+    // }}}1
+    // --- Tree creation --- {{{1
+
     // CSS classes
     const WIN_CLASS = 'tf-window'; // class on all <li>s representing windows
     const TAB_CLASS = 'tf-tab';    // class on all <li>s representing tabs
@@ -307,8 +317,9 @@
         // Or maybe make vscroll a jstree plugin?
 
     }; //module.create()
+    // }}}1
 
     return module;
 }));
 
-// vi: set ts=4 sts=4 sw=4 et ai fo-=o fo-=r: //
+// vi: set ts=4 sts=4 sw=4 et ai fo-=o fo-=r fdm=marker: //

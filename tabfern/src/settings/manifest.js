@@ -2,30 +2,46 @@
 // TODO move the names into constants in common.js
 // Note: the tabs and groups are created in the order they
 // first appear in the manifest.
-(function(root){
+(function (root, factory) {
+    if (typeof define === 'function' && define.amd) {
+        // AMD
+        define([],factory);
+    } else if (typeof exports === 'object') {
+        // Node, CommonJS-like
+        module.exports = factory();
+    } else {
+        // Browser globals (root is window)
+        root.manifest = factory();
+    }
+}(this, function () {
     // Shortcuts for frequently-used items
     function icon(cls) { return `<i class="${cls}"></i>`; }
     function issue(num, noparen) { return `${noparen ? '' : '('}<a href="https://github.com/cxw42/TabFern/issues/${num|0}">#${num|0}</a>${noparen ? '' : ')'}`; }
     function brplain(text){return `<br/><span class="plain">${text}</span>`;}
 
+    function future_i18n(x) { return x; }
+
     let ham = icon('fa fa-bars');
     let gt = icon('fa fa-lg fa-caret-right');
     let settings = `${ham} ${gt} Settings ${gt}`;
-    let refresh_message = " (refresh the TabFern window after you change this to make the change take effect)"
+    let refresh_message = " (refresh the TabFern window after you change this to make the change take effect)";
 
     // Settings {{{2
     // Assign the settings
-    root.manifest = {
+    let manifest = {
         "name":
             `${_T('wsSettings')} - ${_T('wsShortName')} (v${TABFERN_VERSION})`,
 
         "icon": "/assets/fern16.png",
+        //"settingsLabel":'',
+        //"searchLabel":'',
+        //"nothingFoundMessage":'',
         "settings": [
 
             // Welcome page
             {
-                "tab": i18n.get("Welcome / Help"),
-                "group": i18n.get("Introduction"),
+                "tab": future_i18n("Welcome / Help"),
+                "group": future_i18n("Introduction"),
                 "name": "welcome-intro",
                 "type": "description",
                 "text": "<p>Welcome to TabFern!  Each Chrome window you have open "+
@@ -38,16 +54,26 @@
                         ' or changes.</p>'
             },
             {
-                "tab": i18n.get("Welcome / Help"),
-                "group": i18n.get("Import/Export"),
+                "tab": future_i18n("Welcome / Help"),
+                "group": future_i18n("Incognito mode"),
+                "type": "description",
+                "text":
+`TabFern cannot see Incognito windows or tabs, and is not yet tested in
+Incognito mode.  If you would like Incognito support in TabFern, please
+vote at ${issue(125,true)}.
+`,
+            },
+            {
+                "tab": future_i18n("Welcome / Help"),
+                "group": future_i18n("Import/Export"),
                 "name": "export-settings",
                 "id": "export-settings",
                 "type": "button",
                 "text": "Save settings to a file"
             },
             {
-                "tab": i18n.get("Welcome / Help"),
-                "group": i18n.get("Import/Export"),
+                "tab": future_i18n("Welcome / Help"),
+                "group": future_i18n("Import/Export"),
                 "name": "import-settings",
                 "id": "import-settings",
                 "type": "button",
@@ -56,54 +82,67 @@
 
             // Behaviour.  Yeah, there's a "u" in there!
             {
-                "tab": i18n.get("Behaviour"),
-                "group": i18n.get("On startup or refresh..."),
-                "name": CFG_COLLAPSE_ON_STARTUP,
+                "tab": future_i18n("Behaviour"),
+                "group": future_i18n("When Chrome starts..."),
+                "name": CFG_POPUP_ON_STARTUP,
                 "type": "checkbox",
-                "label": i18n.get("Collapse all the saved trees"),
-                //"text": i18n.get("x-characters")
+                "label": future_i18n("Open the TabFern window automatically"),
             },
             {
-                "tab": i18n.get("Behaviour"),
-                "group": i18n.get("On startup or refresh..."),
+                "tab": future_i18n("Behaviour"),
+                "group": future_i18n("When Chrome starts..."),
+                "type": "description",
+                "text": future_i18n("You can open the TabFern window any time by clicking the fern icon next to the address bar."),
+            },
+            {
+                "tab": future_i18n("Behaviour"),
+                "group": future_i18n("On startup or refresh..."),
+                "name": CFG_COLLAPSE_ON_STARTUP,
+                "type": "checkbox",
+                "label": future_i18n("Collapse all the saved trees"),
+                //"text": future_i18n("x-characters")
+            },
+            {
+                "tab": future_i18n("Behaviour"),
+                "group": future_i18n("On startup or refresh..."),
                 "name": CFG_OPEN_TOP_ON_STARTUP,
                 "type": "checkbox",
-                "label": i18n.get("Sort open windows to the top")
-                //"text": i18n.get("x-characters")
+                "label": future_i18n("Sort open windows to the top")
+                //"text": future_i18n("x-characters")
             },
 
             {
-                "tab": i18n.get("Behaviour"),
-                "group": i18n.get("When I..."),
+                "tab": future_i18n("Behaviour"),
+                "group": future_i18n("When I..."),
                 "name": "collapse-tree-on-window-close",
                 "type": "checkbox",
-                "label": i18n.get("Close a window, collapse its tree"),
-                //"text": i18n.get("x-characters")
+                "label": future_i18n("Close a window, collapse its tree"),
+                //"text": future_i18n("x-characters")
             },
             {
-                "tab": i18n.get("Behaviour"),
-                "group": i18n.get("When I..."),
+                "tab": future_i18n("Behaviour"),
+                "group": future_i18n("When I..."),
                 "name": CFG_RESTORE_ON_LAST_DELETED,
                 "type": "checkbox",
-                "label": i18n.get("Restore the last-deleted window, reopen its tabs"),
+                "label": future_i18n("Restore the last-deleted window, reopen its tabs"),
             },
             {
-                "tab": i18n.get("Behaviour"),
-                "group": i18n.get("When I..."),
+                "tab": future_i18n("Behaviour"),
+                "group": future_i18n("When I..."),
                 "name": CFG_JUMP_WITH_SORT_OPEN_TOP,
                 "type": "checkbox",
-                "label": i18n.get('Sort open windows to the top, scroll to the top of the list'),
+                "label": future_i18n('Sort open windows to the top, scroll to the top of the list'),
             },
             {
-                "tab": i18n.get("Behaviour"),
-                "group": i18n.get("When I..."),
+                "tab": future_i18n("Behaviour"),
+                "group": future_i18n("When I..."),
                 "name": CFG_NEW_WINS_AT_TOP,
                 "type": "checkbox",
-                "label": i18n.get('Open a new window, move it to the top of the list'),
+                "label": future_i18n('Open a new window, move it to the top of the list'),
             },
             {   // some extra descriptive text for CFG_NEW_WINS_AT_TOP
-                "tab": i18n.get("Behaviour"),
-                "group": i18n.get("When I..."),
+                "tab": future_i18n("Behaviour"),
+                "group": future_i18n("When I..."),
                 "type": "description",
                 "text": `This has the practical side-effect that all open
                         windows will be sorted to the top when you open the
@@ -112,111 +151,113 @@
             },
 
             {
-                "tab": i18n.get("Behaviour"),
-                "group": i18n.get("Deleting windows"),
+                "tab": future_i18n("Behaviour"),
+                "group": future_i18n("Deleting windows"),
                 "name": CFG_CONFIRM_DEL_OF_SAVED,
                 "type": "checkbox",
-                "label": i18n.get('Prompt for confirmation before deleting <b>saved</b> windows'),
+                "label": future_i18n('Prompt for confirmation before deleting <b>saved</b> windows'),
             },
             {
-                "tab": i18n.get("Behaviour"),
-                "group": i18n.get("Deleting windows"),
+                "tab": future_i18n("Behaviour"),
+                "group": future_i18n("Deleting windows"),
                 "name": CFG_CONFIRM_DEL_OF_UNSAVED,
                 "type": "checkbox",
-                "label": i18n.get('Prompt for confirmation before deleting <b>unsaved</b> windows'),
+                "label": future_i18n('Prompt for confirmation before deleting <b>unsaved</b> windows'),
             },
 
             {
-                "tab": i18n.get("Behaviour"),
-                "group": i18n.get("Deleting tabs"),
+                "tab": future_i18n("Behaviour"),
+                "group": future_i18n("Deleting tabs"),
                 "name": CFG_CONFIRM_DEL_OF_SAVED_TABS,
                 "type": "checkbox",
-                "label": i18n.get('Prompt for confirmation before deleting <b>tabs</b> in <b>saved</b> windows'),
+                "label": future_i18n('Prompt for confirmation before deleting <b>tabs</b> in <b>saved</b> windows'),
             },
             {
-                "tab": i18n.get("Behaviour"),
-                "group": i18n.get("Deleting tabs"),
+                "tab": future_i18n("Behaviour"),
+                "group": future_i18n("Deleting tabs"),
                 "name": CFG_CONFIRM_DEL_OF_UNSAVED_TABS,
                 "type": "checkbox",
-                "label": i18n.get('Prompt for confirmation before deleting <b>tabs</b> in <b>unsaved</b> windows'),
+                "label": future_i18n('Prompt for confirmation before deleting <b>tabs</b> in <b>unsaved</b> windows'),
             },
 
             {
-                "tab": i18n.get("Behaviour"),
-                "group": i18n.get("When Chrome..."),
+                "tab": future_i18n("Behaviour"),
+                "group": future_i18n("When Chrome..."),
                 "name": CFG_PRUNE_NEW_WINDOWS,
                 "type": "checkbox",
-                "label": i18n.get("Adds extra tabs to a new window I've just opened, get rid of them!"),
+                "label": future_i18n("Adds extra tabs to a new window I've just opened, get rid of them!"),
             },
             {
-                "tab": i18n.get("Behaviour"),
-                "group": i18n.get("When Chrome..."),
+                "tab": future_i18n("Behaviour"),
+                "group": future_i18n("When Chrome..."),
                 'group_html':true,
                 "type": "description",
-                "text": i18n.get("\u26a0 use this option only if you need it &mdash; it may not behave exactly as you would expect."),
+                "text": future_i18n("\u26a0 use this option only if you need it &mdash; it may not behave exactly as you would expect."),
             },
 
             // Appearance
             {
-                "tab": i18n.get("Appearance"),
+                "tab": future_i18n("Appearance"),
                 "group": '',
                 "type": "description",
-                "text": i18n.get("Refresh the TabFern window to apply changes to these options.  To refresh, click TabFern's title bar and hit F5."),
+                "text": future_i18n("Refresh the TabFern window to apply changes to these options.  To refresh, click TabFern's title bar and hit F5."),
             },
             {
-                "tab": i18n.get("Appearance"),
-                "group": i18n.get("Scrollbars"),
+                "tab": future_i18n("Appearance"),
+                "group": future_i18n("Scrollbars"),
                 "name": CFG_HIDE_HORIZONTAL_SCROLLBARS,
                 "type": "checkbox",
-                "label": i18n.get('Hide horizontal scrollbar'),
+                "label": future_i18n('Hide horizontal scrollbar'),
             },
             {
-                "tab": i18n.get("Appearance"),
-                "group": i18n.get("Scrollbars"),
+                "tab": future_i18n("Appearance"),
+                "group": future_i18n("Scrollbars"),
                 "name": CFG_SKINNY_SCROLLBARS,
                 "type": "checkbox",
-                "label": i18n.get('Skinny scrollbars'),
+                "label": future_i18n('Skinny scrollbars'),
             },
             {
-                "tab": i18n.get("Appearance"),
-                "group": i18n.get("Scrollbars"),
+                "tab": future_i18n("Appearance"),
+                "group": future_i18n("Scrollbars"),
                 "id": 'scrollbar-color-picker-label',
                 //"name": '',     // Don't save - settings.js handles that
                 "type": "text",
-                //"text": i18n.get('Skinny-scrollbar color: '),
+                //"text": future_i18n('Skinny-scrollbar color: '),
                     // placeholder - settings.js adds the actual control
                     // after this.
+                    // TODO figure out how to make skinny-scrollbar color
+                    // appear properly in search results
             },
             {
-                "tab": i18n.get("Appearance"),
-                "group": i18n.get("Tree"),
+                "tab": future_i18n("Appearance"),
+                "group": future_i18n("Tree"),
                 "name": CFG_SHOW_TREE_LINES,
                 "type": "checkbox",
-                "label": i18n.get('Show connecting lines between nodes'),
+                "label": future_i18n('Show connecting lines between nodes'),
             },
 
             // Theming options
             {
-                "tab": i18n.get("Appearance"),
-                "group": i18n.get("Theme"),
+                "tab": future_i18n("Appearance"),
+                "group": future_i18n("Theme"),
                 "name": CFGS_THEME_NAME,
                 "type": "popupButton",
-                "label": i18n.get('Theme'),
+                "label": future_i18n('Theme'),
                 'options': [
                     { value: 'default-dark', text: 'Dark' },
                     { value: 'default', text: 'Light' },
                 ],
             },
             {
-                "tab": i18n.get("Appearance"),
-                "group": i18n.get("Theme"),
+                "tab": future_i18n("Appearance"),
+                "group": future_i18n("Theme"),
                 "name": CFGS_BACKGROUND,
                 "type": "text",
-                "label": i18n.get('Background color or image'),
+                "label": future_i18n('Background color or image'),
             },
             {
-                "tab": i18n.get("Appearance"),
-                "group": i18n.get("Theme"),
+                "tab": future_i18n("Appearance"),
+                "group": future_i18n("Theme"),
                 "type": "description",
                 "text":
 `The background can be specified as a CSS color name, rgb(r,g,b), hsl(h,s,l),
@@ -230,18 +271,18 @@ bar (it will start with "file://")</li>
             },
 
             {
-                "tab": i18n.get("Appearance"),
-                "group": i18n.get("Tooltips"),
+                "tab": future_i18n("Appearance"),
+                "group": future_i18n("Tooltips"),
                 "name": CFG_URL_IN_TOOLTIP,
                 "type": "checkbox",
-                "label": i18n.get("Show URL in each item's tooltip"),
+                "label": future_i18n("Show URL in each item's tooltip"),
             },
             {
-                "tab": i18n.get("Appearance"),
-                "group": i18n.get("Tooltips"),
+                "tab": future_i18n("Appearance"),
+                "group": future_i18n("Tooltips"),
                 "name": CFG_TITLE_IN_TOOLTIP,
                 "type": "checkbox",
-                "label": i18n.get("Show page title in each item's tooltip"),
+                "label": future_i18n("Show page title in each item's tooltip"),
             },
 
             // Features
@@ -252,6 +293,7 @@ bar (it will start with "file://")</li>
                 "type": "checkbox",
                 "label": "Enable right-click menus" + refresh_message,
             },
+/*
             {
                 "tab": "Features",
                 "group": "Key Mapping",
@@ -305,11 +347,12 @@ bar (it will start with "file://")</li>
                 "type": "button",
                 "text": "X or + or don't show when these are dynamic"
             },
+*/
 
     // }}}2
     // Credits {{{2
             {
-                "tab": i18n.get("Credits and thanks"),
+                "tab": future_i18n("Credits and thanks"),
                 "group": 'TabFern',
                 'group_html':true,
                 "type": "description",
@@ -322,16 +365,16 @@ order.`
             },
 
             {
-                "tab": i18n.get("Credits and thanks"),
-                "group": i18n.get("Programming"),
+                "tab": future_i18n("Credits and thanks"),
+                "group": future_i18n("Programming"),
                 'group_html':true,
                 "type": "description",
                 "text":
 `<ul><li><a href="https://github.com/r4j4h/">Jasmine Hegman</a></li></ul>`
             },
             {
-                "tab": i18n.get("Credits and thanks"),
-                "group": i18n.get("Translation"),
+                "tab": future_i18n("Credits and thanks"),
+                "group": future_i18n("Translation"),
                 'group_html':true,
                 "type": "description",
                 "text":
@@ -344,7 +387,21 @@ order.`
     // }}}2
             // Changelog                                          {{{1
             {
-                "tab": i18n.get("What's new?"),
+                "tab": future_i18n("What's new?"),
+                "group": `Version 0.1.18${brplain('2018-09-17')}`,
+                'group_html':true,
+                "type": "description",
+                "text":
+`<ul>
+<li>New menu item to move a window to the top of the tree: right-click the
+window's entry in the tree and choose "Move to top." ${issue(58)}</li>
+<li>New option to choose whether to open the TabFern window automatically
+when you start Chrome (on ${ham} ${gt} Settings ${gt} Behaviour).
+${issue(143)} </li>
+</ul>`,
+            },
+            {
+                "tab": future_i18n("What's new?"),
                 "group": `Version 0.1.17${brplain('2018-09-02')}`,
                 'group_html':true,
                 "type": "description",
@@ -361,7 +418,7 @@ translators!  Please see the new Credits tab.  ${issue(135)}</li>
 URL and title of each item in a tooltip on that item.  This way you can
 see URLs in the tree, and you can see long titles without having
 to scroll.  ${issue(104)}</li>
-<li>You can now save and load settings from the ${i18n.get("Welcome / Help")}
+<li>You can now save and load settings from the ${future_i18n("Welcome / Help")}
 tab.  ${issue(92)}</li>
 <li>When you open the TF window, it moves back to its last position
 more quickly.  ${issue(134)}</li>
@@ -382,7 +439,7 @@ and Chrome get out of sync.  ${issue(127)}</li>
 </ul>`
             },
             {
-                "tab": i18n.get("What's new?"),
+                "tab": future_i18n("What's new?"),
                 "group": `Version 0.1.16${brplain('2018-03-08')}`,
                 'group_html':true,
                 "type": "description",
@@ -395,7 +452,7 @@ and Chrome get out of sync.  ${issue(127)}</li>
 </ul>`
             },
             {
-                "tab": i18n.get("What's new?"),
+                "tab": future_i18n("What's new?"),
                 "group": `Version 0.1.15${brplain('2018-02-09')}`,
                 'group_html':true,
                 "type": "description",
@@ -408,7 +465,7 @@ status!  One step closer to <a href="https://github.com/cxw42/TabFern/issues?q=i
 </ul>`
             },
             {
-                "tab": i18n.get("What's new?"),
+                "tab": future_i18n("What's new?"),
                 "group": `Version 0.1.14${brplain('2018-01-12')}`,
                 'group_html':true,
                 "type": "description",
@@ -427,7 +484,7 @@ ${issue(97)}</li>
 </ul>`,
             },
             {
-                "tab": i18n.get("What's new?"),
+                "tab": future_i18n("What's new?"),
                 "group": `Version 0.1.13${brplain('2017-12-12')}`,
                 'group_html':true,
                 "type": "description",
@@ -450,7 +507,7 @@ scrollbars."  ${issue(68)}
 </ul>`
             },
             {
-                "tab": i18n.get("What's new?"),
+                "tab": future_i18n("What's new?"),
                 "group": `Version 0.1.12${brplain('2017-11-05')}`,
                 'group_html':true,
                 "type": "description",
@@ -479,7 +536,7 @@ ${issue(78)}</li>
 </ul>`
             },
             {
-                "tab": i18n.get("What's new?"),
+                "tab": future_i18n("What's new?"),
                 "group": `Version 0.1.11${brplain('2017-10-19')}`,
                 'group_html':true,
                 "type": "description",
@@ -512,7 +569,7 @@ if you run across them.  Thanks for considering this request!
             },
 
             {
-                "tab": i18n.get("What's new?"),
+                "tab": future_i18n("What's new?"),
                 "group": `Version 0.1.10${brplain('2017-09-26')}`,
                 'group_html':true,
                 "type": "description",
@@ -534,7 +591,7 @@ locally-stored PDFs, and this helps me find them more quickly.</li>
 </ul>`,
             },
             {
-                "tab": i18n.get("What's new?"),
+                "tab": future_i18n("What's new?"),
                 "group": `Versions 0.1.8 and 0.1.9${brplain('2017-09-22')}`,
                 'group_html':true,
                 "type": "description",
@@ -557,7 +614,7 @@ ready yet.)  ${issue(36)}</li>
 </ul>`,
             },
             {
-                "tab": i18n.get("What's new?"),
+                "tab": future_i18n("What's new?"),
                 "group": `Version 0.1.7${brplain('2017-09-18')}`,
                 'group_html':true,
                 "type": "description",
@@ -573,7 +630,7 @@ ready yet.)  ${issue(36)}</li>
     '</ul>'
             },
             {
-                "tab": i18n.get("What's new?"),
+                "tab": future_i18n("What's new?"),
                 "group": `Version 0.1.6${brplain('2017-09-10')}`,
                 'group_html':true,
                 "type": "description",
@@ -586,7 +643,7 @@ ready yet.)  ${issue(36)}</li>
     '</ul>'
             },
             {
-                "tab": i18n.get("What's new?"),
+                "tab": future_i18n("What's new?"),
                 "group": `Version 0.1.5${brplain('2017-09-07')}`,
                 'group_html':true,
                 "type": "description",
@@ -596,7 +653,7 @@ ready yet.)  ${issue(36)}</li>
                     'workarounds for Chrome 61 changes.'
             },
             {
-                "tab": i18n.get("What's new?"),
+                "tab": future_i18n("What's new?"),
                 "group": `Version 0.1.4${brplain('2017-09-06')}`,
                 'group_html':true,
                 "type": "description",
@@ -606,7 +663,7 @@ saving of TabFern window position ${issue(22)},
 and Expand All/Collapse All.`
             },
             {
-                "tab": i18n.get("What's new?"),
+                "tab": future_i18n("What's new?"),
                 "group": `Version 0.1.2${brplain('2017-09-02')}`,
                 'group_html':true,
                 "type": "description",
@@ -614,5 +671,7 @@ and Expand All/Collapse All.`
             }                                                     // }}}1
         ]
     };
-})(this);
+
+    return manifest;
+}));
 // vi: set ts=4 sts=4 sw=4 et ai foldmethod=marker foldenable foldlevel=1: //
