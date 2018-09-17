@@ -34,6 +34,7 @@ DEST_BUNDLE_2 = tabfern/src/view/bundle_tree.js
 .PHONY: all bundle clean
 
 all: bundle
+	./check-version.sh
 	./check-webstore.sh
 
 bundle: $(DEST_BUNDLE_1) $(DEST_BUNDLE_2)
