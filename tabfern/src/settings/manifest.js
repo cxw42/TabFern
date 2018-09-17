@@ -388,6 +388,15 @@ order.`
             // Changelog                                          {{{1
             {
                 "tab": future_i18n("What's new?"),
+                "group": `Version 0.1.19${brplain('2018-xx-xx')}`,
+                'group_html':true,
+                "type": "description",
+                "text":
+`<ul>
+</ul>`,
+            },
+            {
+                "tab": future_i18n("What's new?"),
                 "group": `Version 0.1.18${brplain('2018-09-17')}`,
                 'group_html':true,
                 "type": "description",
