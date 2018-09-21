@@ -1,0 +1,38 @@
+# Backup files and output files
+*.swp
+*~
+*.bin
+*.o
+*.a
+*.obj
+*.exe
+*.dll
+*.lib
+*.ncb
+*.pdb
+*.suo
+*.idb
+*.sdf
+*.opensdf
+.*.swp
+.DS_Store
+.qmake.stash
+*~
+*.log
+core
+*.stackdump
+/*_history
+tags
+/webstore.zip
+foo.*
+
+# Brunch output directories
+/public
+
+# Test outputs
+*.e
+*.map
+*.txt
+
+# External dependencies (managed by npm)
+/node_modules/

@@ -1,0 +1,35 @@
+{
+  "name": "tabfern-brunch-test",
+  "version": "0.1.19-brunch.1",
+  "description": "Brunch test for TabFern",
+  "main": "index.js",
+  "scripts": {
+    "build": "npx brunch build",
+    "watch": "npx brunch watch",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cxw42/TabFern.git#brunch-test"
+  },
+  "author": "cxw42",
+  "license": "CC-BY-SA-3.0",
+  "bugs": {
+    "url": "https://github.com/cxw42/TabFern/issues"
+  },
+  "homepage": "https://github.com/cxw42/TabFern/tree/brunch-test#readme",
+  "dependencies": {
+    "asynquence": "^0.10.2",
+    "blake2s-js": "^1.3.0",
+    "rmodal": "^1.0.31",
+    "spectrum-colorpicker": "^1.8.0",
+    "spin.js": "^4.0.0",
+    "split.js": "^1.3.5",
+    "tinycolor2": "^1.4.1"
+  },
+  "devDependencies": {
+    "brunch": "^2.10.17",
+    "replacer-brunch": "^1.1.1",
+    "uglify-es-brunch": "^1.0.5"
+  }
+}
