@@ -11,7 +11,10 @@ module.exports = {
     files: {
         javascripts: {
             entryPoints: {
-                'app/win/deps.js': 'win/app.js',    // main (popup) window
+                'app/win/container.js': 'win/container-app.js',
+                    // popup window
+                'app/win/deps.js': 'win/app.js',
+                    // main window, in an iframe in the popup
             },
 
             order: {
@@ -36,8 +39,13 @@ module.exports = {
             // can be flagged as top-level (unwrapped).
     },
 
+    modules: {
+        nameCleaner: path => path.replace(/^(app|lib)\//, '')
+    },      // permit importing from lib/ as require('x') instead of 'lib/x'
+
     npm: {
         globals: { '$': 'jquery' },
+        compilers: ['babel-brunch'],    // run babel-brunch on node_modules/...
     },
 
     plugins: {
@@ -54,6 +62,13 @@ module.exports = {
             copyTo: {
                 '.': ['app/assets/*'],    // . => public
             },
+        },
+
+        babel: {
+            ignore: [ 'app/**', 'lib/**', /^node_modules\/(?!spin\.js)/ ],
+                // At the moment, only spin.js needs Babel treatment.
+                // Ignore everything else to save time and reduce the
+                // chance of surprise.
         },
     },
 
