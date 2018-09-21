@@ -42,6 +42,7 @@ module.exports = {
     npm: {
         globals: { '$': 'jquery' },
         compilers: ['babel-brunch'],    // run babel-brunch on node_modules/...
+        aliases: { path: 'path-browserify' },
     },
 
     plugins: {

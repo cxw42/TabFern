@@ -26,6 +26,9 @@ tags
 /webstore.zip
 foo.*
 
+# A holding pen
+/spare
+
 # Brunch output directories
 /public
 
