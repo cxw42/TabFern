@@ -39,10 +39,6 @@ module.exports = {
             // can be flagged as top-level (unwrapped).
     },
 
-    modules: {
-        nameCleaner: path => path.replace(/^(app|lib)\//, '')
-    },      // permit importing from lib/ as require('x') instead of 'lib/x'
-
     npm: {
         globals: { '$': 'jquery' },
         compilers: ['babel-brunch'],    // run babel-brunch on node_modules/...
