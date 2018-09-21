@@ -49,6 +49,12 @@ module.exports = {
                 return str.split(key).join(`'${path}'`)
             }
         },
+
+        assetsmanager: {
+            copyTo: {
+                '.': ['app/assets/*'],    // . => public
+            },
+        },
     },
 
     overrides: {

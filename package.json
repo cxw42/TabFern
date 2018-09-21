@@ -29,6 +29,7 @@
     "tinycolor2": "^1.4.1"
   },
   "devDependencies": {
+    "assetsmanager-brunch": "^1.8.1",
     "brunch": "^2.10.17",
     "replacer-brunch": "^1.1.1",
     "uglify-es-brunch": "^1.0.5"
