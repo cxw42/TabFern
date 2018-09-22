@@ -11,7 +11,7 @@ module.exports = {
     files: {
         javascripts: {
             entryPoints: {
-                'app/win/container.js': 'win/container-app.js',
+                'app/win/container.js': 'win/container.js',
                     // popup window
                 'app/win/deps.js': 'win/app.js',
                     // main window, in an iframe in the popup
