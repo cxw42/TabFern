@@ -57,7 +57,7 @@ module.exports = {
 
         assetsmanager: {
             copyTo: {
-                '.': ['app/assets/*'],    // . => public
+                '.': ['static/*'],    // . => public
             },
         },
 
