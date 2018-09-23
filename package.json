@@ -24,6 +24,7 @@
     "asynquence-contrib": "^0.28.2",
     "blake2s-js": "^1.3.0",
     "buffer": "^5.2.1",
+    "font-awesome": "github:FortAwesome/font-awesome#fa-4",
     "install": "^0.12.1",
     "jquery": "^3.3.1",
     "keypress.js": "^2.1.5",
