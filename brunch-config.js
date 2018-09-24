@@ -15,6 +15,8 @@ module.exports = {
                     // popup window
                 'app/win/main_deps.js': 'win/main.js',
                     // main window, in an iframe in the popup
+                'app/bg/background.js': 'bg/background.js',
+                    // background script (has no page)
             },
 
             order: {
