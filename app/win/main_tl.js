@@ -9,6 +9,7 @@ log.setLevel(log.levels.INFO);
 let output_ul = $('<ul>').appendTo('body');
 function output(text) {
     output_ul.append($('<li>').html(text));
+    $('html, body').scrollTop($(document).height());
     return text;
 }
 
@@ -86,8 +87,8 @@ function pruneWindow(cwin, expected_tab_count)
             let seq = ASQ();    // for error reporting
             // Don't change chrome: URLs, since those might be things
             // like History (Ctl+H).
-            if(!inner_cwin.tabs[0].url.match(/^chrome:/i)) {
-                log.warn(output(`<b>Setting tab ${tabid} to chrome:newtab</b>`));
+            if(!inner_cwin.tabs[0].url.match(/^chrome:(\/\/)?newtab/i)) {
+                log.warn(output(`<b>Tab ${tabid} is not chrome:newtab, which is what I expected it to be</b>`));
                 if(!pruning_will_not_actually_take_place) {
                     chrome.tabs.update(tabid, {url: 'chrome://newtab'},
                             ASQH.CCgo(seq));
@@ -106,7 +107,7 @@ function pruneWindow(cwin, expected_tab_count)
 
         log.warn(output('<b>Win ' + inner_cwin.id + ': expected ' +
                 count + ' tabs; got ' +
-                inner_cwin.tabs.length + ' tabs --- pruning.</b>'));
+                inner_cwin.tabs.length + ' tabs.</b>'));
 
         let to_prune=[];
 

@@ -37,5 +37,8 @@ foo.*
 *.map
 *.txt
 
+# Zips
+*.xz
+
 # External dependencies (managed by npm)
 /node_modules/
