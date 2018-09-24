@@ -11,11 +11,9 @@ module.exports = {
     files: {
         javascripts: {
             entryPoints: {
-                'app/win/container.js': 'win/container.js',
-                    // popup window
                 'app/win/main_deps.js': 'win/main.js',
                     // main window, in an iframe in the popup
-                'app/bg/background.js': 'bg/background.js',
+                'app/bg/bg_deps.js': 'bg/background.js',
                     // background script (has no page)
             },
 
@@ -29,12 +27,6 @@ module.exports = {
             },
         },
 
-        stylesheets: {
-            joinTo: 'assets/bulk.css',
-                // i.e., output to public/assets/bulk.css.
-                // Note: can't use entryPoints -
-                // https://github.com/brunch/brunch/issues/1640
-        },
     },
 
     conventions: {
@@ -52,11 +44,6 @@ module.exports = {
         globals: { '$': 'jquery' },
         compilers: ['babel-brunch'],    // run babel-brunch on node_modules/...
         aliases: { path: 'path-browserify' },
-
-        styles: {   // map module name to path of the CSS in the module's dir
-            'spin.js': ['spin.css'],
-            'rmodal': ['dist/rmodal-no-bootstrap.css'],
-        },
     },
 
     plugins: {
@@ -72,8 +59,6 @@ module.exports = {
         assetsmanager: {    // Copy files on build
             copyTo: {
                 '.': ['static/*'],    // . => public
-                'assets/fontawesome': ['node_modules/font-awesome/css',
-                                        'node_modules/font-awesome/fonts'],
             },
         },
 

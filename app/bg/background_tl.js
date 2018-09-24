@@ -6,18 +6,26 @@ var viewWindowID;     // the chrome.windows ID of our view
 //////////////////////////////////////////////////////////////////////////
 // Helpers //
 
+/// Ignore a Chrome callback error, and suppress Chrome's
+/// `runtime.lastError` diagnostic.  Use this as a Chrome callback.
+function ignore_chrome_error() { void chrome.runtime.lastError; }
+
 // Open the view
 function loadView()
 {
     console.log("TabFern: Opening view");
     chrome.windows.create(
-        { 'url': chrome.runtime.getURL('win/container.html'),
-          'type': 'popup',
-          //'focused': true
-            // Note: `focused` is not supported on Firefox, but
-            // focused=true is usually the effect.
-            // https://bugzilla.mozilla.org/show_bug.cgi?id=1253129
-            // However, Firefox does support windows.update with focused.
+        {   'url': chrome.runtime.getURL('win/main.html'),
+            'type': 'popup',
+            //'focused': true
+                // Note: `focused` is not supported on Firefox, but
+                // focused=true is usually the effect.
+                // https://bugzilla.mozilla.org/show_bug.cgi?id=1253129
+                // However, Firefox does support windows.update with focused.
+            top: 0,
+            left: 0,
+            width: 400,
+            height: 400,
         },
         function(win) {
             viewWindowID = win.id;
@@ -63,10 +71,8 @@ chrome.windows.onRemoved.addListener(function(windowId) {
 window.addEventListener('load',
     function() {
         console.log('TabFern: background window loaded');
-        if(getBoolSetting(CFG_POPUP_ON_STARTUP)) {
-            console.log('Opening popup window');
-            setTimeout(loadView, 500);
-        }
+        console.log('Opening popup window');
+        setTimeout(loadView, 500);
     },
     { 'once': true }
 );

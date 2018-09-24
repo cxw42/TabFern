@@ -6,15 +6,10 @@
 // in the module.exports array, below.  This is what tells Brunch to
 // include these top-level modules.
 if((window||global||this||{}).this_var_should_never_ever_exist_bang) {
-    require('./main_tl');
+    require('./background_tl');
 }
 
 module.exports = {
-    ASQ_orig: require('asynquence'),
-    ASQ: require('asynquence-contrib'),
-    ASQH: require('lib/asq-helpers'),
-    jquery: require('jquery'),
-    loglevel: require('loglevel'),
 };
 
 // vi: set ts=4 sts=4 sw=4 et ai: //

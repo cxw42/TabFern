@@ -1,35 +1,29 @@
 {
-  "name": "__MSG_wsLongName__",
-  "short_name": "__MSG_wsShortName__",
-  "version": "0.1.19.1",
-  "version_name": "0.1.19-pre.1",
+  "name": "883709 test",
+  "short_name": "883709",
+  "version": "0.0.1.0",
+  "version_name": "0.0.1",
   "offline_enabled": true,
   "manifest_version": 2,
   "minimum_chrome_version": "54",
-  "description": "Vertical view of all your windows and tabs, including saved tabs and windows.",
-  "homepage_url": "https://cxw42.github.io/TabFern/",
-  "icons": {
-    "16": "assets/fern16.png",
-    "48": "assets/fern48.png",
-    "128": "assets/fern128.png"
-  },
-  "default_locale": "en",
+  "description": "Test for issue 883709",
+  "homepage_url": "https://bugs.chromium.org/p/chromium/issues/detail?id=883709",
   "background": {
     "scripts": [
-      "src/common/common.js",
-      "src/bg/background.js"
+      "bg/background.js"
     ],
     "persistent": true
   },
-  "options_page": "src/settings/index.html",
+  "icons": {
+    "128": "assets/128px-1532997792.png"
+  },
   "browser_action": {
     "default_icon": {
-      "16": "assets/fern16.png",
-      "48": "assets/fern48.png",
-      "128": "assets/fern128.png"
+      "128": "assets/128px-1532997792.png"
     },
-    "default_title": "TabFern"
+    "default_title": "883709-test"
   },
+  "options_page": "settings/index.html",
   "permissions": [
     "file://*/*",
     "chrome://favicon/",
@@ -37,13 +31,5 @@
     "storage",
     "unlimitedStorage",
     "contextMenus"
-  ],
-  "web_accessible_resources": [
-    "assets/*"
-  ],
-  "commands": {
-    "reveal-view": {
-      "description": "Open the TabFern window"
-    }
-  }
+  ]
 }
