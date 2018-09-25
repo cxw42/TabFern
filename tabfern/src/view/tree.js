@@ -45,7 +45,7 @@ var L;      ///< Holder --- L.log === log.  This gives closures access to the
 let Module_dependencies = [
     // Modules that are not specific to TabFern
     'jquery', 'jstree', 'jstree-actions', 'jstree-flagnode',
-    'jstree-because',
+    'jstree-because', 'jstree-multitype', 'jstree-redraw-event',
     'loglevel', 'hamburger', 'bypasser', 'multidex', 'justhtmlescape',
     'signals', 'export-file', 'import-file',
     'asynquence-contrib', 'asq-helpers', 'rmodal',

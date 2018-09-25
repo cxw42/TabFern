@@ -13,6 +13,6 @@ Edit the other file (e.g., ru/messages.json) to clear any conflict
 markers (<<<< / >>>>).
 
 Then, check to make sure it looks OK:
-git diff diff --word-diff=color --ignore-space-at-eol --patience -b -w --ignore-blank-lines --no-index en/messages.json ru/messages.json
+git diff --word-diff=color --ignore-space-at-eol --patience -b -w --ignore-blank-lines --no-index en/messages.json ru/messages.json
 
 The only changes you should see are the translations.
