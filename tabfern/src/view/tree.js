@@ -97,6 +97,9 @@ var window_is_being_restored = false;
 /// HACK to not prune windows we create!
 var do_not_prune_right_now = false;
 
+/// DOUBLE HACK to not prune, even if pruning is enabled!  INTERNAL DEBUG only.
+var pruning_will_not_actually_take_place = false;
+
 /// The size of the last-closed window, to be used as the
 /// size of newly-opened windows (whence the name).
 /// Should always have a valid value.
@@ -306,8 +309,10 @@ function pruneWindow(cwin, expected_tab_count)
             // like History (Ctl+H).
             if(!inner_cwin.tabs[0].url.match(/^chrome:/i)) {
                 log.info(`Setting tab ${tabid} to chrome:newtab`);
-                chrome.tabs.update(tabid, {url: 'chrome://newtab'},
-                        ASQH.CCgo(seq));
+                if(!pruning_will_not_actually_take_place) {
+                    chrome.tabs.update(tabid, {url: 'chrome://newtab'},
+                            ASQH.CCgo(seq));
+                }
             }
             // Currently we don't have anything else to do, so there's no
             // seq.then() calls.  However, using seq still causes asynquence
@@ -336,7 +341,9 @@ function pruneWindow(cwin, expected_tab_count)
         } //foreach extra tab
 
         L.log.warn('Pruning ' + to_prune);
-        chrome.tabs.remove(to_prune, ASQH.CC(done));
+        if(!pruning_will_not_actually_take_place) {
+            chrome.tabs.remove(to_prune, ASQH.CC(done));
+        }
     })
 
     .or((err)=>{
