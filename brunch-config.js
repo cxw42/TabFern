@@ -3,9 +3,10 @@
 module.exports = {
     paths: {
         // Bundle from these:
-        watched: ['app', 'lib', 'vendor'],
+        watched: ['app', 'lib', 'static', 'vendor'],
             // All of these will be wrapped, except for those matching
-            // conventions.vendor below.  For example, lib/* will be wrapped.
+            // conventions.vendor or conventions.assets below.
+            // For example, lib/* will be wrapped.
     },
 
     files: {
@@ -36,6 +37,7 @@ module.exports = {
     },
 
     conventions: {
+
         // Don't wrap the following in modules.  Note that these files
         // are not scanned for dependencies, except for node_modules.
         vendor: [ /((^node_modules|vendor)\/)|(_tl)/ ],
@@ -44,6 +46,21 @@ module.exports = {
             //
             // _tl is so that individual source files, e.g., in app/,
             // can be flagged as top-level (unwrapped).
+
+        // Also pull assets from static/ .  Thanks to
+        // https://stackoverflow.com/a/39141542/2877364 by
+        // https://stackoverflow.com/users/2986873/jwanglof
+        assets: (path)=>{
+            if( /\/$/.test(path) ) return path;
+            return /^static\//.test(path);
+        },
+
+        // Don't ignore _*, or else Brunch won't copy _locales.  Thanks to
+        // https://stackoverflow.com/a/43426151/2877364 by
+        // https://stackoverflow.com/users/4028896/johannes-filter
+        // Answer modified to use the rest of the default ignore from
+        // https://github.com/brunch/brunch/blob/ab89a016121fc7ba4ebfbe8bdc93a22bcd8d4cda/lib/utils/config-validate.js#L73
+        ignored: (path) => /vendor\/(node|j?ruby-.+|bundle)\//.test(path),
     },
 
     npm: {
@@ -54,6 +71,8 @@ module.exports = {
         styles: {   // map module name to path of the CSS in the module's dir
             'spin.js': ['spin.css'],
             'rmodal': ['dist/rmodal-no-bootstrap.css'],
+            // Can't list font-awesome here because it doesn't have a
+            // JS module to require().
         },
     },
 
@@ -67,9 +86,8 @@ module.exports = {
             }
         },
 
-        assetsmanager: {    // Copy files on build
-            copyTo: {
-                '.': ['static/*'],    // . => public
+        assetsmanager: {    // Copy files on build.  This is for files that
+            copyTo: {       // don't need to be watched.
                 'assets/fontawesome': ['node_modules/font-awesome/css',
                                         'node_modules/font-awesome/fonts'],
             },
