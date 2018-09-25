@@ -4580,7 +4580,12 @@ function main(...args)
     .or((err)=>{
         $(K.INIT_MSG_SEL).text(
             $(K.INIT_MSG_SEL).text() + "\n" + err
-        )
+        );
+
+        if(spinner) {
+            spinner.stop();
+            spinner = null;
+        }
     });
     ;
 
