@@ -1,5 +1,20 @@
 # TabFern - brunch-test
 
+## Layout
+
+- `app/`: main source
+- `lib/`: JS libraries that are not packaged as NPM modules, or libraries
+  that we're not using the NPM versions of.
+- `static/`: manifest and other files to copy over unchanged into the extension
+- `public/`: where the built output goes
+
+## Usage
+
+- `npm install`
+- `npx brunch b` to build or `npx brunch w` to watch.
+- Load `public/` as an unpacked extension
+
+## Old
 ![screenshot](https://raw.githubusercontent.com/cxw42/TabFern/gh-pages/screenshot.png)
 
 A [Google Chrome extension](https://chrome.google.com/webstore/detail/tabfern-tab-manager-and-b/hbajjpcdbninabigakflkhiogmmjaakm) that:
