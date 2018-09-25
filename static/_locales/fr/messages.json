@@ -322,4 +322,4 @@
     ,"description":"The lines below here do not need translation."
   }
   ,"modeline":{"description":"Keep the following on the last line of the file"
-    ,"message":" // vi: set ts=2 sts=2 sw=2 et ai fenc=utf8 ff=dos: //"}}
+    ,"message":" // vi: set ts=2 sts=2 sw=2 et ai fenc=utf8: //"}}
