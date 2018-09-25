@@ -60,7 +60,7 @@ function moveTabFernViewToWindow(reference_cwin)
 // https://stackoverflow.com/users/930675/sean-bannister
 
 // When the icon is clicked in Chrome
-chrome.browserAction.onClicked.addListener(function(tab) {
+let onClickedListener = function(tab) {
 
     // If viewWindowID is undefined then there isn't a popup currently open.
     if (typeof viewWindowID === "undefined") {        // Open the popup
@@ -72,7 +72,7 @@ chrome.browserAction.onClicked.addListener(function(tab) {
 
     // Set a timer to bring the window to the front on another click
     // that follows fairly shortly.
-    {
+    if(tab) {
         let clickListener = function(tab) {
             if(viewWindowID && tab.windowId) {
                 chrome.windows.get(tab.windowId, moveTabFernViewToWindow);
@@ -89,7 +89,17 @@ chrome.browserAction.onClicked.addListener(function(tab) {
         chrome.browserAction.onClicked.addListener(clickListener);
     }
 
-});
+} //onClickedListener()
+
+chrome.browserAction.onClicked.addListener(onClickedListener);
+
+let onCommandListener = function(cmd) {
+    console.log("Received command " + cmd);
+    if(cmd == 'reveal-view') {
+        onClickedListener(null);    // null => no tab, so no summon
+    }
+} //onCommandListener()
+chrome.commands.onCommand.addListener(onCommandListener);
 
 // When a window is closed
 chrome.windows.onRemoved.addListener(function(windowId) {
@@ -123,7 +133,7 @@ function editNoteOnClick(info, tab)
 } //editNoteOnClick
 
 chrome.contextMenus.create({
-    id: 'editNote', title: 'Add/edit a note for the current tab',
+    id: 'editNote', title: _T('menuAddEditNoteThisTab'),
     contexts: ['browser_action'], onclick: editNoteOnClick
 });
 
@@ -156,14 +166,6 @@ chrome.runtime.onMessage.addListener(messageListener);
 //     'sample_setting': 'This is how you use Store.js to remember values'
 //});
 
-
-////example of using a message handler from the inject scripts
-//chrome.extension.onMessage.addListener(
-//  function(request, sender, sendResponse) {
-//      chrome.pageAction.show(sender.tab.id);
-//    sendResponse();
-//  });
-
 //////////////////////////////////////////////////////////////////////////
 // MAIN //
 
@@ -171,7 +173,10 @@ chrome.runtime.onMessage.addListener(messageListener);
 window.addEventListener('load',
     function() {
         console.log('TabFern: background window loaded');
-        setTimeout(loadView, 500);
+        if(getBoolSetting(CFG_POPUP_ON_STARTUP)) {
+            console.log('Opening popup window');
+            setTimeout(loadView, 500);
+        }
     },
     { 'once': true }
 );

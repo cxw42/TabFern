@@ -1,18 +1,28 @@
 // main.js: main script for src/view/index.html.
 // Part of TabFern.  Copyright (c) cxw42, r4j4h, 2017.
 
+(function (root, factory) {
+    if (typeof define === 'function' && define.amd) {
+        // AMD
+        define([ 'jquery', 'split', 'loglevel' ],factory);
+    } else if (typeof exports === 'object') {
+        // Node, CommonJS-like
+        module.exports = factory(require('jquery'), require('split'),
+            require('loglevel'));
+    } else {
+        // Browser globals (root is window)
+        root.Multidex = factory(root.$, root.split, root.log);
+    }
+}(this, main));
+
+function main($, split, log) {
+
 /// Modules loaded via requirejs
 let Modules = {};
-
-/// HACK - a global for loglevel because typing `Modules.log` everywhere is a pain.
-let log;
 
 /// The tree window itself.  REMINDER: Don't access window.frames until the
 /// document is fully loaded (after onload)
 let W;
-
-/// A variable that tree.html can access via window.parent (`var`, not `let`)
-var hello='world';
 
 //////////////////////////////////////////////////////////////////////////
 // PLUGINS //
@@ -32,20 +42,21 @@ function testCrossLoad()
 //////////////////////////////////////////////////////////////////////////
 // SPLIT //
 
-let split;
+let the_split;
 
 function doSplit()
 {
-    if(!!split) {
-        split.collapse(1);      // close #plugin-container
-        split.destroy();
-        split = undefined;
+    if(!!the_split) {   // Close the split
+        the_split.collapse(1);      // close #plugin-container
+        the_split.destroy();
+        the_split = undefined;
         //$('#tabfern-container').css('padding-top','0');
-    } else {
+
+    } else {            // Open the split
         let tree=$('#tree-container');
         let plugin=$('#plugin-container');
 
-        split = Modules['split'](
+        the_split = split(
                 [tree[0], plugin[0]],
                 {   direction: 'vertical',
                 }
@@ -64,30 +75,19 @@ function initMain()
     W = window.frames[0];
         // Thanks to https://stackoverflow.com/a/13913943/2877364 by
         // https://stackoverflow.com/users/1105384/shank
-    document.title = `TabFern (v${TABFERN_VERSION})`;
+    document.title = `${_T('wsShortName')} (v${TABFERN_VERSION})`;
+
+    window.doSplit = doSplit;    // export doSplit so tree.js can call it
 } //initMain
 
 //////////////////////////////////////////////////////////////////////////
 // MAIN //
 
-/// require.js modules used by this file
-let dependencies = [
-    'jquery', 'split', 'loglevel'
-];
+log.setDefaultLevel(log.levels.WARN);
+callbackOnLoad(initMain);
 
-function main(...args)
-{
-    // Hack: Copy the loaded modules into our Modules global
-    for(let depidx = 0; depidx < args.length; ++depidx) {
-        Modules[dependencies[depidx]] = args[depidx];
-    }
+return {};    // main doesn't provide access to any functions currently
 
-    log = Modules.loglevel;
-    log.setDefaultLevel(log.levels.DEBUG);  // TODO set to WARN for production
-
-    callbackOnLoad(initMain);
-} // main()
-
-require(dependencies, main);
+} //main
 
 // vi: set ts=4 sts=4 sw=4 et ai fo-=o fo-=r: //

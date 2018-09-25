@@ -11,7 +11,7 @@
 // maybe todo: option, true by default, to only open tree for collapsed,
 // closed window.
 
-// TODO break more of this into separate modules
+// TODO break more of this into separate modules.
 
 console.log(`=============================================================
 Loading TabFern ${TABFERN_VERSION}`);
@@ -52,11 +52,11 @@ var L;      ///< Holder --- L.log === log.  This gives closures access to the
 let Module_dependencies = [
     // Modules that are not specific to TabFern
     'jquery', 'jstree', 'jstree-actions', 'jstree-flagnode',
-    'jstree-because',
+    'jstree-because', 'jstree-multitype', 'jstree-redraw-event',
     'loglevel', 'hamburger', 'bypasser', 'multidex', 'justhtmlescape',
     'signals', 'export-file', 'import-file',
     'asynquence-contrib', 'asq-helpers', 'rmodal',
-    'tinycolor',
+    'tinycolor', 'spin-packed',
 
     // Shimmed modules.  Refer to these via Modules or *without* the
     // `window.` prefix so it will be easier to refactor references
@@ -70,7 +70,7 @@ let Module_dependencies = [
 
     // Modules of TabFern itself
     'view/const', 'view/item_details', 'view/sorts', 'view/item_tree',
-    'view/model', 'common/validation'
+    'view/model',
 ];
 
 /// Make short names in Modules for some modules.  shortname => longname
@@ -94,6 +94,9 @@ var currently_focused_winid = null;
 /// tabs to carry the node ID for confirmation.
 var window_is_being_restored = false;
 
+/// HACK to not prune windows we create!
+var do_not_prune_right_now = false;
+
 /// The size of the last-closed window, to be used as the
 /// size of newly-opened windows (whence the name).
 /// Should always have a valid value.
@@ -111,6 +114,11 @@ var ShowWhatIsNew = false;
 
 /// Array of URLs of the last-deleted window
 var lastDeletedWindow;
+
+/// Node ID of the last-closed saved window --- merging is prohibited with
+/// this node.  It's the last-closed saved and not the last-closed overall
+/// because nodes for unsaved windows disappear with their windows.
+var lastSavedClosedWindow_node_id = undefined;
 
 /// Did initialization complete successfully?
 var did_init_complete = false;
@@ -132,6 +140,41 @@ var Bypasser;
 ////////////////////////////////////////////////////////////////////////// }}}1
 // Module setup, and utilities // {{{1
 
+// Initialization support
+let init_step_num = 0;
+const LAST_INIT_STEP = 13;
+
+/// Update the initialization status counter
+let next_init_step = function(where) {
+    ++init_step_num;
+
+    let msg =
+        `${init_step_num}/${LAST_INIT_STEP}${where ? (': ' + where): ''}`;
+    log.info({Initialization:msg})
+
+    let elem = $(K.INIT_PROGRESS_SEL);
+    if(elem.css('display') !== 'block') return;
+
+    elem.text(msg);
+
+    elem.hide().show(1);
+        // Force redraw - thanks to
+        // https://stackoverflow.com/users/122543/juank and
+        // https://stackoverflow.com/users/402517/l-poellabauer
+        // at https://stackoverflow.com/a/8840703/2877364 .
+        // I used (1) instead of (0) since I saw it not work once with (0).
+
+}; //next_init_step
+
+/// Tell me if I forgot to update LAST_INIT_STEP
+let check_init_step_count = function() {
+    if(init_step_num !== LAST_INIT_STEP) {
+        let msg = `Step count was ${init_step_num} - update LAST_INIT_STEP`;
+        log.warn(msg);
+        window.alert(msg);
+    }
+}; //check_init_step_count
+
 /// Init those of our globals that don't require any data to be loaded.
 /// Call after Modules has been populated.
 function local_init()
@@ -147,15 +190,6 @@ function local_init()
     M = Modules['view/model'];
     ASQ = Modules['asynquence-contrib'];
     ASQH = Modules['asq-helpers'];
-
-    // Check development status.  Thanks to
-    // https://stackoverflow.com/a/12833511/2877364 by
-    // https://stackoverflow.com/users/1143495/konrad-dzwinel and
-    // https://stackoverflow.com/users/934239/xan
-    chrome.management.getSelf(function(info){
-        if(info.installType === 'development') is_devel_mode = true;
-    });
-
 } //init()
 
 /// Copy properties named #property_names from #source to #dest.
@@ -172,6 +206,12 @@ function copyTruthyProperties(dest, source, property_names, modifier)
     }
     return dest;
 } //copyTruthyProperties
+
+/// Escape text for use in a regex.  By Mozilla Contributors (CC-BY-SA 2.5+), from
+/// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions
+function escapeRegExp(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+} //escapeRegExp
 
 ////////////////////////////////////////////////////////////////////////// }}}1
 // General record helpers // {{{1
@@ -217,6 +257,95 @@ function unflagAllWindows() {
 } //unflagAllWindows()
 
 ////////////////////////////////////////////////////////////////////////// }}}1
+// Chrome-related utilities // {{{1
+
+/// Check the tabs in the window to make sure they match what we expect,
+/// and prune any we don't expect.
+/// This is because sometimes Chrome opens extra tabs but doesn't tell the
+/// chrome.windows.create callback about them.
+/// See https://bugs.chromium.org/p/chromium/issues/detail?id=762951 .
+/// See also commit 70638829e5c35a8c86b556dc62ddb3920e4a5e92,
+/// at tabfern/src/view/tree.js:997.
+///
+/// @param cwin The Chrome window
+/// @param expected_tab_count {Number}  How many tabs to keep, or 0 to leave
+///             the window empty except for a chrome://newtab.
+function pruneWindow(cwin, expected_tab_count)
+{
+    if(!cwin || +expected_tab_count < 0 || do_not_prune_right_now) return;
+    let count = +expected_tab_count || 1;   // 0 => one tab
+
+    ASQH.NowCC( (cc)=>{ chrome.windows.get(cwin.id, {populate: true}, cc); } )
+
+    .or((err)=>{
+        L.log.warn({'Could not get tabs in window': cwin, err});
+    })
+
+    .then( (done, inner_cwin)=>{
+
+        if(inner_cwin.tabs.length === 0) {
+            //chrome.tabs.create( {windowId: inner_cwin.id, index: 0} );
+            done.fail({"I can't check for pruning in zero-tab window":inner_cwin});
+            return;
+        }
+
+        let win_val = D.windows.by_win_id(inner_cwin.id);
+
+        // Make sure the first tab is a new tab, if desired.
+        // However, if this is a saved window, don't mess with tab 0.
+        if( expected_tab_count === 0 &&
+            !(win_val && win_val.keep === K.WIN_KEEP)
+        ) {
+            // Note: this is problematic if the last window to be open was a
+            // saved window, since this races against the merge check in
+            // tabOnCreated.  That is the reason for pruneWindowSetTimer().
+            let tabid = inner_cwin.tabs[0].id;
+
+            let seq = ASQ();    // for error reporting
+            // Don't change chrome: URLs, since those might be things
+            // like History (Ctl+H).
+            if(!inner_cwin.tabs[0].url.match(/^chrome:/i)) {
+                log.info(`Setting tab ${tabid} to chrome:newtab`);
+                chrome.tabs.update(tabid, {url: 'chrome://newtab'},
+                        ASQH.CCgo(seq));
+            }
+            // Currently we don't have anything else to do, so there's no
+            // seq.then() calls.  However, using seq still causes asynquence
+            // to report any errors in the chrome.tabs.update() call.
+
+        } //endif the caller wanted tab 0 === chrome://newtab
+
+        if(inner_cwin.tabs.length <= count) {
+            done();     // No need to prune --- we're done
+            return;
+        }
+
+        L.log.warn('Win ' + inner_cwin.id + ': expected ' +
+                count + ' tabs; got ' +
+                inner_cwin.tabs.length + ' tabs --- pruning.');
+
+        let to_prune=[];
+
+        // Assume that the unexpected tabs are all at the right-hand
+        // end, since that's the only behaviour I've observed.
+
+        for(let tab_idx = count;
+            tab_idx < inner_cwin.tabs.length;
+            ++tab_idx) {
+            to_prune.push(inner_cwin.tabs[tab_idx].id);
+        } //foreach extra tab
+
+        L.log.warn('Pruning ' + to_prune);
+        chrome.tabs.remove(to_prune, ASQH.CC(done));
+    })
+
+    .or((err)=>{
+        L.log.warn({'Could not prune tabs in window': cwin, err});
+    })
+    ;
+} //pruneWindow
+
+////////////////////////////////////////////////////////////////////////// }}}1
 // UI Controls // {{{1
 
 /// Show a confirmation dialog with Yes/No/Cancel, and Do not ask again.
@@ -234,7 +363,25 @@ function showConfirmationModalDialog(message_html) {
     let cleanup_cbk = cleanup.errfcb();  // pause the sequence
 
     // Modified from the rmodal sample at https://rmodal.js.org/
-    $('#confirm-dialog-question').html(message_html);
+    let jqdlg = $('#confirm-dialog');
+    jqdlg.find('#confirm-dialog-question').html(message_html);
+
+    // i18n
+    const KEY_YES = _T('dlgYesAccelerator');
+    const KEY_NO = _T('dlgNoAccelerator');
+    const KEY_CANCEL = _T('dlgCancelAccelerator');
+
+    jqdlg.find('#confirm-dialog-yes')
+        .attr('accesskey', KEY_YES)
+        .html(_T('dlgYesHTML'));
+    jqdlg.find('#confirm-dialog-no')
+        .attr('accesskey', KEY_NO)
+        .html(_T('dlgNoHTML'));
+    jqdlg.find('#confirm-dialog-cancel')
+        .attr('accesskey', KEY_CANCEL)
+        .html(_T('dlgCancelHTML'));
+    jqdlg.find('#labelNotAgain')
+        .html(_T('dlgDoNotAskAgainHTML'));
 
     dlg = new (Modules['rmodal'])(
         document.getElementById('confirm-dialog'),
@@ -279,11 +426,11 @@ function showConfirmationModalDialog(message_html) {
                     ev.key.toLowerCase(): null;
 
         // Send the events on the next cycle.  Not sure if this is required.
-        if(key === 'y') {
+        if(key === KEY_YES) {
             ASQ().val(()=>{$("#confirm-dialog .btn[data-which='yes']").click();});
-        } else if(key === 'n') {
+        } else if(key === KEY_NO) {
             ASQ().val(()=>{$("#confirm-dialog .btn[data-which='no']").click();});
-        } else if(key === 'c') {
+        } else if(key === KEY_CANCEL) {
             ASQ().val(()=>{$("#confirm-dialog .btn[data-which='cancel']").click();});
         } else {
             dlg.keydown(ev);
@@ -332,7 +479,7 @@ function saveTree(save_ephemeral_windows = true, cbk = undefined)
 
     // Get the raw data for the whole tree.  Can't use $(...) because closed
     // tree nodes aren't in the DOM.
-    let root_node = T.treeobj.get_node($.jstree.root);    //from get_json() src
+    let root_node = T.root_node();
     if(!root_node || !root_node.children) {
         if(typeof cbk === 'function') cbk(new Error("Can't get root node"));
         return;
@@ -403,14 +550,72 @@ function saveTree(save_ephemeral_windows = true, cbk = undefined)
                 return;     // Saved OK
             }
             //else there was an error
-            let msg = "TabFern: couldn't save: " +
-                            chrome.runtime.lastError.toString();
+            let msg = _T('errCouldNotSave', chrome.runtime.lastError.toString());
             log.error(msg);
             window.alert(msg);     // The user needs to know
             if(typeof cbk === 'function') cbk(new Error(msg));
         }
     ); //storage.local.set
 } //saveTree()
+
+////////////////////////////////////////////////////////////////////////// }}}1
+// Other actions // {{{1
+
+/// Make a string replacement on the URLs of all the tabs in a window
+/// @param node_id {string} the ID of the window's node
+/// @param node {Object} the window's node
+function actionURLSubstitute(node_id, node, unused_action_id, unused_action_el)
+{
+    let win_val = D.windows.by_node_id(node_id);
+    if(!win_val) return;
+
+    // TODO replace window.prompt with an in-DOM GUI.
+    let old_text = window.prompt(_T('dlgpTextToReplace'));
+    if(old_text === null) return;   // user cancelled
+
+    let new_text = window.prompt(_T('dlgpReplacementText'));
+    if(new_text === null) return;   // user cancelled
+
+    if(!old_text) return;   // search pattern is required
+
+    // TODO URL escaping of new_text?
+
+    let findregex;
+    if(old_text.length > 1 && old_text[0]==='/' &&
+            old_text[old_text.length-1]==='/') {            // Regex
+        findregex = new RegExp(old_text.slice(1, -1));  // drop the slashes
+            // TODO support flags as well
+    } else {                                                // Literal
+        findregex = new RegExp(escapeRegExp(old_text));
+    }
+
+    for(let tab_node_id of node.children) {
+        let tab_val = D.tabs.by_node_id(tab_node_id);
+        if(!tab_val || !tab_val.tab_id) continue;
+        let new_url = tab_val.raw_url.replace(findregex, new_text);
+            // TODO URL escaping?
+            // TODO also replace in favicon URL?
+        if(new_url === tab_val.raw_url) continue;
+
+        if(win_val.isOpen) {
+            // Make the change and let tabOnUpdated update the model.
+            ASQH.NowCC((cc)=>{      // ASQ for error reporting
+                chrome.tabs.update(tab_val.tab_id, {url: new_url}, cc);
+            });
+        } else {
+            tab_val.raw_url = new_url;
+            M.refresh_label(tab_val);   // do what tabOnUpdated() would
+            M.refresh_icon(tab_val);
+            M.refresh_tooltip(tab_val);
+        }
+    } // foreach child
+
+    // If the window is closed, update the hash.  Otherwise, tabOnUpdated()
+    // handled it.
+    if(!win_val.isOpen) {
+        M.updateOrderedURLHash(win_val);
+    }
+} //actionURLSubstitute
 
 ////////////////////////////////////////////////////////////////////////// }}}1
 // jstree-action callbacks // {{{1
@@ -467,14 +672,14 @@ function actionRenameWindow(node_id, node, unused_action_id, unused_action_el)
     if(!win_val) return;
 
     // TODO replace window.prompt with an in-DOM GUI.
-    let win_name = window.prompt('New window name?',
+    let win_name = window.prompt(_T('dlgpNewWindowName'),
             M.remove_unsaved_markers(M.get_raw_text(win_val)));
     if(win_name === null) return;   // user cancelled
 
     // A bit of a hack --- if the user hits OK on the default text for a
     // no-name window, change it to "Saved tabs."  TODO find a better way.
-    if(win_name === 'Unsaved') {
-        win_val.raw_title = 'Saved tabs';
+    if(win_name === _T('labelUnsaved') || win_name === '') {
+        win_val.raw_title = _T('labelSavedTabs');
     } else {
         win_val.raw_title = win_name;
     }
@@ -644,19 +849,24 @@ function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el,
     } //doDeletion()
 
     // Prompt for confirmation, if necessary
-    if( is_internal ||
+    let no_confirmation = !!is_internal;
+
+    no_confirmation = no_confirmation ||
         (win_val.keep === K.WIN_KEEP &&
-            !getBoolSetting(CFG_CONFIRM_DEL_OF_SAVED)) ||
+            !getBoolSetting(CFG_CONFIRM_DEL_OF_SAVED));
+
+    no_confirmation = no_confirmation ||
         (win_val.keep === K.WIN_NOKEEP &&
             !getBoolSetting(CFG_CONFIRM_DEL_OF_UNSAVED))
-    ) { // No confirmation required - just do it
+
+    if(no_confirmation) { // No confirmation required - just do it
         doDeletion();
 
     } else {    // Confirmation required
 
-        showConfirmationModalDialog(
-            'Delete window "' + M.get_raw_text(win_val) + '"?'
-        )
+        (showConfirmationModalDialog(
+            _T('dlgpDeleteWindow', M.get_raw_text(win_val))
+        ))
 
         // Processing after the dialog closes
         .val((result)=>{
@@ -730,6 +940,14 @@ function actionOpenRestOfTabs(win_node_id, win_node, unused_action_id, unused_ac
 // }}}2
 // == Tab actions ======================================================== {{{2
 
+/// Move a window to the top of the tree.
+function actionMoveWinToTop(node_id, node, unused_action_id, unused_action_el)
+{
+    if(!node) return;
+    T.treeobj.move_node(node, T.root_node(), 1);
+        // 1 => after the holding pen
+} //actionMoveWinToTop
+
 /// Toggle the top border on a node.  This is a hack until I can add
 /// dividers.
 function actionToggleTabTopBorder(node_id, node, unused_action_id, unused_action_el)
@@ -760,7 +978,7 @@ function actionEditTabBullet(node_id, node, unused_action_id, unused_action_el)
     if(!val || val.ty !== K.IT_TAB) return;
 
     // TODO replace window.prompt with an in-DOM GUI.
-    let question = `Note for tab "${val.raw_title}"?`;
+    let question = _T('dlgpTabNote', val.raw_title);
     let new_bullet = window.prompt(question, val.raw_bullet || '');
     if(new_bullet === null) return;   // user cancelled
 
@@ -815,23 +1033,38 @@ function actionDeleteTab(node_id, node, unused_action_id, unused_action_el,
     } //doDeletion()
 
     // Prompt for confirmation, if necessary
+    let prompt_name = 'dlgpDeleteTab';  // in messages.json
     let is_keep = (parent_val.keep === K.WIN_KEEP);
     let is_nokeep = (parent_val.keep === K.WIN_NOKEEP);
-    let need_confirmation = //!is_internal &&
-        (
-            (is_keep && getBoolSetting(CFG_CONFIRM_DEL_OF_SAVED_TABS)) ||
-            (is_nokeep && getBoolSetting(CFG_CONFIRM_DEL_OF_UNSAVED_TABS))
-        );
 
-    if( !need_confirmation ||
-        (/^((chrome:\/\/newtab\/?)|(about:blank))$/i.test(tab_val.raw_url))
-    ) {
+    // General rule...
+    let need_confirmation = (
+        (is_keep && getBoolSetting(CFG_CONFIRM_DEL_OF_SAVED_TABS)) ||
+        (is_nokeep && getBoolSetting(CFG_CONFIRM_DEL_OF_UNSAVED_TABS))
+    );
+
+    // ... but we don't usually need confirmation for empty tabs...
+    if(/^((chrome:\/\/newtab\/?)|(about:blank))$/i.test(tab_val.raw_url)) {
+        need_confirmation = false;
+    }
+
+    // ... except when such a tab (or any tab being deleted) is the last
+    // tab in its window.  In that case, check the window settings as well.
+    if(parent_node.children.length === 1) {
+        if( (is_keep && getBoolSetting(CFG_CONFIRM_DEL_OF_SAVED)) ||
+            (is_nokeep && getBoolSetting(CFG_CONFIRM_DEL_OF_UNSAVED)) ) {
+            need_confirmation = true;
+            prompt_name = 'dlgpDeleteTabAndWindow';
+        }
+    }
+
+    if(!need_confirmation) {
         // No confirmation required - just do it
         doDeletion();
 
     } else {    // Confirmation required
-        showConfirmationModalDialog(
-            'Delete tab "' + M.get_html_label(tab_val) + '"?'
+        (showConfirmationModalDialog(
+            _T(prompt_name, M.get_html_label(tab_val)))
         )
 
         // Processing after the dialog closes
@@ -945,7 +1178,7 @@ function addTabNodeActions(tab_node_id)
         // "Actually" event check in treeOnSelect.
         //html: `<img src="/assets/icons/pencil.png" class=${K.ACTION_BUTTON_WIN_CLASS} />`,
         grouped: true,
-        title: 'Add/edit label',
+        title: _T('ttEditTab'),
         callback: actionEditTabBullet,
         dataset: { action: 'editBullet' }
     });
@@ -965,7 +1198,7 @@ function addTabNodeActions(tab_node_id)
         class: 'fff-cross ' + K.ACTION_BUTTON_WIN_CLASS,
         text: '\xa0',
         grouped: true,
-        title: "Delete (close; don't save)",
+        title: _T('ttDeleteTab'),
         callback: actionDeleteTab,
         dataset: { action: 'deleteTab' }
     });
@@ -978,8 +1211,13 @@ function addTabNodeActions(tab_node_id)
 function createNodeForTab(ctab, parent_node_id)
 {
     let {node_id, val} = M.vnRezTab(parent_node_id);
-    if(!node_id) return false;
-    M.markTabAsOpen(val, ctab);
+    if(!node_id) {
+        log.debug({"<M> Could not create record for ctab":ctab,parent_node_id});
+        return false;
+    }
+    if(!M.markTabAsOpen(val, ctab)) {
+        log.debug({"<M> Could not mark tab as open":ctab,val});
+    }
 
     addTabNodeActions(node_id);
 
@@ -993,7 +1231,10 @@ function createNodeForTab(ctab, parent_node_id)
 function createNodeForClosedTabV1(tab_data_v1, parent_node_id)
 {
     let {node_id, val} = M.vnRezTab(parent_node_id);
-    if(!node_id) return false;
+    if(!node_id) {
+        log.debug({"<M> Could not create record for closed tab":tab_data_v1,parent_node_id});
+        return false;
+    }
 
     // Copy properties into the details
     copyTruthyProperties(val, tab_data_v1,
@@ -1027,7 +1268,7 @@ function addWindowNodeActions(win_node_id)
         class: 'fff-pencil ' + K.ACTION_BUTTON_WIN_CLASS,
         text: '\xa0',
         grouped: true,
-        title: 'Edit text',
+        title: _T('ttEditWin'),
         callback: actionRenameWindow,
         dataset: { action: 'renameWindow' }
     });
@@ -1037,7 +1278,7 @@ function addWindowNodeActions(win_node_id)
         class: 'fff-picture-delete ' + K.ACTION_BUTTON_WIN_CLASS,
         text: '\xa0',
         grouped: true,
-        title: "Close and save",
+        title: _T('ttCloseWin'),
         callback: actionCloseWindowAndSave,
         dataset: { action: 'closeWindow' }
     });
@@ -1047,16 +1288,54 @@ function addWindowNodeActions(win_node_id)
         class: 'fff-cross ' + K.ACTION_BUTTON_WIN_CLASS,
         text: '\xa0',
         grouped: true,
-        title: "Delete (close; don't save)",
+        title: _T('ttDeleteWin'),
         callback: actionDeleteWindow,
         dataset: { action: 'deleteWindow' }
     });
 
 } //addWindowNodeActions
 
+/// Set a timer to prune the window later.
+/// @param win_val  The value for the window
+/// @param cwin     (Optional) The Chrome window.  If not provided, the
+///                 one stashed in win_val (if any) will be used.
+let pruneWindowSetTimer = function(win_val, cwin) {
+    log.debug({"Bump of prune timer requested for":win_val, cwin});
+    if(!win_val.prune_data) {
+        win_val.prune_data = {timer_id: undefined, cwin: cwin || undefined};
+    }
+
+    if(win_val.prune_data.timer_id) {
+        window.clearTimeout(win_val.prune_data.timer_id);
+        win_val.prune_data.timer_id = undefined;
+    }
+
+    if(do_not_prune_right_now) return;
+
+    log.debug({"   Bumping prune timer for":win_val, cwin});
+    win_val.prune_data.timer_id = window.setTimeout(
+        ()=>{
+            if(!win_val.prune_data.cwin) return;
+            if(!did_init_complete) {
+                log.info({'Still initializing, so skipping prune-to-0 check of':
+                                win_val.prune_data.cwin});
+                return;
+            }
+
+            if(do_not_prune_right_now) return;
+            log.info({'Checking for pruning-to-0 of':win_val.prune_data.cwin});
+            pruneWindow(win_val.prune_data.cwin, 0);
+                // 0 => only leave a chrome://newtab there
+            win_val.prune_data = undefined;
+                // Once pruning is done, don't leave stale data around.
+        },
+        K.WIN_PRUNE_TIMER_MS    // UGLY HACK - give the merge check time to run
+    );
+} //pruneWindowSetTimer
+
 /// Create a tree node for open Chrome window #cwin.
 /// @returns the tree-node ID, or falsy on error.
-function createNodeForWindow(cwin, keep)
+function createNodeForWindow(cwin, keep, no_prune)
 {
     if(!cwin || !cwin.id) return;
 
@@ -1065,10 +1344,13 @@ function createNodeForWindow(cwin, keep)
 
     let is_first = (!!cwin && getBoolSetting(CFG_NEW_WINS_AT_TOP));
     let {node_id, val} = M.vnRezWin(is_first);
-    if(!node_id) return false;    //sanity check
+    if(!node_id) {      //sanity check
+        log.debug({"<M> Could not create tree node for open cwin":cwin,keep,no_prune});
+        return false;
+    }
 
     M.markWinAsOpen(val, cwin);
-    if(keep) {
+    if(keep === K.WIN_KEEP) {
         M.remember(node_id, false);
     } else {
         M.mark_win_as_unsaved(val, false);
@@ -1081,6 +1363,13 @@ function createNodeForWindow(cwin, keep)
             log.info('   ' + tab.id.toString() + ': ' + tab.title);
             createNodeForTab(tab, node_id);     //TODO handle errors
         }
+    }
+
+    // Remove extra tabs if the user wants
+    if(!no_prune && !do_not_prune_right_now
+        && getBoolSetting(CFG_PRUNE_NEW_WINDOWS)
+    ) {
+        pruneWindowSetTimer(val, cwin);
     }
 
     return node_id;
@@ -1099,22 +1388,30 @@ function createNodeForClosedWindowV1(win_data_v1)
     // Make a node for a closed window.  The node is marked KEEP.
     // TODO don't mark it keep if it's ephemeral and still open.
     let {node_id, val} = M.vnRezWin();
-    if(!node_id) return false;
-    M.remember(node_id, false);         // Closed windows are KEEP by design
+    if(!node_id) {
+        log.debug({"<M> Could not create node for closed window":win_data_v1});
+        return false;
+    }
+
+    if(!M.remember(node_id, false)) {   // Closed windows are KEEP by design
+        log.debug({"<M> Could not mark closed window as KEEP":win_data_v1, node_id, val});
+    }
 
     // TODO restore ordered_url_hash
 
     // Mark recovered windows
     if(is_ephemeral) {
-        M.add_subtype(node_id, K.NST_RECOVERED);
+        if(!M.add_subtype(node_id, K.NST_RECOVERED)) {
+            log.debug({"<M> Could not add subtype RECOVERED":node_id, val, win_data_v1});
+        }
     }
 
     // Update the item details
     let new_title;
     if( is_ephemeral && (typeof win_data_v1.raw_title !== 'string') ) {
-        new_title = 'Recovered tabs';
+        new_title = _T('labelRecoveredTabs');
     } else if(is_ephemeral) {   // and raw_title is a string
-        new_title = String(win_data_v1.raw_title) + ' (Recovered)';
+        new_title = String(win_data_v1.raw_title) + _T('labelRecoveredTabsPostfix');
     } else {    // not ephemeral
         let n = win_data_v1.raw_title;
         new_title = (typeof n === 'string') ? n : null;
@@ -1203,7 +1500,7 @@ function connectChromeWindowToTreeWindowItem(cwin, existing_win, options = {})
 
         // Do we need these?
         ctab.url = ctab.url || tab_val.raw_url || 'about:blank';
-        ctab.title = ctab.title || tab_val.raw_title || '## Unknown title ##';
+        ctab.title = ctab.title || tab_val.raw_title || _T('labelUnknownTitle');
 
         let pinned = tab_val.isPinned;
         M.markTabAsOpen(tab_node_id, ctab);
@@ -1221,6 +1518,10 @@ function connectChromeWindowToTreeWindowItem(cwin, existing_win, options = {})
 
     M.updateTabIndexValues(existing_win.node.id);
     T.treeobj.redraw_node(existing_win.node);
+
+    // Prune any extra tabs Chrome may have created due to bugs.
+    pruneWindow(cwin, existing_win.node.children.length);
+
     return true;
 } //connectChromeWindowToTreeWindowItem()
 
@@ -1343,11 +1644,28 @@ var loadSavedWindowsFromData = (function(){
 
             // Load it
             if(vernum in versionLoaders) {
-                loader_retval = versionLoaders[vernum](data);
-            } else {
+
+                try {
+                    T.treeobj.suppress_redraw(true);        // EXPERIMENTAL
+                    loader_retval = versionLoaders[vernum](data);
+
+                } catch(e) {
+                    log.error(
+                        `Error loading version-${vernum} save data: ${e}`);
+                    loader_retval = false;
+                    // Continue out of the catch block so the
+                    // suppress_redraw(false) will be called.
+                }
+
+                T.treeobj.suppress_redraw(false);           // EXPERIMENTAL
+                T.treeobj.redraw(true);     // Just in case the experiment
+                                            // had different results than
+                                            // we expected!
+
+            } else {    // unknown version
                 log.error("I don't know how to load save data from version " + vernum);
                 break READIT;
-            }
+            } //endif known version else
 
             if(loader_retval === false) {
                 log.error("There was a problem loading save data of version " + vernum);
@@ -1364,10 +1682,10 @@ var loadSavedWindowsFromData = (function(){
 /// @param {function} next_action If provided, will be called when loading
 ///                     is complete.
 function loadSavedWindowsIntoTree(next_action) {
-    $(K.INIT_PROGRESS_SEL).text("5/13");
+    next_init_step('Load saved windows');       // TODO _T() the step names
 
     chrome.storage.local.get(K.STORAGE_KEY, function(items) {
-        $(K.INIT_PROGRESS_SEL).text("6/13");
+        next_init_step('Got save data');
 
         READIT:
         if(isLastError()) {
@@ -1497,8 +1815,10 @@ function treeOnSelect(evt_unused, evt_data)
                 // Tabs
                 case 'editBullet':
                     actionEditTabBullet(node.id, node, null, null); break;
+
                 case 'closeTab':
                     actionCloseTabAndSave(node.id, node, null, null); break;
+
                 case 'deleteTab':
                     actionDeleteTab(node.id, node, null, null, evt_data.event);
                         // as deleteWindow, above.
@@ -1520,7 +1840,7 @@ function treeOnSelect(evt_unused, evt_data)
     let node_val, is_tab=false, is_win=false;
     let tab_val, win_val, tab_node, win_node;
 
-    let win_id_to_highlight;
+    let win_id_to_highlight_and_raise;
         // If assigned, this window will be brought to the front at the
         // end of this function.
     let win_node_id;
@@ -1559,7 +1879,7 @@ function treeOnSelect(evt_unused, evt_data)
         if(is_win) {    // clicked on an open window
 
             if( M.isWinPartlyOpen(win_node) &&
-                (getStringSetting(CFG_OPEN_REST_ON_CLICK) === CFG_OROC_DO)
+                (getStringSetting(CFGS_OPEN_REST_ON_CLICK) === CFG_OROC_DO)
             ) {
                 action = ActionTy.open_rest;
             } else {
@@ -1584,19 +1904,31 @@ function treeOnSelect(evt_unused, evt_data)
     }
 
     if(action === ActionTy.activate_tab) {
-        chrome.tabs.highlight({
-            windowId: tab_val.win_id,
-            tabs: [tab_val.index]     // Jump to the clicked-on tab
-        }, ignore_chrome_error);
+
+        if(BROWSER_TYPE === 'ff') {
+            ASQ().promise(
+                browser.tabs.update(node_val.tab_id,{active:true})
+            )
+            .or((err)=>{
+                log.warn({"Could not highlight tab":node_val,err});
+            });
+
+        } else {    //Chrome
+            chrome.tabs.highlight({
+                windowId: node_val.win_id,
+                tabs: [node_val.index]     // Jump to the clicked-on tab
+            }, ignore_chrome_error);
+        }
+
         //log.info('flagging treeonselect' + node.id);
         T.treeobj.flag_node(tab_node);
-        win_id_to_highlight = tab_val.win_id;
+        win_id_to_highlight_and_raise = tab_val.win_id;
 
     } else if(action === ActionTy.activate_win) {
-        win_id_to_highlight = node_val.win_id;
+        win_id_to_highlight_and_raise = node_val.win_id;
 
     } else if(action === ActionTy.open_rest) {
-        win_id_to_highlight = win_val.win_id;
+        win_id_to_highlight_and_raise = win_val.win_id;
         actionOpenRestOfTabs(win_node.id, win_node, null, null);
 
     } else if(  action === ActionTy.open_win ||
@@ -1609,13 +1941,15 @@ function treeOnSelect(evt_unused, evt_data)
         let urls=[];
         let tab_node_ids;
 
-        if(action === ActionTy.open_win) {
+        if(action === ActionTy.open_win) {      // Open all tabs
             for(let child_id of win_node.children) {
                 let child_val = D.tabs.by_node_id(child_id);
                 urls.push(child_val.raw_url);
+                    // TODO: in Firefox, you can't call window.create with a
+                    // URL of about:addons or about:debugging.
             }
             tab_node_ids = win_node.children;
-        } else {    // Open only one tab
+        } else {                                // Open only one tab
             urls.push(tab_val.raw_url);
             tab_node_ids = [tab_node.id];
         }
@@ -1625,47 +1959,66 @@ function treeOnSelect(evt_unused, evt_data)
 
         // Open the window
         window_is_being_restored = true;
-        chrome.windows.create(
-            {
-                url: urls
-              , focused: true
-              , left: newWinSize.left
-              , top: newWinSize.top
-              , width: newWinSize.width
-              , height: newWinSize.height
-            },
-            function(cwin) {
-                // Note: In testing, this happens after the winOnCreated,
-                // tabOnCreated, and tabOnActivated events.  I don't know
-                // if that's guaranteed, though.
-                window_is_being_restored = false;
+        let create_data = {
+            url: urls
+          , left: newWinSize.left
+          , top: newWinSize.top
+          , width: newWinSize.width
+          , height: newWinSize.height
+        }
+        if(BROWSER_TYPE !== 'ff') {
+            create_data.focused = true;
+        }
 
-                if(isLastError()) {
-                    window.alert(
-                        `Could not open window: ${chrome.runtime.lastError}`);
-                    return;     // with the state in the tree unchanged
-                }
+        let win_create_cbk = function win_create_cbk(cwin) {
+            // TODO: in Firefox, I'm not sure if this gets called after
+            // an error.  Try to open a saved window with a tab
+            // for about:addons or about:debugging to trigger an error.
 
-                // Update the tree and node mappings
-                log.info('Adding nodeid map for winid ' + cwin.id);
-                log.trace({urls, tab_node_ids, tab_node, tab_val,
-                            win_node, win_val});     // keep them in scope
+            // Note: In testing, this happens after the winOnCreated,
+            // tabOnCreated, and tabOnActivated events.  I don't know
+            // if that's guaranteed, though.
+            window_is_being_restored = false;
 
-                connectChromeWindowToTreeWindowItem(
-                    cwin,
-                    { val: win_val, node: win_node },
-                    { repin: true, tab_node_ids }
-                );
+            if(isLastError()) {
+                window.alert(_T('errCouldNotOpenWindow',
+                                    chrome.runtime.lastError));
+                return;     // with the state in the tree unchanged
+            }
 
-                // Set the highlights in the tree appropriately
-                T.treeobj.flag_node(win_node.id);
-                already_flagged_window = true;
-                flagOnlyCurrentTab(cwin);
+            // Update the tree and node mappings
+            log.info('Adding nodeid map for winid ' + cwin.id);
+            log.trace({urls, tab_node_ids, tab_node, tab_val,
+                        win_node, win_val});     // keep them in scope
 
-                win_id_to_highlight = cwin.id;
+            connectChromeWindowToTreeWindowItem(
+                cwin,
+                { val: win_val, node: win_node },
+                { repin: true, tab_node_ids }
+            );
 
-            } //windows.create callback
-        ); //windows.create
+            // Set the highlights in the tree appropriately
+            T.treeobj.flag_node(win_node.id);
+            already_flagged_window = true;
+            flagOnlyCurrentTab(cwin);
+
+            win_id_to_highlight_and_raise = cwin.id;
+                // TODO FIXME - this is ineffective here.
+                // May be related to #138
+
+        }; //win_create_cbk callback
+
+        log.info({'Creating window': create_data});
+
+        try {   // On FF, create() throws on restricted URLs
+            chrome.windows.create(create_data, win_create_cbk);
+
+        } catch(e) {
+            log.warn({'Could not create window': e, create_data});
+            window_is_being_restored = false;
+            window.alert(_T('errCouldNotCreateWindow',e));
+            return;
+        }
 
     } else if(action === ActionTy.open_tab_in_win) {    // add tab to existing win
         // Figure out where to put it
@@ -1679,6 +2032,7 @@ function treeOnSelect(evt_unused, evt_data)
 
         // Open the tab
         tab_val.being_opened = true;
+        // TODO FIXME wrap this in a try/catch for FF
         chrome.tabs.create(
             {
                 windowId: win_val.win_id,
@@ -1697,20 +2051,22 @@ function treeOnSelect(evt_unused, evt_data)
                 already_flagged_window = true;
                 chrome.windows.get(win_val.win_id, {populate:true}, flagOnlyCurrentTabCC);
 
-                win_id_to_highlight = win_val.win_id;
+                win_id_to_highlight_and_raise = win_val.win_id;
+                    // TODO FIXME - this is ineffective here.
+                    // May be related to #138
 
             } //tabs.create callback
         ); //tabs.create
-    }
+
+    } //endif open_tab_in_win
 
     // Set highlights for the window, unless we had to open a new window.
     // If we opened a new window, the code above handled this.
-    if(!already_flagged_window && win_id_to_highlight) {
+    if(!already_flagged_window && win_id_to_highlight_and_raise) {
         unflagAllWindows();
 
         // Clear the other windows' tabs' flags.
-        let node_id = D.windows.by_win_id(win_id_to_highlight, 'node_id');
-        //if(node_id) T.treeobj.clear_flags_by_type(K.NTs_TAB, node_id, true);
+        let node_id = D.windows.by_win_id(win_id_to_highlight_and_raise, 'node_id');
         if(node_id) {
             T.treeobj.clear_flags_by_multitype(K.IT_TAB, node_id, true);
             // Don't clear flags from children of node_id
@@ -1720,9 +2076,11 @@ function treeOnSelect(evt_unused, evt_data)
 
     } //endif need to flag
 
-    if(win_id_to_highlight) {   // Activate the window, if it still exists.
-        log.debug({'About to activate':win_id_to_highlight});
-        chrome.windows.update(win_id_to_highlight,{focused:true}, ignore_chrome_error);
+    // Activate the window, if it still exists.
+    if(win_id_to_highlight_and_raise) {
+        log.debug({'About to activate': win_id_to_highlight_and_raise});
+        chrome.windows.update(win_id_to_highlight_and_raise, {focused:true},
+                ignore_chrome_error);
             // winOnFocusChanged will set the flag on the newly-focused window
     } //endif
 
@@ -1731,52 +2089,58 @@ function treeOnSelect(evt_unused, evt_data)
 ////////////////////////////////////////////////////////////////////////// }}}1
 // Chrome window/tab callbacks // {{{1
 
-function winOnCreated(win)
+function winOnCreated(cwin)
 {
-    log.info({'Window created': win.id,
+    log.info({'Window created': cwin.id,
                 "Restore?": (window_is_being_restored ? "yes" : "no"),
-                win
+                cwin
             });
     //log.info('clearing flags winoncreated');
 
     T.treeobj.clear_flags();
+
     if(window_is_being_restored) {
-        return;     // don't create an extra copy
-    }
+        return;     // don't create an extra copy - the chrome.window.create
+    }               // callback in treeOnSelect will handle it.
 
     // Save the window's size
-    if(win.type === 'normal') {
-        winSizes[win.id] = getWindowSizeFromWindowRecord(win);
-        newWinSize = winSizes[win.id];
+    if(cwin.type === 'normal') {
+        winSizes[cwin.id] = getWindowSizeFromWindowRecord(cwin);
+        newWinSize = winSizes[cwin.id];
             // Chrome appears to use the last-resized window as its size
             // template even when you haven't closed it, so do similarly.
             // ... Well, maybe the last-resized window with a non-blank tab ---
             // not entirely sure.
     }
 
-    createNodeForWindow(win, K.WIN_NOKEEP);
+    createNodeForWindow(cwin, K.WIN_NOKEEP);
     saveTree();     // for now, brute-force save on any change.
 } //winOnCreated
 
 /// Update the tree when the user closes a browser window
-function winOnRemoved(win_id)
+function winOnRemoved(cwin_id)
 {
-    if(win_id == my_winid) return;  // does this happen?
+    if(cwin_id == my_winid) return;  // does this happen?
 
-    log.info({'Window removed': win_id});
+    log.info({'Window removed': cwin_id});
 
     // Stash the size of the window being closed as the size for
     // reopened windows.
-    if(win_id in winSizes) {
-        // TODO only do this is win_id's type is "normal"
-        newWinSize = winSizes[win_id];
-        delete winSizes[win_id];
+    if(cwin_id in winSizes) {
+        // TODO only do this is cwin_id's type is "normal"
+        newWinSize = winSizes[cwin_id];
+        delete winSizes[cwin_id];
     }
 
-    let node_val = D.windows.by_win_id(win_id);
+    let node_val = D.windows.by_win_id(cwin_id);
     if(!node_val) return;   // e.g., already closed
     let node_id = node_val.node_id;
     if(!node_id) return;
+
+    if(node_val.keep === K.WIN_KEEP) {
+        lastSavedClosedWindow_node_id = node_id;
+    }
+
     let node = T.treeobj.get_node(node_id);
     if(!node) return;
 
@@ -1920,7 +2284,7 @@ function initFocusHandler()
         else change_from = FC_FROM_OPEN;
 
         // Uncomment if you are debugging focus-change behaviour
-        //log.info({change_from, old_win_id, change_to, win_id});
+        log.info({change_from, old_win_id, change_to, win_id});
 
         let same_window = (old_win_id === win_id);
         previously_focused_winid = win_id;
@@ -2013,15 +2377,18 @@ var tabOnCreated = (function(){
 
     /// Make an ASQ step that will check if the window matches an existing
     /// window.
-    function make_merge_check_step(ctab)
+    function make_merge_check_step(ctab, win_val)
     {
         return function merge_check_inner(check_done) {
             //DEBUG
             log.debug({[`merge check tab ${ctab.id} win ${ctab.windowId}`]:
                         ctab});
 
+
             let seq = ASQH.NowCCTry((cc)=>{
                 chrome.windows.get(ctab.windowId,{populate:true}, cc);
+                // If there's a prune pending, give the merge time to work
+                pruneWindowSetTimer(win_val);
             });
 
             seq.then((done, cwin_or_err)=>{
@@ -2032,8 +2399,9 @@ var tabOnCreated = (function(){
 
                 let cwin = cwin_or_err;
                 let merge_to_win = winAlreadyExistsInTree(cwin);
-                MERGE: if(merge_to_win && merge_to_win.val &&
-                    !merge_to_win.val.isOpen    // don't hijack other open wins
+                MERGE: if(merge_to_win && merge_to_win.val
+                    && !merge_to_win.val.isOpen // don't hijack other open wins
+                    && merge_to_win.val.node_id
                 ) {
                     log.info({
                         [`merge ${cwin.id} Found merge target in tree for`]: cwin,
@@ -2051,6 +2419,12 @@ var tabOnCreated = (function(){
                     let merge_from_win_val = D.windows.by_win_id(cwin.id);
                     if(!merge_from_win_val) {
                         log.debug(`merge ${cwin.id}: bail - could not get merge_from_win_val`);
+                        break MERGE;
+                    }
+
+                    if(merge_to_win.val.node_id === lastSavedClosedWindow_node_id) {
+                        log.info(`merge ${cwin.id}: bail - I ` +
+                            "won't merge with the most-recently-closed window");
                         break MERGE;
                     }
 
@@ -2090,7 +2464,7 @@ var tabOnCreated = (function(){
             hash = url.hash.slice(1);
             if(!hash) return false;
 
-            if(url.href.split("#")[0] !==
+            if(url.href.split('#')[0] !==
                 chrome.runtime.getURL('/src/view/newtab.html')
             ) {
                 return false;
@@ -2136,11 +2510,15 @@ var tabOnCreated = (function(){
     {
         log.info({'Tab created': ctab.id, ctab});
 
-        let win_node_id = D.windows.by_win_id(ctab.windowId, 'node_id')
+        let win_val = D.windows.by_win_id(ctab.windowId);
+        let win_node_id = win_val ? win_val.node_id : undefined;
         if(!win_node_id) {
             log.info(`Unknown window ID ${ctab.windowId} - ignoring`);
             return;
         }
+
+        // If there's a prune pending, give the merge time to work
+        pruneWindowSetTimer(win_val);
 
         let tab_node_id;
 
@@ -2196,7 +2574,7 @@ var tabOnCreated = (function(){
 
             // Design decision: after creating the node, check if it's a
             // duplicate.
-            seq.try(make_merge_check_step(ctab));
+            seq.try(make_merge_check_step(ctab, win_val));
                 // .try => always run the following saveTree
 
             seq.then((done)=>{saveTree(true, done);});
@@ -2222,8 +2600,15 @@ function tabOnUpdated(tabid, changeinfo, ctab)
     let node = T.treeobj.get_node(tab_node_id);
     tab_node_val.isOpen = true;     //lest there be any doubt
 
+    log.debug({"   Details for updated ctab":tabid,tab_node_val,node});
+
     // Caution: changeinfo doesn't always have all the changed information.
     // Therefore, we check changeinfo and ctab.
+
+    // TODO refactor the following into a separate routine that can be
+    // used to update closed or open tabs' tree items.  Maybe move it
+    // to model.js as well.  This will reduce code duplication, e.g., in
+    // actionURLSubstitute.
 
     // URL
     let new_raw_url = changeinfo.url || ctab.url || 'about:blank';
@@ -2251,7 +2636,7 @@ function tabOnUpdated(tabid, changeinfo, ctab)
     }
 
     // title
-    let new_raw_title = changeinfo.title || ctab.title || 'Tab';
+    let new_raw_title = changeinfo.title || ctab.title || _T('labelBlankTabTitle');
     if(new_raw_title !== tab_node_val.raw_title) {
         dirty = true;
         should_refresh_label = true;
@@ -2353,38 +2738,64 @@ function tabOnRemoved(tabid, removeinfo)
 
     // If the window is closing, do not remove the tab records.
     // The cleanup will be handled by winOnRemoved().
-    if(removeinfo.isWindowClosing) return;
+    if(removeinfo.isWindowClosing) {
+        log.debug({'Window is closing, so nothing to do for ctab':tabid,removeinfo});
+        return;
         // TODO also mark this as non-recovered, maybe?
+    }
 
     let window_node_id = D.windows.by_win_id(removeinfo.windowId, 'node_id');
-    if(!window_node_id) return;
+    if(!window_node_id) {
+        log.debug({'Bailing - no window_node_id for ctab':tabid,removeinfo});
+        return;
+    }
 
     {   // Keep the locals here out of the scope of the closure below.
         // Get the parent (window)
         let window_node = T.treeobj.get_node(window_node_id);
-        if(!window_node) return;
+        if(!window_node) {
+            log.debug({'Bailing - no window_node for ctab':tabid,removeinfo});
+            return;
+        }
 
-        // Get the tab's node
-        let tab_node_id = D.tabs.by_tab_id(tabid, 'node_id');
-        if(!tab_node_id) return;
-        let tab_node = T.treeobj.get_node(tab_node_id);
-        if(!tab_node) return;
-
+        // Get the node
         let tab_val = D.tabs.by_tab_id(tabid);
 
         // See if it's a tab we have already marked as removed.  If so,
         // whichever code marked it is responsible, and we're off the hook.
-        if(!tab_val || tab_val.tab_id === K.NONE) return;
+        if(!tab_val || tab_val.tab_id === K.NONE) {
+            log.debug({"Bailing, but it's probably OK - no tab_val for ctab":tabid, tab_val, removeinfo});
+            return;
+        }
+
+        // Get the tab's node
+        if(!tab_val.node_id) {
+            log.debug({'Bailing - no tab_val.node_id for ctab':tabid,removeinfo});
+            return;
+        }
+
+        let tab_node = T.treeobj.get_node(tab_val.node_id);
+        if(!tab_node) {
+            log.debug({'Bailing - no tab_node for ctab':tabid,removeinfo});
+            return;
+        }
 
         // Remove the node
+        log.debug({'Removing value for ctab':tabid,tab_val,removeinfo});
         D.tabs.remove_value(tab_val);
             // So any events that are triggered won't try to look for a
             // nonexistent tab.
+
+        log.debug({[`Removing tree node ${tab_node.id} for ctab`]:tabid,tab_node,tab_val,removeinfo});
         T.treeobj.because('chrome','delete_node',tab_node);
     }
 
+    log.debug({'Updating tab index values after removing ctab':tabid,window_node_id,removeinfo});
+
     // Refresh the tab.index values for the remaining tabs
     M.updateTabIndexValues(window_node_id);
+
+    log.debug({'Tab index values updated after removing ctab':tabid,window_node_id,removeinfo});
 
     saveTree();
 } //tabOnRemoved
@@ -2445,11 +2856,22 @@ function tabOnAttached(tabid, attachinfo)
     M.updateTabIndexValues(new_win_val.node_id);
 } //tabOnAttached
 
+/// Handle tab replacement, which can occur with preloads.  E.g., #129.
 function tabOnReplaced(addedTabId, removedTabId)
 {
-    // Do we get this?
-    log.warn('Tab being replaced: added ' + addedTabId + '; removed ' +
+    log.info('Tab being replaced: added ' + addedTabId + '; removed ' +
                 removedTabId);
+    let tab_val = D.tabs.by_tab_id(removedTabId);
+    if(!tab_val) {
+        log.warn('onReplaced: No tab found for removed' +
+                    `tab ID ${removedTabId} - bailing`);
+        return;
+    }
+
+    D.tabs.change_key(tab_val, 'tab_id', addedTabId);
+    log.info({
+        [`Tab replacement ${removedTabId}->${addedTabId}: new value`]:tab_val
+    });
 } //tabOnReplaced
 
 ////////////////////////////////////////////////////////////////////////// }}}1
@@ -2514,18 +2936,39 @@ function timedResizeDetector()
 ////////////////////////////////////////////////////////////////////////// }}}1
 // Hamburger menu // {{{1
 
+/// Open a window, setting do_not_prune_right_now around the call.
+let open_window_with_url = function(url) {
+    do_not_prune_right_now = true;
+    let seq =
+        K.openWindowForURL(url || 'about:blank');
+    seq
+    .val(()=>{
+        do_not_prune_right_now = false;
+    })
+    .or(()=>{
+        do_not_prune_right_now = false;
+    });
+    return seq;
+};
+
 /// Open a new window with the TabFern homepage.
 function hamAboutWindow()
 {
-    K.openWindowForURL('https://cxw42.github.io/TabFern/');
+    open_window_with_url('https://cxw42.github.io/TabFern/');
 } //hamAboutWindow()
+
+/// Reload the TabFern window (or, at least, the tree iframe)
+function hamReloadTree()
+{
+    window.location.reload(true);
+} //hamReloadTree()
 
 /// Open the Settings window.  If ShowWhatIsNew, also updates the K.LASTVER_KEY
 /// information used by checkWhatIsNew().
 function hamSettings()
 {
     // Actually open the window
-    K.openWindowForURL(chrome.extension.getURL(
+    open_window_with_url(chrome.extension.getURL(
         '/src/settings/index.html' +
         (ShowWhatIsNew ? '#open=last' : ''))
     );
@@ -2566,14 +3009,14 @@ function hamRestoreFromBackup()
             let parsed = JSON.parse(text);
             ok = loadSavedWindowsFromData(parsed);
             if(!ok) {
-                log.warn({'Could not load file':e});
-                window.alert("I couldn't load the file " + filename);
+                let errmsg = _T('errCouldNotLoadFile', filename, e);
+                log.warn({[errmsg]:e});
+                window.alert(errmsg);
             }
         } catch(e) {
-            log.warn({'Could not load file (exception thrown)':e});
-            window.alert("File " + filename + ' is not something I can '+
-                'understand as a TabFern save file.  Parse error code was: ' +
-                e);
+            let errmsg = _T('errCouldNotParseFile');
+            log.warn({[errmsg + ' (exception thrown)']:e});
+            window.alert(errmsg);
         }
 
         // If we were successful, save.  Otherwise, a reload of the extension
@@ -2588,9 +3031,9 @@ function hamRestoreFromBackup()
         let importer = new Modules.importer(document, '.tabfern');
         importer.getFileAsString(processFile);
     } catch(e) {
-        log.warn({'Could not run importer':e});
-        window.alert('Unexpected error while trying to load the file.  ' +
-            'Parse error code was: ' + e);
+        let errmsg = _T('errCouldNotRunImporter', e);
+        log.warn({[errmsg]:e});
+        window.alert(errmsg);
     }
 } //hamRestoreFromBackup()
 
@@ -2601,7 +3044,8 @@ function hamRestoreLastDeleted()
     // Make v0 save data from the last-deleted-window URLs, just because
     // v0 is convenient, and the backward-compatibility guarantee of
     // loadSavedWindowsFromData means we won't have to refactor this.
-    let tabs=[]
+    let tabs=[];
+    // TODO RESUME HERE --- convert user-facing text to _T()
     for(let url of lastDeletedWindow) {
         tabs.push({text: 'Restored', url: url});
     }
@@ -2612,7 +3056,7 @@ function hamRestoreLastDeleted()
     if(typeof wins_loaded === 'number' && wins_loaded > 0) {
         // We loaded the window successfully.  Open it, if the user wishes.
         if(getBoolSetting(CFG_RESTORE_ON_LAST_DELETED, false)) {
-            let root = T.treeobj.get_node($.jstree.root);
+            let root = T.root_node();
             let node_id = root.children[root.children.length-1];
             T.treeobj.select_node(node_id);
         }
@@ -2635,7 +3079,7 @@ function hamCollapseAll()
 function hamSorter(compare_fn)
 {
     return function() {
-        let arr = T.treeobj.get_node($.jstree.root).children;
+        let arr = T.root_node().children;
         Modules['view/sorts'].stable_sort(arr, compare_fn);
             // children[] holds node IDs, so compare_fn will always get strings.
         T.treeobj.redraw(true);   // true => full redraw
@@ -2644,7 +3088,7 @@ function hamSorter(compare_fn)
 
 function hamRunJasmineTests()
 {
-    K.openWindowForURL(chrome.extension.getURL('/test/index.html'));
+    open_window_with_url(chrome.extension.getURL('/test/index.html'));
 } // hamRunJasmineTests
 
 function hamSortOpenToTop()
@@ -2680,7 +3124,7 @@ function getHamburgerMenuItems(node, _unused_proxyfunc, e)
     // Add development-specific items, if any
     if(is_devel_mode) {
         items.splitItem = {
-            label: 'Split test',
+            label: _T('menuSplitTest'),
             action: function(){
                 if(window.parent && window.parent.doSplit)
                     window.parent.doSplit();
@@ -2688,21 +3132,29 @@ function getHamburgerMenuItems(node, _unused_proxyfunc, e)
         };
 
         items.jasmineItem = {
-            label: 'Run Jasmine tests',
+            label: _T('menuJasmineTests'),
             action: hamRunJasmineTests,
             icon: 'fa fa-fort-awesome',
             separator_after: true,
         };
     } //endif is_devel_mode
 
+    items.reloadItem = {
+        label: _T('menuReload'),
+        action: hamReloadTree,
+        icon: 'fa fa-refresh',
+        separator_after: true,
+    };
+
     items.infoItem = {
-            label: "Online info",
+            label: _T('menuOnlineInfo'),
             title: "The TabFern web site, with a basic usage guide and the credits",
+                // TODO also _T() the title fields throughout
             action: hamAboutWindow,
             icon: 'fa fa-info',
         };
     items.settingsItem = {
-            label: "Settings and offline help",
+            label: _T('menuSettings'),
             title: "Also lists the features introduced with each version!",
             action: hamSettings,
             icon: 'fa fa-cog' + (ShowWhatIsNew ? ' tf-notification' : ''),
@@ -2712,58 +3164,54 @@ function getHamburgerMenuItems(node, _unused_proxyfunc, e)
 
     if(Array.isArray(lastDeletedWindow) && lastDeletedWindow.length>0) {
         items.restoreLastDeletedItem = {
-            label: "Restore last deleted",
+            label: _T('menuRestoreLastDeleted'),
             action: hamRestoreLastDeleted,
         };
     }
 
     items.backupItem = {
-            label: "Backup now",
+            label: _T('menuBackupNow'),
             icon: 'fa fa-floppy-o',
             action: hamBackup,
         };
     items.restoreItem = {
-            label: "Load contents of a backup",
+            label: _T('menuLoadBackupContents'),
             action: hamRestoreFromBackup,
             icon: 'fa fa-folder-open-o',
             separator_after: true,
         };
 
     items.sortItem = {
-            label: 'Sort',
+            label: _T('menuSort'),
             icon: 'fa fa-sort',
             submenu: {
                 openToTopItem: {
-                    label: 'Open windows to top',
+                    label: _T('menuSortOpenToTop'),
                     title: 'Sort ascending by window name, case-insensitive, '+
                             'and put the open windows at the top of the list.',
                     action: hamSortOpenToTop,
                     icon: 'fff-text-padding-top'
                 },
                 azItem: {
-                    label: 'A-Z',
+                    label: _T('menuSortAZ'),
                     title: 'Sort ascending by window name, case-insensitive',
                     action: hamSorter(Modules['view/sorts'].compare_node_text),
                     icon: 'fa fa-sort-alpha-asc',
                 },
                 zaItem: {
-                    label: 'Z-A',
+                    label: _T('menuSortZA'),
                     title: 'Sort descending by window name, case-insensitive',
                     action: hamSorter(Modules['view/sorts'].compare_node_text_desc),
                     icon: 'fa fa-sort-alpha-desc',
                 },
                 numItem09: {
-                    label: '0-9',
+                    label: _T('menuSort09'),
                     title: 'Sort ascending by window name, numeric, case-insensitive',
                     action: hamSorter(Modules['view/sorts'].compare_node_num),
                     icon: 'fa fa-sort-numeric-asc',
                 },
-                // Test of sub-submenus --- jstree doesn't seem to correctly
-                // constrain them to the viewport.
-                //test: { label: 'test', submenu:
-                //  { foo: {label:'foo'},bar:{label:'bar'},bat:{label:'bat'} }},
                 numItem90: {
-                    label: '9-0',
+                    label: _T('menuSort90'),
                     title: 'Sort descending by window name, numeric, case-insensitive',
                     action: hamSorter(Modules['view/sorts'].compare_node_num_desc),
                     icon: 'fa fa-sort-numeric-desc',
@@ -2772,12 +3220,12 @@ function getHamburgerMenuItems(node, _unused_proxyfunc, e)
         }; //sortItem
 
     items.expandItem = {
-            label: "Expand all",
+            label: _T('menuExpandAll'),
             icon: 'fa fa-plus-square',
             action: hamExpandAll,
         };
     items.collapseItem = {
-            label: "Collapse all",
+            label: _T('menuCollapseAll'),
             icon: 'fa fa-minus-square',
             action: hamCollapseAll,
         };
@@ -2810,11 +3258,11 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
     if(nodeType === K.IT_TAB) {
         let tabItems = {
             toggleBorderItem: {
-                label: 'Toggle top border',
+                label: _T('menuToggleTopBorder'),
                 action: function(){actionToggleTabTopBorder(node.id, node, null, null)}
             },
             editBulletItem: {
-                label: 'Add/edit a note',
+                label: _T('menuAddEditNote'),
                 icon: 'fff-pencil',
 
                 // Use K.nextTickRunner so the context menu can be
@@ -2834,9 +3282,8 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
                 };
         }
 
-
         return tabItems;
-    }
+    } //endif K.IT_TAB
 
     // --- Context menu for a window ---
 
@@ -2844,7 +3291,7 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
         let winItems = {};
 
         winItems.renameItem = {
-                label: 'Rename',
+                label: _T('menuRename'),
                 icon: 'fff-pencil',
 
                 // Use K.nextTickRunner so the context menu can be
@@ -2857,16 +3304,16 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
         // Forget/Remember
         if( val.isOpen && (val.keep === K.WIN_KEEP) ) {
             winItems.forgetItem = {
-                label: "Forget but don't close",
-                title: "Do not save this window when it is closed",
+                label: _T('menuForget'),
+                title: _T('menuttForget'),
                 icon: 'fa fa-chain-broken',
                 action:
                     function(){actionForgetWindow(node.id, node, null, null);}
             };
         } else if( val.isOpen && (val.keep === K.WIN_NOKEEP) ) {
             winItems.rememberItem = {
-                label: "Remember",
-                title: "Save this window when it is closed",
+                label: _T('menuRemember'),
+                title: _T('menuttRemember'),
                 icon: 'fa fa-link',
                 action:
                     function(){actionRememberWindow(node.id, node, null, null);}
@@ -2875,7 +3322,7 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
 
         if(val.isOpen) {
             winItems.closeItem = {
-                    label: 'Close and remember',
+                    label: _T('menuCloseAndRemember'),
                     icon: 'fff-picture-delete',
                     action:
                         function(){actionCloseWindowAndSave(node.id,node,null,null);}
@@ -2883,7 +3330,7 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
         }
 
         if( M.isWinPartlyOpen(node) &&
-            (getStringSetting(CFG_OPEN_REST_ON_CLICK) === CFG_OROC_DO_NOT)
+            (getStringSetting(CFGS_OPEN_REST_ON_CLICK) === CFG_OROC_DO_NOT)
         ) {
             winItems.openAllItem = {
                 label: 'Open all tabs',
@@ -2893,12 +3340,33 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
             };
         }
 
+        {   // If not the first item, add "Move to top"
+            let parent_node = T.treeobj.get_node(node.parent);
+            if(parent_node.children[1] !== node.id) {
+                // children[1], not [0], because [0] is the holding pen.
+                winItems.toTopItem = {
+                    label: _T('menuMoveToTop'),
+                    icon: 'fff-text-padding-top',
+                    action: ()=>{actionMoveWinToTop(node.id,node,null,null);},
+                };
+            }
+        }
+
         winItems.deleteItem = {
-                label: 'Delete',
+                label: _T('menuDelete'),
                 icon: 'fff-cross',
                 separator_before: true,
                 action:
                     function(){actionDeleteWindow(node.id, node, null, null);}
+            };
+
+        winItems.urlSubstituteItem = {
+                label: _T('menuURLSubstitute'),
+                title: _T('menuttURLSubstitute'),
+                icon: 'arrow-switch',
+                separator_before: true,
+                action:
+                    function(){actionURLSubstitute(node.id, node, null, null);}
             };
 
         return winItems;
@@ -3497,7 +3965,7 @@ function checkWhatIsNew(selector)
                 { [K.LASTVER_KEY]: 'installed, but no version viewed yet' },
                 function() {
                     ignore_chrome_error();
-                    K.openWindowForURL('https://cxw42.github.io/TabFern/#usage');
+                    open_window_with_url('https://cxw42.github.io/TabFern/#usage');
                 }
             );
         }
@@ -3576,7 +4044,7 @@ function delete_all_closed_nodes(are_you_sure)
 {
     if(!are_you_sure) return;
 
-    let root = T.treeobj.get_node($.jstree.root);
+    let root = T.root_node();
     if(!root) return
 
     for(let i=root.children.length-1; i>0; --i) {
@@ -3590,14 +4058,16 @@ function delete_all_closed_nodes(are_you_sure)
 } //delete_all_closed_nodes
 
 ////////////////////////////////////////////////////////////////////////// }}}1
-// Startup / shutdown // {{{1
+// Startup / shutdown details // {{{1
+
+// Initialization routines // {{{2
 
 let custom_bg_color = false;
 
 /// Initialization that happens before the full DOM is loaded
 function preLoadInit()
 {
-    $(K.INIT_PROGRESS_SEL).text("1/13");
+    next_init_step('preload');
     if(getBoolSetting(CFG_HIDE_HORIZONTAL_SCROLLBARS)) {
         document.querySelector('html').classList += ' tf--feature--hide-horizontal-scrollbars';
     }
@@ -3642,34 +4112,28 @@ function preLoadInit()
         body.classList += ` jstree-${getThemeName()}`;
     }
 
-    // Apply custom background, if any
+    // Apply custom background, if any.
+    // NOTE: need to keep this logic in sync with the validator for
+    // CFGS_BACKGROUND in src/common/common.js.  TODO remove this duplication.
     BG: if(haveSetting(CFGS_BACKGROUND)) {
         let bg = getStringSetting(CFGS_BACKGROUND, '').trim();
 
         if(bg.length < 2) break BG;     // no valid color is one character
 
-        if(Modules['common/validation'].isValidColor(bg)) {
+        if(Validation.isValidColor(bg)) {
             custom_bg_color = bg;
             break BG;
         }
 
-        // not a color --- try to parse it as a URL
-        try {
-            let url = new URL(bg);
-            if(url.protocol === "file:" ||
-                    //url.protocol === "http:" ||
+        // not a color --- try to parse it as a URL.
+        if(Validation.isValidURL(bg,
+                    ['file', 'https', 'data', 'chrome-extension'])) {
                     // For now, disallow http so we don't have to worry
                     // about HTTP-hijacking attacks.  I don't know of any
                     // attack vectors in CSS background images off-hand,
                     // but that doesn't mean there aren't any :) .
-                    url.protocol === "https:" ||
-                    url.protocol === "data:" ||
-                    url.protocol === "chrome-extension:") {
-                custom_bg_color = `url("${url.href}")`;
-            }
+            custom_bg_color = `url("${bg}")`;
             break BG;
-        } catch(e) {
-            // do nothing
         }
     } //endif have a background setting
 
@@ -3679,10 +4143,25 @@ function preLoadInit()
 
 } //preLoadInit
 
-/// Beginning of the onload initialization.
+// Beginning of the onload initialization.
+
+/// Check development status in an ASQ step.  Thanks to
+/// https://stackoverflow.com/a/12833511/2877364 by
+/// https://stackoverflow.com/users/1143495/konrad-dzwinel and
+/// https://stackoverflow.com/users/934239/xan
+function determine_devel_mode(done)
+{
+    ASQH.NowCC((cc)=>{ chrome.management.getSelf(cc); })
+    .val((info)=>{
+        is_devel_mode = (info.installType === 'development');
+    })
+    .pipe(done);
+} //determine_devel_mode()
+
+/// Initialization we can do before we have our window ID
 function basicInit(done)
 {
-    $(K.INIT_PROGRESS_SEL).text("2/13");
+    next_init_step('basic initialization');
     log.info('TabFern tree.js initializing view - ' + TABFERN_VERSION);
 
     Hamburger = Modules.hamburger('#hamburger-menu', getHamburgerMenuItems
@@ -3715,7 +4194,7 @@ function basicInit(done)
 /// Called after ASQ.try(chrome.runtime.sendMessage)
 function createMainTreeIfWinIdReceived_catch(done, win_id_msg_or_error)
 {
-    $(K.INIT_PROGRESS_SEL).text("4/13");
+    next_init_step('create main tree');
     if(ASQH.is_asq_try_err(win_id_msg_or_error)) {
         // This is fatal
         return done.fail("Couldn't get win ID: " + win_id_msg_or_error.catch);
@@ -3759,7 +4238,7 @@ function createMainTreeIfWinIdReceived_catch(done, win_id_msg_or_error)
             drivers: [Modules.dmauro_keypress]
         },
         function initialized(err) {
-            $(K.INIT_PROGRESS_SEL).text("5/13");
+            next_init_step('context-menu support');
             if ( err ) {
                 console.log({['Failed loading a shortcut driver!  Initializing '+
                             'context menu with no shortcut driver']:err});
@@ -3773,9 +4252,57 @@ function createMainTreeIfWinIdReceived_catch(done, win_id_msg_or_error)
     );
 } //createMainTreeIfWinIdReceived_catch()
 
+/// Called after ASQ.try(chrome.storage.local.get(LOCN_KEY))
+function moveWinToLastPositionIfAny_catch(done, items_or_err)
+{   // move the popup window to its last position/size.
+    // If there was an error (e.g., nonexistent key), just
+    // accept the default size.
+
+    next_init_step('reposition window');
+    if(ASQH.is_asq_try_err(items_or_err)) {
+        log.warn({"Couldn't get saved location":$.extend({},items_or_err)});
+        // Note: $.extend() used to force evaluation at the time of logging
+    } else { //we have a location
+        log.info({"Got saved location":$.extend({},items_or_err)});
+
+        let parsed = items_or_err[K.LOCN_KEY];
+        if( (parsed !== null) && (typeof parsed === 'object') ) {
+            // + and || are to provide some sensible defaults - thanks to
+            // https://stackoverflow.com/a/7540412/2877364 by
+            // https://stackoverflow.com/users/113716/user113716
+            let size_data =
+                {
+                      'left': +parsed.left || 0
+                    , 'top': +parsed.top || 0
+                    , 'width': Math.max(+parsed.width || 300, 100)
+                        // don't let it shrink too small, in case something went wrong
+                    , 'height': Math.max(+parsed.height || 600, 200)
+                };
+            last_saved_size = $.extend({}, size_data);
+            chrome.windows.update(my_winid, size_data,
+                (win)=>{
+                    if(isLastError()) {
+                        log.error(`Could not move window: ${chrome.runtime.lastError}`);
+                    } else {
+                        log.info({"Updated window size":$.extend({},win)});
+                    }
+                }
+            );
+        } else {
+            log.warn({"Could not parse size from":$.extend({},items_or_err)})
+        } //endif got an item else
+
+    } //endif storage.local.get worked
+
+    // Start the detection of moved or resized windows
+    setTimeout(timedResizeDetector, K.RESIZE_DETECTOR_INTERVAL_MS);
+
+    done();
+} //moveWinToLastPositionIfAny_catch()
+
 function addOpenWindowsToTree(done, cwins)
 {
-    $(K.INIT_PROGRESS_SEL).text("8/13");
+    next_init_step('add open windows to tree');
     let dat = {};
     let focused_win_id;
 
@@ -3802,7 +4329,7 @@ function addOpenWindowsToTree(done, cwins)
         if(!existing_win || (existing_win.val && existing_win.val.isOpen)) {
             // Doesn't exist, or the duplicate is already open (e.g., if two
             // windows are open with the same set of tabs)
-            createNodeForWindow(cwin, K.WIN_NOKEEP);
+            createNodeForWindow(cwin, K.WIN_NOKEEP, true);  //true=>no pruning
         } else {
             connectChromeWindowToTreeWindowItem(cwin, existing_win);
         } //endif window already exists
@@ -3820,7 +4347,7 @@ function addOpenWindowsToTree(done, cwins)
 
 function addEventListeners(done)
 {
-    $(K.INIT_PROGRESS_SEL).text("9/13");
+    next_init_step('add event listeners');
     // At this point, the saved and open windows have been loaded into the
     // tree.  Therefore, we can position the action groups.  We already
     // saved the position, so do not need to specify it here.
@@ -3889,59 +4416,11 @@ function addEventListeners(done)
     done();
 } //addEventListeners
 
-/// Called after ASQ.try(chrome.storage.local.get(LOCN_KEY))
-function moveWinToLastPositionIfAny_catch(done, items_or_err)
-{   // move the popup window to its last position/size.
-    // If there was an error (e.g., nonexistent key), just
-    // accept the default size.
-
-    $(K.INIT_PROGRESS_SEL).text("11/13");
-    if(ASQH.is_asq_try_err(items_or_err)) {
-        log.warn({"Couldn't get saved location":$.extend({},items_or_err)});
-        // Note: $.extend() used to force evaluation at the time of logging
-    } else { //we have a location
-        log.info({"Got saved location":$.extend({},items_or_err)});
-
-        let parsed = items_or_err[K.LOCN_KEY];
-        if( (parsed !== null) && (typeof parsed === 'object') ) {
-            // + and || are to provide some sensible defaults - thanks to
-            // https://stackoverflow.com/a/7540412/2877364 by
-            // https://stackoverflow.com/users/113716/user113716
-            let size_data =
-                {
-                      'left': +parsed.left || 0
-                    , 'top': +parsed.top || 0
-                    , 'width': Math.max(+parsed.width || 300, 100)
-                        // don't let it shrink too small, in case something went wrong
-                    , 'height': Math.max(+parsed.height || 600, 200)
-                };
-            last_saved_size = $.extend({}, size_data);
-            chrome.windows.update(my_winid, size_data,
-                (win)=>{
-                    if(isLastError()) {
-                        log.error(`Could not open window: ${chrome.runtime.lastError}`);
-                    } else {
-                        log.info({"Updated window size":$.extend({},win)});
-                    }
-                }
-            );
-        } else {
-            log.warn({"Could not parse size from":$.extend({},items_or_err)})
-        } //endif got an item else
-
-    } //endif storage.local.get worked
-
-    // Start the detection of moved or resized windows
-    setTimeout(timedResizeDetector, K.RESIZE_DETECTOR_INTERVAL_MS);
-
-    done();
-} //moveWinToLastPositionIfAny_catch()
-
 /// The last function to be called after all other initialization has
 /// completed successfully.
 function initTreeFinal(done)
 {
-    $(K.INIT_PROGRESS_SEL).text("12/13");
+    next_init_step('finalize');
 
     // Tests of different ways of failing init - for debugging only
     //throw new Error("oops");      // DEBUG
@@ -3967,7 +4446,8 @@ function initTreeFinal(done)
     done();
 } //initTreeFinal()
 
-// ----------------------------------------------
+// ---------------------------------------------- }}}2
+// Shutdown routines // {{{2
 
 /// Save the tree on window.unload
 function shutdownTree()
@@ -3985,6 +4465,9 @@ function shutdownTree()
         saveTree(false);    // false => don't save visible, non-saved windows
     }
 } //shutdownTree()
+
+// ---------------------------------------------- }}}2
+// Error reporting // {{{2
 
 /// Show a warning if initialization hasn't completed.
 function initIncompleteWarning()
@@ -4005,9 +4488,13 @@ function initIncompleteWarning()
     }
 } //initIncompleteWarning()
 
-//////////////////////////////////////////////////////////////////////////
-// MAIN //
+// }}}2
 
+//////////////////////////////////////////////////////////////////////// }}}1
+// MAIN // {{{1
+
+/// The main function.  Called once RequireJS has loaded all the
+/// dependencies.
 function main(...args)
 {
     // Hack: Copy the loaded modules into our Modules global
@@ -4022,7 +4509,8 @@ function main(...args)
 
     local_init();
 
-    $(K.INIT_PROGRESS_SEL).text("0/13");
+    //$(K.INIT_PROGRESS_SEL).css('display','block');  //DEBUG
+    $(K.INIT_PROGRESS_SEL).text("waiting for browser");
 
     // Timer to display the warning message if initialization doesn't complete
     // quickly enough.
@@ -4038,32 +4526,57 @@ function main(...args)
 
     // Run the main init steps once the page has loaded
     let s = ASQ();
-    callbackOnLoad(s.errfcb());
-    $(K.INIT_PROGRESS_SEL).text("waiting for browser");
+    callbackOnLoad(s.errfcb());     // Just using errfcb() to kick off s.
+    // Note: on one test on Firefox, the rest of the chain never fired.
+    // Not sure why.
 
-    s.then(basicInit)
+    // Start a spinner if loading takes more than 1 s
+    let spinner = new Spinner();
+    let spin_starter = function() {
+        if(spinner) spinner.spin($('#tabfern-container')[0]);
+    };
+    //let spin_timer = window.setTimeout(spin_starter, 1000);
+
+    s.then(determine_devel_mode)
+    .then(basicInit)
+
+    .val(spin_starter)
+        // for now, always start --- loadSavedWindowsIntoTree is synchronous
+
     .try((done)=>{
         // Get our Chrome-extensions-API window ID from the background page.
         // I don't know a way to get this directly from the JS window object.
         // TODO maybe getCurrent?  Not sure if that's reliable.
-        $(K.INIT_PROGRESS_SEL).text("3/13");
+        next_init_step('get window ID');
         chrome.runtime.sendMessage({msg:MSG_GET_VIEW_WIN_ID}, ASQH.CC(done));
     })
     .then(createMainTreeIfWinIdReceived_catch)
-    .then(loadSavedWindowsIntoTree)
-    .then((done)=>{
-        $(K.INIT_PROGRESS_SEL).text("7/13");
-        chrome.windows.getAll({'populate': true}, ASQH.CC(done));
-    })
-    .then(addOpenWindowsToTree)
-    .then(addEventListeners)
+
     .try((done)=>{
-        $(K.INIT_PROGRESS_SEL).text("10/13");
+        next_init_step('get saved location');
         // Find out where the view was before, if anywhere
         chrome.storage.local.get(K.LOCN_KEY, ASQH.CC(done));
     })
     .then(moveWinToLastPositionIfAny_catch)
+
+    .then(loadSavedWindowsIntoTree)
+    .then((done)=>{
+        next_init_step('get open windows');
+        chrome.windows.getAll({'populate': true}, ASQH.CC(done));
+    })
+    .then(addOpenWindowsToTree)
+    .then(addEventListeners)
     .then(initTreeFinal)
+
+    .val(check_init_step_count)
+
+    // Stop the spinner, if it started
+    .val(()=>{
+        spinner.stop();
+        spinner = null;
+        //clearTimeout(spin_timer);
+    })
+
     .or((err)=>{
         $(K.INIT_MSG_SEL).text(
             $(K.INIT_MSG_SEL).text() + "\n" + err

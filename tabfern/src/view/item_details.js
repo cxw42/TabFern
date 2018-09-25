@@ -6,25 +6,22 @@
 // Copyright (c) 2017 Chris White, Jasmine Hegman.
 
 (function (root, factory) {
-    let imports=['jquery','jstree','loglevel', 'multidex', 'view/const' ];
-
     if (typeof define === 'function' && define.amd) {
         // AMD
-        define(imports, factory);
+        define([ 'jquery','jstree','loglevel', 'multidex', 'view/const' ],
+                factory);
     } else if (typeof exports === 'object') {
         // Node, CommonJS-like
-        let requirements = [];
-        for(let modulename of imports) {
-            requirements.push(require(modulename));
-        }
-        module.exports = factory(...requirements);
+        module.exports = factory(
+            require('jquery'), require('jstree'), require('loglevel'),
+            require('multidex'), require('view/const')
+        );
     } else {
         // Browser globals (root is `window`)
-        let requirements = [];
-        for(let modulename of imports) {
-            requirements.push(root[modulename]);
-        }
-        root.tabfern_item_details = factory(...requirements);
+        root.D = factory(
+            root.$, root.$.jstree, root.log,
+            root.multidex, root.K
+        );
     }
 }(this, function ($, _unused_jstree_placeholder_, log, multidex, K ) {
     "use strict";
@@ -80,12 +77,13 @@
         ],
         [ //other data
             'win',          // the actual Window record from chrome
-                // TODO remove this --- win_id should be enough
+                // TODO? remove this --- win_id should be enough
             'raw_title',    // the window's title (e.g., "Window")
             'isOpen',       // whether the window is open or not
             'keep',         // whether the window should be saved or not
             //'raw_bullet',   // User-provided text (brief).  null => none
                 // Not currently used.
+            'prune_data',   // {timer_id,cwin} of a setTimeout used for pruning
         ]);
 
     /// Find a node's value in the model, regardless of type.

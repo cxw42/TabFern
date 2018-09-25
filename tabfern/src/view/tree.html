@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
-<!-- view/index.html: TabFern popup main source.
-     CC-BY-SA 4.0 International -->
+<!-- view/index.html: TabFern popup main source.  CC-BY-SA 4.0 International -->
 <head>
     <title>TabFern tree</title>
     <meta http-equiv="Content-Type" content="text/html" />
@@ -14,6 +13,7 @@
     <link href="/assets/fontawesome/css/font-awesome.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" type="text/css" media="all" href="/assets/css/rmodal-no-bootstrap.css" />
     <link rel="stylesheet" type="text/css" media="all" href="/assets/css/custom-scrollbars.css" /><!-- TODO load dynamically only if needed? -->
+    <link rel="stylesheet" type="text/css" media="all" href="/assets/css/spinjs.css" />
 
     <!-- jstree theme stylesheets are loaded before this -->
 
@@ -22,6 +22,7 @@
         <!-- this one should always be the last stylesheet listed -->
 
     <!-- Scripts, except for those loaded by require.js ~~~~~~~~~~~~~~~~~~~ -->
+    <script src="../common/validation.js" type="text/javascript"></script>  <!-- not requirejs -->
     <script src="../common/common.js" type="text/javascript"></script>  <!-- not requirejs -->
 
     <script src="/conf/require-config.js"></script> <!-- load before require.js -->
@@ -49,7 +50,8 @@
 
         <!-- Modal dialog ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
         <!-- rmodal sets display:none on .modal automatically, so we don't
-             have to here. -->
+             have to here.  Note that the text below will be replaced from
+             the localized messages.json. -->
         <div id="confirm-dialog" class="modal">
             <div class="modal-dialog">
                 <form class="form-horizontal" method="get">
@@ -61,7 +63,7 @@
                         <input type="checkbox" name="cbNotAgain"
                             id="cbNotAgain"
                             class="form-control col-0p5" />
-                        <label for="cbNotAgain"
+                        <label id="labelNotAgain" for="cbNotAgain"
                             class="control-label col-xs-4 col-5">
                             Don't ask again
                             (<abbr title="You can change this in Settings | Behaviour">note</abbr>)
@@ -69,16 +71,17 @@
                         <!-- note: don't use <button type=submit>, which
                             reloads the page. -->
                         <div class="col-3">&nbsp;</div>
-                        <button data-which="yes"
+                        <button id="confirm-dialog-yes" data-which="yes"
                             class="btn btn-primary col-1"
                             type="button" accesskey="y">
                             <span class="accel">Y</span>es
                         </button>
-                        <button data-which="no" class="btn col-1"
+                        <button id="confirm-dialog-no" data-which="no"
+                            class="btn col-1"
                             type="button" accesskey="n">
                             <span class="accel">N</span>o
                         </button>
-                        <button data-which="cancel"
+                        <button id="confirm-dialog-cancel" data-which="cancel"
                             class="btn btn-default col-1" type="button"
                             accesskey="c">
                             <span class="accel">C</span>ancel
@@ -91,6 +94,7 @@
     </div><!-- tabfern-container -->
 
     <!-- Main script ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+    <!-- Loaded here because this file is not a module. -->
     <script src="tree.js" type="text/javascript"></script>
 
 </body>

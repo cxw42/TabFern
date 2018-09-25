@@ -23,7 +23,8 @@ find tabfern \( -prune -o -name \*.swp -prune -o \
             -wholename tabfern/webstore -prune -o -name .git\* -prune -o \
             -wholename tabfern/scraps -prune -o -wholename tabfern/webstore.js -prune -o \
             -wholename tabfern/webstore.zip -prune -o -wholename tabfern/test -prune -o \
-            -wholename tabfern/node_modules -prune \) \
+            -wholename tabfern/node_modules -prune -o \
+            -wholename tabfern/_locales/README-patching.txt -prune \) \
     -o \( -type f \( -exec dash -c 'f="webstore/${0#tabfern/}" ; [ -f "$f" ]' {} \; -o -print \) \)
 
 if [[ $1 = '-z' ]]; then

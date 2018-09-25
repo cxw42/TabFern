@@ -1,25 +1,17 @@
-// validation.js: Data-validation routines
+/// validation.js: Data-validation routines.
+/// Copyright (c) cxw42, 2017--2018.
+/// NOTE: does NOT use common.js routines, so that common.js can use it.
 
 (function (root, factory) {
-    let imports=[];
-
     if (typeof define === 'function' && define.amd) {
         // AMD
-        define(imports, factory);
+        define([], factory);
     } else if (typeof exports === 'object') {
         // Node, CommonJS-like
-        let requirements = [];
-        for(let modulename of imports) {
-            requirements.push(require(modulename));
-        }
-        module.exports = factory(...requirements);
+        module.exports = factory();
     } else {
         // Browser globals (root is `window`)
-        let requirements = [];
-        for(let modulename of imports) {
-            requirements.push(root[modulename]);
-        }
-        root.Validation = factory(...requirements);
+        root.Validation = factory();
     }
 }(this, function () {
     "use strict";
@@ -44,7 +36,25 @@
             const RE = /^(rgb|hsl)a?\((-?[\d\.]+%?(deg|rad|grad|turn)?[,\s]+){2,3}[\s\/]*[\d\.]+%?\)$/i;
             return RE.test(color);
         }
-    } //isValidColor
+    }; //isValidColor
+
+    /// Validate a URL.
+    /// @param test_url The URL to test
+    /// @param allowed_schemes {Optional array} If provided, only those schemes
+    ///                                         (no colons) are allowed.
+    module.isValidURL = function(test_url, allowed_schemes) {
+        try {
+            let url = new URL(String(test_url));
+
+            if(Array.isArray(allowed_schemes)) {
+                let scheme = url.protocol.replace(/:$/,'');
+                if(allowed_schemes.indexOf(scheme) === -1) return false;
+            }
+
+            return true;
+        } catch(e) { }  // nop
+        return false;
+    }; //isValidURL
 
     return module;
 }));
