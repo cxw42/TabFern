@@ -6,6 +6,8 @@
 // in the module.exports array, below.  This is what tells Brunch to
 // include these top-level modules.
 if((window||global||this||{}).this_var_should_never_ever_exist_bang) {
+    require('vendor/validation');
+    require('vendor/common');
     require('./main_tl');
 }
 
@@ -15,7 +17,7 @@ module.exports = {
     ASQH: require('lib/asq-helpers'),
     BLAKE2s: require('blake2s-js'),
     Buffer: require('buffer/').Buffer,
-    //bypasser: require('bypasser'),	// TODO
+    bypasser: require('./bypasser'),    // TODO pull in shortcuts
     exporter: require('lib/export-file'),
     hamburger: require('lib/hamburger'),
     importer: require('lib/import-file'),
@@ -33,6 +35,13 @@ module.exports = {
     signals: require('signals'),
     spin: require('spin.js'),
     tinycolor: require('tinycolor2'),
+
+    // Modules of TabFern itself
+    K: require('./const'),
+    D: require('./item_details'),
+    sorts: require('./sorts'),
+    T: require('./item_tree'),
+    M: require('./model'),
 };
 
 // Other modules used by src/view/tree.js, but not imported above yet:
@@ -40,8 +49,5 @@ module.exports = {
 //    // but not yet disentangled fully.
 //    'shortcuts', 'dmauro_keypress', 'shortcuts_keybindings_default' (as default_shortcuts),
 //
-//    // Modules of TabFern itself
-//    'view/const', 'view/item_details', 'view/sorts', 'view/item_tree',
-//    'view/model',
 
 // vi: set ts=4 sts=4 sw=4 et ai: //

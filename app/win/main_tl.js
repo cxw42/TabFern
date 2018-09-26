@@ -1,4 +1,4 @@
-// tree.js: main script for tree.html in the popup window of TabFern
+// win/main_tl.js: main script for main.html in the popup window of TabFern
 // Copyright (c) cxw42, 2017--2018
 // See /doc/design.md for information about notation and organization.
 
@@ -32,8 +32,8 @@ Loading TabFern ${TABFERN_VERSION}`);
 // `window` from the developer console.  `let` variables are not attached
 // to the global object.
 
-/// Modules loaded via requirejs
-var Modules = {};
+/// External modules
+var Modules = require('./main_deps');
 
 /// HACK - a global for loglevel (typing `Modules.log` everywhere is a pain).
 var log;
@@ -62,7 +62,7 @@ let Module_dependencies = [
     // `window.` prefix so it will be easier to refactor references
     // to them later when we switch to a full build system.
     'buffer',   // defines window.Buffer
-    'blake2s',  // defines window.BLAKE2s
+    'blake2s-js',  // defines window.BLAKE2s
 
     // Modules for keyboard-shortcut handling.  Not really TabFern-specific,
     // but not yet disentangled fully.
@@ -4610,4 +4610,4 @@ require(Module_dependencies, main);     // Do it, Rockapella!
 // can get T.treeobj from $(selector).data('jstree')
 // can get element from T.treeobj.element
 
-// vi: set ts=4 sts=4 sw=4 et ai fo-=ro foldmethod=marker: //
+// vi: set fo-=ro foldmethod=marker: //     // END of win/main_tl.js

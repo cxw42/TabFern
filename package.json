@@ -59,7 +59,7 @@
     "seedrandom": "^2.4.3",
     "assetsmanager-brunch": "^1.8.1",
     "babel-brunch": "^7.0.0",
-    "brunch": "^2.10.17",
+    "brunch": "cxw42/brunch#1527",
     "replacer-brunch": "^1.1.1",
     "uglify-es-brunch": "^1.0.5"
   }

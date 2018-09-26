@@ -21,12 +21,13 @@ module.exports = {
             },
 
             order: {
-                before: /^vendor\//,
+                before: /validation/,
                     // conventions.vendor below specifies that *_tl* are
                     // top-level modules.  This line causes files in the
                     // vendor/ directory to go before other vendor files,
                     // e.g., *_tl* files.  All the vendor files go after
                     // the wrapped modules.
+                after: /_tl/,
             },
         },
 

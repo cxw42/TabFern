@@ -16,21 +16,21 @@
 /// TODO? Change vorny to VorVNorNY?  I.e., also accept {val:...} and
 /// {node_id:...}?
 
-// Boilerplate {{{1
+// Boilerplate and require()s {{{1
 
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD
-        define(['jquery','jstree','loglevel', 'view/const',
-                    'view/item_details', 'view/item_tree', 'justhtmlescape',
-                    'buffer', 'blake2s'], factory);
+        define(['jquery','lib/jstree','loglevel', './const',
+                    './item_details', './item_tree', 'lib/justhtmlescape',
+                    'buffer/', 'blake2s-js'], factory);
     } else if (typeof exports === 'object') {
         // Node, CommonJS-like
         module.exports = factory(
-            require('jquery'), require('jstree'), require('loglevel'),
-            require('view/const'), require('view/item_details'),
-            require('view/item_tree'), require('justhtmlescape'),
-            require('buffer'), require('blake2s')
+            require('jquery'), require('lib/jstree'), require('loglevel'),
+            require('./const'), require('./item_details'),
+            require('./item_tree'), require('lib/justhtmlescape'),
+            require('buffer/'), require('blake2s-js')
         );
     } else {
         // Browser globals (root is `window`)
@@ -42,6 +42,8 @@
 }(this, function ($, _unused_jstree_placeholder_, log, K, D, T, Esc,
                     Buffer, BLAKE2s) {
     "use strict";
+
+    if(Buffer.Buffer) Buffer = Buffer.Buffer;   // buffalo buffalo buffalo
 
     function loginfo(...args) { log.info('TabFern view/item.js: ', ...args); };
     // }}}1

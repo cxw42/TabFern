@@ -1,4 +1,4 @@
-/* main.css: CSS for TabFern's src/view/index.html */
+/* container.css: CSS for TabFern's win/container.html */
 
 /* //////////////////////////////////////////////////////////////////// */
 /* Layout */
@@ -83,6 +83,3 @@ html, body, #overall-container, #tree-container, #tree-iframe {
     height:1px;
     overflow:hidden;
 }
-
-
-/* vi: set ts=4 sts=4 sw=4 et ai: */

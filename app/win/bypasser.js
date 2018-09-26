@@ -4,10 +4,10 @@
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD
-        define(['jquery', 'jstree', 'loglevel', 'signals'], factory);
+        define(['jquery', 'lib/jstree', 'loglevel', 'signals'], factory);
     } else if (typeof exports === 'object') {
         // Node, CommonJS-like
-        module.exports = factory(require('jquery'), require('jstree'),
+        module.exports = factory(require('jquery'), require('lib/jstree'),
             require('loglevel'), require('signals'));
     } else {
         // Browser globals (root is `window`)

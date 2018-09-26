@@ -4,13 +4,13 @@
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD
-        define([ 'jquery', 'jstree', 'loglevel', 'asynquence-contrib',
-                    'asq-helpers' ], factory);
+        define([ 'jquery', 'lib/jstree', 'loglevel', 'asynquence-contrib',
+                    'lib/asq-helpers' ], factory);
     } else if (typeof exports === 'object') {
         // Node, CommonJS-like
         module.exports = factory(
-            require('jquery'), require('jstree'), require('loglevel'),
-            require('asynquence-contrib'), require('asq-helpers')
+            require('jquery'), require('lib/jstree'), require('loglevel'),
+            require('asynquence-contrib'), require('lib/asq-helpers')
         );
     } else {
         // Browser globals (root is `window`)

@@ -8,13 +8,13 @@
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD
-        define([ 'jquery','jstree','loglevel', 'multidex', 'view/const' ],
+        define([ 'jquery','lib/jstree','loglevel', 'lib/multidex', './const' ],
                 factory);
     } else if (typeof exports === 'object') {
         // Node, CommonJS-like
         module.exports = factory(
-            require('jquery'), require('jstree'), require('loglevel'),
-            require('multidex'), require('view/const')
+            require('jquery'), require('lib/jstree'), require('loglevel'),
+            require('lib/multidex'), require('./const')
         );
     } else {
         // Browser globals (root is `window`)

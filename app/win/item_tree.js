@@ -4,16 +4,16 @@
 (function (root, factory) {     // Boilerplate {{{1
     if (typeof define === 'function' && define.amd) {
         // AMD
-        define([ 'jquery','jstree','jstree-actions', 'jstree-flagnode',
-                    'jstree-because', 'loglevel', 'view/const',
-                    'jstree-multitype', 'jstree-redraw-event' ], factory);
+        define([ 'jquery','lib/jstree','lib/jstree-actions', 'lib/jstree-flagnode',
+                    'lib/jstree-because', 'loglevel', './const',
+                    'lib/jstree-multitype', 'lib/jstree-redraw-event' ], factory);
     } else if (typeof exports === 'object') {
         // Node, CommonJS-like
         module.exports = factory(
-            require('jquery'), require('jstree'), require('jstree-actions'),
-            require('jstree-flagnode'), require('jstree-because'),
-            require('loglevel'), require('view/const'),
-            require('jstree-multitype'), require('jstree-redraw-event')
+            require('jquery'), require('lib/jstree'), require('lib/jstree-actions'),
+            require('lib/jstree-flagnode'), require('lib/jstree-because'),
+            require('loglevel'), require('./const'),
+            require('lib/jstree-multitype'), require('lib/jstree-redraw-event')
         );
     } else {
         // Browser globals (root is `window`)
@@ -27,7 +27,7 @@
 }(this, function ($, _jstree, _actions, _flagnode, _because, log_orig, K, _multitype, _redraw_event ) {
     "use strict";
 
-    function loginfo(...args) { log_orig.info('TabFern view/item_tree.js: ', ...args); };
+    function loginfo(...args) { log_orig.info('TabFern win/item_tree.js: ', ...args); };
 // }}}1
 
     /// The module we are creating

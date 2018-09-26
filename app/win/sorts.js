@@ -4,14 +4,14 @@
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD
-        define(['jquery', 'jstree','loglevel', 'view/const', 'view/item_tree',
-                 'view/item_details'], factory);
+        define(['jquery', 'lib/jstree','loglevel', './const', './item_tree',
+                 './item_details'], factory);
     } else if (typeof exports === 'object') {
         // Node, CommonJS-like
         module.exports = factory(
-            require('jquery'), require('jstree'), require('loglevel'),
-            require('view/const'), require('view/item_tree'),
-            require('view/item_details'),
+            require('jquery'), require('lib/jstree'), require('loglevel'),
+            require('./const'), require('./item_tree'),
+            require('./item_details'),
         );
     } else {
         // Browser globals (root is `window`)
