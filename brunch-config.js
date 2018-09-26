@@ -29,6 +29,9 @@ module.exports = {
                     // the wrapped modules.
                 after: /_tl/,
             },
+
+            // _tl files go after the wrapped modules instead of before
+            postWrapped: /_tl/,
         },
 
         stylesheets: {

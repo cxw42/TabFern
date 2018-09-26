@@ -2,6 +2,7 @@
 // CC-BY-SA 3.0
 console.log('TabFern: running background.js');
 
+require('vendor/validation');
 require('vendor/common');
 
 /// The module exports, for use in command-line debugging

@@ -1,21 +1,21 @@
-// main.js: main script for src/view/index.html.
-// Part of TabFern.  Copyright (c) cxw42, r4j4h, 2017.
+// win/container.js: main script for win/container.html.
+// Part of TabFern.  Copyright (c) cxw42, r4j4h, 2017--2018.
 
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD
-        define([ 'jquery', 'lib/split-cw', 'loglevel', 'vendor/common' ],factory);
+        define([ 'jquery', 'lib/split-cw', 'loglevel', 'vendor/validation', 'vendor/common' ],factory);
     } else if (typeof exports === 'object') {
         // Node, CommonJS-like
         module.exports = factory(require('jquery'), require('lib/split-cw'),
-            require('loglevel'), require('vendor/common'));
+            require('loglevel'), require('vendor/validation'), require('vendor/common'));
     } else {
         // Browser globals (root is window)
-        root.Multidex = factory(root.$, root.split, root.log, {});
+        root.Multidex = factory(root.$, root.split, root.log, root.Validation, {});
     }
 }(this, main));
 
-function main($, split, log) {
+function main($, split, log, Validation, _unused_common) {
 
 /// Modules loaded via requirejs
 let Modules = {};
