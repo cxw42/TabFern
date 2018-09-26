@@ -1,9 +1,0 @@
-{
-  "name": "Sample TabFern plugin",
-  "version": "0.0.1",
-  "manifest_version": 2,
-  "description": "Sample plugin for TabFern",
-  "web_accessible_resources": [
-    "tfplugin/index.html"
-  ]
-}
