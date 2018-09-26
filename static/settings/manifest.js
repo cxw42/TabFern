@@ -34,7 +34,7 @@
         "name":
             `${_T('wsSettings')} - ${_T('wsShortName')} (v${TABFERN_VERSION})`,
 
-        "icon": "/assets/fern16.png",
+        "icon": "/assets/fern16o.png",
         //"settingsLabel":'',
         //"searchLabel":'',
         //"nothingFoundMessage":'',

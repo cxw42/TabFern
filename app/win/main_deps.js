@@ -8,7 +8,7 @@
 if((window||global||this||{}).this_var_should_never_ever_exist_bang) {
     require('vendor/validation');
     require('vendor/common');
-    require('./main_tl');
+    require('win/main_tl');
 }
 
 module.exports = {

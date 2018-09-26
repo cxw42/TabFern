@@ -33,7 +33,8 @@ Loading TabFern ${TABFERN_VERSION}`);
 // to the global object.
 
 /// External modules
-var Modules = require('./main_deps');
+var Modules = require('win/main_deps');
+var $ = require('jquery');
 
 /// HACK - a global for loglevel (typing `Modules.log` everywhere is a pain).
 var log;
@@ -47,34 +48,6 @@ var ASQ;    ///< Shorthand for asynquence
 var ASQH;   ///< Shorthand for asq-helpers
 var L;      ///< Holder --- L.log === log.  This gives closures access to the
             ///< current log instance.
-
-/// require.js modules used by this file
-let Module_dependencies = [
-    // Modules that are not specific to TabFern
-    'jquery', 'jstree', 'jstree-actions', 'jstree-flagnode',
-    'jstree-because', 'jstree-multitype', 'jstree-redraw-event',
-    'loglevel', 'hamburger', 'bypasser', 'multidex', 'justhtmlescape',
-    'signals', 'export-file', 'import-file',
-    'asynquence-contrib', 'asq-helpers', 'rmodal',
-    'tinycolor', 'spin-packed',
-
-    // Shimmed modules.  Refer to these via Modules or *without* the
-    // `window.` prefix so it will be easier to refactor references
-    // to them later when we switch to a full build system.
-    'buffer',   // defines window.Buffer
-    'blake2s-js',  // defines window.BLAKE2s
-
-    // Modules of TabFern itself
-    'view/const', 'view/item_details', 'view/sorts', 'view/item_tree',
-    'view/model',
-];
-
-/// Make short names in Modules for some modules.  shortname => longname
-let Module_shortnames = {
-    exporter: 'export-file',
-    importer: 'import-file',
-    default_shortcuts: 'shortcuts_keybindings_default',
-};
 
 ////////////////////////////////////////////////////////////////////////// }}}1
 // Globals // {{{1
@@ -183,12 +156,12 @@ function local_init()
     log.setDefaultLevel(log.levels.WARN);
 
     Esc = Modules.justhtmlescape;
-    K = Modules['view/const'];
-    D = Modules['view/item_details'];
-    T = Modules['view/item_tree'];
-    M = Modules['view/model'];
-    ASQ = Modules['asynquence-contrib'];
-    ASQH = Modules['asq-helpers'];
+    K = Modules.K;
+    D = Modules.D;
+    T = Modules.T;
+    M = Modules.M;
+    ASQ = Modules.ASQ;
+    ASQH = Modules.ASQH;
 } //init()
 
 /// Copy properties named #property_names from #source to #dest.
@@ -4479,20 +4452,9 @@ function initIncompleteWarning()
 //////////////////////////////////////////////////////////////////////// }}}1
 // MAIN // {{{1
 
-/// The main function.  Called once RequireJS has loaded all the
-/// dependencies.
-function main(...args)
+/// The main function.
+function main()
 {
-    // Hack: Copy the loaded modules into our Modules global
-    for(let depidx = 0; depidx < args.length; ++depidx) {
-        Modules[Module_dependencies[depidx]] = args[depidx];
-    }
-
-    // Easier names for some modules
-    for(let shortname in Module_shortnames) {
-        Modules[shortname] = Modules[Module_shortnames[shortname]];
-    }
-
     local_init();
 
     //$(K.INIT_PROGRESS_SEL).css('display','block');  //DEBUG
@@ -4517,7 +4479,7 @@ function main(...args)
     // Not sure why.
 
     // Start a spinner if loading takes more than 1 s
-    let spinner = new Spinner();
+    let spinner = new Modules.spin.Spinner();
     let spin_starter = function() {
         if(spinner) spinner.spin($('#tabfern-container')[0]);
     };
@@ -4572,12 +4534,14 @@ function main(...args)
             spinner.stop();
             spinner = null;
         }
+
+        log.error(err);
     });
     ;
 
 } // main()
 
-require(Module_dependencies, main);     // Do it, Rockapella!
+main();     // Do it, Rockapella!
 // }}}1
 
 // ###########################################################################

@@ -9,24 +9,23 @@
   "description": "Vertical view of all your windows and tabs, including saved tabs and windows.",
   "homepage_url": "https://cxw42.github.io/TabFern/",
   "icons": {
-    "16": "assets/fern16.png",
-    "48": "assets/fern48.png",
-    "128": "assets/fern128.png"
+    "16": "assets/fern16o.png",
+    "48": "assets/fern48o.png",
+    "128": "assets/fern128o.png"
   },
   "default_locale": "en",
   "background": {
     "scripts": [
-      "src/common/common.js",
-      "src/bg/background.js"
+      "bg/background.js"
     ],
     "persistent": true
   },
-  "options_page": "src/settings/index.html",
+  "options_page": "settings/index.html",
   "browser_action": {
     "default_icon": {
-      "16": "assets/fern16.png",
-      "48": "assets/fern48.png",
-      "128": "assets/fern128.png"
+      "16": "assets/fern16o.png",
+      "48": "assets/fern48o.png",
+      "128": "assets/fern128o.png"
     },
     "default_title": "TabFern"
   },

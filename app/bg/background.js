@@ -2,8 +2,10 @@
 // CC-BY-SA 3.0
 console.log('TabFern: running background.js');
 
-require('vendor/validation');
-require('vendor/common');
+if(false) { // Vendor files - listed here only so they'll be bundled
+    require('vendor/validation');
+    require('vendor/common');
+}
 
 /// The module exports, for use in command-line debugging
 let me = {
@@ -22,7 +24,7 @@ me.loadView = function loadView()
 {
     console.log("TabFern: Opening view");
     chrome.windows.create(
-        { 'url': chrome.runtime.getURL('src/view/main.html'),
+        { 'url': chrome.runtime.getURL('win/container.html'),
           'type': 'popup',
           //'focused': true
             // Note: `focused` is not supported on Firefox, but
@@ -118,6 +120,7 @@ chrome.windows.onRemoved.addListener(function(windowId) {
   if (windowId === me.viewWindowID) {
     // Set viewWindowID to undefined so we know the popup is not open
     me.viewWindowID = undefined;
+    console.log('Popup window was closed');
   }
 });
 
@@ -181,15 +184,17 @@ chrome.runtime.onMessage.addListener(messageListener);
 // MAIN //
 
 // Create the main window when Chrome starts
-callbackOnLoad(
-    function() {
-        console.log('TabFern: background window loaded');
-        if(getBoolSetting(CFG_POPUP_ON_STARTUP)) {
-            console.log('Opening popup window');
-            setTimeout(me.loadView, 500);
+if(true) {
+    callbackOnLoad(
+        function() {
+            console.log('TabFern: background window loaded');
+            if(getBoolSetting(CFG_POPUP_ON_STARTUP)) {
+                console.log('Opening popup window');
+                setTimeout(me.loadView, 500);
+            }
         }
-    }
-);
+    );
+}
 
 // Set the defaults for the options.  The settings boilerplate from
 // extensionizr does not appear to have this facility.

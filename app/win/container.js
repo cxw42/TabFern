@@ -1,24 +1,17 @@
 // win/container.js: main script for win/container.html.
 // Part of TabFern.  Copyright (c) cxw42, r4j4h, 2017--2018.
 
-(function (root, factory) {
-    if (typeof define === 'function' && define.amd) {
-        // AMD
-        define([ 'jquery', 'lib/split-cw', 'loglevel', 'vendor/validation', 'vendor/common' ],factory);
-    } else if (typeof exports === 'object') {
-        // Node, CommonJS-like
-        module.exports = factory(require('jquery'), require('lib/split-cw'),
-            require('loglevel'), require('vendor/validation'), require('vendor/common'));
-    } else {
-        // Browser globals (root is window)
-        root.Multidex = factory(root.$, root.split, root.log, root.Validation, {});
-    }
-}(this, main));
+module.exports = {};
+    // main doesn't provide access to any functions currently
 
-function main($, split, log, Validation, _unused_common) {
+if(false) { // Vendor files - listed here only so they'll be bundled
+    require('vendor/validation');
+    require('vendor/common');
+}
 
-/// Modules loaded via requirejs
-let Modules = {};
+const $ = require('jquery');
+const split = require('lib/split-cw');
+const log = require('loglevel');
 
 /// The tree window itself.  REMINDER: Don't access window.frames until the
 /// document is fully loaded (after onload)
@@ -85,9 +78,5 @@ function initMain()
 
 log.setDefaultLevel(log.levels.WARN);
 callbackOnLoad(initMain);
-
-return {};    // main doesn't provide access to any functions currently
-
-} //main
 
 // vi: set ts=4 sts=4 sw=4 et ai fo-=o fo-=r: //
