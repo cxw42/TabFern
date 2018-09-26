@@ -64,10 +64,6 @@ let Module_dependencies = [
     'buffer',   // defines window.Buffer
     'blake2s-js',  // defines window.BLAKE2s
 
-    // Modules for keyboard-shortcut handling.  Not really TabFern-specific,
-    // but not yet disentangled fully.
-    'shortcuts', 'dmauro_keypress', 'shortcuts_keybindings_default',
-
     // Modules of TabFern itself
     'view/const', 'view/item_details', 'view/sorts', 'view/item_tree',
     'view/model',
@@ -4236,27 +4232,10 @@ function createMainTreeIfWinIdReceived_catch(done, win_id_msg_or_error)
     T.create('#maintree', treeCheckCallback, dndIsDraggable,
             contextmenu_items);
 
-    // Install keyboard shortcuts.  This includes the keyboard listener for
-    // context menus.
-    Modules.shortcuts.install(
-        {
-            window,
-            keybindings: Modules.default_shortcuts,
-            drivers: [Modules.dmauro_keypress]
-        },
-        function initialized(err) {
-            next_init_step('context-menu support');
-            if ( err ) {
-                console.log({['Failed loading a shortcut driver!  Initializing '+
-                            'context menu with no shortcut driver']:err});
-                Bypasser = Modules.bypasser.create(window, T.treeobj);
-            } else {
-                Bypasser = Modules.bypasser.create(window, T.treeobj, Modules.shortcuts);
-            }
-            // Continue initialization by loading the tree
-            done();
-        }
-    );
+    next_init_step('context-menu support');
+    Bypasser = Modules.bypasser.create(window, T.treeobj);
+
+    done();
 } //createMainTreeIfWinIdReceived_catch()
 
 /// Called after ASQ.try(chrome.storage.local.get(LOCN_KEY))
