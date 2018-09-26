@@ -27,18 +27,19 @@ tags
 foo.*
 
 # Output directories
+/public
 /build*
 /doc/
 /dist/
 *-packed/
+
+# A holding pen
+/spare
 
 # Test outputs
 *.e
 *.map
 *.txt
 
-# readline history
-*.history
-
-# dependencies
+# External dependencies (managed by npm)
 /node_modules/

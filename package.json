@@ -7,7 +7,10 @@
     "test": "test"
   },
   "scripts": {
-    "build": "webpack"
+    "build": "npx brunch build",
+    "debug": "sh -c 'LOGGY_STACKS=1 npx brunch b -d 2>&1 |less -R'",
+    "watch": "npx brunch watch",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
@@ -20,7 +23,9 @@
   ],
   "contributors": [
     "Christopher White",
-    "Jasmine Hegman"
+    "Jasmine Hegman",
+    "Procyon-b",
+    "rwexmd"
   ],
   "license": "CC-BY-NC-SA-4.0",
   "bugs": {
@@ -28,10 +33,20 @@
   },
   "homepage": "https://cxw42.github.io/TabFern/",
   "dependencies": {
-    "asynquence": "^0.10.0",
-    "blake2s-js": "^1.2.3",
+    "asynquence": "^0.10.2",
+    "asynquence-contrib": "^0.28.2",
+    "blake2s-js": "^1.3.0",
+    "buffer": "^5.2.1",
+    "font-awesome": "github:FortAwesome/font-awesome#fa-4",
+    "install": "^0.12.1",
+    "jquery": "^3.3.1",
+    "keypress.js": "^2.1.5",
+    "loglevel": "^1.6.1",
+    "npm": "^6.4.1",
+    "path-browserify": "^1.0.0",
     "requirejs": "^2.3.5",
-    "rmodal": "^1.0.28",
+    "rmodal": "^1.0.31",
+    "signals": "^1.0.0",
     "spectrum-colorpicker": "^1.8.0",
     "spin.js": "^4.0.0",
     "split.js": "^1.3.5",
@@ -40,6 +55,11 @@
   "devDependencies": {
     "benchmark": "^2.1.4",
     "jasmine2-custom-message": "^0.8.4",
-    "seedrandom": "^2.4.3"
+    "seedrandom": "^2.4.3",
+    "assetsmanager-brunch": "^1.8.1",
+    "babel-brunch": "^7.0.0",
+    "brunch": "^2.10.17",
+    "replacer-brunch": "^1.1.1",
+    "uglify-es-brunch": "^1.0.5"
   }
 }

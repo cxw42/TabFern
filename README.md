@@ -74,4 +74,3 @@ by Vladyslav Volovyk.  However, TabFern is not derived from Tabs Outliner.
 TabFern is not affiliated in any way with Vladyslav or Tabs Outliner.
 
 ![logo](https://raw.githubusercontent.com/cxw42/TabFern/master/webstore/assets/fern128.png)
-
