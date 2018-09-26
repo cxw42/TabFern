@@ -8,6 +8,7 @@
   },
   "scripts": {
     "build": "npx brunch build",
+    "rebuild": "sh -c 'rm -rf public ; npx brunch b ; find public'",
     "debug": "sh -c 'LOGGY_STACKS=1 npx brunch b -d 2>&1 |less -R'",
     "watch": "npx brunch watch",
     "test": "echo \"Error: no test specified\" && exit 1"
