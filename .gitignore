@@ -25,6 +25,8 @@ core
 tags
 /webstore.zip
 foo.*
+*.xz
+*.zip
 
 # A holding pen
 /spare

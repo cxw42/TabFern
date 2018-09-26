@@ -14,7 +14,7 @@ module.exports = {
             entryPoints: {
                 'app/win/container.js': 'win/container.js',
                     // popup window
-                'app/win/main_deps.js': 'win/main.js',
+                'app/win/main.js': 'win/main.js',
                     // main window, in an iframe in the popup
                 'app/bg/background.js': 'bg/background.js',
                     // background script (has no page)
@@ -35,6 +35,12 @@ module.exports = {
                 // i.e., output to public/assets/bulk.css.
                 // Note: can't use entryPoints -
                 // https://github.com/brunch/brunch/issues/1640
+        },
+    },
+
+    modules: {
+        autoRequire: {
+            'win/main.js': ['win/main'],
         },
     },
 
@@ -66,7 +72,6 @@ module.exports = {
     },
 
     npm: {
-        globals: { '$': 'jquery' },
         compilers: ['babel-brunch'],    // run babel-brunch on node_modules/...
         aliases: { path: 'path-browserify' },
 
