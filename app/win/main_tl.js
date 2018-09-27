@@ -109,6 +109,9 @@ var Esc;
 /// The module that handles <Shift> bypassing of the jstree context menu
 var Bypasser;
 
+/// The URL for new tabs we create
+const NEW_TAB_URL = chrome.runtime.getURL('/win/new_tab.html');
+
 ////////////////////////////////////////////////////////////////////////// }}}1
 // Module setup, and utilities // {{{1
 
@@ -892,8 +895,7 @@ function actionOpenRestOfTabs(win_node_id, win_node, unused_action_id, unused_ac
                         index: curridx,
                             // Chrome magically bumps other tabs out of the way,
                             // so we don't need to use M.chromeIdxOfTab here.
-                        url: chrome.runtime.getURL('/src/view/newtab.html')
-                                + '#' + child_node_id,
+                        url: NEW_TAB_URL + '#' + child_node_id,
                         pinned: !!child_val.isPinned,
                     },
                     ASQH.CC(done)
@@ -2014,7 +2016,7 @@ function treeOnSelect(evt_unused, evt_data)
                 windowId: win_val.win_id,
                 index: newindex,
                 url: tab_val.raw_url,
-                url: chrome.runtime.getURL('/src/view/newtab.html') + '#' + tab_node.id,
+                url: NEW_TAB_URL + '#' + tab_node.id,
                 active: true,
                 pinned: !!tab_val.isPinned,
             },
@@ -2425,7 +2427,7 @@ var tabOnCreated = (function(){
 
     /// Check if we're opening a tab on our own initiative, e.g., because
     /// it was dragged from a closed window into an open window.
-    /// This is indicated by the URL being /src/view/newtab.html.
+    /// This is indicated by the URL being NEW_TAB_URL.
     /// @return {Boolean} true if we handled the action, false otherwise
     function handle_tabfern_action(tab_val, ctab)
     {
@@ -2440,9 +2442,7 @@ var tabOnCreated = (function(){
             hash = url.hash.slice(1);
             if(!hash) return false;
 
-            if(url.href.split('#')[0] !==
-                chrome.runtime.getURL('/src/view/newtab.html')
-            ) {
+            if(url.href.split('#')[0] !== NEW_TAB_URL) {
                 return false;
             }
 
@@ -2456,7 +2456,7 @@ var tabOnCreated = (function(){
         }
 
         // If we get here, it is a tab we are opening.  Change the URL
-        // to the URL we actually wanted (newtab.html is a placeholder)
+        // to the URL we actually wanted (the NEW_TAB_URL page is a placeholder)
 
         let tab_node_id = hash;
         tab_val.being_opened = false;
@@ -3568,7 +3568,7 @@ var treeCheckCallback = (function()
 
             let newtab_info = {
                 windowId: dest_win_val.win_id,
-                url: chrome.runtime.getURL('/src/view/newtab.html') + '#' + moving_val.node_id,
+                url: NEW_TAB_URL + '#' + moving_val.node_id,
                     // pass the node ID to the tabOnUpdated callback
                 index: ctab_idx,
                 pinned: !!moving_val.isPinned,
