@@ -68,7 +68,7 @@ function initMain()
     W = window.frames[0];
         // Thanks to https://stackoverflow.com/a/13913943/2877364 by
         // https://stackoverflow.com/users/1105384/shank
-    document.title = `${_T('wsShortName')} (v${TABFERN_VERSION})`;
+    document.title = `tfswitch - ${_T('wsShortName')} (v${TABFERN_VERSION})`;
 
     window.doSplit = doSplit;    // export doSplit so tree.js can call it
 } //initMain
