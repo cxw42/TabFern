@@ -176,10 +176,6 @@ function messageListener(request, sender, sendResponse)
 
 chrome.runtime.onMessage.addListener(messageListener);
 
-//var settings = new Store('settings', {
-//     'sample_setting': 'This is how you use Store.js to remember values'
-//});
-
 //////////////////////////////////////////////////////////////////////////
 // MAIN //
 

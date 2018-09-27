@@ -11,8 +11,8 @@
         module.exports = factory();
     } else {
         // Browser globals (root is `window`)
-        (root||window||global).Validation = factory();
-    }   // ^ because brunch rewrites `this` -> `void 0`.
+        root.Validation = factory();
+    }
 }(this, function () {
     "use strict";
 

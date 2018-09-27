@@ -115,7 +115,7 @@ let me = {
 
         babel: {
             ignore: [ 'app/**', 'lib/**', /^node_modules\/(?!spin\.js)/,
-                        'test/**' ],
+                        'test/**', 'vendor/**' ],
                 // At the moment, only spin.js needs Babel treatment.
                 // Ignore everything else to save time and reduce the
                 // chance of surprise.

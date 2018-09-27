@@ -6,17 +6,26 @@
 if(false) {
     require('vendor/validation');
     require('vendor/common');
+
+    // Hack the fixed order using the filenames because I don't want to
+    // clutter the Brunch config with this page-specific material.
+    require('vendor/settings/0_store.js');
+    require('vendor/settings/1_mootools-core.js');
+    require('vendor/settings/2_tab.js');
+    require('vendor/settings/3_setting.js');
+    require('vendor/settings/4_search.js');
+    require('vendor/settings/5_fancy-settings.js');
 }
 
 const ExportFile = require('lib/export-file');
 const ImportFile = require('lib/import-file');
 
 /// jQuery alias, since $ is mootools
-const $$ = require('jquery');
+const $j = require('jquery');
 
-const loglevel = require('loglevel');
+const log = require('loglevel');
 const spectrum = require('spectrum-colorpicker');
-const spin = require('spin.js');
+const Spinner = require('spin.js').Spinner;
 const tinycolor = require('tinycolor2');
 
 const manifest = require('./manifest');
@@ -30,7 +39,7 @@ let settingsobj;
 
 /// Create the color picker for the scrollbar color.
 let createPicker = function createPicker() {
-    let picker = $$('#scrollbar-color-picker-label');
+    let picker = $j('#scrollbar-color-picker-label');
 
     let orig_color = getStringSetting(CFGS_SCROLLBAR_COLOR);
     if(!Validation.isValidColor(orig_color)) {
@@ -38,7 +47,7 @@ let createPicker = function createPicker() {
     }
 
     // Replace the manifest entry with the color picker
-    $$(picker).spectrum({
+    $j(picker).spectrum({
         showInput: true,
         allowEmpty:true,
         showInitial: true,
@@ -47,13 +56,13 @@ let createPicker = function createPicker() {
     });
 
     // Add the text that would otherwise have gone in the manifest
-    let newlabel = $$('<span>').text(
+    let newlabel = $j('<span>').text(
             'Skinny-scrollbar color ("X" for the default): ')   // TODO i18n
         .addClass('setting label');
-    $$(picker).before(newlabel);
+    $j(picker).before(newlabel);
 
     // Handle updates
-    $$(picker).on('change.spectrum', (e, newcolor)=>{
+    $j(picker).on('change.spectrum', (e, newcolor)=>{
         let colorstring;
         if(!newcolor || !newcolor.toString) {
             console.log('New color: default');
@@ -67,7 +76,7 @@ let createPicker = function createPicker() {
             setSetting(CFGS_SCROLLBAR_COLOR, colorstring);
         } else {
             console.log('Invalid color');
-            $$(picker).spectrum('set',orig_color);
+            $j(picker).spectrum('set',orig_color);
         }
     });
 }; //createPicker
@@ -174,15 +183,15 @@ function importSettings(evt_unused)
         let spinner;
         try {
             spinner = new Spinner().spin(
-                $$('#import-settings').parent()[0]
+                $j('#import-settings').parent()[0]
             );
             let parsed = JSON.parse(text);
             let {ok, errmsgs} = loadSettingsFromObject(parsed);
             if(!ok) {
-                let elem = $$('<div>').html(
+                let elem = $j('<div>').html(
                     '<p>I encountered error(s) while loading the file ' +
                     `'${filename}':</p><ul>${errmsgs}</ul>`);
-                $$('#import-settings').after(elem);
+                $j('#import-settings').after(elem);
 
             } else {    // success
                 // Let ourselves know, after reload, that it worked
@@ -212,7 +221,7 @@ function main()
 {
     // Option 1: Use the manifest:
     new FancySettings.initWithManifest(function (settings) {
-        $$('#settings-label').text(_T('wsSettings'));
+        $j('#settings-label').text(_T('wsSettings'));
 
         settingsobj = settings;
 
@@ -222,14 +231,14 @@ function main()
 
         // ----------------------------
         // Hook up events
-        $$('#import-settings').on('click', importSettings);
-        $$('#export-settings').on('click', exportSettings);
+        $j('#import-settings').on('click', importSettings);
+        $j('#export-settings').on('click', exportSettings);
 
         let is_settings_load = false;
         if(getBoolSetting(SETTINGS_LOADED_OK)) {
             is_settings_load = true;
-            let elem = $$('<div>').text("Settings loaded");
-            $$('#import-settings').after(elem);
+            let elem = $j('<div>').text("Settings loaded");
+            $j('#import-settings').after(elem);
             setSetting(SETTINGS_LOADED_OK, false);
         }
 
