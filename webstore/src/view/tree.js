@@ -1233,6 +1233,7 @@ function addWindowNodeActions(win_node_id)
 /// @param cwin     (Optional) The Chrome window.  If not provided, the
 ///                 one stashed in win_val (if any) will be used.
 let pruneWindowSetTimer = function(win_val, cwin) {
+    return; // pruning is disabled
     log.debug({"Bump of prune timer requested for":win_val, cwin});
     if(!win_val.prune_data) {
         win_val.prune_data = {timer_id: undefined, cwin: cwin || undefined};
@@ -1299,7 +1300,7 @@ function createNodeForWindow(cwin, keep, no_prune)
     }
 
     // Remove extra tabs if the user wants
-    if(!no_prune && !do_not_prune_right_now
+    if(false && !no_prune && !do_not_prune_right_now
         && getBoolSetting(CFG_PRUNE_NEW_WINDOWS)
     ) {
         pruneWindowSetTimer(val, cwin);

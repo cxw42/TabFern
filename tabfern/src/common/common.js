@@ -119,7 +119,8 @@ _VAL[CFG_TITLE_IN_TOOLTIP] = _vbool;
 
 const CFG_PRUNE_NEW_WINDOWS = 'prune-new-windows';
 _DEF[CFG_PRUNE_NEW_WINDOWS] = false;
-_VAL[CFG_PRUNE_NEW_WINDOWS] = _vbool;
+_VAL[CFG_PRUNE_NEW_WINDOWS] = ()=>false;
+    // Always false --- don't permit a settings load to set prune to true.
 
 /// Not actually a setting, but an indicator that we loaded settings OK.
 /// Used by src/settings/main.js.
