@@ -1,3 +1,4 @@
+// jasmine console.js
 /*
 Copyright (c) 2008-2018 Pivotal Labs
 

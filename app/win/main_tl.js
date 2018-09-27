@@ -359,7 +359,7 @@ function showConfirmationModalDialog(message_html) {
     jqdlg.find('#labelNotAgain')
         .html(_T('dlgDoNotAskAgainHTML'));
 
-    dlg = new (Modules['rmodal'])(
+    dlg = new (Modules.rmodal)(
         document.getElementById('confirm-dialog'),
         {
             closeTimeout: 0,
@@ -2945,7 +2945,7 @@ function hamSettings()
 {
     // Actually open the window
     open_window_with_url(chrome.extension.getURL(
-        '/src/settings/index.html' +
+        '/settings/index.html' +
         (ShowWhatIsNew ? '#open=last' : ''))
     );
 
@@ -3056,7 +3056,7 @@ function hamSorter(compare_fn)
 {
     return function() {
         let arr = T.root_node().children;
-        Modules['view/sorts'].stable_sort(arr, compare_fn);
+        Modules.sorts.stable_sort(arr, compare_fn);
             // children[] holds node IDs, so compare_fn will always get strings.
         T.treeobj.redraw(true);   // true => full redraw
     };
@@ -3069,7 +3069,7 @@ function hamRunJasmineTests()
 
 function hamSortOpenToTop()
 {
-    hamSorter(Modules['view/sorts'].open_windows_to_top)();     //do the sort
+    hamSorter(Modules.sorts.open_windows_to_top)();     //do the sort
 
     if(getBoolSetting(CFG_JUMP_WITH_SORT_OPEN_TOP, true)) {
         let h = $('html');
@@ -3171,25 +3171,25 @@ function getHamburgerMenuItems(node, _unused_proxyfunc, e)
                 azItem: {
                     label: _T('menuSortAZ'),
                     title: 'Sort ascending by window name, case-insensitive',
-                    action: hamSorter(Modules['view/sorts'].compare_node_text),
+                    action: hamSorter(Modules.sorts.compare_node_text),
                     icon: 'fa fa-sort-alpha-asc',
                 },
                 zaItem: {
                     label: _T('menuSortZA'),
                     title: 'Sort descending by window name, case-insensitive',
-                    action: hamSorter(Modules['view/sorts'].compare_node_text_desc),
+                    action: hamSorter(Modules.sorts.compare_node_text_desc),
                     icon: 'fa fa-sort-alpha-desc',
                 },
                 numItem09: {
                     label: _T('menuSort09'),
                     title: 'Sort ascending by window name, numeric, case-insensitive',
-                    action: hamSorter(Modules['view/sorts'].compare_node_num),
+                    action: hamSorter(Modules.sorts.compare_node_num),
                     icon: 'fa fa-sort-numeric-asc',
                 },
                 numItem90: {
                     label: _T('menuSort90'),
                     title: 'Sort descending by window name, numeric, case-insensitive',
-                    action: hamSorter(Modules['view/sorts'].compare_node_num_desc),
+                    action: hamSorter(Modules.sorts.compare_node_num_desc),
                     icon: 'fa fa-sort-numeric-desc',
                 },
             } //submenu

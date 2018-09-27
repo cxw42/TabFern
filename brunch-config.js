@@ -1,6 +1,6 @@
 // brunch-config.js for brunch-test by cxw42
 
-module.exports = {
+let me = {
     paths: {
         // Bundle from these:
         watched: ['app', 'lib', 'static', 'vendor'],
@@ -21,17 +21,21 @@ module.exports = {
             },
 
             order: {
-                before: /validation/,
+                // Note: if multiple matchers are listed in the `before` or
+                // `after` arrays, files will be given in that relative order.
+                // Thanks to https://stackoverflow.com/a/26819008/2877364 by
+                // https://stackoverflow.com/users/2297279/es128 for the tip.
+                before: [/validation/],
                     // conventions.vendor below specifies that *_tl* are
                     // top-level modules.  This line causes files in the
                     // vendor/ directory to go before other vendor files,
                     // e.g., *_tl* files.  All the vendor files go after
                     // the wrapped modules.
-                after: /_tl/,
+                after: [/_tl\b/],
             },
 
             // _tl files go after the wrapped modules instead of before
-            postWrapped: /_tl/,
+            postWrapped: [/_tl\b/],
         },
 
         stylesheets: {
@@ -54,7 +58,7 @@ module.exports = {
 
         // Don't wrap the following in modules.  Note that these files
         // are not scanned for dependencies, except for node_modules.
-        vendor: [ /((^node_modules|vendor)\/)|(_tl)/ ],
+        vendor: [ /(^node_modules|vendor)\//, /_tl\b/ ],
             // `node_modules` must be listed, but is handled specially by
             // brunch so that CommonJS modules can be used in the browser.
             //
@@ -107,10 +111,13 @@ module.exports = {
         },
 
         babel: {
-            ignore: [ 'app/**', 'lib/**', /^node_modules\/(?!spin\.js)/ ],
+            ignore: [ 'app/**', 'lib/**', /^node_modules\/(?!spin\.js)/,
+                        'test/**' ],
                 // At the moment, only spin.js needs Babel treatment.
                 // Ignore everything else to save time and reduce the
                 // chance of surprise.
+                // Example of surprise:
+                // https://stackoverflow.com/q/34973442/2877364
         },
     },
 
@@ -120,5 +127,44 @@ module.exports = {
         },
     },
 };
+
+// Run tests in development only.
+me.overrides.development = {
+    paths: {
+        watched: me.paths.watched.concat(['test']),
+    },
+
+    files: {
+        javascripts: {
+            entryPoints: {
+                ...me.files.javascripts.entryPoints,
+                'test/test-main.js': 'test/test-main.js',
+            },
+            order: {
+                // Have to copy it, or else it gets blown away.
+                before: me.files.javascripts.order.before || [],
+
+                // Jasmine files after validation, common.
+                after: me.files.javascripts.order.after.concat(
+                    [/jasmine.+jasmine[^-]/, /jasmine-html/,
+                        /jasmine.+boot\b/]),
+            },
+        },
+    },
+
+    modules: {
+        autoRequire: {
+            ...me.modules.autoRequire,
+            'test/test-main.js': ['test/test-main'],
+        },
+    },
+
+    conventions: {
+        vendor: me.conventions.vendor.concat(['test/lib/jasmine*/*']),
+    },
+};
+
+console.dir(me, {depth:null});
+module.exports = me;
 
 // vi: set ts=4 sts=4 sw=4 et ai: //
