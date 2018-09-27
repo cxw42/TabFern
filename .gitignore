@@ -23,7 +23,7 @@ core
 *.stackdump
 /*_history
 tags
-/webstore.zip
+/webstore*.zip
 foo.*
 
 # Output directories

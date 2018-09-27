@@ -11,7 +11,8 @@
     "rebuild": "sh -c 'rm -rf public ; npx brunch b ; find public'",
     "debug": "sh -c 'LOGGY_STACKS=1 npx brunch b -d 2>&1 |less -R'",
     "watch": "npx brunch watch",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "zip": "node zip.js"
   },
   "repository": {
     "type": "git",
@@ -54,6 +55,7 @@
     "tinycolor2": "^1.4.1"
   },
   "devDependencies": {
+    "archiver": "^3.0.0",
     "assetsmanager-brunch": "^1.8.1",
     "babel-brunch": "^7.0.0",
     "benchmark": "^2.1.4",
