@@ -180,6 +180,7 @@ vote at ${issue(125,true)}.
                 "label": future_i18n('Prompt for confirmation before deleting <b>tabs</b> in <b>unsaved</b> windows'),
             },
 
+/*
             {
                 "tab": future_i18n("Behaviour"),
                 "group": future_i18n("When Chrome..."),
@@ -194,6 +195,7 @@ vote at ${issue(125,true)}.
                 "type": "description",
                 "text": future_i18n("\u26a0 use this option only if you need it &mdash; it may not behave exactly as you would expect."),
             },
+*/
 
             // Appearance
             {
@@ -386,6 +388,13 @@ order.`
 
     // }}}2
             // Changelog                                          {{{1
+            {
+                "tab": future_i18n("What's new?"),
+                "group": `Version 0.1.18.1${brplain('2018-xx-xx')}`,
+                'group_html':true,
+                "type": "description",
+                "text": `Bugfixes: ${issue(131,true)}, ${issue(149,true)}`,
+            },
             {
                 "tab": future_i18n("What's new?"),
                 "group": `Version 0.1.18${brplain('2018-09-17')}`,
