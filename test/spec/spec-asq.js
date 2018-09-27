@@ -2,13 +2,11 @@
 
 describe('asq-helpers', function() {
     let ASQ, ASQH;
-    let M={};       // loaded modules
-    let dex;        // a asq we will test
 
-    beforeAll(R(['asynquence', 'asynquence-contrib', 'asq-helpers'],M,()=>{
-        ASQ = M['asynquence'];
-        ASQH = M['asq-helpers'];
-    }));
+    beforeAll(()=>{
+        ASQ = require('asynquence');
+        ASQH = require('lib/asq-helpers');
+    });
 
     it('can be loaded successfully', function() {
         expect(ASQ).not.toBeUndefined();

@@ -2,14 +2,17 @@
 // NOTE: run these in order.
 
 describe('jstree-multitype', ()=>{
-    let ASQ;
+    let ASQ, $;
     let div;    // where the tree goes
     let treeobj;
 
-    beforeAll(R(['jstree', 'jstree-multitype', 'asynquence',
-                    'asynquence-contrib'],null, ()=>{
-                        ASQ = RModules['asynquence-contrib'];
-                    }));
+    beforeAll(()=>{
+        $ = require('jquery');
+        require('lib/jstree');
+        require('lib/jstree-multitype');
+        require('asynquence');
+        ASQ = require('asynquence-contrib');
+    });
 
     //////////////////////////////////////////////////////////////////////
 

@@ -1,10 +1,14 @@
 // spec/jstree.js: Test basic jstree operations
 
 describe('jstree', function() {
+    let $;
     let new_div;    // where the tree goes
     let treeobj;
 
-    beforeAll(R('jstree'));
+    beforeAll(() => {
+        $ = require('jquery');
+        require('lib/jstree')
+    });
 
     it('can be created', function() {
         new_div = $('<div />').appendTo('body');

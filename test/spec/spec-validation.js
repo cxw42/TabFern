@@ -1,10 +1,8 @@
 // spec/validation.js: Test validation.
 
 describe('validation', function() {
-    let M={};       // loaded modules
-    let V;          // Shorthand for the validation module
-
-    beforeAll(R('common/validation',M, ()=>{ V = M['common/validation']; }));
+    let V = Validation;     // Shorthand for the validation module.
+        // It's already loaded because it's a vendor module.
 
     it('can be loaded successfully', function() {
         expect(V).not.toBeUndefined();

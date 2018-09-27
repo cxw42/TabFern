@@ -16,13 +16,13 @@ require('./lib/jasmine2-custom-message');
 
 require('./lib/asyncinator.js');
 
-require('./spec/spec-asyncinator');
+//require('./spec/spec-asyncinator');
 require('./spec/spec-asq');
 require('./spec/spec-validation');
 require('./spec/spec-multidex');
 require('./spec/spec-jstree');
 require('./spec/spec-jstree-multitype');
-require('./spec/spec-view-model');
+//require('./spec/spec-view-model');
 
 //const $ = require('jquery');
 //const split = require('lib/split-cw');

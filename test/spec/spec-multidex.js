@@ -1,16 +1,18 @@
 // spec/multidex.js: Test multidex.
 
 describe('multidex', function() {
-    let M={};       // loaded modules
+    let Multidex;
     let dex;        // a multidex we will test
 
-    beforeAll(R('multidex',M));
+    beforeAll(() => {
+        Multidex = require('lib/multidex');
+    });
 
     it('can be loaded successfully',
-        function() { expect(M.multidex).not.toBeUndefined(); });
+        function() { expect(Multidex).not.toBeUndefined(); });
 
     it('can create a new multidex', function(){
-        dex = M.multidex(['key'],['val1','val2']);
+        dex = Multidex(['key'],['val1','val2']);
         expect(dex).not.toBeUndefined();
         expect(dex.all_values).not.toBeUndefined();
     });
