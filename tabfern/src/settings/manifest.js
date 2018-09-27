@@ -393,12 +393,7 @@ order.`
                 "group": `Version 0.1.18.1${brplain('2018-xx-xx')}`,
                 'group_html':true,
                 "type": "description",
-                "text":
-`<ul>
-<li>Removed the close-extra-windows function ${issue(131)}.  Turns out it's
-a bug in Google Chrome, and if you exit and restart Chrome, the problem
-goes away.</li>
-</ul>`,
+                "text": `Bugfixes: ${issue(131,true)}, ${issue(149,true)}`,
             },
             {
                 "tab": future_i18n("What's new?"),
