@@ -1,11 +1,30 @@
 /// main.js: Main file for TabFern settings page
 /// Copyright (c) 2017--2018 Chris White
 
-/// An object to hold the settings for later programmatic access
-let settingsobj;
+// A static require statement that brunch will pick up on, but that will never
+// actually run.  This is what tells Brunch to include these top-level modules.
+if(false) {
+    require('vendor/validation');
+    require('vendor/common');
+}
+
+const ExportFile = require('lib/export-file');
+const ImportFile = require('lib/import-file');
 
 /// jQuery alias, since $ is mootools
-let $$ = jQuery;
+const $$ = require('jquery');
+
+const loglevel = require('loglevel');
+const spectrum = require('spectrum-colorpicker');
+const spin = require('spin.js');
+const tinycolor = require('tinycolor2');
+
+const manifest = require('./manifest');
+
+window.manifest = manifest; //because fancy-settings pulls from there
+
+/// An object to hold the settings for later programmatic access
+let settingsobj;
 
 // Color picker //////////////////////////////////////////////////// {{{1
 

@@ -18,6 +18,8 @@ let me = {
                     // main window, in an iframe in the popup
                 'app/bg/background.js': 'bg/background.js',
                     // background script (has no page)
+                'app/settings/settings.js': 'settings/settings-main.js',
+                    // settings window
             },
 
             order: {
@@ -51,6 +53,7 @@ let me = {
             // Output file:     [ deps to autoload ]
             'bg/background.js': ['bg/background'],
             'win/container.js': ['win/container'],
+            'settings/settings-main.js': ['settings/settings'],
         },
     },
 
