@@ -41,10 +41,12 @@ let me = {
         },
 
         stylesheets: {
-            joinTo: 'assets/bulk.css',
-                // i.e., output to public/assets/bulk.css.
-                // Note: can't use entryPoints -
-                // https://github.com/brunch/brunch/issues/1640
+            // Note: can't use entryPoints -
+            // https://github.com/brunch/brunch/issues/1640
+            joinTo: {
+                'win/main-pre.css': /^app\/win/,
+                'assets/bulk.css': /^(?!app\/win)/,
+            },
         },
     },
 
@@ -76,24 +78,25 @@ let me = {
             return /^static\//.test(path);
         },
 
-        // Don't ignore _*, or else Brunch won't copy _locales.  Thanks to
+        // Don't ignore _*, or else Brunch won't copy _locales.  Instead,
+        // use __ for partials.  Thanks to
         // https://stackoverflow.com/a/43426151/2877364 by
         // https://stackoverflow.com/users/4028896/johannes-filter
         // Answer modified to use the rest of the default ignore from
         // https://github.com/brunch/brunch/blob/ab89a016121fc7ba4ebfbe8bdc93a22bcd8d4cda/lib/utils/config-validate.js#L73
-        ignored: (path) => /vendor\/(node|j?ruby-.+|bundle)\//.test(path),
+        ignored: [/\/__/, /vendor\/(node|j?ruby-.+|bundle)\//]
     },
 
     npm: {
         compilers: ['babel-brunch'],    // run babel-brunch on node_modules/...
         aliases: { path: 'path-browserify' },
 
-        styles: {   // map module name to path of the CSS in the module's dir
-            'spin.js': ['spin.css'],
-            'rmodal': ['dist/rmodal-no-bootstrap.css'],
-            // Can't list font-awesome here because it doesn't have a
-            // JS module to require().
-        },
+//        styles: {   // map module name to path of the CSS in the module's dir
+//            'spin.js': ['spin.css'],
+//            'rmodal': ['dist/rmodal-no-bootstrap.css'],
+//            // Can't list font-awesome here because it doesn't have a
+//            // JS module to require().
+//        },
     },
 
     plugins: {
@@ -121,6 +124,12 @@ let me = {
                 // chance of surprise.
                 // Example of surprise:
                 // https://stackoverflow.com/q/34973442/2877364
+        },
+
+        sass: {
+            options: {
+                includePaths: ['node_modules'],
+            },
         },
     },
 
