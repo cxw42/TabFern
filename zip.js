@@ -33,8 +33,9 @@ archive.pipe(output);
 
 // ZIP the contents of public/, except for the development material.
 archive.glob(
-    'public/**',
+    '**/*',     // with respect to the cwd in the next argument
     {
+        cwd: 'public',  // https://github.com/archiverjs/node-archiver/issues/221#issuecomment-360070387
         ignore: [ '**/*.map',   // Source maps
                   'public/test/**', 'public/_locales/*.txt'],
     },
