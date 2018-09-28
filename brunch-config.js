@@ -68,7 +68,9 @@ module.exports = {
         // https://stackoverflow.com/users/4028896/johannes-filter
         // Answer modified to use the rest of the default ignore from
         // https://github.com/brunch/brunch/blob/ab89a016121fc7ba4ebfbe8bdc93a22bcd8d4cda/lib/utils/config-validate.js#L73
-        ignored: (path) => /vendor\/(node|j?ruby-.+|bundle)\//.test(path),
+//        ignored: (path) => 
+//            (/vendor\/(node|j?ruby-.+|bundle)\//.test(path)) ||
+//            (/(^|\b)__/.test(path)),
     },
 
     npm: {

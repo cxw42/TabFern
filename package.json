@@ -44,6 +44,7 @@
     "babel-brunch": "^7.0.0",
     "brunch": "^2.10.17",
     "replacer-brunch": "^1.1.1",
+    "sass-brunch": "^2.10.7",
     "uglify-es-brunch": "^1.0.5"
   }
 }
