@@ -1,0 +1,23 @@
+/* settings/main.scss: SCSS file for settings/index.html.
+ * N.B.: Ignore the deprecation warnings during build per
+ * https://github.com/sass/sass/issues/556#issuecomment-397771726 .
+ */
+
+/* === default === */
+@import "__default";
+
+/* === main === */
+@import "__main";
+
+/* === setting === */
+@import "__setting";
+
+/* === custom === */
+@import "__custom";
+
+/* === spin.js === */
+@import "spin.js/spin";
+
+/* === spectrum === */
+@import "spectrum-colorpicker/spectrum";
+

@@ -45,7 +45,7 @@ let me = {
             // https://github.com/brunch/brunch/issues/1640
             joinTo: {
                 'win/main-pre.css': /^app\/win/,
-                'assets/bulk.css': /^(?!app\/win)/,
+                'settings/settings-main.css': /^app\/settings/,
             },
         },
     },
