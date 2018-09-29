@@ -90,13 +90,6 @@ let me = {
     npm: {
         compilers: ['babel-brunch'],    // run babel-brunch on node_modules/...
         aliases: { path: 'path-browserify' },
-
-//        styles: {   // map module name to path of the CSS in the module's dir
-//            'spin.js': ['spin.css'],
-//            'rmodal': ['dist/rmodal-no-bootstrap.css'],
-//            // Can't list font-awesome here because it doesn't have a
-//            // JS module to require().
-//        },
     },
 
     plugins: {
@@ -111,8 +104,16 @@ let me = {
 
         assetsmanager: {    // Copy files on build.  This is for files that
             copyTo: {       // don't need to be watched.
-                'assets/fontawesome': ['node_modules/font-awesome/css',
-                                        'node_modules/font-awesome/fonts'],
+                // font-awesome
+                'assets/font-awesome/css':
+                    ['node_modules/font-awesome/css/font-awesome.css'],
+                // Fonts: we only need one format, so I picked the smallest.
+                'assets/font-awesome/fonts':
+                    ['node_modules/font-awesome/fonts/*.woff2'],
+
+                // spectrum-colorpicker
+                'assets/css':
+                    ['node_modules/spectrum-colorpicker/spectrum.css'],
             },
         },
 
@@ -121,8 +122,7 @@ let me = {
                         'test/**', 'vendor/**' ],
                 // At the moment, only spin.js needs Babel treatment.
                 // Ignore everything else to save time and reduce the
-                // chance of surprise.
-                // Example of surprise:
+                // chance of surprise.  An example of surprise:
                 // https://stackoverflow.com/q/34973442/2877364
         },
 
@@ -174,7 +174,26 @@ me.overrides.development = {
     conventions: {
         vendor: me.conventions.vendor.concat(['test/lib/jasmine*/*']),
     },
+
 };
+
+//// Production.  TODO figure out how to get the filenames to match between
+//// CSS and HTML.  Maybe copycat-brunch will be able to do this.
+//me.overrides.production = {
+//    plugins: {
+//        assetsmanager: {
+//            copyTo: {
+//                // Use the minified font-awesome CSS
+//                'assets/font-awesome/css/':
+//                    [ 'node_modules/font-awesome/css/font-awesome.min.css',
+//                      'node_modules/font-awesome/css/font-awesome.css.map' ],
+//
+//                'assets/font-awesome/fonts':
+//                    ['node_modules/font-awesome/fonts/*.woff2'],
+//            },
+//        },
+//    },
+//};
 
 console.dir(me, {depth:null});
 module.exports = me;
