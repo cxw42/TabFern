@@ -7,6 +7,8 @@ if(false) { // Vendor files - listed here only so they'll be bundled
     require('vendor/common');
 }
 
+const S = require('setting-definitions');   // in app/
+
 /// The module exports, for use in command-line debugging
 let me = {
     viewWindowID: undefined,    // the chrome.windows ID of our view
@@ -184,7 +186,7 @@ if(true) {
     callbackOnLoad(
         function() {
             console.log('TabFern: background window loaded');
-            if(getBoolSetting(CFG_POPUP_ON_STARTUP)) {
+            if(S.getBool(S.POPUP_ON_STARTUP)) {
                 console.log('Opening popup window');
                 setTimeout(me.loadView, 500);
             }
@@ -194,8 +196,8 @@ if(true) {
 
 // Set the defaults for the options.  The settings boilerplate from
 // extensionizr does not appear to have this facility.
-for(opt in CFG_DEFAULTS) {
-    setSettingIfNonexistent(opt, CFG_DEFAULTS[opt]);
+for(let opt in S.defaults) {
+    S.setIfNonexistent(opt, S.defaults[opt]);
 }
 
 console.log('TabFern: done running background.js');

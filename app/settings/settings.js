@@ -1,4 +1,4 @@
-/// main.js: Main file for TabFern settings page
+/// settings.js: Main file for TabFern settings page
 /// Copyright (c) 2017--2018 Chris White
 
 console.log('TabFern: running ' + __filename);
@@ -22,7 +22,7 @@ if(false) {
 const ExportFile = require('lib/export-file');
 const ImportFile = require('lib/import-file');
 
-/// jQuery alias, since $ is mootools
+/// jQuery alias, since $ and $$ are mootools
 const $j = require('jquery');
 
 const log = require('loglevel');
@@ -30,8 +30,9 @@ const spectrum = require('spectrum-colorpicker');
 const Spinner = require('spin.js').Spinner;
 const tinycolor = require('tinycolor2');
 
-const manifest = require('./manifest');
+const S = require('setting-definitions');   // in app/
 
+const manifest = require('./manifest');
 window.manifest = manifest; //because fancy-settings pulls from there
 
 /// An object to hold the settings for later programmatic access
@@ -43,9 +44,9 @@ let settingsobj;
 let createPicker = function createPicker() {
     let picker = $j('#scrollbar-color-picker-label');
 
-    let orig_color = getStringSetting(CFGS_SCROLLBAR_COLOR);
+    let orig_color = S.getString(S.S_SCROLLBAR_COLOR);
     if(!Validation.isValidColor(orig_color)) {
-        orig_color = CFG_DEFAULTS[CFGS_SCROLLBAR_COLOR];
+        orig_color = S.defaults[S.S_SCROLLBAR_COLOR];
     }
 
     // Replace the manifest entry with the color picker
@@ -68,14 +69,14 @@ let createPicker = function createPicker() {
         let colorstring;
         if(!newcolor || !newcolor.toString) {
             console.log('New color: default');
-            colorstring = CFG_DEFAULTS[CFGS_SCROLLBAR_COLOR];
+            colorstring = S.defaults[S.S_SCROLLBAR_COLOR];
         } else {
             console.log({'New color': newcolor.toString()});
             colorstring = String(newcolor.toString());
         }
 
         if(!colorstring || Validation.isValidColor(colorstring)) {
-            setSetting(CFGS_SCROLLBAR_COLOR, colorstring);
+            S.set(S.S_SCROLLBAR_COLOR, colorstring);
         } else {
             console.log('Invalid color');
             $j(picker).spectrum('set',orig_color);
@@ -91,8 +92,8 @@ let createPicker = function createPicker() {
 function saveSettingsToObject()
 {
     let retval = { __proto__: null };
-    for(let key in CFG_DEFAULTS) {
-        retval[key] = getRawSetting(key);
+    for(let key in S.defaults) {
+        retval[key] = S.getRaw(key);
     }
     return Object.seal(retval);
 } //saveSettingsToObject
@@ -119,9 +120,9 @@ function loadSettingsFromObject(obj) {
 
     log.info({'Loading settings from':obj});
 
-    for(let key in CFG_DEFAULTS) {
+    for(let key in S.defaults) {
         if(!obj[key]) {
-            log.info(`Setting ${key} not found`);
+            log.info(`Setting ${key} not found - skipping`);
             continue;   // not an error
         }
 
@@ -138,9 +139,9 @@ function loadSettingsFromObject(obj) {
         }
 
         // Confirm its type
-        if(typeof val !== typeof CFG_DEFAULTS[key]) {
+        if(typeof val !== typeof S.defaults[key]) {
             let m = `Setting ${key}: value is a ${typeof val} but should be `+
-                    `a ${typeof CFG_DEFAULTS[key]} - skipping`;
+                    `a ${typeof S.defaults[key]} - skipping`;
             log.warn(m);
             stash(m);
             ok = false;
@@ -148,13 +149,13 @@ function loadSettingsFromObject(obj) {
         }
 
         // Run value-specific checks, e.g., for well-formedness.
-        if(CFG_VALIDATORS[key]) {
-            let val_output = CFG_VALIDATORS[key](val);
+        if(S.validators[key]) {
+            let val_output = S.validators[key](val);
             if(val_output === undefined) {
                 let m = `Setting ${key}: Value ${val} failed validation`;
                 log.warn(m);
                 //stash(m); // Not user-facing
-                val = CFG_DEFAULTS[key];
+                val = S.defaults[key];
             } else {
                 val = val_output;
             }
@@ -164,7 +165,7 @@ function loadSettingsFromObject(obj) {
         if(typeof val === 'boolean' || typeof val === 'string') {
             // We already checked that val is of the correct type above,
             // so we can go ahead and set it.
-            setSetting(key, val);
+            S.set(key, val);
         } else {    // This shouldn't happen, so it's a log.error if it does.
             let m = `Unexpected type ${typeof val} for ${key} - skipping`;
             log.error(m);
@@ -197,7 +198,7 @@ function importSettings(evt_unused)
 
             } else {    // success
                 // Let ourselves know, after reload, that it worked
-                setSetting(SETTINGS_LOADED_OK, true);
+                S.set(S.SETTINGS_LOADED_OK, true);
 
                 // refresh all the controls by reloading
                 window.location.reload(true);
@@ -205,13 +206,13 @@ function importSettings(evt_unused)
 
         } catch(e) {
             window.alert("File " + filename + ' is not something I can '+
-                'understand as a TabFern settings file.  Parse error code was: ' +
-                e);
+                'understand as a TabFern settings file.  ' +
+                'Parse error code was: ' + e);
         }
         if(spinner) spinner.stop();
     } //processFile()
 
-    setSetting(SETTINGS_LOADED_OK, false);
+    S.set(S.SETTINGS_LOADED_OK, false);
     let importer = ImportFile(document, '.tabfern_settings');
     importer.getFileAsString(processFile);
 } //importSettings()
@@ -237,11 +238,11 @@ function main()
         $j('#export-settings').on('click', exportSettings);
 
         let is_settings_load = false;
-        if(getBoolSetting(SETTINGS_LOADED_OK)) {
+        if(S.getBool(S.SETTINGS_LOADED_OK)) {
             is_settings_load = true;
             let elem = $j('<div>').text("Settings loaded");
             $j('#import-settings').after(elem);
-            setSetting(SETTINGS_LOADED_OK, false);
+            S.set(S.SETTINGS_LOADED_OK, false);
         }
 
         // ----------------------------

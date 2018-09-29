@@ -48,9 +48,14 @@ var ASQ;    ///< Shorthand for asynquence
 var ASQH;   ///< Shorthand for asq-helpers
 var L;      ///< Holder --- L.log === log.  This gives closures access to the
             ///< current log instance.
+var S;      ///< Setting definitions
+var Esc;    ///< HTML escaper
 
 ////////////////////////////////////////////////////////////////////////// }}}1
 // Globals // {{{1
+
+/// The URL for new tabs we create
+const NEW_TAB_URL = chrome.runtime.getURL('/win/new_tab.html');
 
 // - Operation state -
 var my_winid;                   ///< window ID of this popup window
@@ -103,14 +108,8 @@ var is_devel_mode = false;
 /// The hamburger menu
 var Hamburger;
 
-/// An escaper
-var Esc;
-
 /// The module that handles <Shift> bypassing of the jstree context menu
 var Bypasser;
-
-/// The URL for new tabs we create
-const NEW_TAB_URL = chrome.runtime.getURL('/win/new_tab.html');
 
 ////////////////////////////////////////////////////////////////////////// }}}1
 // Module setup, and utilities // {{{1
@@ -165,6 +164,7 @@ function local_init()
     M = Modules.M;
     ASQ = Modules.ASQ;
     ASQH = Modules.ASQH;
+    S = Modules.S;
 } //init()
 
 /// Copy properties named #property_names from #source to #dest.
@@ -404,7 +404,7 @@ function showConfirmationModalDialog(message_html) {
         let key = (ev && typeof ev.key === 'string') ?
                     ev.key.toLowerCase(): null;
 
-        // Send the events on the next cycle.  Not sure if this is required.
+        // Send the events on the next cycle (not sure if the delay is required)
         if(key === KEY_YES) {
             ASQ().val(()=>{$("#confirm-dialog .btn[data-which='yes']").click();});
         } else if(key === KEY_NO) {
@@ -740,7 +740,7 @@ function actionCloseWindowButDoNotSave(node_id, node, unused_action_id, unused_a
     M.del_subtype(node_id, K.NST_OPEN);
 
     // Collapse the tree, if the user wants that
-    if(getBoolSetting("collapse-tree-on-window-close")) {
+    if(S.getBool(S.COLLAPSE_ON_WIN_CLOSE)) {
         T.treeobj.close_node(node);
         T.treeobj.redraw_node(node);    // to be safe
     }
@@ -832,11 +832,11 @@ function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el,
 
     no_confirmation = no_confirmation ||
         (win_val.keep === K.WIN_KEEP &&
-            !getBoolSetting(CFG_CONFIRM_DEL_OF_SAVED));
+            !S.getBool(S.CONFIRM_DEL_OF_SAVED));
 
     no_confirmation = no_confirmation ||
         (win_val.keep === K.WIN_NOKEEP &&
-            !getBoolSetting(CFG_CONFIRM_DEL_OF_UNSAVED))
+            !S.getBool(S.CONFIRM_DEL_OF_UNSAVED))
 
     if(no_confirmation) { // No confirmation required - just do it
         doDeletion();
@@ -856,10 +856,10 @@ function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el,
             if(result.reason !== 'cancel' && result.notAgain) {
                 /// The configuration key to clear
                 let conf_key = (win_val.keep === K.WIN_KEEP) ?
-                    CFG_CONFIRM_DEL_OF_SAVED :
-                    CFG_CONFIRM_DEL_OF_UNSAVED;
+                    S.CONFIRM_DEL_OF_SAVED :
+                    S.CONFIRM_DEL_OF_UNSAVED;
                 //log.info({"Don't ask again":conf_key});
-                setSetting(conf_key, false);
+                S.set(conf_key, false);
             }
 
             if(result.reason === 'yes') {
@@ -1017,8 +1017,8 @@ function actionDeleteTab(node_id, node, unused_action_id, unused_action_el,
 
     // General rule...
     let need_confirmation = (
-        (is_keep && getBoolSetting(CFG_CONFIRM_DEL_OF_SAVED_TABS)) ||
-        (is_nokeep && getBoolSetting(CFG_CONFIRM_DEL_OF_UNSAVED_TABS))
+        (is_keep && S.getBool(S.CONFIRM_DEL_OF_SAVED_TABS)) ||
+        (is_nokeep && S.getBool(S.CONFIRM_DEL_OF_UNSAVED_TABS))
     );
 
     // ... but we don't usually need confirmation for empty tabs...
@@ -1029,8 +1029,8 @@ function actionDeleteTab(node_id, node, unused_action_id, unused_action_el,
     // ... except when such a tab (or any tab being deleted) is the last
     // tab in its window.  In that case, check the window settings as well.
     if(parent_node.children.length === 1) {
-        if( (is_keep && getBoolSetting(CFG_CONFIRM_DEL_OF_SAVED)) ||
-            (is_nokeep && getBoolSetting(CFG_CONFIRM_DEL_OF_UNSAVED)) ) {
+        if( (is_keep && S.getBool(S.CONFIRM_DEL_OF_SAVED)) ||
+            (is_nokeep && S.getBool(S.CONFIRM_DEL_OF_UNSAVED)) ) {
             need_confirmation = true;
             prompt_name = 'dlgpDeleteTabAndWindow';
         }
@@ -1053,9 +1053,9 @@ function actionDeleteTab(node_id, node, unused_action_id, unused_action_el,
             if(result.reason !== 'cancel' && result.notAgain) {
                 /// The configuration key to clear
                 let conf_key = is_keep ?
-                    CFG_CONFIRM_DEL_OF_SAVED_TABS :
-                    CFG_CONFIRM_DEL_OF_UNSAVED_TABS;
-                setSetting(conf_key, false);
+                    S.CONFIRM_DEL_OF_SAVED_TABS :
+                    S.CONFIRM_DEL_OF_UNSAVED_TABS;
+                S.set(conf_key, false);
             }
 
             if(result.reason === 'yes') {
@@ -1320,7 +1320,7 @@ function createNodeForWindow(cwin, keep, no_prune)
     // Don't put our own popup window in the list
     if( cwin.id && (cwin.id === my_winid) ) return;
 
-    let is_first = (!!cwin && getBoolSetting(CFG_NEW_WINS_AT_TOP));
+    let is_first = (!!cwin && S.getBool(S.NEW_WINS_AT_TOP));
     let {node_id, val} = M.vnRezWin(is_first);
     if(!node_id) {      //sanity check
         log.debug({"<M> Could not create tree node for open cwin":cwin,keep,no_prune});
@@ -1345,7 +1345,7 @@ function createNodeForWindow(cwin, keep, no_prune)
 
     // Remove extra tabs if the user wants
     if(!no_prune && !do_not_prune_right_now
-        && getBoolSetting(CFG_PRUNE_NEW_WINDOWS)
+        && S.getBool(S.PRUNE_NEW_WINDOWS)
     ) {
         pruneWindowSetTimer(val, cwin);
     }
@@ -1359,7 +1359,7 @@ function createNodeForWindow(cwin, keep, no_prune)
 function createNodeForClosedWindowV1(win_data_v1)
 {
     let is_ephemeral = Boolean(win_data_v1.ephemeral);  // missing => false
-    let shouldCollapse = getBoolSetting(CFG_COLLAPSE_ON_STARTUP);
+    let shouldCollapse = S.getBool(S.COLLAPSE_ON_STARTUP);
 
     log.info({'Closed window':win_data_v1.raw_title, 'is ephemeral?': is_ephemeral});
 
@@ -1857,7 +1857,7 @@ function treeOnSelect(evt_unused, evt_data)
         if(is_win) {    // clicked on an open window
 
             if( M.isWinPartlyOpen(win_node) &&
-                (getStringSetting(CFGS_OPEN_REST_ON_CLICK) === CFG_OROC_DO)
+                (S.getString(S.S_OPEN_REST_ON_CLICK) === S.OROC_DO)
             ) {
                 action = ActionTy.open_rest;
             } else {
@@ -2105,7 +2105,7 @@ function winOnRemoved(cwin_id)
     // Stash the size of the window being closed as the size for
     // reopened windows.
     if(cwin_id in winSizes) {
-        // TODO only do this is cwin_id's type is "normal"
+        // TODO only do this if cwin_id's type is "normal"
         newWinSize = winSizes[cwin_id];
         delete winSizes[cwin_id];
     }
@@ -3031,7 +3031,7 @@ function hamRestoreLastDeleted()
     let wins_loaded = loadSavedWindowsFromData(dat);
     if(typeof wins_loaded === 'number' && wins_loaded > 0) {
         // We loaded the window successfully.  Open it, if the user wishes.
-        if(getBoolSetting(CFG_RESTORE_ON_LAST_DELETED, false)) {
+        if(S.getBool(S.RESTORE_ON_LAST_DELETED, false)) {
             let root = T.root_node();
             let node_id = root.children[root.children.length-1];
             T.treeobj.select_node(node_id);
@@ -3071,7 +3071,7 @@ function hamSortOpenToTop()
 {
     hamSorter(Modules.sorts.open_windows_to_top)();     //do the sort
 
-    if(getBoolSetting(CFG_JUMP_WITH_SORT_OPEN_TOP, true)) {
+    if(S.getBool(S.JUMP_WITH_SORT_OPEN_TOP, true)) {
         let h = $('html');
         if(h.scrollTop != 0) h.animate({scrollTop:0});
             // https://stackoverflow.com/a/3442125/2877364 by
@@ -3306,7 +3306,7 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
         }
 
         if( M.isWinPartlyOpen(node) &&
-            (getStringSetting(CFGS_OPEN_REST_ON_CLICK) === CFG_OROC_DO_NOT)
+            (S.getString(S.S_OPEN_REST_ON_CLICK) === S.OROC_DO_NOT)
         ) {
             winItems.openAllItem = {
                 label: 'Open all tabs',
@@ -4044,17 +4044,17 @@ let custom_bg_color = false;
 function preLoadInit()
 {
     next_init_step('preload');
-    if(getBoolSetting(CFG_HIDE_HORIZONTAL_SCROLLBARS)) {
+    if(S.getBool(S.HIDE_HORIZONTAL_SCROLLBARS)) {
         document.querySelector('html').classList += ' tf--feature--hide-horizontal-scrollbars';
     }
 
-    if(getBoolSetting(CFG_SKINNY_SCROLLBARS)) {
+    if(S.getBool(S.SKINNY_SCROLLBARS)) {
         document.querySelector('html').classList += ' skinny-scrollbar';
     }
 
     //Custom skinny-scrollbar color
-    CSSC: if(getBoolSetting(CFG_SKINNY_SCROLLBARS) && document.styleSheets) {
-        let color = getStringSetting(CFGS_SCROLLBAR_COLOR);
+    CSSC: if(S.getBool(S.SKINNY_SCROLLBARS) && document.styleSheets) {
+        let color = S.getString(S.S_SCROLLBAR_COLOR);
         color = Modules.tinycolor(color);
         if(!color.isValid()) {
             log.error({'Invalid custom color for skinny scrollbars':
@@ -4075,7 +4075,7 @@ function preLoadInit()
     }
 
     let url = chrome.runtime.getURL(
-                `/assets/jstree-3.3.4/themes/${getThemeName()}/style.css`);
+                `/assets/jstree-3.3.4/themes/${S.getThemeName()}/style.css`);
     let before = document.getElementById('last-stylesheet');
     loadCSS(document, url, before);
 
@@ -4085,14 +4085,14 @@ function preLoadInit()
 
     let body = document.querySelector('body');
     if(body) {
-        body.classList += ` jstree-${getThemeName()}`;
+        body.classList += ` jstree-${S.getThemeName()}`;
     }
 
     // Apply custom background, if any.
     // NOTE: need to keep this logic in sync with the validator for
-    // CFGS_BACKGROUND in src/common/common.js.  TODO remove this duplication.
-    BG: if(haveSetting(CFGS_BACKGROUND)) {
-        let bg = getStringSetting(CFGS_BACKGROUND, '').trim();
+    // S.S_BACKGROUND in src/common/common.js.  TODO remove this duplication.
+    BG: if(S.have(S.S_BACKGROUND)) {
+        let bg = S.getString(S.S_BACKGROUND, '').trim();
 
         if(bg.length < 2) break BG;     // no valid color is one character
 
@@ -4190,7 +4190,7 @@ function createMainTreeIfWinIdReceived_catch(done, win_id_msg_or_error)
     log.info('TabFern tree.js initializing tree in window ' + win_id.toString());
 
     let contextmenu_items =
-        getBoolSetting(CFG_ENB_CONTEXT_MENU, true) ? getMainContextMenuItems
+        S.getBool(S.ENB_CONTEXT_MENU, true) ? getMainContextMenuItems
                                                     : false;
 
     // Set up to receive resize notifications from item_tree.
@@ -4396,7 +4396,7 @@ function initTreeFinal(done)
         // If the user wishes, sort the open windows to the top.  Do this only
         // if everything initialized successfully, since hamSortOpenToTop
         // is not guaranteed to work correctly otherwise.
-        if(getBoolSetting(CFG_OPEN_TOP_ON_STARTUP)) {
+        if(S.getBool(S.OPEN_TOP_ON_STARTUP)) {
             ASQ().val(hamSortOpenToTop);
         }
 
