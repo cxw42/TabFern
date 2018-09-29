@@ -2,37 +2,33 @@
 // Note: specs must be run in order
 
 describe('view/model', function() {
-    let Modules={};     ///< loaded modules
-    let M;              ///< Model: module under test
-    let K;              ///< view/const
-    let T;              ///< view/item_tree
-    let D;              ///< view/item_details
     let $;              ///< jQuery
+    let K;              ///< win/const
+    let T;              ///< win/item_tree
+    let D;              ///< win/item_details
+    let M;              ///< win/model: module under test
 
     // Setup /////////////////////////////////////////////////////////// {{{1
 
-    beforeAll(R(['jquery','jstree','view/model', 'view/const',
-                    'view/item_tree', 'view/item_details'],
-            Modules,
-            ()=>{
-                M = Modules['view/model'];
-                K = Modules['view/const'];
-                T = Modules['view/item_tree'];
-                D = Modules['view/item_details'];
-                $ = Modules['jquery'];
+    beforeAll(()=>{
+        $ = require('jquery');
+        require('lib/jstree');
+        K = require('win/const');
+        T = require('win/item_tree');
+        D = require('win/item_details');
+        M = require('win/model');
 
-                this.$div = $('<div />').appendTo('body');
-                T.create(this.$div, true);
-                    // true = check-callback => allow all
-                    // no dnd or context menu
+        this.$div = $('<div />').appendTo('body');
+        T.create(this.$div, true);
+            // true = check-callback => allow all.
+            // No dnd or context menu.
 
-                // Create vars we will use below
-                this.win_node_id = null;
-                this.win_val = null;
-                this.tab_node_id = null;
-                this.tab_val = null;
-            }
-    ));
+        // Create vars we will use below
+        this.win_node_id = null;
+        this.win_val = null;
+        this.tab_node_id = null;
+        this.tab_val = null;
+    });
 
     it('can be loaded successfully', ()=>{
         expect(M).not.toBeUndefined();
