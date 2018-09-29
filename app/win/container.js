@@ -1,6 +1,8 @@
 // win/container.js: main script for win/container.html.
 // Part of TabFern.  Copyright (c) cxw42, r4j4h, 2017--2018.
 
+console.log('TabFern: running ' + __filename);
+
 module.exports = {};
     // main doesn't provide access to any functions currently
 

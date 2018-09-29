@@ -1,5 +1,27 @@
 // brunch-config.js for brunch-test by cxw42
 
+/*
+ * Notes on the TabFern extension friendly version number.
+ *
+ * The friendly version is the version_name in static/manifest.json.  Since it
+ * is displayed in the title bar of the popup window, it is lowercase (no
+ * shouting!).  The following should match:
+ *
+ *  - static/manifest.json (both the version and version_name)
+ *  - package.json (the version_name)
+ *  - package-lock.json (the version_name)
+ *
+ * Design decision: version numbers follow semver.org.
+ * In the Chrome manifest, the version_name attribute tracks the above.
+ * The version attribute, `x.y.z.w`, which is compared in numeric order L-R,
+ * is as follows: x.y.z track the above.  w is the "-pre." or "-rc." number.
+ * A release to the Chrome Web Store has w=1337.
+ * E.g., 1.2.3-pre.4 is `version='1.2.3.4'`, and 1.2.3 (release) is
+ * `version='1.2.3.1337'`.
+ * If you get up to -pre.1336, just bump the `z` value and reset `w` :) .
+ */
+
+/// The object we will eventually return
 let me = {
     paths: {
         // Bundle from these:
@@ -93,14 +115,6 @@ let me = {
     },
 
     plugins: {
-        replacer: {     // Permit using __filename in modules
-            dict: [
-                { key: /\b__filename\b/, }
-            ],
-            replace: (str, key, value, path) => {
-                return str.split(key).join(`'${path}'`)
-            }
-        },
 
         assetsmanager: {    // Copy files on build.  This is for files that
             copyTo: {       // don't need to be watched.
@@ -138,6 +152,27 @@ let me = {
             sourceMaps: true,
         },
     },
+};
+
+// String replacement
+let chrome_manifest = require('./static/manifest.json');
+
+// Regexes we will replace
+const kFN = /\b__filename\b/;
+
+me.plugins.replacer = {     // Permit using __filename in modules
+    dict: [
+        { key: kFN, },
+        { key: /\bTABFERN_VERSION\b/,
+            value: `'${chrome_manifest.version_name}'` },
+    ],
+
+    replace: (str, key, value, path) => {
+        if(key === kFN) {
+            value = `'${path}'`;
+        }
+        return str.split(key).join(value);
+    }
 };
 
 // Run tests in development only.

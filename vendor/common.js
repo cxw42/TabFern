@@ -7,27 +7,6 @@
 
 console.log('TabFern common.js loading');
 
-//////////////////////////////////////////////////////////////////////////
-// General constants // {{{1
-
-/// The TabFern extension friendly version number.  Displayed in the
-/// title bar of the popup window, so lowercase (no shouting!).
-const TABFERN_VERSION='0.2.0-pre.3'  //' alpha \u26a0'
-    // When you change this, also update:
-    //  - manifest.json: both the version and version_name
-    //  - package.json
-    //  - package-lock.json
-
-// Design decision: version numbers follow semver.org.
-// In the Chrome manifest, the version_name attribute tracks the above.
-// The version attribute, `x.y.z.w`, which is compared in numeric order L-R,
-// is as follows: x.y.z track the above.  w is the "-pre." or "-rc." number.
-// A release to the Chrome Web Store has w=1337.
-// E.g., 1.2.3-pre.4 is `version='1.2.3.4'`, and 1.2.3 (release) is
-// `version='1.2.3.1337'`.
-// If you get up to -pre.1336, just bump the `z` value and reset `w` :) .
-
-////////////////////////////////////////////////////////////////////////// }}}1
 // Messages between parts of TabFern // {{{1
 
 // The format of a message is

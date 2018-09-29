@@ -1,6 +1,8 @@
 /// main.js: Main file for TabFern settings page
 /// Copyright (c) 2017--2018 Chris White
 
+console.log('TabFern: running ' + __filename);
+
 // A static require statement that brunch will pick up on, but that will never
 // actually run.  This is what tells Brunch to include these top-level modules.
 if(false) {

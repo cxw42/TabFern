@@ -1,6 +1,6 @@
 // background.js: background script for TabFern.  Runs as a module.
 // CC-BY-SA 3.0
-console.log('TabFern: running background.js');
+console.log('TabFern: running ' + __filename);
 
 if(false) { // Vendor files - listed here only so they'll be bundled
     require('vendor/validation');

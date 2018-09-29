@@ -14,7 +14,7 @@
 // TODO break more of this into separate modules.
 
 console.log(`=============================================================
-Loading TabFern ${TABFERN_VERSION}`);
+Loading TabFern ${TABFERN_VERSION} from ${__filename}`);
 
 //////////////////////////////////////////////////////////////////////////
 // Modules // {{{1
