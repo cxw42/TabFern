@@ -85,7 +85,7 @@
         jq = $('> div > .' + K.ACTION_GROUP_WIN_CLASS, node_dom_elem);
 
         if(jq.length) {     // Do this node
-            let sl = $(window).scrollLeft();
+            let sl = $(window).scrollLeft();    // *** Forces layout ***
             rjustify_inner(jq, module.last_r_edge, sl);
         }
 
@@ -111,7 +111,7 @@
         // TODO if it's an after_open or after_close, only process nodes
         // from that node to the bottom of the tree.
         $('.' + K.ACTION_GROUP_WIN_CLASS).each(function(idx, dom_elem) {
-            let sl = $(window).scrollLeft();
+            let sl = $(window).scrollLeft();    // *** Forces layout
             rjustify_inner($(dom_elem), r_edge, sl);
         });
     } //rjustify_action_group_at
