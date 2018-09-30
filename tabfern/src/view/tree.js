@@ -685,8 +685,19 @@ function actionRenameWindow(node_id, node, unused_action_id, unused_action_el)
         win_val.raw_title = win_name;
     }
 
-    M.remember(node_id, false);
-        // assume that a user who bothered to rename a node
+    // We need the below for editing the bullet on a tab, which causes
+    // that node to be redrawn, but does not trigger a redraw.jstree.
+
+    // Put the actions in the right place.  TODO move this to model?
+    T.treeobj.element.one('redraw_event.jstree', function(evt, evt_data){
+        //log.info({redraw_event:arguments});
+        if(evt_data && typeof evt_data === 'object' && evt_data.obj) {
+            T.rjustify_node_actions(evt_data.obj);
+        }
+    });
+
+    M.remember(node_id, false);     // calls refresh_label internally.
+        // Assume that a user who bothered to rename a node
         // wants to keep it.  false => do not change the raw_title,
         // since the user just specified it.
 
@@ -932,6 +943,20 @@ function actionEditTabBullet(node_id, node, unused_action_id, unused_action_el)
     let question = _T('dlgpTabNote', val.raw_title);
     let new_bullet = window.prompt(question, val.raw_bullet || '');
     if(new_bullet === null) return;   // user cancelled
+
+    // We need the below for editing the bullet on a tab, which causes
+    // that node to be redrawn, but does not trigger a redraw.jstree.
+    // We cannot leave this handler attached to redraw_event all the time
+    // because it triggers reflow during full redraw, which seems
+    // to be the cause of #102.
+
+    // Put the actions in the right place.  TODO move this to model?
+    T.treeobj.element.one('redraw_event.jstree', function(evt, evt_data){
+        //log.info({redraw_event:arguments});
+        if(evt_data && typeof evt_data === 'object' && evt_data.obj) {
+            T.rjustify_node_actions(evt_data.obj);
+        }
+    });
 
     val.raw_bullet = new_bullet;
     M.refresh_label(node_id);
@@ -4195,19 +4220,8 @@ function addEventListeners(done)
         }
     });
 
-    // TODO determine whether we need the above, given that we have the below.
-    // It appears we do need the above, at least on startup, and after
-    // removing a closed window from the tree without changing the scrollbar
-    // visibility.
-    // We need the below for editing the bullet on a tab, which causes
-    // that node to be redrawn, but does not trigger a redraw.jstree.
-
-    T.treeobj.element.on('redraw_event.jstree', function(evt, evt_data){
-        //log.info({redraw_event:arguments});
-        if(evt_data && typeof evt_data === 'object' && evt_data.obj) {
-            T.rjustify_node_actions(evt_data.obj);
-        }
-    });
+    // We need the above, at least on startup, and after removing a closed
+    // window from the tree without changing the scrollbar visibility.
 
     // Set event listeners
     T.treeobj.element.on('changed.jstree', treeOnSelect);
