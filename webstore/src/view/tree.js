@@ -3726,6 +3726,11 @@ var treeCheckCallback = (function()
 
             let old_parent = T.treeobj.get_node(node.parent);
 
+            // Focus the dropped node when the drop completes.  Otherwise,
+            // jstree's _redraw() scrolls to whatever node was previously
+            // focused after the move completes.
+            T.treeobj._data.core.focused = node.id;
+
             // If we are moving an open tab, set up to move the tab in Chrome.
             if( moving_val.isOpen &&
                 old_parent &&
