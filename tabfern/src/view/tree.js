@@ -685,17 +685,6 @@ function actionRenameWindow(node_id, node, unused_action_id, unused_action_el)
         win_val.raw_title = win_name;
     }
 
-    // We need the below for editing the bullet on a tab, which causes
-    // that node to be redrawn, but does not trigger a redraw.jstree.
-
-    // Put the actions in the right place.  TODO move this to model?
-    T.treeobj.element.one('redraw_event.jstree', function(evt, evt_data){
-        //log.info({redraw_event:arguments});
-        if(evt_data && typeof evt_data === 'object' && evt_data.obj) {
-            T.rjustify_node_actions(evt_data.obj);
-        }
-    });
-
     M.remember(node_id, false);     // calls refresh_label internally.
         // Assume that a user who bothered to rename a node
         // wants to keep it.  false => do not change the raw_title,
@@ -774,6 +763,7 @@ function actionCloseWindowButDoNotSave(node_id, node, unused_action_id, unused_a
     // Collapse the tree, if the user wants that
     if(getBoolSetting("collapse-tree-on-window-close")) {
         T.treeobj.close_node(node);
+        T.install_rjustify(null, 'redraw_event.jstree', 'once');
         T.treeobj.redraw_node(node);    // to be safe
     }
 
@@ -1468,10 +1458,11 @@ function connectChromeWindowToTreeWindowItem(cwin, existing_win, options = {})
     // Note: We do not need to update existing_win.val.ordered_url_hash.
     // Since we got here, we know that it was a match.
 
+    T.install_rjustify(null, 'redraw_event.jstree', 'once');
     T.treeobj.redraw_node(existing_win.node);
 
     // Prune any extra tabs Chrome may have created due to bugs.
-    pruneWindow(cwin, existing_win.node.children.length);
+    // REMOVED #131 pruneWindow(cwin, existing_win.node.children.length);
 
     return true;
 } //connectChromeWindowToTreeWindowItem()
@@ -1600,6 +1591,7 @@ var loadSavedWindowsFromData = (function(){
 /* // TEMPORARILY REMOVED
                     T.treeobj.suppress_redraw(true);        // EXPERIMENTAL
 */
+                    T.do_not_rjustify = true;
                     loader_retval = versionLoaders[vernum](data);
 
                 } catch(e) {
@@ -1610,6 +1602,7 @@ var loadSavedWindowsFromData = (function(){
                     // suppress_redraw(false) will be called.
                 }
 
+                delete T.do_not_rjustify;
 /* // TEMPORARILY REMOVED
                 T.treeobj.suppress_redraw(false);           // EXPERIMENTAL
                 T.treeobj.redraw(true);     // Just in case the experiment
@@ -2657,13 +2650,8 @@ function tabOnRemoved(tabid, removeinfo)
             return;
         }
 
-        log.debug({'Removing value for ctab':tabid,tab_val,removeinfo});
-        D.tabs.remove_value(tab_val);
-            // So any events that are triggered won't try to look for a
-            // nonexistent tab.
-
-        log.debug({[`Removing tree node ${tab_node.id} for ctab`]:tabid,tab_node,tab_val,removeinfo});
-        T.treeobj.because('chrome','delete_node',tab_node);
+        log.debug({'Removing value and entry for ctab':tabid,tab_node, tab_val,removeinfo});
+        M.eraseTab(tab_node, 'chrome');
     }
 
     log.debug({'Updating tab index values after removing ctab':tabid,window_node_id,removeinfo});

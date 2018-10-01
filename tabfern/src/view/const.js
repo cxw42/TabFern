@@ -90,6 +90,7 @@
     /// Make a callback function that will forward to #fn on a later tick.
     /// @param fn {function} the function to call
     module.nextTickRunner = function(fn) {
+        // TODO use ASQ() instead.
         function inner(...args) {   // the actual callback
             setTimeout( function() { fn(...args); } ,0);
                 // on a later tick, call #fn, passing it the arguments the
