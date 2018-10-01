@@ -334,14 +334,26 @@
 
     /// Refresh a node after changes have been made.
     /// @param vorny {mixed}    The item
+    /// @param what {optional Object}   If an object, truthy keys
+    ///     icon, tooltip, label cause that to be refreshed.
+    ///     If not provided, or not an object, all three will be refreshed.
     /// @return {Boolean}   False on unknown item; true otherwise.
-    module.refresh = function(vorny) {
+    module.refresh = function(vorny, what) {
         let {val, node_id} = module.vn_by_vorny(vorny);
         if(!val) return false;
+        if(!what || (typeof what !== 'object')) {
+            what = {icon: true, tooltip: true, label:true};
+        }
 
-        module.refresh_icon(val);
-        module.refresh_tooltip(val, true);  // true => don't call redraw_node
-        module.refresh_label(val);      // calls redraw_node - put this last
+        if(what.icon) module.refresh_icon(val);
+        if(what.tooltip) {
+            module.refresh_tooltip(val, !!what.label);
+            // 2nd parm true => don't call redraw_node.  Therefore,
+            // don't refresh if we are going to be calling refresh_label()
+            // in just a moment.
+        }
+        if(what.label) module.refresh_label(val);
+            // calls redraw_node - put this last
         return true;
     };
 

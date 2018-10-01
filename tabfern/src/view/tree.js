@@ -2463,6 +2463,7 @@ function tabOnUpdated(tabid, changeinfo, ctab)
     let dirty = false;
     let should_refresh_label = false;
     let should_refresh_tooltip = false;
+    let should_refresh_icon = false;
 
     log.info({'Tab updated': tabid, 'Index': ctab.index, changeinfo, ctab});
 
@@ -2488,6 +2489,8 @@ function tabOnUpdated(tabid, changeinfo, ctab)
     if(new_raw_url !== tab_node_val.raw_url) {
         dirty = true;
         should_refresh_tooltip = true;
+            // TODO check the config - it may not be necessary to update
+            // the tooltip since the URL might be in the tooltip
         tab_node_val.raw_url = new_raw_url;
         M.updateOrderedURLHash(node.parent);
             // When the URL changes, the hash changes, too.
@@ -2522,17 +2525,12 @@ function tabOnUpdated(tabid, changeinfo, ctab)
     let new_raw_favicon_url = changeinfo.favIconUrl || ctab.favIconUrl || null;
     if(new_raw_favicon_url !== tab_node_val.raw_favicon_url) {
         dirty = true;
+        should_refresh_icon = true;
         tab_node_val.raw_favicon_url = new_raw_favicon_url;
-        M.refresh_icon(tab_node_val);
     }
 
-    if(should_refresh_label) {
-        M.refresh_label(tab_node_id);
-    }
-
-    if(should_refresh_tooltip) {
-        M.refresh_tooltip(tab_node_id);
-    }
+    M.refresh(tab_node_val, { icon: should_refresh_icon,
+            label: should_refresh_label, tooltip: should_refresh_tooltip });
 
     if(dirty) {
         saveTree();
