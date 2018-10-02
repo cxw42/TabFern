@@ -1,8 +1,8 @@
 {
   "name": "__MSG_wsLongName__",
   "short_name": "__MSG_wsShortName__",
-  "version": "0.1.19.1",
-  "version_name": "0.1.19-rc.1",
+  "version": "0.1.19.1337",
+  "version_name": "0.1.19",
   "offline_enabled": true,
   "manifest_version": 2,
   "minimum_chrome_version": "54",

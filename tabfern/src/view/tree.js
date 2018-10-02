@@ -2168,7 +2168,7 @@ function initFocusHandler()
         else change_from = FC_FROM_OPEN;
 
         // Uncomment if you are debugging focus-change behaviour TODO RESUME HERE
-        log.info({change_from, old_win_id, change_to, win_id});
+        //log.info({change_from, old_win_id, change_to, win_id});
 
         let same_window = (old_win_id === win_id);
         previously_focused_winid = win_id;
