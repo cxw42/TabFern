@@ -327,7 +327,7 @@ function callbackOnLoad(callback)
     if(document.readyState !== 'complete') {
         // Thanks to https://stackoverflow.com/a/28093606/2877364 by
         // https://stackoverflow.com/users/4483389/matthias-samsel
-        window.addEventListener('load', callback, { 'once': true });
+        window.addEventListener('load', ()=>{callback();}, { 'once': true });
     } else {
         window.setTimeout(callback, 0);    //always async
     }
