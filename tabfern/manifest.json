@@ -1,7 +1,7 @@
 {
   "name": "__MSG_wsLongName__",
   "short_name": "__MSG_wsShortName__",
-  "version": "0.1.19.1337",
+  "version": "0.1.19.1338",
   "version_name": "0.1.19",
   "offline_enabled": true,
   "manifest_version": 2,

@@ -390,7 +390,7 @@ order.`
             // Changelog                                          {{{1
             {
                 "tab": future_i18n("What's new?"),
-                "group": `Version 0.1.19${brplain('2018-xx-xx')}`,
+                "group": `Version 0.1.19${brplain('2018-10-03')}`,
                 'group_html':true,
                 "type": "description",
                 "text": `<ul><li>Bugfixes and internals: ${issue(102,true)},
