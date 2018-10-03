@@ -26,11 +26,12 @@ tags
 /webstore.zip
 foo.*
 
-# Output directories
+# Outputs
 /build*
 /doc/
 /dist/
 *-packed/
+*.zip
 
 # Test outputs
 *.e
