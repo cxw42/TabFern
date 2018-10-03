@@ -12,7 +12,7 @@ console.log('TabFern common.js loading');
 
 /// The TabFern extension friendly version number.  Displayed in the
 /// title bar of the popup window, so lowercase (no shouting!).
-const TABFERN_VERSION='0.1.18';
+const TABFERN_VERSION='0.1.19';
     // When you change this, also update:
     //  - manifest.json: both the version and version_name
     //  - package.json
@@ -119,7 +119,8 @@ _VAL[CFG_TITLE_IN_TOOLTIP] = _vbool;
 
 const CFG_PRUNE_NEW_WINDOWS = 'prune-new-windows';
 _DEF[CFG_PRUNE_NEW_WINDOWS] = false;
-_VAL[CFG_PRUNE_NEW_WINDOWS] = _vbool;
+_VAL[CFG_PRUNE_NEW_WINDOWS] = ()=>false;
+    // Always false --- don't permit a settings load to set prune to true.
 
 /// Not actually a setting, but an indicator that we loaded settings OK.
 /// Used by src/settings/main.js.
@@ -326,7 +327,7 @@ function callbackOnLoad(callback)
     if(document.readyState !== 'complete') {
         // Thanks to https://stackoverflow.com/a/28093606/2877364 by
         // https://stackoverflow.com/users/4483389/matthias-samsel
-        window.addEventListener('load', callback, { 'once': true });
+        window.addEventListener('load', ()=>{callback();}, { 'once': true });
     } else {
         window.setTimeout(callback, 0);    //always async
     }

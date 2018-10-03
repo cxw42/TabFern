@@ -180,6 +180,7 @@ vote at ${issue(125,true)}.
                 "label": future_i18n('Prompt for confirmation before deleting <b>tabs</b> in <b>unsaved</b> windows'),
             },
 
+/*
             {
                 "tab": future_i18n("Behaviour"),
                 "group": future_i18n("When Chrome..."),
@@ -194,6 +195,7 @@ vote at ${issue(125,true)}.
                 "type": "description",
                 "text": future_i18n("\u26a0 use this option only if you need it &mdash; it may not behave exactly as you would expect."),
             },
+*/
 
             // Appearance
             {
@@ -388,6 +390,14 @@ order.`
             // Changelog                                          {{{1
             {
                 "tab": future_i18n("What's new?"),
+                "group": `Version 0.1.19${brplain('2018-xx-xx')}`,
+                'group_html':true,
+                "type": "description",
+                "text": `<ul><li>Bugfixes and internals: ${issue(102,true)},
+                        ${issue(131,true)}, ${issue(149,true)}</li></ul>`,
+            },
+            {
+                "tab": future_i18n("What's new?"),
                 "group": `Version 0.1.18${brplain('2018-09-17')}`,
                 'group_html':true,
                 "type": "description",
@@ -561,7 +571,7 @@ the window.  A small thing, but I hope it helps!</li>
 <p>Would you be willing to run a pre-release version?  You would get the
 new features about a week earlier that way&nbsp;:)&nbsp;.  If so, please
 <a href="mailto:tabfern@zoho.com">send me a note</a> or ping me
-<a href="https://github.com/cxw42">on GitHub</a>.  The only requirements are
+<a href="https://github.com/cxw42/TabFern/issues/122">on GitHub</a>.  The only requirements are
 a <a href="https://github.com/join">free GitHub account</a> and the willingness
 to <a href="https://github.com/cxw42/TabFern/issues/new">report issues</a>
 if you run across them.  Thanks for considering this request!
@@ -647,10 +657,11 @@ ready yet.)  ${issue(36)}</li>
                 "group": `Version 0.1.5${brplain('2017-09-07')}`,
                 'group_html':true,
                 "type": "description",
-                "text": "You can now right-click on a saved window and choose "+
+                "text": "<ul><li>You can now right-click on a saved window " +
+                    "and choose " +
                     '"Forget" to leave the window as open, but not save it '+
                     'for next time.  Also includes some bug fixes, including '+
-                    'workarounds for Chrome 61 changes.'
+                    'workarounds for Chrome 61 changes.</li></ul>'
             },
             {
                 "tab": future_i18n("What's new?"),
@@ -658,16 +669,17 @@ ready yet.)  ${issue(36)}</li>
                 'group_html':true,
                 "type": "description",
                 "text":
-`Added context menus ${issue(6)},
+`<ul><li>Added context menus ${issue(6)},
 saving of TabFern window position ${issue(22)},
-and Expand All/Collapse All.`
+and Expand All/Collapse All.</li></ul>`
             },
             {
                 "tab": future_i18n("What's new?"),
                 "group": `Version 0.1.2${brplain('2017-09-02')}`,
                 'group_html':true,
                 "type": "description",
-                "text": "First version released to the Chrome Web Store"
+                "text":
+"<ul><li>First version released to the Chrome Web Store</li></ul>"
             }                                                     // }}}1
         ]
     };

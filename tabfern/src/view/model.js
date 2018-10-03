@@ -174,9 +174,7 @@
         // If raw_title is null, get_raw_text() will return _T('Unsaved'),
         // so we don't need to manually assign text here.
 
-        module.refresh_label(val.node_id);
-        module.refresh_icon(val);
-        module.refresh_tooltip(val);
+        module.refresh(val);
 
         return true;
     }; //mark_as_unsaved()
@@ -248,8 +246,12 @@
 
     /// Update the tooltip for an item.
     /// @param vorny {mixed} the item
+    /// @param suppress_redraw [Boolean=false]  If truthy, do not redraw the
+    ///             node.  The caller must then do so.  However, if falsy,
+    ///             always redraw, even if the title hasn't changed.  This is
+    ///             for consistency.
     /// @return {Boolean} truthy on success; falsy on failure.
-    module.refresh_tooltip = function(vorny) {
+    module.refresh_tooltip = function(vorny, suppress_redraw) {
         let {val, node_id} = module.vn_by_vorny(vorny);
         let node = T.treeobj.get_node(node_id);
         if(!val || !node) return false;
@@ -267,6 +269,10 @@
 
         if(tooltip !== node.li_attr.title) {
             node.li_attr.title = tooltip;
+        }
+
+        if(!suppress_redraw) {
+            T.install_rjustify(null, 'redraw_event.jstree', 'once');
             T.treeobj.redraw_node(node);
         }
 
@@ -280,6 +286,10 @@
         let {val, node_id} = module.vn_by_vorny(vorny);
         let node = T.treeobj.get_node(node_id);
         if(!val || !node) return;
+
+        // Make sure the actions are in the right place after the rename
+        T.install_rjustify(null, 'redraw_event.jstree', 'once');
+
         let retval = T.treeobj.rename_node(node, module.get_html_label(val));
 
         return retval;
@@ -328,6 +338,31 @@
         return true;
     }; //refresh_icon()
 
+    /// Refresh a node after changes have been made.
+    /// @param vorny {mixed}    The item
+    /// @param what {optional Object}   If an object, truthy keys
+    ///     icon, tooltip, label cause that to be refreshed.
+    ///     If not provided, or not an object, all three will be refreshed.
+    /// @return {Boolean}   False on unknown item; true otherwise.
+    module.refresh = function(vorny, what) {
+        let {val, node_id} = module.vn_by_vorny(vorny);
+        if(!val) return false;
+        if(!what || (typeof what !== 'object')) {
+            what = {icon: true, tooltip: true, label:true};
+        }
+
+        if(what.icon) module.refresh_icon(val);
+        if(what.tooltip) {
+            module.refresh_tooltip(val, !!what.label);
+            // 2nd parm true => don't call redraw_node.  Therefore,
+            // don't refresh if we are going to be calling refresh_label()
+            // in just a moment.
+        }
+        if(what.label) module.refresh_label(val);
+            // calls redraw_node - put this last
+        return true;
+    };
+
     /// Mark the window identified by #win_node_id as to be kept.
     /// @param win_vorny {mixed} The window node
     /// @param cleanup_title {optional boolean, default true}
@@ -356,9 +391,7 @@
             }
         }
 
-        module.refresh_label(node_id);
-        module.refresh_icon(val);
-        module.refresh_tooltip(val);
+        module.refresh(val);
         return true;
     }; //remember()
 
@@ -469,9 +502,7 @@
             return module.VN_NONE;
         }
 
-        module.refresh_label(node_id);
-        module.refresh_icon(val);
-        module.refresh_tooltip(val);
+        module.refresh(val);
 
         return {val, node_id};
     }; //vnRezWin()
@@ -515,9 +546,11 @@
             return module.VN_NONE;
         }
 
-        module.refresh_label(node_id);
-        module.refresh_icon(val);
-        module.refresh_tooltip(val);
+        module.refresh(val);
+
+        // create_node may redraw the parent node as well, which trashes the
+        // action-group positioning.  Therefore, rjustify the whole window.
+        T.rjustify_node_actions($(`#${parent_node_id}`)[0]);
 
         return {val, node_id};
     }; //vnRezTab()
@@ -619,9 +652,7 @@
 
         T.treeobj.add_multitype(node_id, K.NST_OPEN);
 
-        module.refresh_label(node_id);
-        module.refresh_icon(val);
-        module.refresh_tooltip(val);
+        module.refresh(val);
 
         return true;
     }; //markWinAsOpen()
@@ -663,9 +694,8 @@
 
         T.treeobj.add_multitype(node_id, K.NST_OPEN);
 
-        module.refresh_label(node_id);
-        module.refresh_icon(val);   // since favicon may have changed
-        module.refresh_tooltip(val);
+        module.refresh(val);
+            // favicon may have changed, so also refresh icon
 
         // Design decision: tree items for open windows always start expanded.
         // No one has requested any other behaviour, as of the time of writing.
@@ -702,9 +732,7 @@
 
         T.treeobj.del_multitype(node_id, K.NST_OPEN);
 
-        module.refresh_label(node_id);
-        module.refresh_icon(val);
-        module.refresh_tooltip(val);
+        module.refresh(val);
 
         return true;
     }; //markWinAsClosed()
@@ -756,8 +784,10 @@
     /// ** NOTE ** Does NOT update the parent's val.ordered_url_hash.
     /// TODO? Report error if tab is currently open?
     /// @param tab_vorny {mixed}
+    /// @param reason {optional string} If truthy, the delete_node call
+    ///         is made with the given reason (jstree-because).
     /// @return {Boolean} true on success; false on error
-    module.eraseTab = function(tab_vorny) {
+    module.eraseTab = function(tab_vorny, reason) {
         let {val, node_id} = module.vn_by_vorny(tab_vorny, K.IT_TAB);
         let node = T.treeobj.get_node(node_id);
         if(!val || !node_id || !node) return false;
@@ -767,7 +797,16 @@
         D.tabs.remove_value(val);
             // So any events that are triggered won't try to look for a
             // nonexistent tab.
-        T.treeobj.delete_node(node_id);
+
+        if(reason) {
+            T.treeobj.because(reason,'delete_node',node_id);
+        } else {
+            T.treeobj.delete_node(node_id);
+        }
+
+        // delete_node may redraw the parent node as well, which trashes the
+        // action-group positioning.  Therefore, rjustify the whole window.
+        T.rjustify_node_actions($(`#${parent_node_id}`)[0]);
 
         return true;
     }; //eraseTab()

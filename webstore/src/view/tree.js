@@ -685,8 +685,8 @@ function actionRenameWindow(node_id, node, unused_action_id, unused_action_el)
         win_val.raw_title = win_name;
     }
 
-    M.remember(node_id, false);
-        // assume that a user who bothered to rename a node
+    M.remember(node_id, false);     // calls refresh_label internally.
+        // Assume that a user who bothered to rename a node
         // wants to keep it.  false => do not change the raw_title,
         // since the user just specified it.
 
@@ -763,6 +763,7 @@ function actionCloseWindowButDoNotSave(node_id, node, unused_action_id, unused_a
     // Collapse the tree, if the user wants that
     if(getBoolSetting("collapse-tree-on-window-close")) {
         T.treeobj.close_node(node);
+        T.install_rjustify(null, 'redraw_event.jstree', 'once');
         T.treeobj.redraw_node(node);    // to be safe
     }
 
@@ -891,7 +892,11 @@ function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el,
     } //endif confirmation required
 } //actionDeleteWindow
 
-/// Move a window to the top of the tree.
+/// Move a window to the top of the tree.  Note: this also scrolls to the top
+/// as a side-effect of the fact that the node for the window must have been
+/// focused in jstree in order for the context menu to have been activated
+/// on that node.  TODO once keyboard shortcuts are added, see if this is
+/// still the case.
 function actionMoveWinToTop(node_id, node, unused_action_id, unused_action_el)
 {
     if(!node) return;
@@ -932,6 +937,20 @@ function actionEditTabBullet(node_id, node, unused_action_id, unused_action_el)
     let question = _T('dlgpTabNote', val.raw_title);
     let new_bullet = window.prompt(question, val.raw_bullet || '');
     if(new_bullet === null) return;   // user cancelled
+
+    // We need the below for editing the bullet on a tab, which causes
+    // that node to be redrawn, but does not trigger a redraw.jstree.
+    // We cannot leave this handler attached to redraw_event all the time
+    // because it triggers reflow during full redraw, which seems
+    // to be the cause of #102.
+
+    // Put the actions in the right place.  TODO move this to model?
+    T.treeobj.element.one('redraw_event.jstree', function(evt, evt_data){
+        //log.info({redraw_event:arguments});
+        if(evt_data && typeof evt_data === 'object' && evt_data.obj) {
+            T.rjustify_node_actions(evt_data.obj);
+        }
+    });
 
     val.raw_bullet = new_bullet;
     M.refresh_label(node_id);
@@ -1233,6 +1252,7 @@ function addWindowNodeActions(win_node_id)
 /// @param cwin     (Optional) The Chrome window.  If not provided, the
 ///                 one stashed in win_val (if any) will be used.
 let pruneWindowSetTimer = function(win_val, cwin) {
+    return; // pruning is disabled
     log.debug({"Bump of prune timer requested for":win_val, cwin});
     if(!win_val.prune_data) {
         win_val.prune_data = {timer_id: undefined, cwin: cwin || undefined};
@@ -1299,7 +1319,7 @@ function createNodeForWindow(cwin, keep, no_prune)
     }
 
     // Remove extra tabs if the user wants
-    if(!no_prune && !do_not_prune_right_now
+    if(false && !no_prune && !do_not_prune_right_now
         && getBoolSetting(CFG_PRUNE_NEW_WINDOWS)
     ) {
         pruneWindowSetTimer(val, cwin);
@@ -1442,10 +1462,11 @@ function connectChromeWindowToTreeWindowItem(cwin, existing_win, options = {})
     // Note: We do not need to update existing_win.val.ordered_url_hash.
     // Since we got here, we know that it was a match.
 
+    T.install_rjustify(null, 'redraw_event.jstree', 'once');
     T.treeobj.redraw_node(existing_win.node);
 
     // Prune any extra tabs Chrome may have created due to bugs.
-    pruneWindow(cwin, existing_win.node.children.length);
+    // REMOVED #131 pruneWindow(cwin, existing_win.node.children.length);
 
     return true;
 } //connectChromeWindowToTreeWindowItem()
@@ -1574,6 +1595,7 @@ var loadSavedWindowsFromData = (function(){
 /* // TEMPORARILY REMOVED
                     T.treeobj.suppress_redraw(true);        // EXPERIMENTAL
 */
+                    T.do_not_rjustify = true;
                     loader_retval = versionLoaders[vernum](data);
 
                 } catch(e) {
@@ -1584,6 +1606,7 @@ var loadSavedWindowsFromData = (function(){
                     // suppress_redraw(false) will be called.
                 }
 
+                delete T.do_not_rjustify;
 /* // TEMPORARILY REMOVED
                 T.treeobj.suppress_redraw(false);           // EXPERIMENTAL
                 T.treeobj.redraw(true);     // Just in case the experiment
@@ -2149,7 +2172,7 @@ function initFocusHandler()
         else change_from = FC_FROM_OPEN;
 
         // Uncomment if you are debugging focus-change behaviour TODO RESUME HERE
-        log.info({change_from, old_win_id, change_to, win_id});
+        //log.info({change_from, old_win_id, change_to, win_id});
 
         let same_window = (old_win_id === win_id);
         previously_focused_winid = win_id;
@@ -2444,6 +2467,7 @@ function tabOnUpdated(tabid, changeinfo, ctab)
     let dirty = false;
     let should_refresh_label = false;
     let should_refresh_tooltip = false;
+    let should_refresh_icon = false;
 
     log.info({'Tab updated': tabid, 'Index': ctab.index, changeinfo, ctab});
 
@@ -2469,6 +2493,8 @@ function tabOnUpdated(tabid, changeinfo, ctab)
     if(new_raw_url !== tab_node_val.raw_url) {
         dirty = true;
         should_refresh_tooltip = true;
+            // TODO check the config - it may not be necessary to update
+            // the tooltip since the URL might be in the tooltip
         tab_node_val.raw_url = new_raw_url;
         M.updateOrderedURLHash(node.parent);
             // When the URL changes, the hash changes, too.
@@ -2503,17 +2529,12 @@ function tabOnUpdated(tabid, changeinfo, ctab)
     let new_raw_favicon_url = changeinfo.favIconUrl || ctab.favIconUrl || null;
     if(new_raw_favicon_url !== tab_node_val.raw_favicon_url) {
         dirty = true;
+        should_refresh_icon = true;
         tab_node_val.raw_favicon_url = new_raw_favicon_url;
-        M.refresh_icon(tab_node_val);
     }
 
-    if(should_refresh_label) {
-        M.refresh_label(tab_node_id);
-    }
-
-    if(should_refresh_tooltip) {
-        M.refresh_tooltip(tab_node_id);
-    }
+    M.refresh(tab_node_val, { icon: should_refresh_icon,
+            label: should_refresh_label, tooltip: should_refresh_tooltip });
 
     if(dirty) {
         saveTree();
@@ -2631,13 +2652,8 @@ function tabOnRemoved(tabid, removeinfo)
             return;
         }
 
-        log.debug({'Removing value for ctab':tabid,tab_val,removeinfo});
-        D.tabs.remove_value(tab_val);
-            // So any events that are triggered won't try to look for a
-            // nonexistent tab.
-
-        log.debug({[`Removing tree node ${tab_node.id} for ctab`]:tabid,tab_node,tab_val,removeinfo});
-        T.treeobj.because('chrome','delete_node',tab_node);
+        log.debug({'Removing value and entry for ctab':tabid,tab_node, tab_val,removeinfo});
+        M.eraseTab(tab_node, 'chrome');
     }
 
     log.debug({'Updating tab index values after removing ctab':tabid,window_node_id,removeinfo});
@@ -3700,6 +3716,11 @@ var treeCheckCallback = (function()
 
             let old_parent = T.treeobj.get_node(node.parent);
 
+            // Focus the dropped node when the drop completes.  Otherwise,
+            // jstree's _redraw() scrolls to whatever node was previously
+            // focused after the move completes.
+            T.treeobj._data.core.focused = node.id;
+
             // If we are moving an open tab, set up to move the tab in Chrome.
             if( moving_val.isOpen &&
                 old_parent &&
@@ -4194,19 +4215,8 @@ function addEventListeners(done)
         }
     });
 
-    // TODO determine whether we need the above, given that we have the below.
-    // It appears we do need the above, at least on startup, and after
-    // removing a closed window from the tree without changing the scrollbar
-    // visibility.
-    // We need the below for editing the bullet on a tab, which causes
-    // that node to be redrawn, but does not trigger a redraw.jstree.
-
-    T.treeobj.element.on('redraw_event.jstree', function(evt, evt_data){
-        //log.info({redraw_event:arguments});
-        if(evt_data && typeof evt_data === 'object' && evt_data.obj) {
-            T.rjustify_node_actions(evt_data.obj);
-        }
-    });
+    // We need the above, at least on startup, and after removing a closed
+    // window from the tree without changing the scrollbar visibility.
 
     // Set event listeners
     T.treeobj.element.on('changed.jstree', treeOnSelect);
@@ -4351,9 +4361,8 @@ function main(...args)
 
     // Run the main init steps once the page has loaded
     let s = ASQ();
-    callbackOnLoad(s.errfcb());     // Just using errfcb() to kick off s.
-    // Note: on one test on Firefox, the rest of the chain never fired.
-    // Not sure why.
+    let go = s.errfcb();    // To kick off s.
+    callbackOnLoad(go.bind(go, null));  // null => success
 
     // Start a spinner if loading takes more than 1 s
     let spinner = new Spinner();

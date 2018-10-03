@@ -1,13 +1,13 @@
 {
   "name": "tabfern",
-  "version": "0.1.18.1337",
+  "version": "0.1.19.1337",
   "description": "Google Chrome extension for displaying, saving, and managing tabs",
   "main": "src/view/main.js",
   "directories": {
     "test": "test"
   },
   "scripts": {
-    "build": "webpack"
+    "zip": "node zip.js"
   },
   "repository": {
     "type": "git",
@@ -38,6 +38,7 @@
     "tinycolor2": "^1.4.1"
   },
   "devDependencies": {
+    "archiver": "^3.0.0",
     "benchmark": "^2.1.4",
     "jasmine2-custom-message": "^0.8.4",
     "seedrandom": "^2.4.3"
