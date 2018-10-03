@@ -892,7 +892,11 @@ function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el,
     } //endif confirmation required
 } //actionDeleteWindow
 
-/// Move a window to the top of the tree.
+/// Move a window to the top of the tree.  Note: this also scrolls to the top
+/// as a side-effect of the fact that the node for the window must have been
+/// focused in jstree in order for the context menu to have been activated
+/// on that node.  TODO once keyboard shortcuts are added, see if this is
+/// still the case.
 function actionMoveWinToTop(node_id, node, unused_action_id, unused_action_el)
 {
     if(!node) return;

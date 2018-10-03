@@ -247,7 +247,9 @@
     /// Update the tooltip for an item.
     /// @param vorny {mixed} the item
     /// @param suppress_redraw [Boolean=false]  If truthy, do not redraw the
-    ///             node.  The caller must then do so.
+    ///             node.  The caller must then do so.  However, if falsy,
+    ///             always redraw, even if the title hasn't changed.  This is
+    ///             for consistency.
     /// @return {Boolean} truthy on success; falsy on failure.
     module.refresh_tooltip = function(vorny, suppress_redraw) {
         let {val, node_id} = module.vn_by_vorny(vorny);
@@ -267,7 +269,11 @@
 
         if(tooltip !== node.li_attr.title) {
             node.li_attr.title = tooltip;
-            if(!suppress_redraw) T.treeobj.redraw_node(node);
+        }
+
+        if(!suppress_redraw) {
+            T.install_rjustify(null, 'redraw_event.jstree', 'once');
+            T.treeobj.redraw_node(node);
         }
 
         return true;
