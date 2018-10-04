@@ -38,7 +38,8 @@
     "contextMenus"
   ],
   "web_accessible_resources": [
-    "/assets/*"
+    "/assets/*",
+    "/test/*"
   ],
   "commands": {
     "reveal-view": {
