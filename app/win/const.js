@@ -91,6 +91,7 @@
     /// @param fn {function} the function to call
     module.nextTickRunner = function(fn) {
         function inner(...args) {   // the actual callback
+            // TODO use ASQ() instead
             setTimeout( function() { fn(...args); } ,0);
                 // on a later tick, call #fn, passing it the arguments the
                 // actual callback (inner()) got.

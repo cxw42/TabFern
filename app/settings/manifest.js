@@ -397,7 +397,7 @@ order.`
         // Changelog                                          {{{1
         {
             "tab": future_i18n("What's new?"),
-            "group": `Version 0.1.19${brplain('2018-xx-xx')}`,
+            "group": `Version 0.2.0${brplain('2018-xx-xx')}`,
             'group_html':true,
             "type": "description",
             "text":
@@ -417,12 +417,21 @@ recovered window will show up in TabFern as a separate, unsaved window
 </li>
 </ul>`,
         },
-        {
-            "tab": future_i18n("What's new?"),
-            "group": `Version 0.1.18${brplain('2018-09-17')}`,
-            'group_html':true,
-            "type": "description",
-            "text":
+            // Changelog                                          {{{1
+            {
+                "tab": future_i18n("What's new?"),
+                "group": `Version 0.1.19${brplain('2018-10-03')}`,
+                'group_html':true,
+                "type": "description",
+                "text": `<ul><li>Bugfixes and internals: ${issue(102,true)},
+                        ${issue(131,true)}, ${issue(149,true)}</li></ul>`,
+            },
+            {
+                "tab": future_i18n("What's new?"),
+                "group": `Version 0.1.18${brplain('2018-09-17')}`,
+                'group_html':true,
+                "type": "description",
+                "text":
 `<ul>
 <li>New menu item to move a window to the top of the tree: right-click the
 window's entry in the tree and choose "Move to top." ${issue(58)}</li>
@@ -592,7 +601,7 @@ the window.  A small thing, but I hope it helps!</li>
 <p>Would you be willing to run a pre-release version?  You would get the
 new features about a week earlier that way&nbsp;:)&nbsp;.  If so, please
 <a href="mailto:tabfern@zoho.com">send me a note</a> or ping me
-<a href="https://github.com/cxw42">on GitHub</a>.  The only requirements are
+<a href="https://github.com/cxw42/TabFern/issues/122">on GitHub</a>.  The only requirements are
 a <a href="https://github.com/join">free GitHub account</a> and the willingness
 to <a href="https://github.com/cxw42/TabFern/issues/new">report issues</a>
 if you run across them.  Thanks for considering this request!
@@ -643,65 +652,67 @@ windows.  ${issue(36)}</li>
 rearrange them.  (Drag-and-drop between open windows is coming soon, but not
 ready yet.)  ${issue(36)}</li>
 </ul>`,
-        },
-        {
-            "tab": future_i18n("What's new?"),
-            "group": `Version 0.1.7${brplain('2017-09-18')}`,
-            'group_html':true,
-            "type": "description",
-            "text":
-'<ul>' +
-'<li>Numeric sort order options (on the '+ham+' '+gt+' Sort menu)  ' +
-issue(43) +
-'</li>'+
-'<li>"Restore last deleted" option on the '+ham+' menu  ' +
-issue(30) + '</li>'+
-'<li>To close the '+ham+' menu without the keyboard, move the mouse off of it for a second or two</li>'+
-'<li>Improvements under the hood for robustness</li>'+
-'</ul>'
-        },
-        {
-            "tab": future_i18n("What's new?"),
-            "group": `Version 0.1.6${brplain('2017-09-10')}`,
-            'group_html':true,
-            "type": "description",
-            "text":
-'<ul>' +
-'<li>Sorting list by window name (on the '+ham+' '+gt+' Sort menu)  '+
-issue(43) + '</li>'+
-'<li>You can now drag and drop windows to rearrange them in the tree!  '
-+issue(36) + '</li>'+
-'</ul>'
-        },
-        {
-            "tab": future_i18n("What's new?"),
-            "group": `Version 0.1.5${brplain('2017-09-07')}`,
-            'group_html':true,
-            "type": "description",
-            "text": "You can now right-click on a saved window and choose "+
-                '"Forget" to leave the window as open, but not save it '+
-                'for next time.  Also includes some bug fixes, including '+
-                'workarounds for Chrome 61 changes.'
-        },
-        {
-            "tab": future_i18n("What's new?"),
-            "group": `Version 0.1.4${brplain('2017-09-06')}`,
-            'group_html':true,
-            "type": "description",
-            "text":
-`Added context menus ${issue(6)},
+            },
+            {
+                "tab": future_i18n("What's new?"),
+                "group": `Version 0.1.7${brplain('2017-09-18')}`,
+                'group_html':true,
+                "type": "description",
+                "text":
+    '<ul>' +
+    '<li>Numeric sort order options (on the '+ham+' '+gt+' Sort menu)  ' +
+    issue(43) +
+    '</li>'+
+    '<li>"Restore last deleted" option on the '+ham+' menu  ' +
+    issue(30) + '</li>'+
+    '<li>To close the '+ham+' menu without the keyboard, move the mouse off of it for a second or two</li>'+
+    '<li>Improvements under the hood for robustness</li>'+
+    '</ul>'
+            },
+            {
+                "tab": future_i18n("What's new?"),
+                "group": `Version 0.1.6${brplain('2017-09-10')}`,
+                'group_html':true,
+                "type": "description",
+                "text":
+    '<ul>' +
+    '<li>Sorting list by window name (on the '+ham+' '+gt+' Sort menu)  '+
+    issue(43) + '</li>'+
+    '<li>You can now drag and drop windows to rearrange them in the tree!  '
+    +issue(36) + '</li>'+
+    '</ul>'
+            },
+            {
+                "tab": future_i18n("What's new?"),
+                "group": `Version 0.1.5${brplain('2017-09-07')}`,
+                'group_html':true,
+                "type": "description",
+                "text": "<ul><li>You can now right-click on a saved window " +
+                    "and choose " +
+                    '"Forget" to leave the window as open, but not save it '+
+                    'for next time.  Also includes some bug fixes, including '+
+                    'workarounds for Chrome 61 changes.</li></ul>'
+            },
+            {
+                "tab": future_i18n("What's new?"),
+                "group": `Version 0.1.4${brplain('2017-09-06')}`,
+                'group_html':true,
+                "type": "description",
+                "text":
+`<ul><li>Added context menus ${issue(6)},
 saving of TabFern window position ${issue(22)},
-and Expand All/Collapse All.`
-        },
-        {
-            "tab": future_i18n("What's new?"),
-            "group": `Version 0.1.2${brplain('2017-09-02')}`,
-            'group_html':true,
-            "type": "description",
-            "text": "First version released to the Chrome Web Store"
-        }                                                     // }}}1
-    ]
-};
+and Expand All/Collapse All.</li></ul>`
+            },
+            {
+                "tab": future_i18n("What's new?"),
+                "group": `Version 0.1.2${brplain('2017-09-02')}`,
+                'group_html':true,
+                "type": "description",
+                "text":
+"<ul><li>First version released to the Chrome Web Store</li></ul>"
+            }                                                     // }}}1
+        ]
+    };
 
 module.exports = manifest;
 // vi: set fdm=marker foldenable fdl=1: //

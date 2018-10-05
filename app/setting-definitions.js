@@ -93,7 +93,8 @@ _VAL[_NAM.CFG_TITLE_IN_TOOLTIP] = _vbool;
 
 _NAM.CFG_PRUNE_NEW_WINDOWS = 'prune-new-windows';
 _DEF[_NAM.CFG_PRUNE_NEW_WINDOWS] = false;
-_VAL[_NAM.CFG_PRUNE_NEW_WINDOWS] = _vbool;
+_VAL[_NAM.CFG_PRUNE_NEW_WINDOWS] = ()=>false;
+    // Always false --- don't permit a settings load to set prune to true.
 
 /// Not actually a setting, but an indicator that we loaded settings OK.
 /// Used by src/settings/main.js.
@@ -258,7 +259,7 @@ let me = {
 
     // special values settings can take on
     OROC_DO: CFG_OROC_DO,
-    OROC_D_NOT: CFG_OROC_DO_NOT,
+    OROC_DO_NOT: CFG_OROC_DO_NOT,
 
     // special accessors
     isOROC: ()=>(getStringSetting(CFG_NAMES.CFG_OPEN_REST_ON_CLICK) === CFG_OROC_DO),

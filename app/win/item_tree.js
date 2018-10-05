@@ -53,9 +53,12 @@ function rjustify_inner(jq, r_edge, scroll_left) {
 /// Set the css('right') to line up with last_r_edge for the
 /// action group under #node_dom_elem, given the same assumptions
 /// as rjustify_action_group_at() below.
-/// Takes an #idx_unused parameter so it can be called from $().each().
-me.rjustify_node_actions = function(idx_unused, node_dom_elem) {
-    if(arguments.length === 1) node_dom_elem = idx_unused;
+/// If me.do_not_rjustify is truthy, do nothing.
+/// Takes an optional \p idx_unused_opt parameter so it can be called from
+/// $().each().  If me.do_not_rjustify is truthy, does nothing.
+me.rjustify_node_actions = function(idx_unused_opt, node_dom_elem) {
+    if(me.do_not_rjustify) return;
+    if(arguments.length === 1) node_dom_elem = idx_unused_opt;
     let jq;
     // TODO? use treeobj.get_node instead?
 
@@ -74,11 +77,14 @@ me.rjustify_node_actions = function(idx_unused, node_dom_elem) {
 
     if(jq.length) {     // Do this node
         let sl = $(window).scrollLeft();
+            // TODO? use fixed 0 if horizontal scrollbar is disabled?
         rjustify_inner(jq, me.last_r_edge, sl);
     }
 
     // Do this node's children, if any.  They appear not to always be
-    // included in the list of nodes provided to the redraw.jstree event
+    // included in the list of nodes provided to the redraw.jstree event.
+    // TODO pass scrollLeft down into this function so it doesn't have
+    // to be called over and over.
     $('li.jstree-node',node_dom_elem).each(me.rjustify_node_actions);
 } //rjustify_node_actions
 
@@ -114,7 +120,7 @@ me.rjustify_action_group_at = function(r_edge) {
 // This is nice because it will also trigger when the V scrollbar
 // appears or disappears.
 
-me.install_resize_detector = function(win, jq_tree){
+me.install_resize_detector = function(win, jq_tree) {
     let jq_iframe = $('<iframe id="scrollbar-listener"/>');
     jq_iframe.css({
         'position'      : 'fixed',
@@ -167,6 +173,47 @@ me.install_resize_detector = function(win, jq_tree){
 
     //jq_tree.on('after_close.jstree', me.rjustify_action_group_at);
 }; //install_resize_detector
+
+    /// Install an event handler that calls rjustify_node_actions.
+    /// If me.do_not_rjustify is truthy, do nothing.
+    /// @param jq_tree  {Object}    A JQuery object for the element holding the
+    ///                             tree, or null to use me.treeobj.element
+    /// @param event_name {String}  Which event to catch
+    /// @param once {mixed} If truthy, catch only once.
+    me.install_rjustify = function(jq_tree, event_name, once) {
+        if(me.do_not_rjustify) return;
+
+        jq_tree = jq_tree || me.treeobj.element;
+        jq_tree[once?'one':'on'](event_name, function(evt, evt_data){
+            //log.info({[event_name]]:arguments});
+            if(evt_data && typeof evt_data === 'object' && evt_data.obj) {
+                me.rjustify_node_actions(evt_data.obj);
+                    // Has to run in this tick, as far as I can tell.
+            }
+        });
+    }; //install_rjustify
+
+    /* Comments on install_rjustify:
+     *
+     * I used to call rjustify_node_actions on each redraw_event.jstree, i.e.,
+     * each call to redraw_node().  However, that caused layout during the
+     * jstree _redraw attendant on a dnd, which in turn gave rise to #102.
+     * Therefore, I now use install_rjustify selectively to trigger only when
+     * necessary.  As far as I can tell, for example, dnd does not trigger
+     * set_text, so I can safely hook that globally below.
+     *
+     * redraw_node may be called by:
+     *  - jstree-actions:add_action()
+     *  - jstree-actions:remove_action()
+     *  - model:refresh_tooltip()
+     *  - tree:actionCloseWindowButDoNotSave()
+     *  - tree:connectChromeWindowToTreeWindowItem()
+     *  - jstree:_redraw() (internal)
+     *  - jstree:draw_children() (internal)
+     *  - jstree:set_text()
+     *  - jstree:create_node()
+     *  - jstree:delete_node()
+     */
 
 // }}}1
 // --- Tree creation --- {{{1
@@ -284,6 +331,7 @@ me.create = function(selector, check_callback, is_draggable,
     // Add custom event handlers
     //me.install_vscroll_function(window, jq_tree);
     me.install_resize_detector(window, jq_tree);
+    me.install_rjustify(jq_tree, 'set_text.jstree');
 
     // Add a spare node that will be hidden and that will serve as a
     // holding pen when tabs are being attached and detached.
