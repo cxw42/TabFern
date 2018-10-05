@@ -44,7 +44,7 @@
         ],
         [ //other data
             'win_id',       // from Chrome
-            'index',        // in the current window
+            'index',        // of the Chrome tab in its Chrome window
             'tab',          // the actual Tab record from Chrome
                 // TODO remove this --- tab_id should be enough
             'being_opened', // true if we are manually opening the Chrome tab
