@@ -189,21 +189,6 @@ vote at ${issue(125,true)}.
             "label": future_i18n('Prompt for confirmation before deleting <b>tabs</b> in <b>unsaved</b> windows'),
         },
 
-        {
-            "tab": future_i18n("Behaviour"),
-            "group": future_i18n("When Chrome..."),
-            "name": S.PRUNE_NEW_WINDOWS,
-            "type": "checkbox",
-            "label": future_i18n("Adds extra tabs to a new window I've just opened, get rid of them!"),
-        },
-        {
-            "tab": future_i18n("Behaviour"),
-            "group": future_i18n("When Chrome..."),
-            'group_html':true,
-            "type": "description",
-            "text": future_i18n("\u26a0 use this option only if you need it &mdash; it may not behave exactly as you would expect."),
-        },
-
         // Appearance
         {
             "tab": future_i18n("Appearance"),

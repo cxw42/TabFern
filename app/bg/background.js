@@ -200,7 +200,7 @@ for(let opt in S.defaults) {
     S.setIfNonexistent(opt, S.defaults[opt]);
 }
 
-setSetting(CFG_PRUNE_NEW_WINDOWS, false);   // don't prune - it's a Chrome bug
+S.set(S.PRUNE_NEW_WINDOWS, false);  // don't prune - it's a Chrome bug
     // See https://bugs.chromium.org/p/chromium/issues/detail?id=883709#c16
 
 console.log('TabFern: done running background.js');

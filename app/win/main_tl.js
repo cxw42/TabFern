@@ -72,7 +72,7 @@ var window_is_being_restored = false;
 var do_not_prune_right_now = false;
 
 /// DOUBLE HACK to not prune, even if pruning is enabled!  INTERNAL DEBUG only.
-var pruning_will_not_actually_take_place = false;
+var pruning_will_not_actually_take_place = true;
 
 /// The size of the last-closed window, to be used as the
 /// size of newly-opened windows (whence the name).
@@ -1654,10 +1654,10 @@ var loadSavedWindowsFromData = (function(){
                     log.error(
                         `Error loading version-${vernum} save data: ${e}`);
                     loader_retval = false;
-                    // Continue out of the catch block so the
-                    // suppress_redraw(false) will be called.
+                    // Continue out of the catch block to the cleanup
                 }
 
+                // Cleanup from the try block above
                 delete T.do_not_rjustify;
 
                 T.treeobj.suppress_redraw(false);           // EXPERIMENTAL
