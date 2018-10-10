@@ -13,3 +13,15 @@
 /* === spin.js === */
 @import "spin.js/spin";
 
+/* === custom === */
+
+$closed-tab-in-open-win: '.tf-window.tfs-open .tf-tab:not(.tfs-open) .jstree-wholerow-hovered';
+
+/* Show which tabs are closed in partly-open windows */
+#{$closed-tab-in-open-win} {
+    background: #ffffc8;
+}
+
+.jstree-default-dark #{$closed-tab-in-open-win} {
+    background: #555500;
+}
