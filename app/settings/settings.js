@@ -30,7 +30,7 @@ const spectrum = require('spectrum-colorpicker');
 const Spinner = require('spin.js').Spinner;
 const tinycolor = require('tinycolor2');
 
-const S = require('setting-definitions');   // in app/
+const S = require('common/setting-definitions');    // in app/
 
 const manifest = require('./manifest');
 window.manifest = manifest; //because fancy-settings pulls from there

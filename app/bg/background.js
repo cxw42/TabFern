@@ -7,7 +7,7 @@ if(false) { // Vendor files - listed here only so they'll be bundled
     require('vendor/common');
 }
 
-const S = require('setting-definitions');   // in app/
+const S = require('common/setting-definitions');    // in app/
 
 /// The module exports, for use in command-line debugging
 let me = {

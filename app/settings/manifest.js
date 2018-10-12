@@ -4,7 +4,7 @@
 // Note: the tabs and groups are created in the order they
 // first appear in the manifest.
 
-const S = require('setting-definitions');   // in app/
+const S = require('common/setting-definitions');    // in app/
 
 // Shortcuts for frequently-used items
 function icon(cls) { return `<i class="${cls}"></i>`; }
@@ -110,7 +110,15 @@ vote at ${issue(125,true)}.
             "group": future_i18n("When I..."),
             "name": S.COLLAPSE_ON_WIN_CLOSE,
             "type": "checkbox",
-            "label": future_i18n("Close a window, collapse its tree"),
+            "label": future_i18n("Close a fully-open window, collapse its tree"),
+            //"text": future_i18n("x-characters")
+        },
+        {
+            "tab": future_i18n("Behaviour"),
+            "group": future_i18n("When I..."),
+            "name": S.COLLAPSE_ON_PARTIAL_WIN_CLOSE,
+            "type": "checkbox",
+            "label": future_i18n("Close the last tab in a partly-open window, collapse its tree"),
             //"text": future_i18n("x-characters")
         },
         {

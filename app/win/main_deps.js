@@ -42,7 +42,7 @@ module.exports = {
     sorts: require('./sorts'),
     T: require('./item_tree'),
     M: require('./model'),
-    S: require('setting-definitions'),  // in app/
+    S: require('common/setting-definitions'),    // in app/
 };
 
 // Other modules used by src/view/tree.js, but not imported above yet:
