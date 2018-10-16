@@ -1,5 +1,7 @@
 # TabFern
 
+[![Join the chat at https://gitter.im/TabFern/Lobby](https://badges.gitter.im/TabFern/Lobby.svg)](https://gitter.im/TabFern/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 ![screenshot](https://raw.githubusercontent.com/cxw42/TabFern/gh-pages/screenshot.png)
 
 A [Google Chrome extension](https://chrome.google.com/webstore/detail/tabfern-tab-manager-and-b/hbajjpcdbninabigakflkhiogmmjaakm) that:
