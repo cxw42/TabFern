@@ -73,6 +73,13 @@ vote at ${issue(125,true)}.
             "type": "button",
             "text": "Load settings from a file"
         },
+        {
+            "tab": future_i18n("Welcome / Help"),
+            "group": future_i18n("Legal"),
+            "name": "legal",
+            "type": "description",
+            "text": "The TabFern name and logo are trademarks of Chris White."
+        },
 
         // Behaviour.  Yeah, there's a "u" in there!
         {
