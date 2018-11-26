@@ -230,7 +230,7 @@ me.overrides.development = {
 //    },
 //};
 
-console.dir(me, {depth:null});
+//console.dir(me, {depth:null});    // DEBUG
 module.exports = me;
 
 // vi: set ts=4 sts=4 sw=4 et ai: //

@@ -594,6 +594,9 @@ function actionURLSubstitute(node_id, node, unused_action_id, unused_action_el)
     if(!win_val.isOpen) {
         M.updateOrderedURLHash(win_val);
     }
+
+    // Since the user touched the window, save the changes.
+    actionRememberWindow(node_id, node);
 } //actionURLSubstitute
 
 ////////////////////////////////////////////////////////////////////////// }}}1
