@@ -230,8 +230,8 @@ div.jstree-wholerow-hovered > .tf-action-group {
  * TODO replace this with an invisible, narrow action button that just calls
  * select_node().
  */
-.tf-window > div > .tf-action-group .fff-picture-delete,
-.tf-tab > div > .tf-action-group  .fff-pencil {
+.tf-window > div > .tf-action-group .fff-saveBtn,
+.tf-tab > div > .tf-action-group  .fff-editBtn {
     padding-right: 0.5em;
 }
 

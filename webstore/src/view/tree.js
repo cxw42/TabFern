@@ -1122,13 +1122,13 @@ function addTabNodeActions(tab_node_id)
 
     T.treeobj.add_action(tab_node_id, {
         id: 'editBullet',
-        class: 'fff-pencil ' + K.ACTION_BUTTON_WIN_CLASS,
+        class: 'fff-editBtn ' + K.ACTION_BUTTON_WIN_CLASS,
         text: '\xa0',
         // I tried this approach but it was a bit ugly.  For example, the
         // image was in the right place but the border of the <i /> was offset
         // down a pixel or two.  Also, the class was required for the
         // "Actually" event check in treeOnSelect.
-        //html: `<img src="/assets/icons/pencil.png" class=${K.ACTION_BUTTON_WIN_CLASS} />`,
+        //html: `<img src="/assets/icons/editBtn.png" class=${K.ACTION_BUTTON_WIN_CLASS} />`,
         grouped: true,
         title: _T('ttEditTab'),
         callback: actionEditTabBullet,
@@ -1137,7 +1137,7 @@ function addTabNodeActions(tab_node_id)
 
 //    T.treeobj.add_action(tab_node_id, {
 //        id: 'closeTab',
-//        class: 'fff-picture-delete ' + K.ACTION_BUTTON_WIN_CLASS,
+//        class: 'fff-saveBtn ' + K.ACTION_BUTTON_WIN_CLASS,
 //        text: '\xa0',
 //        grouped: true,
 //        title: "Close and save",
@@ -1147,7 +1147,7 @@ function addTabNodeActions(tab_node_id)
 
     T.treeobj.add_action(tab_node_id, {
         id: 'deleteTab',
-        class: 'fff-cross ' + K.ACTION_BUTTON_WIN_CLASS,
+        class: 'fff-delBtn ' + K.ACTION_BUTTON_WIN_CLASS,
         text: '\xa0',
         grouped: true,
         title: _T('ttDeleteTab'),
@@ -1217,7 +1217,7 @@ function addWindowNodeActions(win_node_id)
 
     T.treeobj.add_action(win_node_id, {
         id: 'renameWindow',
-        class: 'fff-pencil ' + K.ACTION_BUTTON_WIN_CLASS,
+        class: 'fff-editBtn ' + K.ACTION_BUTTON_WIN_CLASS,
         text: '\xa0',
         grouped: true,
         title: _T('ttEditWin'),
@@ -1227,7 +1227,7 @@ function addWindowNodeActions(win_node_id)
 
     T.treeobj.add_action(win_node_id, {
         id: 'closeWindow',
-        class: 'fff-picture-delete ' + K.ACTION_BUTTON_WIN_CLASS,
+        class: 'fff-saveBtn ' + K.ACTION_BUTTON_WIN_CLASS,
         text: '\xa0',
         grouped: true,
         title: _T('ttCloseWin'),
@@ -1237,7 +1237,7 @@ function addWindowNodeActions(win_node_id)
 
     T.treeobj.add_action(win_node_id, {
         id: 'deleteWindow',
-        class: 'fff-cross ' + K.ACTION_BUTTON_WIN_CLASS,
+        class: 'fff-delBtn ' + K.ACTION_BUTTON_WIN_CLASS,
         text: '\xa0',
         grouped: true,
         title: _T('ttDeleteWin'),
@@ -3133,7 +3133,7 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
             },
             editBulletItem: {
                 label: _T('menuAddEditNote'),
-                icon: 'fff-pencil',
+                icon: 'fff-editBtn',
 
                 // Use K.nextTickRunner so the context menu can be
                 // hidden before actionRenameWindow() calls window.prompt().
@@ -3146,7 +3146,7 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
 //        if(tab_val.isOpen) {
 //            tabItems.closeItem = {
 //                    label: 'Close and remember',
-//                    icon: 'fff-picture-delete',
+//                    icon: 'fff-saveBtn',
 //                    action:
 //                        function(){actionCloseTabAndSave(node.id,node,null,null);}
 //                };
@@ -3160,7 +3160,7 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
 
         winItems.renameItem = {
                 label: _T('menuRename'),
-                icon: 'fff-pencil',
+                icon: 'fff-editBtn',
 
                 // Use K.nextTickRunner so the context menu can be
                 // hidden before actionRenameWindow() calls window.prompt().
@@ -3191,7 +3191,7 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
         if(win_val.isOpen) {
             winItems.closeItem = {
                     label: _T('menuCloseAndRemember'),
-                    icon: 'fff-picture-delete',
+                    icon: 'fff-saveBtn',
                     action:
                         function(){actionCloseWindowAndSave(node.id,node,null,null);}
                 };
@@ -3211,7 +3211,7 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
 
         winItems.deleteItem = {
                 label: _T('menuDelete'),
-                icon: 'fff-cross',
+                icon: 'fff-delBtn',
                 separator_before: true,
                 action:
                     function(){actionDeleteWindow(node.id, node, null, null);}

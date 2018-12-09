@@ -18,7 +18,7 @@
                         ,"description": "Text for tooltips, other than menu tooltips" }
   , "ttEditTab": {
     "message": "Notiz hinzufügen oder bearbeiten"
-    ,"description":"Tooltip for the pencil button on a tab's tree entry"
+    ,"description":"Tooltip for the edit button on a tab's tree entry"
   }
   , "ttDeleteTab": {
     "message": "Löschen (schließen; nicht speichern)"
@@ -26,7 +26,7 @@
   }
   , "ttEditWin": {
     "message": "Umbenennen"
-    ,"description":"Tooltip for the pencil button on a window's tree entry"
+    ,"description":"Tooltip for the edit button on a window's tree entry"
   }
   , "ttCloseWin": {
     "message": "Schließen und speichern"

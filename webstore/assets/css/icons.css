@@ -43,16 +43,16 @@
     background-image: url("/assets/icons/page_white_red_banner.png");
 }
 
-.jstree-themeicon-custom.fff-pencil, .vakata-context .fff-pencil {
-    background-image: url("/assets/icons/pencil.png");
+.jstree-themeicon-custom.fff-edit, .vakata-context .fff-edit {
+    background-image: url("/assets/icons/editBtn.png");
 }
 
-.jstree-themeicon-custom.fff-cross, .vakata-context .fff-cross {
-    background-image: url("/assets/icons/cross.png");
+.jstree-themeicon-custom.fff-delBtn, .vakata-context .fff-delBtn {
+    background-image: url("/assets/icons/deleteBtn.png");
 }
 
-.jstree-themeicon-custom.fff-picture-delete, .vakata-context .fff-picture-delete {
-    background-image: url("/assets/icons/picture_delete.png");
+.jstree-themeicon-custom.fff-saveBtn, .vakata-context .fff-saveBtn {
+    background-image: url("/assets/icons/save.png");
 }
 
 .jstree-themeicon-custom.fff-text-padding-top,
@@ -83,16 +83,16 @@
     height: 16px;   /* must match icon height */
 }
 
-.tf-action-button.fff-pencil::after {
-    content: url("/assets/icons/pencil.png");
+.tf-action-button.fff-edit::after {
+    content: url("/assets/icons/editBtn.png");
 }
 
-.tf-action-button.fff-picture-delete::after {
-    content: url("/assets/icons/picture_delete.png");
+.tf-action-button.fff-saveBtn::after {
+    content: url("/assets/icons/save.png");
 }
 
-.tf-action-button.fff-cross::after {
-    content: url("/assets/icons/cross.png");
+.tf-action-button.fff-delBtn::after {
+    content: url("/assets/icons/deleteBtn.png");
 }
 
 /* Background sizes of icons in context menu are different.  Note: Need the

@@ -367,7 +367,7 @@
 .fa-picture-o:before {
   content: "\f03e";
 }
-.fa-pencil:before {
+.fa-edit:before {
   content: "\f040";
 }
 .fa-map-marker:before {
@@ -380,7 +380,7 @@
   content: "\f043";
 }
 .fa-edit:before,
-.fa-pencil-square-o:before {
+.fa-edit-square-o:before {
   content: "\f044";
 }
 .fa-share-square-o:before {
@@ -446,7 +446,7 @@
 .fa-info-circle:before {
   content: "\f05a";
 }
-.fa-crosshairs:before {
+.fa-delBtn:before {
   content: "\f05b";
 }
 .fa-times-circle-o:before {
@@ -1106,7 +1106,7 @@
 .fa-check-square:before {
   content: "\f14a";
 }
-.fa-pencil-square:before {
+.fa-edit-square:before {
   content: "\f14b";
 }
 .fa-external-link-square:before {

@@ -21,9 +21,9 @@ See [INTERNALS.md](INTERNALS.md) for details of how the code is structured.
    particular browser window_, the tree will update.
  - To mark a window to be saved, you have two choices:
 
-     1. Give the window a name using the pencil icon (![image](https://raw.githubusercontent.com/cxw42/TabFern/master/webstore/assets/icons/pencil.png)).
+     1. Give the window a name using the edit icon (![image](https://raw.githubusercontent.com/cxw42/TabFern/master/webstore/assets/icons/editBtn.png)).
      1. Hit the middle icon showing a rectangle with a red dot
-   (![image](https://raw.githubusercontent.com/cxw42/TabFern/master/webstore/assets/icons/picture_delete.png)).  The window will close.
+   (![image](https://raw.githubusercontent.com/cxw42/TabFern/master/webstore/assets/icons/save.png)).  The window will close.
 
  - Folder icons are:
 
@@ -33,7 +33,7 @@ See [INTERNALS.md](INTERNALS.md) for details of how the code is structured.
 
  - Saved windows will be saved even if you close them manually.  To remove them
    from the tree, hit the delete icon (red X,
-   ![image](https://raw.githubusercontent.com/cxw42/TabFern/master/webstore/assets/icons/cross.png)).
+   ![image](https://raw.githubusercontent.com/cxw42/TabFern/master/webstore/assets/icons/deleteBtn.png)).
 
  - Windows you do not expressly save will not be saved when you exit!
    I am open to discussion of better ways to handle this.

@@ -18,7 +18,7 @@
                         ,"description": "Text for tooltips, other than menu tooltips" }
   , "ttEditTab": {
     "message": "Add/edit label"
-    ,"description":"Tooltip for the pencil button on a tab's tree entry"
+    ,"description":"Tooltip for the edit button on a tab's tree entry"
   }
   , "ttDeleteTab": {
     "message": "Delete (close; don't save)"
@@ -26,7 +26,7 @@
   }
   , "ttEditWin": {
     "message": "Edit text"
-    ,"description":"Tooltip for the pencil button on a window's tree entry"
+    ,"description":"Tooltip for the edit button on a window's tree entry"
   }
   , "ttCloseWin": {
     "message": "Close and save"

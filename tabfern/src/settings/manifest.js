@@ -23,6 +23,9 @@
 
     let ham = icon('fa fa-bars');
     let gt = icon('fa fa-lg fa-caret-right');
+    var editImg = icon('fff-editBtn tf-action-button');
+    var delImg = icon('fff-delBtn tf-action-button');
+    var saveImg = icon('fff-saveBtn tf-action-button');
     let settings = `${ham} ${gt} Settings ${gt}`;
     let refresh_message = " (refresh the TabFern window after you change this to make the change take effect)";
 
@@ -285,6 +288,19 @@ bar (it will start with "file://")</li>
                 "name": CFG_TITLE_IN_TOOLTIP,
                 "type": "checkbox",
                 "label": future_i18n("Show page title in each item's tooltip"),
+            },
+            {
+                "tab": future_i18n("Appearance"),
+                "group": future_i18n("Manage Menu Buttons Layout"),
+                "name": CFG_FLIP_BUTTONS,
+                "type": "checkbox",
+                "label": future_i18n("Enable Optional <br>" + "Close and Save " + saveImg + " Edit " + editImg + " Delete " + delImg + "<br><br>"),
+            },
+            {
+                "tab": future_i18n("Appearance"),
+                "group": future_i18n("Manage Menu Buttons Layout"),
+                "type": "description",
+                "text": future_i18n("<b>Default Buttons Layout</b><br>" + " Edit " + editImg + " Close and Save " + saveImg + "Delete " + delImg),
             },
 
             // Features
@@ -609,7 +625,7 @@ locally-stored PDFs, and this helps me find them more quickly.</li>
 `<ul>
 <li>You can right-click a tab to give it a top border.  This lets you
 visually separate tabs in the tree at any point.  ${issue(56)}</li>
-<li>You can also right-click a tab or press ${icon('fff-pencil')}
+<li>You can also right-click a tab or press ${icon('fff-editBtn')}
 to add a note to yourself!
 The note will be displayed on the tab's item in the tree.
 Notes are saved with the tree, so your notes will stick around

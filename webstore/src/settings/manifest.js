@@ -609,7 +609,7 @@ locally-stored PDFs, and this helps me find them more quickly.</li>
 `<ul>
 <li>You can right-click a tab to give it a top border.  This lets you
 visually separate tabs in the tree at any point.  ${issue(56)}</li>
-<li>You can also right-click a tab or press ${icon('fff-pencil')}
+<li>You can also right-click a tab or press ${icon('fff-editBtn')}
 to add a note to yourself!
 The note will be displayed on the tab's item in the tree.
 Notes are saved with the tree, so your notes will stick around
