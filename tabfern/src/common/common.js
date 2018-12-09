@@ -58,7 +58,7 @@ _DEF[CFG_POPUP_ON_STARTUP] = true;
 _VAL[CFG_POPUP_ON_STARTUP] = _vbool;
 
 const CFG_ENB_CONTEXT_MENU = 'ContextMenu.Enabled';
-_DEF[CFG_ENB_CONTEXT_MENU] = false;
+_DEF[CFG_ENB_CONTEXT_MENU] = true;
 _VAL[CFG_ENB_CONTEXT_MENU] = _vbool;
 
 const CFG_FLIP_BUTTONS = 'flip-buttons';
