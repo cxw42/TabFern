@@ -552,7 +552,7 @@ function actionURLSubstitute(node_id, node, unused_action_id, unused_action_el)
     let old_text = window.prompt(_T('dlgpTextToReplace'));
     if(old_text === null) return;   // user cancelled
 
-    let new_text = window.prompt(_T('dlgpReplacementText'));
+    let new_text = window.prompt(_T('dlgpReplacementText'), old_text);
     if(new_text === null) return;   // user cancelled
 
     if(!old_text) return;   // search pattern is required
