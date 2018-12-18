@@ -1263,36 +1263,54 @@ function addWindowNodeActions(win_node_id)
         class: K.ACTION_GROUP_WIN_CLASS // + ' jstree-animated' //TODO?
     });
 
-    T.treeobj.add_action(win_node_id, {
-        id: 'renameWindow',
-        class: 'fff-pencil ' + K.ACTION_BUTTON_WIN_CLASS,
-        text: '\xa0',
-        grouped: true,
-        title: _T('ttEditWin'),
-        callback: actionRenameWindow,
-        dataset: { action: 'renameWindow' }
-    });
+    // Set a button management layout choosed by user.
+    // If checkbox in "Enable Optional" in "Appearance" in "Options" is unchecked; default button management layout is used.
+    // On first app run; default button management layout is used.
+    if(getBoolSetting(CFG_FLIP_BUTTONS)) {
+        closeSaveBtn(win_node_id);
+        renameBtn(win_node_id);
+        deleteBtn(win_node_id);
+    }else{
+        renameBtn(win_node_id);
+        closeSaveBtn(win_node_id);
+        deleteBtn(win_node_id);
+    }
 
-    T.treeobj.add_action(win_node_id, {
-        id: 'closeWindow',
-        class: 'fff-picture-delete ' + K.ACTION_BUTTON_WIN_CLASS,
-        text: '\xa0',
-        grouped: true,
-        title: _T('ttCloseWin'),
-        callback: actionCloseWindowAndSave,
-        dataset: { action: 'closeWindow' }
-    });
+    function renameBtn (win_node_id){
+        T.treeobj.add_action(win_node_id, {
+            id: 'renameWindow',
+            class: 'fff-pencil ' + K.ACTION_BUTTON_WIN_CLASS,
+            text: '\xa0',
+            grouped: true,
+            title: _T('ttEditWin'),
+            callback: actionRenameWindow,
+            dataset: { action: 'renameWindow' }
+        });
+    }
 
-    T.treeobj.add_action(win_node_id, {
-        id: 'deleteWindow',
-        class: 'fff-cross ' + K.ACTION_BUTTON_WIN_CLASS,
-        text: '\xa0',
-        grouped: true,
-        title: _T('ttDeleteWin'),
-        callback: actionDeleteWindow,
-        dataset: { action: 'deleteWindow' }
-    });
+    function closeSaveBtn (win_node_id) {
+        T.treeobj.add_action(win_node_id, {
+            id: 'closeWindow',
+            class: 'fff-picture-delete ' + K.ACTION_BUTTON_WIN_CLASS,
+            text: '\xa0',
+            grouped: true,
+            title: _T('ttCloseWin'),
+            callback: actionCloseWindowAndSave,
+            dataset: {action: 'closeWindow'}
+        });
+    }
 
+    function deleteBtn (win_node_id){
+        T.treeobj.add_action(win_node_id, {
+            id: 'deleteWindow',
+            class: 'fff-cross ' + K.ACTION_BUTTON_WIN_CLASS,
+            text: '\xa0',
+            grouped: true,
+            title: _T('ttDeleteWin'),
+            callback: actionDeleteWindow,
+            dataset: {action: 'deleteWindow'}
+        });
+    }
 } //addWindowNodeActions
 
 /// Set a timer to prune the window later.

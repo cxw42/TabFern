@@ -27,6 +27,10 @@ _NAM.CFG_POPUP_ON_STARTUP = 'open-popup-on-chrome-startup';
 _DEF[_NAM.CFG_POPUP_ON_STARTUP] = true;
 _VAL[_NAM.CFG_POPUP_ON_STARTUP] = _vbool;
 
+_NAM.CFG_FLIP_BUTTONS = 'flip-buttons';
+_DEF[_NAM.CFG_FLIP_BUTTONS] = false;
+_VAL[_NAM.CFG_FLIP_BUTTONS] = _vbool;
+
 _NAM.CFG_ENB_CONTEXT_MENU = 'ContextMenu.Enabled';
 _DEF[_NAM.CFG_ENB_CONTEXT_MENU] = true;
 _VAL[_NAM.CFG_ENB_CONTEXT_MENU] = _vbool;

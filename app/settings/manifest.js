@@ -293,6 +293,19 @@ bar (it will start with "file://")</li>
             "type": "checkbox",
             "label": future_i18n("Show page title in each item's tooltip"),
         },
+        {
+            "tab": future_i18n("Appearance"),
+            "group": future_i18n("Tabs Edit Management"),
+            "name": CFG_FLIP_BUTTONS,
+            "type": "checkbox",
+            "label": future_i18n("Enable collocation of buttons for managing Tabs <br>" + " Close and Save " + saveImg + " Edit " + editImg + " Delete " + delImg + "<br><br>"),
+        },
+        {
+            "tab": future_i18n("Appearance"),
+            "group": future_i18n("Tabs Edit Management"),
+            "type": "description",
+            "text": future_i18n("<b>Default Buttons Layout</b><br>" + " Edit " + editImg + " Close and Save " + saveImg + "Delete " + delImg),
+        },
 
         // Features
         {
