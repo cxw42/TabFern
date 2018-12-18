@@ -597,7 +597,7 @@
     });
 
     Bundle.RadioButtons = new Class({
-        // label, options[{value, text}]
+        // label, options[{value, text, html}]
         // action -> change
         "Extends": Bundle,
 
@@ -621,7 +621,7 @@
                 var optionID,
                     container;
 
-                this.params.searchString += (option.text || option.value) + "•";
+                this.params.searchString += (option.text || option.html || option.value) + "•";
 
                 optionID = String.uniqueID();
                 container = (new Element("div", {
@@ -637,11 +637,20 @@
                     "value": option.value
                 })).inject(container));
 
-                this.labels.push((new Element("label", {
+                let elemOptions = {
                     "class": "setting element-label radio-buttons",
                     "for": optionID,
                     "text": option.text || option.value
-                })).inject(container));
+                };
+
+                if(option.html) {
+                    elemOptions.html = option.html;
+                } else {
+                    elemOptions.text = option.text || option.value;
+                }
+
+                this.labels.push((new Element("label", elemOptions
+                )).inject(container));
             }).bind(this));
         },
 
