@@ -299,12 +299,14 @@ bar (it will start with "file://")</li>
         {
             'tab': future_i18n('Appearance'),
             'group': future_i18n('Action-button order for tabs'),
-            'name': S.FLIP_BUTTONS,
+            'name': S.WIN_ACTION_ORDER,
             'type': 'radioButtons',
             'options': [
-                {value: S.FALSE,
+                {value: 'ecd',
                     html: `Edit ${editImg} &bull; Close and Save ${saveImg} &bull; Delete ${delImg}` },
-                {value: S.TRUE,
+                {value: 'edc',
+                    html: `Edit ${editImg} &bull; Delete ${delImg} &bull; Close and Save ${saveImg}` },
+                {value: 'ced',
                     html: `Close and Save ${saveImg} &bull; Edit ${editImg} &bull; Delete ${delImg}` },
             ],
         },
@@ -394,7 +396,10 @@ order.`
             'group_html':true,
             "type": "description",
             "text":
-`<ul><li><a href="https://github.com/r4j4h/">Jasmine Hegman</a></li></ul>`
+`<ul>
+<li><a href="https://github.com/r4j4h/">Jasmine Hegman</a></li>
+<li><a href="https://github.com/RiotPharaoh/">RiotPharaoh</a></li>
+</ul>`
         },
         {
             "tab": future_i18n("Credits and thanks"),
@@ -429,6 +434,10 @@ order.`
 <p>Please note that if Chrome crashes while you have only some tabs open, the
 recovered window will show up in TabFern as a separate, unsaved window
 (related to ${issue(41, true)}).</p>
+</li>
+<li>You can choose the order of the action buttons for the windows:
+    ${editImg}${saveImg}${delImg}, ${editImg}${delImg}${saveImg}, or
+    ${saveImg}${editImg}${delImg}. ${issue(152)}
 </li>
 </ul>`,
         },

@@ -1168,6 +1168,8 @@ function addTabNodeActions(tab_node_id)
         class: K.ACTION_GROUP_WIN_CLASS // + ' jstree-animated' //TODO?
     });
 
+    // TODO?  Change order per #152?
+
     T.treeobj.add_action(tab_node_id, {
         id: 'editBullet',
         class: 'fff-pencil ' + K.ACTION_BUTTON_WIN_CLASS,
@@ -1263,18 +1265,23 @@ function addWindowNodeActions(win_node_id)
         class: K.ACTION_GROUP_WIN_CLASS // + ' jstree-animated' //TODO?
     });
 
-    // Set a button management layout choosed by user.
-    // If checkbox in "Enable Optional" in "Appearance" in "Options" is unchecked; default button management layout is used.
-    // On first app run; default button management layout is used.
-    if(S.getString(S.FLIP_BUTTONS) === S.TRUE) {
+    // Add the buttons in the layout chosen by the user (#152).
+    let order = S.getString(S.WIN_ACTION_ORDER);
+    if(order === 'ced') {
         closeSaveBtn(win_node_id);
         renameBtn(win_node_id);
         deleteBtn(win_node_id);
-    } else {
+    } else if(order === 'edc') {
+        renameBtn(win_node_id);
+        deleteBtn(win_node_id);
+        closeSaveBtn(win_node_id);
+    } else {    // default: 'ecd'
         renameBtn(win_node_id);
         closeSaveBtn(win_node_id);
         deleteBtn(win_node_id);
     }
+
+    // Workers to add the buttons
 
     function renameBtn (win_node_id){
         T.treeobj.add_action(win_node_id, {
@@ -1286,7 +1293,7 @@ function addWindowNodeActions(win_node_id)
             callback: actionRenameWindow,
             dataset: { action: 'renameWindow' }
         });
-    }
+    } //renameBtn
 
     function closeSaveBtn (win_node_id) {
         T.treeobj.add_action(win_node_id, {
@@ -1298,7 +1305,7 @@ function addWindowNodeActions(win_node_id)
             callback: actionCloseWindowAndSave,
             dataset: {action: 'closeWindow'}
         });
-    }
+    } //closeSaveBtn
 
     function deleteBtn (win_node_id){
         T.treeobj.add_action(win_node_id, {
@@ -1310,7 +1317,8 @@ function addWindowNodeActions(win_node_id)
             callback: actionDeleteWindow,
             dataset: {action: 'deleteWindow'}
         });
-    }
+    } //deleteBtn
+
 } //addWindowNodeActions
 
 /// Set a timer to prune the window later.

@@ -146,10 +146,10 @@ _VAL[_NAM.CFGS_OPEN_REST_ON_CLICK] = (v)=>{
 };
 
 // #152.  Which order of action buttons to use for tabs.
-_NAM.CFG_FLIP_BUTTONS = 'flip-tab-buttons';
-_DEF[_NAM.CFG_FLIP_BUTTONS] = CFG_FALSE;
+_NAM.CFG_WIN_ACTION_ORDER = 'win-button-action-order';
+_DEF[_NAM.CFG_WIN_ACTION_ORDER] = 'ecd';
 _VAL[_NAM.CFGS_OPEN_REST_ON_CLICK] = (v)=>{
-    return (( v === CFG_TRUE || v === CFG_FALSE ) ? v : undefined);
+    return (( v === 'ecd' || v === 'edc' || v === 'ced' ) ? v : undefined);
 };
 
 // }}}2
