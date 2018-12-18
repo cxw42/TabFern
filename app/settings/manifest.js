@@ -297,17 +297,16 @@ bar (it will start with "file://")</li>
             "label": future_i18n("Show page title in each item's tooltip"),
         },
         {
-            "tab": future_i18n("Appearance"),
-            "group": future_i18n("Tabs Edit Management"),
-            "name": S.FLIP_BUTTONS,
-            "type": "checkbox",
-            "label": future_i18n("Enable collocation of buttons for managing Tabs <br>" + " Close and Save " + saveImg + " Edit " + editImg + " Delete " + delImg + "<br><br>"),
-        },
-        {
-            "tab": future_i18n("Appearance"),
-            "group": future_i18n("Tabs Edit Management"),
-            "type": "description",
-            "text": future_i18n("<b>Default Buttons Layout</b><br>" + " Edit " + editImg + " Close and Save " + saveImg + "Delete " + delImg),
+            'tab': future_i18n('Appearance'),
+            'group': future_i18n('Action-button order for tabs'),
+            'name': S.FLIP_BUTTONS,
+            'type': 'radioButtons',
+            'options': [
+                {value: S.FALSE,
+                    html: `Edit ${editImg} &bull; Close and Save ${saveImg} &bull; Delete ${delImg}` },
+                {value: S.TRUE,
+                    html: `Close and Save ${saveImg} &bull; Edit ${editImg} &bull; Delete ${delImg}` },
+            ],
         },
 
         // Features

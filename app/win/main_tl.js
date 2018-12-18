@@ -1266,7 +1266,7 @@ function addWindowNodeActions(win_node_id)
     // Set a button management layout choosed by user.
     // If checkbox in "Enable Optional" in "Appearance" in "Options" is unchecked; default button management layout is used.
     // On first app run; default button management layout is used.
-    if(S.getBool(S.FLIP_BUTTONS)) {
+    if(S.getString(S.FLIP_BUTTONS) === S.TRUE) {
         closeSaveBtn(win_node_id);
         renameBtn(win_node_id);
         deleteBtn(win_node_id);
