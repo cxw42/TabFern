@@ -17,6 +17,9 @@ function future_i18n(x) { return x; }
 
 let ham = icon('fa fa-bars');
 let gt = icon('fa fa-lg fa-caret-right');
+var editImg = icon('fff-pencil tf-action-button');
+var delImg = icon('fff-cross tf-action-button');
+var saveImg = icon('fff-picture-delete tf-action-button');
 let settings = `${ham} ${gt} Settings ${gt}`;
 let refresh_message = " (refresh the TabFern window after you change this to make the change take effect)";
 
@@ -296,7 +299,7 @@ bar (it will start with "file://")</li>
         {
             "tab": future_i18n("Appearance"),
             "group": future_i18n("Tabs Edit Management"),
-            "name": CFG_FLIP_BUTTONS,
+            "name": S.FLIP_BUTTONS,
             "type": "checkbox",
             "label": future_i18n("Enable collocation of buttons for managing Tabs <br>" + " Close and Save " + saveImg + " Edit " + editImg + " Delete " + delImg + "<br><br>"),
         },

@@ -1266,11 +1266,11 @@ function addWindowNodeActions(win_node_id)
     // Set a button management layout choosed by user.
     // If checkbox in "Enable Optional" in "Appearance" in "Options" is unchecked; default button management layout is used.
     // On first app run; default button management layout is used.
-    if(getBoolSetting(CFG_FLIP_BUTTONS)) {
+    if(S.getBool(S.FLIP_BUTTONS)) {
         closeSaveBtn(win_node_id);
         renameBtn(win_node_id);
         deleteBtn(win_node_id);
-    }else{
+    } else {
         renameBtn(win_node_id);
         closeSaveBtn(win_node_id);
         deleteBtn(win_node_id);
@@ -1386,7 +1386,7 @@ function createNodeForWindow(cwin, keep, no_prune)
 
     // Remove extra tabs if the user wants
     if(false && !no_prune && !do_not_prune_right_now
-        && getBoolSetting(CFG_PRUNE_NEW_WINDOWS)
+        && S.getBool(S.PRUNE_NEW_WINDOWS)
     ) {
         pruneWindowSetTimer(val, cwin);
     }
