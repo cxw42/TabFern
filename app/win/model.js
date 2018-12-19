@@ -666,6 +666,8 @@ me.updateTabIndexValues = function updateTabIndexValues(win_nodey, as_open = [])
     log.trace(`win ${win_node.id} hash from ${old_hash} to ${new_hash}`); //DEBUG
 } //updateTabIndexValues
 
+// TODO cache open-child count?
+
 /// See if any children are closed.
 /// @param win_nodey {mixed} The window in question
 me.isWinPartlyOpen = function isWinPartlyOpen(win_nodey)
@@ -684,6 +686,26 @@ me.isWinPartlyOpen = function isWinPartlyOpen(win_nodey)
 
     return false;           // All open children => not partly open
 } //isWinPartlyOpen()
+
+/// Get the number of open children.
+/// @param win_nodey {mixed} The window in question
+me.getWinOpenChildCount = function getWinOpenChildCount(win_nodey)
+{
+    let win_node = T.treeobj.get_node(win_nodey);
+    if(!win_node) return false;
+
+    // Window can't be partly open if it's closed
+    if(!D.windows.by_node_id(win_node.id, 'isOpen')) return false;
+
+    let retval = 0;
+    for(let child_node_id of win_node.children) {
+        if(D.tabs.by_node_id(child_node_id, 'isOpen')) {
+            ++retval;
+        }
+    } //foreach child
+
+    return retval;
+} //getWinOpenChildCount()
 
 /// Convert a Chrome tab index to an index in the tree for a window,
 /// even if the window is partly open.

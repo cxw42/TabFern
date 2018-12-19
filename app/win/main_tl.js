@@ -600,6 +600,16 @@ function actionURLSubstitute(node_id, node, unused_action_id, unused_action_el)
 } //actionURLSubstitute
 
 ////////////////////////////////////////////////////////////////////////// }}}1
+// jstree helpers {{{1
+
+/// Collapse a tree node.
+function collapseTreeNode(nodey) {
+    T.treeobj.close_node(nodey);
+    T.install_rjustify(null, 'redraw_event.jstree', 'once');
+    T.treeobj.redraw_node(nodey);    // to be safe
+} //collapseTreeNode
+
+// }}}1
 // jstree-action callbacks // {{{1
 
 /// Wrapper to call jstree-action style callbacks from jstree contextmenu
@@ -709,7 +719,7 @@ function actionRememberWindow(node_id, node, unused_action_id, unused_action_el)
 /// Close a window, but don't delete its tree nodes.  Used for saving windows.
 /// ** The caller must call saveTree() --- actionCloseWindowButDoNotSave() does not.
 /// TODO refactor this to use the model
-function actionCloseWindowButDoNotSave(node_id, node, unused_action_id, unused_action_el)
+function actionCloseWindowButDoNotSave(node_id, node, unused_action_id, unused_action_el, is_ui_action)
 {
     let win_val = D.windows.by_node_id(node_id);
     if(!win_val) return;
@@ -722,6 +732,8 @@ function actionCloseWindowButDoNotSave(node_id, node, unused_action_id, unused_a
         // Can't access by win_id, but can still access by node_id.
 
     // TODO winOnFocusChanged(NONE, true) ?
+
+    let was_open = win_val.isOpen && win;
 
     // Close the window
     if(win_val.isOpen && win) {
@@ -742,11 +754,12 @@ function actionCloseWindowButDoNotSave(node_id, node, unused_action_id, unused_a
     M.remember(node_id);
     M.del_subtype(node_id, K.NST_OPEN);
 
-    // Collapse the tree, if the user wants that
-    if(S.getBool(S.COLLAPSE_ON_WIN_CLOSE)) {
-        T.treeobj.close_node(node);
-        T.install_rjustify(null, 'redraw_event.jstree', 'once');
-        T.treeobj.redraw_node(node);    // to be safe
+    // Collapse the tree, if the user wants that.
+    // If the user hit close on a closed window, it's a collapse.
+    if(S.getBool(S.COLLAPSE_ON_WIN_CLOSE) ||
+            (is_ui_action && !was_open)
+    ) {
+        collapseTreeNode(node);
     }
 
     // Mark the tabs in the tree node closed.
@@ -772,7 +785,8 @@ function actionCloseWindowButDoNotSave(node_id, node, unused_action_id, unused_a
 /// Close the window and save
 function actionCloseWindowAndSave(node_id, node, unused_action_id, unused_action_el)
 {
-    actionCloseWindowButDoNotSave(node_id, node, unused_action_id, unused_action_el);
+    actionCloseWindowButDoNotSave(node_id, node, unused_action_id, unused_action_el, true);     // true => it came from a user action.  The only places
+                // this is invoked are user actions.
     saveTree();
 } //actionCloseWindowAndSave
 
@@ -1138,15 +1152,33 @@ function actionCloseTabAndSave(tab_node_id, tab_node, unused_action_id, unused_a
     let window_node_id = tab_node.parent;
     M.remember(window_node_id);
 
+//    // If closing the last tab, collapse if requested.  Collapse before saving
+//    // so the UI is more responsive.
+//    let should_collapse = false;
+//    if(S.getBool(S.COLLAPSE_ON_PARTIAL_WIN_CLOSE)) {
+//        should_collapse =
+//            M.isWinPartlyOpen(window_node_id) &&
+//            (M.getWinOpenChildCount(window_node_id) === 1);
+//                // Still 1 here, because the chrome.tabs.remove hasn't
+//                // happened yet.
+//    }
+
     let tab_id = tab_val.tab_id;    // since markTabAsClosed clears it
     M.markTabAsClosed(tab_val);
 
-    ASQH.NowCC((cc)=>{
+    let seq = ASQH.NowCC((cc)=>{
         chrome.tabs.remove(tab_id, cc);
         // Because the tab is already marked as closed, tabOnRemoved()
         // won't delete its node.
-    })
-    .val(()=>{
+    });
+
+//    if(should_collapse) {
+//        seq.val(()=>{
+//            collapseTreeNode(window_node_id);
+//        });
+//    }
+
+    seq.val(()=>{
         // Refresh the tab.index values for the remaining tabs
         M.updateTabIndexValues(window_node_id);
         saveTree();
@@ -1382,7 +1414,9 @@ function createNodeForWindow(cwin, keep, no_prune)
 function createNodeForClosedWindowV1(win_data_v1)
 {
     let is_ephemeral = Boolean(win_data_v1.ephemeral);  // missing => false
+
     let shouldCollapse = S.getBool(S.COLLAPSE_ON_STARTUP);
+        // TODO is this not actually implemented?
 
     log.info({'Closed window':win_data_v1.raw_title, 'is ephemeral?': is_ephemeral});
 

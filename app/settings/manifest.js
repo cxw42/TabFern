@@ -117,17 +117,17 @@ vote at ${issue(125,true)}.
             "group": future_i18n("When I..."),
             "name": S.COLLAPSE_ON_WIN_CLOSE,
             "type": "checkbox",
-            "label": future_i18n("Close a fully-open window, collapse its tree"),
+            "label": future_i18n("Close an open window, collapse its tree"),
             //"text": future_i18n("x-characters")
         },
-        {
-            "tab": future_i18n("Behaviour"),
-            "group": future_i18n("When I..."),
-            "name": S.COLLAPSE_ON_PARTIAL_WIN_CLOSE,
-            "type": "checkbox",
-            "label": future_i18n("Close the last tab in a partly-open window, collapse its tree"),
-            //"text": future_i18n("x-characters")
-        },
+//        {
+//            "tab": future_i18n("Behaviour"),
+//            "group": future_i18n("When I..."),
+//            "name": S.COLLAPSE_ON_PARTIAL_WIN_CLOSE,
+//            "type": "checkbox",
+//            "label": future_i18n("Close the last tab in a partly-open window, collapse its tree"),
+//            //"text": future_i18n("x-characters")
+//        },
         {
             "tab": future_i18n("Behaviour"),
             "group": future_i18n("When I..."),

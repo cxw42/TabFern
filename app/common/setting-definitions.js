@@ -51,9 +51,9 @@ _NAM.CFG_COLLAPSE_ON_WIN_CLOSE = 'collapse-tree-on-window-close';
 _DEF[_NAM.CFG_COLLAPSE_ON_WIN_CLOSE] = true;
 _VAL[_NAM.CFG_COLLAPSE_ON_WIN_CLOSE] = _vbool;
 
-_NAM.CFG_COLLAPSE_ON_PARTIAL_WIN_CLOSE = 'collapse-tree-on-partially-open-window-close';
-_DEF[_NAM.CFG_COLLAPSE_ON_PARTIAL_WIN_CLOSE] = true;
-_VAL[_NAM.CFG_COLLAPSE_ON_PARTIAL_WIN_CLOSE] = _vbool;
+//_NAM.CFG_COLLAPSE_ON_PARTIAL_WIN_CLOSE = 'collapse-tree-on-partially-open-window-close';
+//_DEF[_NAM.CFG_COLLAPSE_ON_PARTIAL_WIN_CLOSE] = true;
+//_VAL[_NAM.CFG_COLLAPSE_ON_PARTIAL_WIN_CLOSE] = _vbool;
 
 _NAM.CFG_HIDE_HORIZONTAL_SCROLLBARS = 'hide-horizontal-scrollbars';
 _DEF[_NAM.CFG_HIDE_HORIZONTAL_SCROLLBARS] = true;
