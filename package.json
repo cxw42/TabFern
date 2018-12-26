@@ -8,6 +8,7 @@
   },
   "scripts": {
     "build": "npx brunch build",
+    "ff": "sh -c 'npx brunch b ; node ffize.js'",
     "rebuild": "sh -c 'rm -rf public ; npx brunch b ; find public'",
     "debug": "sh -c 'LOGGY_STACKS=1 npx brunch b -d 2>&1 |less -R'",
     "watch": "npx brunch watch",
@@ -60,6 +61,7 @@
     "babel-brunch": "^7.0.0",
     "benchmark": "^2.1.4",
     "brunch": "cxw42/brunch#1527",
+    "fs-extra": "^7.0.1",
     "replacer-brunch": "^1.1.1",
     "sass-brunch": "^2.10.7",
     "seedrandom": "^2.4.3",

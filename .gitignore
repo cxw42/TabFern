@@ -27,7 +27,7 @@ tags
 foo.*
 
 # Output directories
-/public
+/public*
 /build*
 /doc/
 /dist/
