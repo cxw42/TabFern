@@ -100,13 +100,20 @@ let me = {
             return /^static\//.test(path);
         },
 
-        // Don't ignore _*, or else Brunch won't copy _locales.  Instead,
-        // use __ for partials.  Thanks to
-        // https://stackoverflow.com/a/43426151/2877364 by
-        // https://stackoverflow.com/users/4028896/johannes-filter
-        // Answer modified to use the rest of the default ignore from
-        // https://github.com/brunch/brunch/blob/ab89a016121fc7ba4ebfbe8bdc93a22bcd8d4cda/lib/utils/config-validate.js#L73
-        ignored: [/\/__/, /vendor\/(node|j?ruby-.+|bundle)\//]
+        ignored: [
+            /\/__/,
+                // Don't ignore _*, or else Brunch won't copy _locales.
+                // Instead, use __ for partials.  Thanks to
+                // https://stackoverflow.com/a/43426151/2877364 by
+                // https://stackoverflow.com/users/4028896/johannes-filter
+
+            /vendor\/(node|j?ruby-.+|bundle)\//,
+                // The rest of the default ignore from
+                // https://github.com/brunch/brunch/blob/ab89a016121fc7ba4ebfbe8bdc93a22bcd8d4cda/lib/utils/config-validate.js#L73
+
+            /node_modules\/process\/browser.js/
+                // https://github.com/brunch/brunch/issues/1503#issuecomment-320902509
+        ]
     },
 
     npm: {
