@@ -16,6 +16,13 @@ delete manifest['offline_enabled'];
 delete manifest['options_page'];
 delete manifest['background']['persistent'];
 
+// Add the Add-on ID so localStorage will persist
+manifest.browser_specific_settings = {
+    "gecko": {
+        "id": "{262561cf-8570-4815-9464-0152a0fde25c}"
+    }
+};
+
 var idx = manifest['permissions'].indexOf('chrome://favicon/');
 if(idx > -1) {
     manifest['permissions'].splice(idx,1);
