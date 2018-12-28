@@ -1,4 +1,5 @@
 // brunch-config.js for brunch-test by cxw42
+let child_process = require('child_process');
 
 /*
  * Notes on the TabFern extension friendly version number.
@@ -236,6 +237,21 @@ me.overrides.development = {
 //        },
 //    },
 //};
+
+// Firefox build
+me.overrides.firefox = {
+    hooks: {
+        onCompile: ()=>{
+            console.log('Making public-ff tree');
+            try {
+                child_process.execSync('node ffize.js');
+                console.log('done');
+            } catch(error) {
+                console.error(error);
+            }
+        },
+    },
+};
 
 //console.dir(me, {depth:null});    // DEBUG
 module.exports = me;

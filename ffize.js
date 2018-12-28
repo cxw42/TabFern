@@ -30,3 +30,4 @@ if(idx > -1) {
 
 // Write it back out
 fs.writeFileSync('./public-ff/manifest.json', JSON.stringify(manifest));
+console.log('Wrote public-ff');
