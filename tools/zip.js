@@ -1,4 +1,4 @@
-// zip.js: ZIP up the brunch-built TabFern.
+// tools/zip.js: ZIP up the brunch-built TabFern.
 // cxw42, 2018.  Modified from the samples at
 // https://github.com/archiverjs/node-archiver and
 // https://github.com/archiverjs/node-archiver/issues/185 .
@@ -7,10 +7,10 @@
 var fs = require('fs');
 var archiver = require('archiver');
 
-var me = require('./package.json');
+var me = require('../package.json');
 
 // create a file to stream archive data to.
-const fn = `${__dirname}/webstore-${me.version}.zip`;
+const fn = `${__dirname}/../webstore-${me.version}.zip`;
 var output = fs.createWriteStream(fn);
 
 var archive = archiver('zip', {

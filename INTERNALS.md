@@ -1,14 +1,16 @@
 # TabFern internals
 
+NOTE: this document has not yet been fully updated for brunch usage.
+
 ## Project layout
 
  - `/tabfern`: The development tree for TabFern itself
-   * `/tabfern/src`: Main source
+   * `/tabfern/app`: Main source
      - `/tabfern/src/bg`: Background page
-     - `/tabfern/src/view`: Popup
-     - `/tabfern/src/options_custom`: Options page
+     - `/tabfern/src/win`: Popup
+     - `/tabfern/src/settings`: Options page
    * `/tabfern/test`: Jasmine tests of TabFern
- - `/dist`: where build output from the build process will eventually go.
+ - `/tools`: Useful scripts
  - `/webstore`: The latest version of TabFern released to the Chrome Web Store.
    Updated manually by the maintainers.
  - `/doc`: Documentation
