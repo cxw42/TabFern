@@ -1,6 +1,6 @@
 {
   "name": "tabfern",
-  "version": "0.2.0-pre.4",
+  "version": "0.2.0-pre.5",
   "description": "Google Chrome extension for displaying, saving, and managing tabs",
   "main": "src/view/main.js",
   "directories": {
@@ -63,6 +63,7 @@
     "brunch": "cxw42/brunch#1527",
     "fs-extra": "^7.0.1",
     "replacer-brunch": "^1.1.1",
+    "replacestream": "^4.0.3",
     "sass-brunch": "^2.10.7",
     "seedrandom": "^2.4.3",
     "uglify-es-brunch": "^1.0.5"

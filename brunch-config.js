@@ -1,5 +1,10 @@
 // brunch-config.js for brunch-test by cxw42
-let child_process = require('child_process');
+let child_process = require('child_process'),
+    replaceStream = require('replacestream'),
+    fs = require('fs'),
+    path = require('path');
+
+let pkg_json = require('./package.json');
 
 /*
  * Notes on the TabFern extension friendly version number.
@@ -21,6 +26,37 @@ let child_process = require('child_process');
  * `version='1.2.3.1337'`.
  * If you get up to -pre.1336, just bump the `z` value and reset `w` :) .
  */
+
+// =======================================================================
+// Copy the manifest file and populate version numbers from package.json.
+// TODO make this a Brunch plugin instead.
+try { fs.mkdirSync('public') } catch (err) {}
+
+// Parse the version from package.json
+let ver_re = /^(\d+)\.(\d+)\.(\d+)(?:-[a-z]+)?(?:\.(\d+))?$/;
+    // Permit x.y.z and x.y.z-pre.w (normal use)
+    // Also permit x.y.z.w (for specifying w>1337)
+let matches = ver_re.exec(pkg_json.version);
+if(matches == null) {
+    console.error('Invalid version in package.json');
+    process.exit(); // ABORT
+}
+
+// Make the Chrome-format version
+if(matches[4] == null) {    // Non-prerelease has w=1337 by default
+    matches[4] = 1337;
+}
+let ver_tuple = matches.slice(1,5).join('.');   // x.y.z.w
+
+// Copy app/manifest.json->public/manifest.json and fill in versions
+console.log(`TF version ${pkg_json.version} -> ${ver_tuple}`);
+fs.createReadStream(path.join(__dirname, 'app', 'manifest.json'))
+  .pipe(replaceStream('$VER$', ver_tuple))
+  .pipe(replaceStream('$VERNAME$', pkg_json.version))
+  .pipe(fs.createWriteStream(path.join(__dirname, 'public', 'manifest.json')));
+
+// =======================================================================
+// Actual Brunch config
 
 /// The object we will eventually return
 let me = {
@@ -163,7 +199,7 @@ let me = {
 };
 
 // String replacement
-let chrome_manifest = require('./static/manifest.json');
+//let chrome_manifest = require('./static/manifest.json');
 
 // Regexes we will replace
 const kFN = /\b__filename\b/;
@@ -172,7 +208,7 @@ me.plugins.replacer = {     // Permit using __filename in modules
     dict: [
         { key: kFN, },
         { key: /\bTABFERN_VERSION\b/,
-            value: `'${chrome_manifest.version_name}'` },
+            value: `'${pkg_json.version}'` },
     ],
 
     replace: (str, key, value, path) => {
