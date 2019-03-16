@@ -116,7 +116,24 @@ function loadCSS(doc, url, before) {
 // Miscellaneous functions // {{{1
 
 /// Shortcut for i18n.  Call _T("name") to pull the localized "name".
-var _T = chrome.i18n.getMessage;
+var _T;
+if(chrome && chrome.i18n && chrome.i18n.getMessage) {
+    _T = chrome.i18n.getMessage;
+} else {    // #171 HACK
+    console.warn("Using #171 hack");
+    // The following line is substituted at build time with the messages
+    // from _locales/en/messages.json.  See details in brunch-config.js.
+    // The "0;" is so it will not confuse the autoindent.
+    let _messages = 0;///I18N_MESSAGES/// ;
+
+    _T = function _T_hack(messageName, substitutions_IGNORED) {
+        if(_messages && _messages[messageName]) {
+            return _messages[messageName];
+        } else {
+            return "Unknown message (issue 171): " + messageName;
+        }
+    } //_T()
+} //endif !chrome.i18n.getMessage
 
 /// Ignore a Chrome callback error, and suppress Chrome's
 /// `runtime.lastError` diagnostic.  Use this as a Chrome callback.

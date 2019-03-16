@@ -5,6 +5,7 @@ let child_process = require('child_process'),
     path = require('path');
 
 let pkg_json = require('./package.json');
+let messages_en = require('./static/_locales/en/messages.json');
 
 /*
  * Notes on the TabFern extension friendly version number.
@@ -54,6 +55,13 @@ fs.createReadStream(path.join(__dirname, 'app', 'manifest.json'))
   .pipe(replaceStream('$VER$', ver_tuple))
   .pipe(replaceStream('$VERNAME$', pkg_json.version))
   .pipe(fs.createWriteStream(path.join(__dirname, 'public', 'manifest.json')));
+
+// =======================================================================
+// Make the backup 18n config
+messages_en_trimmed = {}
+for(let msg in messages_en) {
+    messages_en_trimmed[msg] = messages_en[msg].message;
+}
 
 // =======================================================================
 // Actual Brunch config
@@ -209,6 +217,8 @@ me.plugins.replacer = {     // Permit using __filename in modules
         { key: kFN, },
         { key: /\bTABFERN_VERSION\b/,
             value: `'${pkg_json.version}'` },
+        { key: "0;///I18N_MESSAGES///",
+            value: JSON.stringify(messages_en_trimmed) },
     ],
 
     replace: (str, key, value, path) => {

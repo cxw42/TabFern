@@ -428,7 +428,10 @@ order.`
             'group_html':true,
             "type": "description",
             "text":
-`<ul>
+`<p>Note: Vivaldi 2.3.1440.61 appears to have a bug that sometimes causes
+TabFern not to load properly.  If this happens, close the TF window and
+click the TF toolbar button to reload.  That will probably work!</p>
+<ul>
 <li>TabFern now opens in a small window in the upper-left corner of the
     screen before moving to wherever you last put it.  Hopefully this
     is less disruptive visually.  ${issue(169)}
