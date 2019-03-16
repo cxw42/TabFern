@@ -8,9 +8,16 @@ const S = require('common/setting-definitions');    // in app/
 
 // Shortcuts for frequently-used items
 function icon(cls) { return `<i class="${cls}"></i>`; }
-function issue(num, noparens) {
-    return `${noparens?'':'('}<a href="https://github.com/cxw42/TabFern/issues/${num|0}">#${num|0}</a>${noparens?'':')'}`;
-}
+function issue(nums, noparens) {
+    if(!Array.isArray(nums)) {
+        nums = [nums];
+    }
+    return (noparens?'':'(') +
+        nums.map(num =>
+            `<a href="https://github.com/cxw42/TabFern/issues/${num|0}">#${num|0}</a>`).join(', ') +
+        (noparens?'':')');
+} //issue()
+
 function brplain(text){return `<br/><span class="plain">${text}</span>`;}
 
 function future_i18n(x) { return x; }
@@ -397,10 +404,17 @@ order.`
         // Changelog                                          {{{1
         {
             "tab": future_i18n("What's new?"),
-            "group": `Version 0.2.0${brplain('2018-xx-xx')}`,
+            "group": `Version 0.2.0${brplain('2019-xx-xx')}`,
             'group_html':true,
             "type": "description",
             "text":
+`<ul>
+<li>Updates under the hood ${issue([4,164])}.  Hopefully you will see
+    faster load times as a result.</li>
+<li>(Developers only) Initial Firefox support ${issue(100)}.  See
+    <a href="https://github.com/cxw42/TabFern/issues/100#issuecomment-450384941">here</a> for more details.</li>
+</ul>`
+/*
 `<ul>
 <li class="gold-star">Opening one tab at a time!  Yes, the wait is over!  ${issue(35)}
 <ul>
@@ -416,6 +430,7 @@ recovered window will show up in TabFern as a separate, unsaved window
 (related to ${issue(41, true)}).</p>
 </li>
 </ul>`,
+*/
         },
             // Changelog                                          {{{1
             {
@@ -423,8 +438,8 @@ recovered window will show up in TabFern as a separate, unsaved window
                 "group": `Version 0.1.19${brplain('2018-10-03')}`,
                 'group_html':true,
                 "type": "description",
-                "text": `<ul><li>Bugfixes and internals: ${issue(102,true)},
-                        ${issue(131,true)}, ${issue(149,true)}</li></ul>`,
+                "text": `<ul><li>Bugfixes and internals:
+                        ${issue([102, 131, 149],true)}</li></ul>`,
             },
             {
                 "tab": future_i18n("What's new?"),
