@@ -1,5 +1,5 @@
-// ffize.js: Make a Firefox manifest from the built Chrome manifest
-// cxw42, 2018.
+// ffize.js: Make a Firefox manifest and tree from the built Chrome dir
+// cxw42, 2018--2019.
 
 var fs = require('fs-extra');
 
@@ -8,7 +8,7 @@ fs.removeSync('public-ff');
 fs.copySync('public','public-ff');
 
 // Read the Chrome manifest
-var manifest = require('./public/manifest.json');
+var manifest = require('../public/manifest.json');
 
 // Munge
 delete manifest['version_name'];
@@ -29,5 +29,5 @@ if(idx > -1) {
 }
 
 // Write it back out
-fs.writeFileSync('./public-ff/manifest.json', JSON.stringify(manifest));
+fs.writeFileSync('public-ff/manifest.json', JSON.stringify(manifest));
 console.log('Wrote public-ff');
