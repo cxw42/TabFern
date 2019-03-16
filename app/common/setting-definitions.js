@@ -108,6 +108,9 @@ _VAL[_NAM.SETTINGS_LOADED_OK] = ()=>{return undefined;}
 
 // }}}2
 // Strings and limited-choice controls such as radio buttons and dropdowns. {{{2
+const CFG_TRUE = 'affirmative';
+const CFG_FALSE = 'negative';
+
 _NAM.CFGS_BACKGROUND = 'window-background';
 _DEF[_NAM.CFGS_BACKGROUND] = '';
 _VAL[_NAM.CFGS_BACKGROUND] = (v)=>{
@@ -140,6 +143,13 @@ const CFG_OROC_DO_NOT = "nope";
 _DEF[_NAM.CFGS_OPEN_REST_ON_CLICK] = CFG_OROC_DO_NOT;
 _VAL[_NAM.CFGS_OPEN_REST_ON_CLICK] = (v)=>{
     return (( v === CFG_OROC_DO || v === CFG_OROC_DO_NOT ) ? v : undefined);
+};
+
+// #152.  Which order of action buttons to use for tabs.
+_NAM.CFG_WIN_ACTION_ORDER = 'win-button-action-order';
+_DEF[_NAM.CFG_WIN_ACTION_ORDER] = 'ecd';
+_VAL[_NAM.CFGS_OPEN_REST_ON_CLICK] = (v)=>{
+    return (( v === 'ecd' || v === 'edc' || v === 'ced' ) ? v : undefined);
 };
 
 // }}}2
@@ -264,6 +274,8 @@ let me = {
     // special values settings can take on
     OROC_DO: CFG_OROC_DO,
     OROC_DO_NOT: CFG_OROC_DO_NOT,
+    TRUE: CFG_TRUE,
+    FALSE: CFG_FALSE,
 
     // special accessors
     isOROC: ()=>(getStringSetting(CFG_NAMES.CFG_OPEN_REST_ON_CLICK) === CFG_OROC_DO),

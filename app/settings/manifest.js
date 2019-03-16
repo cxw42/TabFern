@@ -24,6 +24,9 @@ function future_i18n(x) { return x; }
 
 let ham = icon('fa fa-bars');
 let gt = icon('fa fa-lg fa-caret-right');
+var editImg = icon('fff-pencil tf-action-button');
+var delImg = icon('fff-cross tf-action-button');
+var saveImg = icon('fff-picture-delete tf-action-button');
 let settings = `${ham} ${gt} Settings ${gt}`;
 let refresh_message = " (refresh the TabFern window after you change this to make the change take effect)";
 
@@ -300,6 +303,20 @@ bar (it will start with "file://")</li>
             "type": "checkbox",
             "label": future_i18n("Show page title in each item's tooltip"),
         },
+        {
+            'tab': future_i18n('Appearance'),
+            'group': future_i18n('Action-button order for windows'),
+            'name': S.WIN_ACTION_ORDER,
+            'type': 'radioButtons',
+            'options': [
+                {value: 'ecd',
+                    html: `Edit ${editImg} &bull; Close and Save ${saveImg} &bull; Delete ${delImg}` },
+                {value: 'edc',
+                    html: `Edit ${editImg} &bull; Delete ${delImg} &bull; Close and Save ${saveImg}` },
+                {value: 'ced',
+                    html: `Close and Save ${saveImg} &bull; Edit ${editImg} &bull; Delete ${delImg}` },
+            ],
+        },
 
         // Features
         {
@@ -386,7 +403,10 @@ order.`
             'group_html':true,
             "type": "description",
             "text":
-`<ul><li><a href="https://github.com/r4j4h/">Jasmine Hegman</a></li></ul>`
+`<ul>
+<li><a href="https://github.com/r4j4h/">Jasmine Hegman</a></li>
+<li><a href="https://github.com/RiotPharaoh/">RiotPharaoh</a></li>
+</ul>`
         },
         {
             "tab": future_i18n("Credits and thanks"),
@@ -411,6 +431,12 @@ order.`
 `<ul>
 <li>Updates under the hood ${issue([4,164])}.  Hopefully you will see
     faster load times as a result.</li>
+<li>You can choose the order of the action buttons for the windows on
+    ${ham} ${gt} Settings ${gt} Appearance.<br />
+    Options are:
+    ${editImg}${saveImg}${delImg}, ${editImg}${delImg}${saveImg}, or
+    ${saveImg}${editImg}${delImg}. ${issue(152)}
+</li>
 <li>(Developers only) Initial Firefox support ${issue(100)}.  See
     <a href="https://github.com/cxw42/TabFern/issues/100#issuecomment-450384941">here</a> for more details.</li>
 </ul>`

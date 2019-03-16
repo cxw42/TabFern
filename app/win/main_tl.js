@@ -1200,6 +1200,8 @@ function addTabNodeActions(tab_node_id)
         class: K.ACTION_GROUP_WIN_CLASS // + ' jstree-animated' //TODO?
     });
 
+    // TODO?  Change order per #152?
+
     T.treeobj.add_action(tab_node_id, {
         id: 'editBullet',
         class: 'fff-pencil ' + K.ACTION_BUTTON_WIN_CLASS,
@@ -1297,35 +1299,59 @@ function addWindowNodeActions(win_node_id)
         class: K.ACTION_GROUP_WIN_CLASS // + ' jstree-animated' //TODO?
     });
 
-    T.treeobj.add_action(win_node_id, {
-        id: 'renameWindow',
-        class: 'fff-pencil ' + K.ACTION_BUTTON_WIN_CLASS,
-        text: '\xa0',
-        grouped: true,
-        title: _T('ttEditWin'),
-        callback: actionRenameWindow,
-        dataset: { action: 'renameWindow' }
-    });
+    // Add the buttons in the layout chosen by the user (#152).
+    let order = S.getString(S.WIN_ACTION_ORDER);
+    if(order === 'ced') {
+        closeSaveBtn(win_node_id);
+        renameBtn(win_node_id);
+        deleteBtn(win_node_id);
+    } else if(order === 'edc') {
+        renameBtn(win_node_id);
+        deleteBtn(win_node_id);
+        closeSaveBtn(win_node_id);
+    } else {    // default: 'ecd'
+        renameBtn(win_node_id);
+        closeSaveBtn(win_node_id);
+        deleteBtn(win_node_id);
+    }
 
-    T.treeobj.add_action(win_node_id, {
-        id: 'closeWindow',
-        class: 'fff-picture-delete ' + K.ACTION_BUTTON_WIN_CLASS,
-        text: '\xa0',
-        grouped: true,
-        title: _T('ttCloseWin'),
-        callback: actionCloseWindowAndSave,
-        dataset: { action: 'closeWindow' }
-    });
+    // Workers to add the buttons
 
-    T.treeobj.add_action(win_node_id, {
-        id: 'deleteWindow',
-        class: 'fff-cross ' + K.ACTION_BUTTON_WIN_CLASS,
-        text: '\xa0',
-        grouped: true,
-        title: _T('ttDeleteWin'),
-        callback: actionDeleteWindow,
-        dataset: { action: 'deleteWindow' }
-    });
+    function renameBtn (win_node_id){
+        T.treeobj.add_action(win_node_id, {
+            id: 'renameWindow',
+            class: 'fff-pencil ' + K.ACTION_BUTTON_WIN_CLASS,
+            text: '\xa0',
+            grouped: true,
+            title: _T('ttEditWin'),
+            callback: actionRenameWindow,
+            dataset: { action: 'renameWindow' }
+        });
+    } //renameBtn
+
+    function closeSaveBtn (win_node_id) {
+        T.treeobj.add_action(win_node_id, {
+            id: 'closeWindow',
+            class: 'fff-picture-delete ' + K.ACTION_BUTTON_WIN_CLASS,
+            text: '\xa0',
+            grouped: true,
+            title: _T('ttCloseWin'),
+            callback: actionCloseWindowAndSave,
+            dataset: {action: 'closeWindow'}
+        });
+    } //closeSaveBtn
+
+    function deleteBtn (win_node_id){
+        T.treeobj.add_action(win_node_id, {
+            id: 'deleteWindow',
+            class: 'fff-cross ' + K.ACTION_BUTTON_WIN_CLASS,
+            text: '\xa0',
+            grouped: true,
+            title: _T('ttDeleteWin'),
+            callback: actionDeleteWindow,
+            dataset: {action: 'deleteWindow'}
+        });
+    } //deleteBtn
 
 } //addWindowNodeActions
 
@@ -1402,7 +1428,7 @@ function createNodeForWindow(cwin, keep, no_prune)
 
     // Remove extra tabs if the user wants
     if(false && !no_prune && !do_not_prune_right_now
-        && getBoolSetting(CFG_PRUNE_NEW_WINDOWS)
+        && S.getBool(S.PRUNE_NEW_WINDOWS)
     ) {
         pruneWindowSetTimer(val, cwin);
     }
