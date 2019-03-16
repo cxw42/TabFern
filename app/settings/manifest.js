@@ -429,13 +429,16 @@ order.`
             "type": "description",
             "text":
 `<ul>
-<li>Updates under the hood ${issue([4,164])}.  Hopefully you will see
-    faster load times as a result.</li>
+<li>TabFern now opens in a small window in the upper-left corner of the
+    screen before moving to wherever you last put it.  Hopefully this
+    is less disruptive visually.  ${issue(169)}
+<li>Updates under the hood.  Hopefully you will see
+    faster load times as a result.  ${issue([4,164])}</li>
 <li>You can choose the order of the action buttons for the windows on
-    ${ham} ${gt} Settings ${gt} Appearance.<br />
+    ${ham} ${gt} Settings ${gt} Appearance.  ${issue(152)}<br />
     Options are:
     ${editImg}${saveImg}${delImg}, ${editImg}${delImg}${saveImg}, or
-    ${saveImg}${editImg}${delImg}. ${issue(152)}
+    ${saveImg}${editImg}${delImg}.
 </li>
 <li>(Developers only) Initial Firefox support ${issue(100)}.  See
     <a href="https://github.com/cxw42/TabFern/issues/100#issuecomment-450384941">here</a> for more details.</li>

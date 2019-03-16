@@ -28,6 +28,10 @@ me.loadView = function loadView()
     chrome.windows.create(
         { 'url': chrome.runtime.getURL('win/container.html'),
           'type': 'popup',
+          'left': 10,
+          'top': 10,
+          'width': 200,
+          'height': 200,
           //'focused': true
             // Note: `focused` is not supported on Firefox, but
             // focused=true is usually the effect.
