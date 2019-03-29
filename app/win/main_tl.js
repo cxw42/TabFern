@@ -1200,44 +1200,67 @@ function addTabNodeActions(tab_node_id)
         class: K.ACTION_GROUP_WIN_CLASS // + ' jstree-animated' //TODO?
     });
 
-    // TODO?  Change order per #152?
+    // Add the buttons in the layout chosen by the user (#152).
+    let order = S.getString(S.WIN_ACTION_ORDER);
+    if(order === 'ced') {
+        //addTabCloseAction(win_node_id);   // DISABLED for now (#35)
+        addTabEditAction(tab_node_id);
+        addTabDeleteAction(tab_node_id);
+    } else if(order == 'ecd') {
+        addTabEditAction(tab_node_id);
+        //addTabCloseAction(tab_node_id);   // DISABLED for now (#35)
+        addTabDeleteAction(tab_node_id);
+    } else if(order === 'edc') {
+        addTabEditAction(tab_node_id);
+        addTabDeleteAction(tab_node_id);
+        //addTabCloseAction(tab_node_id);   // DISABLED for now (#35)
+    } else {
+        //don't add any buttons, but don't crash.
+        log.error(`Unknown order ${order}`);
+    }
 
-    T.treeobj.add_action(tab_node_id, {
-        id: 'editBullet',
-        class: 'fff-pencil ' + K.ACTION_BUTTON_WIN_CLASS,
-        text: '\xa0',
-        // I tried this approach but it was a bit ugly.  For example, the
-        // image was in the right place but the border of the <i /> was offset
-        // down a pixel or two.  Also, the class was required for the
-        // "Actually" event check in treeOnSelect.
-        //html: `<img src="/assets/icons/pencil.png" class=${K.ACTION_BUTTON_WIN_CLASS} />`,
-        grouped: true,
-        title: _T('ttEditTab'),
-        callback: actionEditTabBullet,
-        dataset: { action: 'editBullet' }
-    });
+    function addTabEditAction(tab_node_id) {
+        T.treeobj.add_action(tab_node_id, {
+            id: 'editBullet',
+            class: 'fff-pencil ' + K.ACTION_BUTTON_WIN_CLASS,
+            text: '\xa0',
+            // I tried this approach but it was a bit ugly.  For example, the
+            // image was in the right place but the border of the <i /> was offset
+            // down a pixel or two.  Also, the class was required for the
+            // "Actually" event check in treeOnSelect.
+            //html: `<img src="/assets/icons/pencil.png" class=${K.ACTION_BUTTON_WIN_CLASS} />`,
+            grouped: true,
+            title: _T('ttEditTab'),
+            callback: actionEditTabBullet,
+            dataset: { action: 'editBullet' }
+        });
+    } //addTabEditAction()
 
     /* DISABLED for now
-    T.treeobj.add_action(tab_node_id, {
-        id: 'closeTab',
-        class: 'fff-picture-delete ' + K.ACTION_BUTTON_WIN_CLASS,
-        text: '\xa0',
-        grouped: true,
-        title: "Close and save",
-        callback: actionCloseTabAndSave,
-        dataset: { action: 'closeTab' }
-    });
+    function addTabCloseAction(tab_node_id) {
+        T.treeobj.add_action(tab_node_id, {
+            id: 'closeTab',
+            class: 'fff-picture-delete ' + K.ACTION_BUTTON_WIN_CLASS,
+            text: '\xa0',
+            grouped: true,
+            title: "Close and save",
+            callback: actionCloseTabAndSave,
+            dataset: { action: 'closeTab' }
+        });
+    } //addTabCloseAction()
     */
 
-    T.treeobj.add_action(tab_node_id, {
-        id: 'deleteTab',
-        class: 'fff-cross ' + K.ACTION_BUTTON_WIN_CLASS,
-        text: '\xa0',
-        grouped: true,
-        title: _T('ttDeleteTab'),
-        callback: actionDeleteTab,
-        dataset: { action: 'deleteTab' }
-    });
+    function addTabDeleteAction(tab_node_id) {
+        T.treeobj.add_action(tab_node_id, {
+            id: 'deleteTab',
+            class: 'fff-cross ' + K.ACTION_BUTTON_WIN_CLASS,
+            text: '\xa0',
+            grouped: true,
+            title: _T('ttDeleteTab'),
+            callback: actionDeleteTab,
+            dataset: { action: 'deleteTab' }
+        });
+    } //addTabDeleteAction()
 
 } //addTabNodeActions
 

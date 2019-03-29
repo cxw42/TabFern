@@ -306,6 +306,12 @@ bar (it will start with "file://")</li>
         {
             'tab': future_i18n('Appearance'),
             'group': future_i18n('Action-button order for windows'),
+            "type": "description",
+            "text": future_i18n("This also sets the order of the corresponding buttons for tabs."),
+        },
+        {
+            'tab': future_i18n('Appearance'),
+            'group': future_i18n('Action-button order for windows'),
             'name': S.WIN_ACTION_ORDER,
             'type': 'radioButtons',
             'options': [
