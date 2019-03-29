@@ -315,12 +315,12 @@ bar (it will start with "file://")</li>
             'name': S.WIN_ACTION_ORDER,
             'type': 'radioButtons',
             'options': [
+                {value: 'ced',
+                    html: `Close and Save ${saveImg} &bull; Edit ${editImg} &bull; Delete ${delImg}` },
                 {value: 'ecd',
                     html: `Edit ${editImg} &bull; Close and Save ${saveImg} &bull; Delete ${delImg}` },
                 {value: 'edc',
                     html: `Edit ${editImg} &bull; Delete ${delImg} &bull; Close and Save ${saveImg}` },
-                {value: 'ced',
-                    html: `Close and Save ${saveImg} &bull; Edit ${editImg} &bull; Delete ${delImg}` },
             ],
         },
 

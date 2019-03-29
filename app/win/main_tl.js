@@ -1206,7 +1206,7 @@ function addTabNodeActions(tab_node_id)
         //addTabCloseAction(win_node_id);   // DISABLED for now (#35)
         addTabEditAction(tab_node_id);
         addTabDeleteAction(tab_node_id);
-    } else if(order == 'ecd') {
+    } else if(order === 'ecd') {
         addTabEditAction(tab_node_id);
         //addTabCloseAction(tab_node_id);   // DISABLED for now (#35)
         addTabDeleteAction(tab_node_id);
@@ -1216,7 +1216,7 @@ function addTabNodeActions(tab_node_id)
         //addTabCloseAction(tab_node_id);   // DISABLED for now (#35)
     } else {
         //don't add any buttons, but don't crash.
-        log.error(`Unknown order ${order}`);
+        log.error(`Unknown tab-button order ${order}`);
     }
 
     function addTabEditAction(tab_node_id) {
@@ -1325,22 +1325,25 @@ function addWindowNodeActions(win_node_id)
     // Add the buttons in the layout chosen by the user (#152).
     let order = S.getString(S.WIN_ACTION_ORDER);
     if(order === 'ced') {
-        closeSaveBtn(win_node_id);
-        renameBtn(win_node_id);
-        deleteBtn(win_node_id);
+        addWinCloseAction(win_node_id);
+        addWinEditAction(win_node_id);
+        addWinDeleteAction(win_node_id);
+    } else if(order === 'ecd') {
+        addWinEditAction(win_node_id);
+        addWinCloseAction(win_node_id);
+        addWinDeleteAction(win_node_id);
     } else if(order === 'edc') {
-        renameBtn(win_node_id);
-        deleteBtn(win_node_id);
-        closeSaveBtn(win_node_id);
-    } else {    // default: 'ecd'
-        renameBtn(win_node_id);
-        closeSaveBtn(win_node_id);
-        deleteBtn(win_node_id);
+        addWinEditAction(win_node_id);
+        addWinDeleteAction(win_node_id);
+        addWinCloseAction(win_node_id);
+    } else {
+        //don't add any buttons, but don't crash.
+        log.error(`Unknown window-button order ${order}`);
     }
 
     // Workers to add the buttons
 
-    function renameBtn (win_node_id){
+    function addWinEditAction(win_node_id) {
         T.treeobj.add_action(win_node_id, {
             id: 'renameWindow',
             class: 'fff-pencil ' + K.ACTION_BUTTON_WIN_CLASS,
@@ -1350,9 +1353,9 @@ function addWindowNodeActions(win_node_id)
             callback: actionRenameWindow,
             dataset: { action: 'renameWindow' }
         });
-    } //renameBtn
+    } //addWinEditAction()
 
-    function closeSaveBtn (win_node_id) {
+    function addWinCloseAction(win_node_id) {
         T.treeobj.add_action(win_node_id, {
             id: 'closeWindow',
             class: 'fff-picture-delete ' + K.ACTION_BUTTON_WIN_CLASS,
@@ -1362,9 +1365,9 @@ function addWindowNodeActions(win_node_id)
             callback: actionCloseWindowAndSave,
             dataset: {action: 'closeWindow'}
         });
-    } //closeSaveBtn
+    } //addWinCloseAction()
 
-    function deleteBtn (win_node_id){
+    function addWinDeleteAction(win_node_id) {
         T.treeobj.add_action(win_node_id, {
             id: 'deleteWindow',
             class: 'fff-cross ' + K.ACTION_BUTTON_WIN_CLASS,
@@ -1374,7 +1377,7 @@ function addWindowNodeActions(win_node_id)
             callback: actionDeleteWindow,
             dataset: {action: 'deleteWindow'}
         });
-    } //deleteBtn
+    } //addWinDeleteAction()
 
 } //addWindowNodeActions
 
