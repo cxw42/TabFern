@@ -434,9 +434,12 @@ order.`
             'group_html':true,
             "type": "description",
             "text":
-`<p>Note: Vivaldi 2.3.1440.61 appears to have a bug that sometimes causes
+`<p>Note: Vivaldi 2.3.1440.61+ has a
+<a href="https://forum.vivaldi.net/topic/35531/chrome-extension-apis-intermittently-unavailable-on-2-3-1440-61-x86">bug</a>
+that sometimes causes
 TabFern not to load properly.  If this happens, close the TF window and
-click the TF toolbar button to reload.  That will probably work!</p>
+click the TF toolbar button to reload.  That will probably work!
+${issue(171)}</p>
 <ul>
 <li>TabFern now opens in a small window in the upper-left corner of the
     screen before moving to wherever you last put it.  Hopefully this
@@ -446,8 +449,8 @@ click the TF toolbar button to reload.  That will probably work!</p>
 <li>You can choose the order of the action buttons for the windows on
     ${ham} ${gt} Settings ${gt} Appearance.  ${issue(152)}<br />
     Options are:
-    ${editImg}${saveImg}${delImg}, ${editImg}${delImg}${saveImg}, or
-    ${saveImg}${editImg}${delImg}.
+    ${saveImg}${editImg}${delImg}, ${editImg}${saveImg}${delImg},
+    or ${editImg}${delImg}${saveImg}.
 </li>
 <li>(Developers only) Initial Firefox support ${issue(100)}.  See
     <a href="https://github.com/cxw42/TabFern/issues/100#issuecomment-450384941">here</a> for more details.</li>
