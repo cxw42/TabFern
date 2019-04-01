@@ -3363,6 +3363,7 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
         let tabItems = {
             toggleBorderItem: {
                 label: _T('menuToggleTopBorder'),
+                icon: 'fa fa-minus',
                 action: function(){actionToggleTabTopBorder(node.id, node, null, null)}
             },
             editBulletItem: {
