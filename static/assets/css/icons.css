@@ -1,0 +1,109 @@
+/* icons.css: Common icon definitions */
+
+.jstree-themeicon-custom.tf-window.tfs-saved > a > i {
+    background-image: url("/assets/icons/folder-from-jstree-default-dark-32px.png");
+}
+
+/* For Chrome */
+.jstree-themeicon-custom.visible-window-icon,
+.jstree-themeicon-custom.tf-window.tfs-open > a > i {
+    background-image: url("/assets/icons/monitor.png");    /* or folder.png? */
+}
+
+.jstree-themeicon-custom.visible-saved-window-icon, .jstree-themeicon-custom.tf-window.tfs-open.tfs-saved > a > i {
+    background-image: url("/assets/icons/monitor_add.png");    /* or folder.png? */
+}
+
+/* For Firefox */
+/*
+.tf-window.tfs-open.tfs-saved > a > i::before {
+    content: url(/assets/icons/monitor_add.png);    * or folder.png? *
+}
+
+.tf-window.tfs-open > a > i::before {
+    content: url(/assets/icons/monitor.png);    * or folder.png? *
+}
+*/
+
+/* Back to cross-browser */
+
+.jstree-themeicon-custom.fff-page /*, .tf-tab > i*/ {
+    background-image: url("/assets/icons/page_white.png");
+}
+
+.jstree-themeicon-custom.fff-monitor-add {
+    background-image: url("/assets/icons/monitor_add.png");
+}
+
+.jstree-themeicon-custom.fff-monitor {
+    background-image: url("/assets/icons/monitor.png");
+}
+
+.jstree-themeicon-custom.fff-page-white-with-red-banner {
+    background-image: url("/assets/icons/page_white_red_banner.png");
+}
+
+.jstree-themeicon-custom.fff-pencil, .vakata-context .fff-pencil {
+    background-image: url("/assets/icons/pencil.png");
+}
+
+.jstree-themeicon-custom.fff-cross, .vakata-context .fff-cross {
+    background-image: url("/assets/icons/cross.png");
+}
+
+.jstree-themeicon-custom.fff-picture-delete, .vakata-context .fff-picture-delete {
+    background-image: url("/assets/icons/picture_delete.png");
+}
+
+.jstree-themeicon-custom.fff-text-padding-top,
+.vakata-context .fff-text-padding-top {
+    background-image: url("/assets/icons/text_padding_top.png");
+}
+
+.jstree-themeicon-custom.arrow-switch, .vakata-context .arrow-switch {
+    background-image: url("/assets/icons/arrow_switch.png");
+}
+
+.vakata-context .fff-application-cascade {
+    background-image: url(/assets/icons/application_cascade.png);
+}
+
+/* Class for icons with no content.  Used in jstree.set_icon() when the
+ * icon is actually being set using CSS.
+ */
+.jstree-themeicon-custom.clear-icon, .vakata-context .clear-icon {
+    /*url(/assets/icons/clear-icon.png);*/
+    /*content: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQI12NgYGBgAAAABQABXvMqOgAAAABJRU5ErkJggg==);*/
+}
+
+/* Icons for actions, which do use content rather than background-image.
+ * That way we do not have to set the size of the <i> manually.
+ * For Firefox compatibility, we use content in the ::after pseudo-elements,
+ * since Chrome supports content in regular elements but Firefox doesn't. */
+
+.tf-action-button {
+    position: relative;
+    display: inline-block;
+    height: 16px;   /* must match icon height */
+}
+
+.tf-action-button.fff-pencil::after {
+    content: url("/assets/icons/pencil.png");
+}
+
+.tf-action-button.fff-picture-delete::after {
+    content: url("/assets/icons/picture_delete.png");
+}
+
+.tf-action-button.fff-cross::after {
+    content: url("/assets/icons/cross.png");
+}
+
+/* Background sizes of icons in context menu are different.  Note: Need the
+ * `li a` to make it specific enough. */
+.vakata-context li a i {
+    background-repeat: no-repeat;
+    background-position: center center;
+}
+
+/* vi: set ts=4 sts=4 sw=4 et ai: */

@@ -23,23 +23,23 @@ core
 *.stackdump
 /*_history
 tags
-/webstore.zip
+*.zip
 foo.*
 
-# Outputs
+# Output directories
+/public*
 /build*
 /doc/
 /dist/
 *-packed/
-*.zip
+
+# A holding pen
+/spare
 
 # Test outputs
 *.e
 *.map
 *.txt
 
-# readline history
-*.history
-
-# dependencies
+# External dependencies (managed by npm)
 /node_modules/

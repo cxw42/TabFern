@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<!-- win/container.html: TabFern popup window.
+     CC-BY-SA 4.0 International -->
+<head>
+    <title>TabFern</title>
+    <meta http-equiv="Content-Type" content="text/html" />
+    <meta charset="utf-8" />
+    <link rel="stylesheet" type="text/css" media="all" href="container.css" />
+</head>
+
+<body>
+
+    <!-- Some content for no-styles, no-JS, or screen-reader users -->
+    <div id="static-about" class="hidden-but-accessible">
+        <a href="https://cxw42.github.io/TabFern/">About, help, and credits</a>
+    </div>
+
+    <!-- The visible area -->
+    <div id="overall-container">
+
+        <div id="tree-container">
+            <!-- Thanks to a suggestion in
+                 https://stackoverflow.com/a/15558772/2877364
+                by https://stackoverflow.com/users/1156119/daniel-imms -->
+            <iframe id="tree-iframe" src="main.html"></iframe>
+        </div><!-- tree-container -->
+
+        <!-- Room for plugins ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+        <div id="plugin-container">Dummy content!</div>
+
+    </div><!-- overall-container -->
+
+    <!-- Scripts ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+    <script src="container.js"></script>
+</body>
+</html>

@@ -1,0 +1,85 @@
+/* container.css: CSS for TabFern's win/container.html */
+
+/* //////////////////////////////////////////////////////////////////// */
+/* Layout */
+
+/* html, body, and #overall-container stay 100% all the time.
+ * #tree-iframe is also always 100% of its parent, #tree-container.
+ * #tree-container starts out 100% height but gets resized to make room
+ * for #plugin-container.  #tree-container, #plugin-container, and a
+ * split.js gutter between them fill #overall-container. */
+html, body, #overall-container, #tree-container, #tree-iframe {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    box-sizing: border-box;
+    margin: 0;
+    border: 0;
+    padding: 0;
+}
+
+/* #plugin-container starts out at zero height but gets resized when
+ * there's a plugin to load. */
+#plugin-container {
+    height: 0;
+    width: 100%;
+    overflow: auto;
+    box-sizing: border-box;
+    border: 0;
+}
+
+/* The iframe hosting the plugin. */
+#plugin-container iframe {
+    height: 100%;
+    width: 100%;
+    overflow: auto;
+    box-sizing: border-box;
+    margin: 0;
+    border: 0;
+    padding: 0;
+}
+
+/* ////////////////////////////////////////////////////////////////////// */
+/* split.js - from its README */
+
+.gutter {
+    background-color: #eee;
+
+    background-repeat: no-repeat;
+    background-position: 50%;
+}
+
+.gutter.gutter-horizontal {
+    background-image: url('grips/vertical.png');
+    cursor: ew-resize;
+}
+
+.gutter.gutter-vertical {
+    background-image: url('grips/horizontal.png');
+    cursor: ns-resize;
+}
+
+.gutter.gutter-vertical {
+    background-image:  url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAFAQMAAABo7865AAAABlBMVEVHcEzMzMzyAv2sAAAAAXRSTlMAQObYZgAAABBJREFUeF5jOAMEEAIEEFwAn3kMwcB6I2AAAAAASUVORK5CYII=')
+}
+
+.gutter.gutter-horizontal {
+    background-image:  url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIiDjrELjpo5aiZeMwF+yNnOs5KSvgAAAABJRU5ErkJggg==')
+}
+
+.split {
+    box-sizing: border-box;
+}
+
+/* //////////////////////////////////////////////////////////////////// */
+/* Accessibility */
+
+/* Thanks to http://webaim.org/techniques/css/invisiblecontent/ */
+.hidden-but-accessible {
+    position:absolute;
+    left:-10000px;
+    top:auto;
+    width:1px;
+    height:1px;
+    overflow:hidden;
+}
