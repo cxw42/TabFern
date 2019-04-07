@@ -58,15 +58,18 @@ See [INTERNALS.md](INTERNALS.md) for details of how the code is structured.
 
 # Legal
 
-Copyright (c) 2017 Chris White and contributors.  CC-BY-SA 4.0 International.
-See [LICENSE.md](LICENSE.md) for details, which are controlling in case of any
-difference between that file and this section.
+Copyright (c) 2017--2019 Chris White and contributors.  CC-BY-SA 4.0
+International.  See [LICENSE.md](LICENSE.md) for details, which are controlling
+in case of any difference between that file and this section.
 
 Contributors (in alphabetical order, case-insensitive):
 
+ - [Devin Rhode](https://github.com/devinrhode2)
  - [Jasmine Hegman](https://github.com/r4j4h)
  - [Procyon-b](https://github.com/Procyon-b)
+ - [RiotPharaoh](https://github.com/RiotPharaoh)
  - [rwexmd](https://github.com/rwexmd)
+ - [Yasujizr](https://github.com/Yasujizr)
 
 Originally inspired by
 [Tabs Outliner](https://chrome.google.com/webstore/detail/tabs-outliner/eggkanocgddhmamlbiijnphhppkpkmkl)

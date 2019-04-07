@@ -3,11 +3,11 @@
   , "name_text": { "message": "-----------------------------------------"
                         ,"description": "Text for the Chrome Web Store listing and window titles" }
   , "wsLongName": {
-    "message": "TFSwitch tab manager and backup tool"
+    "message": "TabFern tab manager and backup tool"
     ,"description":"The long name at the top of the Chrome Web Store window"
   }
   , "wsShortName": {
-    "message": "TFSwitch"
+    "message": "TabFern"
     ,"description":"The short name, for the TabFern window title bar"
   }
   , "wsSettings": {

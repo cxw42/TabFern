@@ -11,7 +11,7 @@
         "initialize": function (name, icon, settingsLabel, searchLabel, nothingFoundMessage) {
             // Set title and icon
             $("title").set("text", name);
-            $("favicon").set("href", icon);
+            //$("favicon").set("href", icon);   // Let the HTML do it
             $("icon").set("src", icon);
             $("settings-label").set("text", (settingsLabel || "Settings"));
             $("search-label").set("text", (searchLabel || "Search"));

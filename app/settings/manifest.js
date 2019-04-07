@@ -36,7 +36,7 @@ let manifest = {
     "name":
         `${_T('wsSettings')} - ${_T('wsShortName')} (v${TABFERN_VERSION})`,
 
-    "icon": "/assets/fern16o.png",
+    "icon": "/assets/fern128.png",
     //"settingsLabel":'',
     //"searchLabel":'',
     //"nothingFoundMessage":'',
@@ -88,7 +88,7 @@ vote at ${issue(125,true)}.
             "group": future_i18n("Legal"),
             "name": "legal",
             "type": "description",
-            "text": "The TabFern name and logo are trademarks of Chris White."
+            "text": "The TabFern name, logo, and icons are trademarks of Chris White."
         },
 
         // Behaviour.  Yeah, there's a "u" in there!
@@ -400,7 +400,7 @@ bar (it will start with "file://")</li>
 <a href="https://github.com/cxw42/">GitHub</a>).  I greatly appreciate
 the following contributors!  If I have accidentally missed you, please let
 me know so I can correct the omission.  All names below are in alphabetical
-order.`
+order within each category.`
         },
 
         {
@@ -425,12 +425,32 @@ order.`
 <li><a href="https://github.com/rwexmd/">rwexmd</a> (Russian)</li>
 </ul>`
         },
+        {
+            "tab": future_i18n("Credits and thanks"),
+            "group": future_i18n("Artwork"),
+            'group_html':true,
+            "type": "description",
+            "text":
+`<ul>
+<li><a href="https://github.com/Yasujizr/">Yasujizr</a></li>
+</ul>`
+        },
+        {
+            "tab": future_i18n("Credits and thanks"),
+            "group": future_i18n("Other"),
+            'group_html':true,
+            "type": "description",
+            "text":
+`<ul>
+<li><a href="https://github.com/devinrhode2/">Devin Rhode</a></li>
+</ul>`
+        },
 
 // }}}2
         // Changelog                                          {{{1
         {
             "tab": future_i18n("What's new?"),
-            "group": `Version 0.2.0${brplain('2019-xx-xx')}`,
+            "group": `Version 0.2.0${brplain('2019-04-07')}`,
             'group_html':true,
             "type": "description",
             "text":
@@ -438,7 +458,7 @@ order.`
 <a href="https://forum.vivaldi.net/topic/35531/chrome-extension-apis-intermittently-unavailable-on-2-3-1440-61-x86">bug</a>
 that sometimes causes
 TabFern not to load properly.  If this happens, close the TF window and
-click the TF toolbar button to reload.  That will probably work!
+click the TF toolbar button to reload, or hit F5.  That will probably work!
 ${issue(171)}</p>
 <ul>
 <li>TabFern now opens in a small window in the upper-left corner of the
@@ -452,6 +472,8 @@ ${issue(171)}</p>
     ${saveImg}${editImg}${delImg}, ${editImg}${saveImg}${delImg},
     or ${editImg}${delImg}${saveImg}.
 </li>
+<li>New logo!  Thanks to [Yasujizr](https://github.com/Yasujizr)
+    for the artwork.  ${issue(137)}</li>
 <li>(Developers only) Initial Firefox support ${issue(100)}.  See
     <a href="https://github.com/cxw42/TabFern/issues/100#issuecomment-450384941">here</a> for more details.</li>
 </ul>`

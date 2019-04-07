@@ -4386,7 +4386,7 @@ function moveWinToLastPositionIfAny_catch(done, items_or_err)
                 }
             );
         } else {
-            log.warn({"Could not parse size from":$.extend({},items_or_err)})
+            log.info({"Could not parse size from":$.extend({},items_or_err)});
         } //endif got an item else
 
     } //endif storage.local.get worked
