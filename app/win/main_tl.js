@@ -4363,31 +4363,33 @@ function moveWinToLastPositionIfAny_catch(done, items_or_err)
         log.info({"Got saved location":$.extend({},items_or_err)});
 
         let parsed = items_or_err[K.LOCN_KEY];
-        if( (parsed !== null) && (typeof parsed === 'object') ) {
-            // + and || are to provide some sensible defaults - thanks to
-            // https://stackoverflow.com/a/7540412/2877364 by
-            // https://stackoverflow.com/users/113716/user113716
-            let size_data =
-                {
-                      'left': +parsed.left || 0
-                    , 'top': +parsed.top || 0
-                    , 'width': Math.max(+parsed.width || 300, 100)
-                        // don't let it shrink too small, in case something went wrong
-                    , 'height': Math.max(+parsed.height || 600, 200)
-                };
-            last_saved_size = $.extend({}, size_data);
-            chrome.windows.update(my_winid, size_data,
-                (win)=>{
-                    if(isLastError()) {
-                        log.error(`Could not move window: ${chrome.runtime.lastError}`);
-                    } else {
-                        log.info({"Updated window size":$.extend({},win)});
-                    }
-                }
-            );
-        } else {
+        if(!( (parsed !== null) && (typeof parsed === 'object') )) {
             log.info({"Could not parse size from":$.extend({},items_or_err)});
-        } //endif got an item else
+            parsed = { left: 100, top: 100, width: 500, height: 400 };
+                // Some kind of hopefully-reasonable size
+        }
+
+        // + and || are to provide some sensible defaults - thanks to
+        // https://stackoverflow.com/a/7540412/2877364 by
+        // https://stackoverflow.com/users/113716/user113716
+        let size_data =
+            {
+                  'left': +parsed.left || 0
+                , 'top': +parsed.top || 0
+                , 'width': Math.max(+parsed.width || 300, 100)
+                    // don't let it shrink too small, in case something went wrong
+                , 'height': Math.max(+parsed.height || 600, 200)
+            };
+        last_saved_size = $.extend({}, size_data);
+        chrome.windows.update(my_winid, size_data,
+            (win)=>{
+                if(isLastError()) {
+                    log.error(`Could not move window: ${chrome.runtime.lastError}`);
+                } else {
+                    log.info({"Updated window size":$.extend({},win)});
+                }
+            }
+        );
 
     } //endif storage.local.get worked
 
