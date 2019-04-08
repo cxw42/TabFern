@@ -69,12 +69,12 @@ in case of any difference between that file and this section.
 
 Contributors (in alphabetical order, case-insensitive):
 
- - [Devin Rhode](https://github.com/devinrhode2)
- - [Jasmine Hegman](https://github.com/r4j4h)
- - [Procyon-b](https://github.com/Procyon-b)
- - [RiotPharaoh](https://github.com/RiotPharaoh)
- - [rwexmd](https://github.com/rwexmd)
- - [Yasujizr](https://github.com/Yasujizr)
+ - [Devin Rhode](https://github.com/devinrhode2) (other)
+ - [Jasmine Hegman](https://github.com/r4j4h) (code)
+ - [Procyon-b](https://github.com/Procyon-b) (translations)
+ - [RiotPharaoh](https://github.com/RiotPharaoh) (code)
+ - [rwexmd](https://github.com/rwexmd) (translations)
+ - [Yasujizr](https://github.com/Yasujizr) (artwork)
 
 Originally inspired by
 [Tabs Outliner](https://chrome.google.com/webstore/detail/tabs-outliner/eggkanocgddhmamlbiijnphhppkpkmkl)
