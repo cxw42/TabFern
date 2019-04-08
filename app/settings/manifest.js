@@ -450,6 +450,28 @@ order within each category.`
         // Changelog                                          {{{1
         {
             "tab": future_i18n("What's new?"),
+            "group": `Version 0.2.1${brplain('2019-xx-xx')}`,
+            'group_html':true,
+            "type": "description",
+            "text":
+`<ul>
+<li class="gold-star">Opening one tab at a time!  Yes, the wait is over!  ${issue(35)}
+<ul>
+<li>Click on a tab in a closed window to open only that tab.</li>
+<li>Click the "close and save" icon (${icon('fff-picture-delete')})
+    on a tab's tree entry to close only that tab.</li>
+<li>To open any remaining closed tabs, right-click the window and choose
+    "Open all tabs."  (See ${settings} Behaviour ${gt} Partly-open windows
+    for another option.)</li>
+</ul>
+<p>Please note that if Chrome crashes while you have only some tabs open, the
+recovered window will show up in TabFern as a separate, unsaved window
+(related to ${issue(41, true)}).</p>
+</li>
+</ul>`,
+        },
+        {
+            "tab": future_i18n("What's new?"),
             "group": `Version 0.2.0${brplain('2019-04-07')}`,
             'group_html':true,
             "type": "description",
@@ -472,44 +494,26 @@ ${issue(171)}</p>
     ${saveImg}${editImg}${delImg}, ${editImg}${saveImg}${delImg},
     or ${editImg}${delImg}${saveImg}.
 </li>
-<li>New logo!  Thanks to [Yasujizr](https://github.com/Yasujizr)
+<li>New logo!  Thanks to <a href="https://github.com/Yasujizr">Yasujizr</a>
     for the artwork.  ${issue(137)}</li>
 <li>(Developers only) Initial Firefox support ${issue(100)}.  See
     <a href="https://github.com/cxw42/TabFern/issues/100#issuecomment-450384941">here</a> for more details.</li>
 </ul>`
-/*
-`<ul>
-<li class="gold-star">Opening one tab at a time!  Yes, the wait is over!  ${issue(35)}
-<ul>
-<li>Click on a tab in a closed window to open only that tab.</li>
-<li>Click the "close and save" icon (${icon('fff-picture-delete')})
-    on a tab's tree entry to close only that tab.</li>
-<li>To open any remaining closed tabs, right-click the window and choose
-    "Open all tabs."  (See ${settings} Behaviour ${gt} Partly-open windows
-    for another option.)</li>
-</ul>
-<p>Please note that if Chrome crashes while you have only some tabs open, the
-recovered window will show up in TabFern as a separate, unsaved window
-(related to ${issue(41, true)}).</p>
-</li>
-</ul>`,
-*/
         },
-            // Changelog                                          {{{1
-            {
-                "tab": future_i18n("What's new?"),
-                "group": `Version 0.1.19${brplain('2018-10-03')}`,
-                'group_html':true,
-                "type": "description",
-                "text": `<ul><li>Bugfixes and internals:
-                        ${issue([102, 131, 149],true)}</li></ul>`,
-            },
-            {
-                "tab": future_i18n("What's new?"),
-                "group": `Version 0.1.18${brplain('2018-09-17')}`,
-                'group_html':true,
-                "type": "description",
-                "text":
+        {
+            "tab": future_i18n("What's new?"),
+            "group": `Version 0.1.19${brplain('2018-10-03')}`,
+            'group_html':true,
+            "type": "description",
+            "text": `<ul><li>Bugfixes and internals:
+                    ${issue([102, 131, 149],true)}</li></ul>`,
+        },
+        {
+            "tab": future_i18n("What's new?"),
+            "group": `Version 0.1.18${brplain('2018-09-17')}`,
+            'group_html':true,
+            "type": "description",
+            "text":
 `<ul>
 <li>New menu item to move a window to the top of the tree: right-click the
 window's entry in the tree and choose "Move to top." ${issue(58)}</li>
