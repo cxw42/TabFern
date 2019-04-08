@@ -891,7 +891,7 @@ function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el,
 /// Open the rest of the tabs in a partly-open window.
 /// @param win_node_id {string} the ID of the window's node
 /// @param win_node {object} the window's node
-function DISABLED_actionOpenRestOfTabs(win_node_id, win_node, unused_action_id, unused_action_el)
+function actionOpenRestOfTabs(win_node_id, win_node, unused_action_id, unused_action_el)
 {
     if(!win_node_id || !win_node) return;
     let win_val = D.windows.by_node_id(win_node_id);
@@ -1145,7 +1145,7 @@ function actionDeleteTab(node_id, node, unused_action_id, unused_action_el,
 } //actionDeleteTab
 
 /// Close the tab and save
-function DISABLED_actionCloseTabAndSave(tab_node_id, tab_node, unused_action_id, unused_action_el)
+function actionCloseTabAndSave(tab_node_id, tab_node, unused_action_id, unused_action_el)
 {
     let tab_val = D.tabs.by_node_id(tab_node_id);
     if(!tab_val || tab_val.tab_id === K.NONE) return;   //already closed => nop
@@ -1203,17 +1203,17 @@ function addTabNodeActions(tab_node_id)
     // Add the buttons in the layout chosen by the user (#152).
     let order = S.getString(S.WIN_ACTION_ORDER);
     if(order === 'ced') {
-        //addTabCloseAction(win_node_id);   // DISABLED for now (#35)
+        addTabCloseAction(win_node_id);
         addTabEditAction(tab_node_id);
         addTabDeleteAction(tab_node_id);
     } else if(order === 'ecd') {
         addTabEditAction(tab_node_id);
-        //addTabCloseAction(tab_node_id);   // DISABLED for now (#35)
+        addTabCloseAction(tab_node_id);
         addTabDeleteAction(tab_node_id);
     } else if(order === 'edc') {
         addTabEditAction(tab_node_id);
         addTabDeleteAction(tab_node_id);
-        //addTabCloseAction(tab_node_id);   // DISABLED for now (#35)
+        addTabCloseAction(tab_node_id);
     } else {
         //don't add any buttons, but don't crash.
         log.error(`Unknown tab-button order ${order}`);
@@ -1236,7 +1236,6 @@ function addTabNodeActions(tab_node_id)
         });
     } //addTabEditAction()
 
-    /* DISABLED for now
     function addTabCloseAction(tab_node_id) {
         T.treeobj.add_action(tab_node_id, {
             id: 'closeTab',
@@ -1248,7 +1247,6 @@ function addTabNodeActions(tab_node_id)
             dataset: { action: 'closeTab' }
         });
     } //addTabCloseAction()
-    */
 
     function addTabDeleteAction(tab_node_id) {
         T.treeobj.add_action(tab_node_id, {
@@ -1829,7 +1827,7 @@ function DBG_printSaveData()
 } //DBG_printSaveData()
 
 ////////////////////////////////////////////////////////////////////////// }}}1
-// jstree callbacks, including treeOnSelect // {{{1
+// jstree callbacks // {{{1
 
 /// ID for a timeout shared by newWinFocusCheckTest() and treeOnSelect()
 var awaitSelectTimeoutId = undefined;
@@ -1846,14 +1844,13 @@ function treeOnSelect(evt_unused, evt_data)
     let ActionTy = Object.freeze({
         nop: 'nop',
         activate_win: 'activate_win',   // win is open, as are all tabs
-        activate_tab: 'activate_tab',   // tab is open
-        open_win: 'open_win',           // win is closed; open all tabs
-        /* DISABLED for now
         open_rest: 'open_rest',         // win is open, but not all tabs
+        activate_tab: 'activate_tab',   // tab is open
         open_tab_in_win: 'open_tab_in_win',
             // win is open, but tab is closed; open tab in existing window
+
+        open_win: 'open_win',           // win is closed; open all tabs
         open_win_and_tab: 'open_win_and_tab',   // win is closed; open one tab
-        */
     });
 
     //log.info(evt_data.node);
@@ -1911,10 +1908,8 @@ function treeOnSelect(evt_unused, evt_data)
                 case 'editBullet':
                     actionEditTabBullet(node.id, node, null, null); break;
 
-                /* DISABLED for now
                 case 'closeTab':
                     actionCloseTabAndSave(node.id, node, null, null); break;
-                */
 
                 case 'deleteTab':
                     actionDeleteTab(node.id, node, null, null, evt_data.event);
@@ -1975,7 +1970,6 @@ function treeOnSelect(evt_unused, evt_data)
     if(win_val.isOpen) {
         if(is_win) {    // clicked on an open window
 
-            /* DISABLED for now
             if( M.isWinPartlyOpen(win_node) &&
                 (S.getString(S.S_OPEN_REST_ON_CLICK) === S.OROC_DO)
             ) {
@@ -1983,21 +1977,13 @@ function treeOnSelect(evt_unused, evt_data)
             } else {
                 action = ActionTy.activate_win;
             }
-            */
-            action = ActionTy.activate_win; // FOR NOW
 
         } else {        // clicked on a tab in an open window
-            /* DISABLED for now
             action = tab_val.isOpen ?  ActionTy.activate_tab
                                     : ActionTy.open_tab_in_win;
-            */
-            action = ActionTy.activate_tab; // FOR NOW
         }
     } else {    // window is closed
-        /* DISABLED for now
         action = is_win ? ActionTy.open_win : ActionTy.open_win_and_tab;
-        */
-        action = ActionTy.open_win;
     }
 
     let already_flagged_window = false;
@@ -2033,17 +2019,12 @@ function treeOnSelect(evt_unused, evt_data)
     } else if(action === ActionTy.activate_win) {
         win_id_to_highlight_and_raise = node_val.win_id;
 
-    /* DISABLED for now
     } else if(action === ActionTy.open_rest) {
         win_id_to_highlight_and_raise = win_val.win_id;
         actionOpenRestOfTabs(win_node.id, win_node, null, null);
-    */
 
-    } else if(  action === ActionTy.open_win
-                /* DISABLED for now
-                || action === ActionTy.open_win_and_tab
-                */
-    ) {
+    } else if(  action === ActionTy.open_win ||
+                action === ActionTy.open_win_and_tab) {
 
         // Ignore attempts to open two windows at once, since we currently
         // can't handle them.
@@ -2131,9 +2112,7 @@ function treeOnSelect(evt_unused, evt_data)
             return;
         }
 
-    }
-    /* DISABLED for now
-      else if(action === ActionTy.open_tab_in_win) {    // add tab to existing win
+    } else if(action === ActionTy.open_tab_in_win) {    // add tab to existing win
         // Figure out where to put it
         //let newindex=0;
         //for(let other_tab_node_id of win_node.children) {
@@ -2172,7 +2151,6 @@ function treeOnSelect(evt_unused, evt_data)
         ); //tabs.create
 
     } //endif open_tab_in_win
-    */
 
     // Set highlights for the window, unless we had to open a new window.
     // If we opened a new window, the code above handled this.
@@ -3379,14 +3357,12 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
         };
 
         if(val.isOpen) {
-            /* DISABLED for now
             tabItems.closeItem = {
                     label: 'Close and remember',
                     icon: 'fff-picture-delete',
                     action:
                         function(){actionCloseTabAndSave(node.id,node,null,null);}
                 };
-            */
         }
 
         return tabItems;
@@ -3439,14 +3415,12 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
         if( M.isWinPartlyOpen(node) &&
             (S.getString(S.S_OPEN_REST_ON_CLICK) === S.OROC_DO_NOT)
         ) {
-            /* DISABLED for now
             winItems.openAllItem = {
                 label: 'Open all tabs',
                 icon: 'fff-application-cascade',
                 action:
                     function(){actionOpenRestOfTabs(node.id,node,null,null);}
             };
-            */
         }
 
         {   // If not the first item, add "Move to top"
