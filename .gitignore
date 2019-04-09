@@ -1,6 +1,10 @@
+# Auth
+/token.sh
+
 # Jekyll
 /_site
 .jekyll-metadata
+.sass-cache
 
 # Backup files and output files
 *.swp
