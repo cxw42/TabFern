@@ -4,14 +4,13 @@ title: TabFern tab-management extension for Google Chrome
 
 ![screenshot](/screenshot.png)
 
-A single window showing all your open browser windows and tabs, listed
-vertically.  TabFern will also save browser windows so you can close them and
-come back to them later with all their tabs intact.
+TabFern:
 
-# Call for alpha testers!
-
-If you are willing, please try TabFern and let us know how it goes!
-Huge thanks to those who have done so already!
+ - Saves browser windows so you can close them and come back to them later
+with all their tabs intact
+ - Backs up your windows and tabs with just two clicks!
+ - Gives you a single window showing all your open browser windows and tabs,
+   listed vertically.
 
 [![badge](/img/ChromeWebStore_Badge_v2_206x58.png)](https://chrome.google.com/webstore/detail/tabfern-tab-manager-and-b/hbajjpcdbninabigakflkhiogmmjaakm)
 
@@ -21,7 +20,6 @@ Huge thanks to those who have done so already!
 
 
 Check out the code or report issues [on GitHub](https://github.com/cxw42/TabFern).
-
 
 # Usage
 
@@ -122,10 +120,6 @@ more about current limitations, and where TabFern is going in the future!
  - Hosted on GitHub Pages &mdash; Theme modified from
    [Leap Day](https://github.com/pages-themes/leap-day) by
    [mattgraham](https://twitter.com/michigangraham)
-
-# Legal
-
-Copyright (c) 2017 Chris White, Jasmine Hegman.  CC-BY-SA 4.0 International.
 
 ![logo](/assets/fern128.png)
 
