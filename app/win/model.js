@@ -194,6 +194,7 @@ me.remove_unsaved_markers = function(str) {
 
 /// Get the HTML for the node's label.  The output can be passed
 /// directly to jstree.rename_node().
+/// The label HTML includes indicators of pinned and audible status.
 /// @param vorny {mixed} The item of interest, which
 ///     can be a window or a tab.
 /// @return A string
@@ -205,6 +206,19 @@ me.get_html_label = function(vorny) {
     if(val.isPinned) {  // TODO make this optional?
         // Note: for windows, isPinned is nonexistent, thus falsy.
         retval += '&#x1f4cc;&nbsp;';    // PUSHPIN
+    }
+
+    if(val.isAudible) { // TODO make this optional?
+        // Note: for windows, isAudible is nonexistent, thus falsy.
+        //retval += '<span class="is-audible">&#x1f50a;&nbsp;</span>';
+        //    // SPEAKER WITH THREE SOUND WAVES
+        //retval += '&#x1f3a7;&nbsp;';    // HEADPHONE
+        retval +=   '<span class="is-audible"><i class="fa fa-music"></i>'
+                  + '&nbsp;</span>';
+            // Use fa-volume-up if you want a speaker icon - I like the
+            // musical notes better on my screen.
+            // If you change the icon here, also change it in
+            // app/settings/manifest.js | Behaviour | Music.
     }
 
     let raw_text = me.get_raw_text(val);    // raw_title, or default
@@ -529,6 +543,7 @@ me.vnRezTab = function(vornyParent) {
         tab: undefined,
         isOpen: false,
         isPinned: false,
+        isAudible: false,
     });
 
     if(!val) {
@@ -874,6 +889,7 @@ me.markTabAsOpen = function(tab_vorny, ctab) {
     // val.raw_bullet is unchanged since it doesn't come from ctab
     val.raw_favicon_url = ctab.favIconUrl;
     val.isPinned = !!ctab.pinned;
+    val.isAudible = !!ctab.audible;
 
     T.treeobj.add_multitype(node_id, K.NST_OPEN);
 
@@ -950,6 +966,8 @@ me.markTabAsClosed = function(tab_vorny) {
     val.isOpen = false;
     // raw_bullet unchanged
     // raw_favicon_url unchanged
+    // isPinned unchanged
+    val.isAudible = false;
 
     T.treeobj.del_multitype(node_id, K.NST_OPEN);
 

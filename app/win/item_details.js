@@ -5,6 +5,7 @@
 //
 // Copyright (c) 2017 Chris White, Jasmine Hegman.
 
+// Boilerplate and require()s {{{1
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD
@@ -25,6 +26,7 @@
     }
 }(this, function ($, _unused_jstree_placeholder_, log, multidex, K ) {
     "use strict";
+// }}}1
 
     function loginfo(...args) { log.info('TabFern view/item_details.js: ', ...args); };
 
@@ -57,6 +59,8 @@
                             // someday add a long-form notes field.
             'raw_favicon_url',  //favicon URL
             'isPinned',     // whether the tab is pinned
+            'isAudible',    // whether the tab is playing audio
+            // Note: MutedInfo not yet tracked.
             // Note: isTopBordered (NST_TOP_BORDER) is stored in the jstree,
             // not here.
         ]);
@@ -109,4 +113,4 @@
     return module;
 }));
 
-// vi: set ts=4 sts=4 sw=4 et ai fo-=o fo-=r: //
+// vi: set ts=4 sts=4 sw=4 et ai fo-=o fo-=r fdm=marker: //

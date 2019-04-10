@@ -330,8 +330,10 @@ function pruneWindow(cwin, expected_tab_count)
 /// Show a confirmation dialog with Yes/No/Cancel, and Do not ask again.
 /// @param message_html {String} the HTML message to show.  The caller is
 /// responsible for sanitizing the message.
+/// @param show_dnsa {Boolean} If true (default), show the "Don't show again"
+/// checkbox.  Otherwise, hide the box.
 /// @return An ASQ instance that will run once the dialog closes
-function showConfirmationModalDialog(message_html) {
+function showConfirmationModalDialog(message_html, show_dnsa = true) {
     //log.info('Setting up dialog seq');
 
     let dlg;                    ///< The rmodal instance
@@ -359,8 +361,13 @@ function showConfirmationModalDialog(message_html) {
     jqdlg.find('#confirm-dialog-cancel')
         .attr('accesskey', KEY_CANCEL)
         .html(_T('dlgCancelHTML'));
-    jqdlg.find('#labelNotAgain')
-        .html(_T('dlgDoNotAskAgainHTML'));
+    jqdlg.find('#notAgain')
+        .toggle(show_dnsa)
+        .prop('disabled',!show_dnsa);
+
+    if(show_dnsa) {
+        jqdlg.find('#labelNotAgain').html(_T('dlgDoNotAskAgainHTML'));
+    }
 
     dlg = new (Modules.rmodal)(
         document.getElementById('confirm-dialog'),
@@ -375,7 +382,9 @@ function showConfirmationModalDialog(message_html) {
             afterClose: function() {
                 //console.log('closed');
                 cleanup_cbk(null);  // Run the cleanup
-                cbk(null, {reason: dlg.reason, notAgain: dlg.notAgain});
+                let data = { reason: dlg.reason };
+                if(show_dnsa) { data.notAgain = dlg.notAgain; }
+                cbk(null, data);
                     // In parallel, let the caller's processing run
             },
         }
@@ -391,11 +400,14 @@ function showConfirmationModalDialog(message_html) {
     });
 
     // The "don't ask again" checkbox
-    let notAgain = $('#cbNotAgain');
-    notAgain[0].checked = false;
-    notAgain.on('change.TFrmodal', function(){
-        dlg.notAgain = this.checked;
-    });
+    let notAgain;
+    if(show_dnsa) {
+        notAgain = $('#cbNotAgain');
+        notAgain[0].checked = false;
+        notAgain.on('change.TFrmodal', function(){
+            dlg.notAgain = this.checked;
+        });
+    }
 
     // Add the keyboard listener
     $(document).on('keydown.TFrmodal', function(ev) {
@@ -424,7 +436,9 @@ function showConfirmationModalDialog(message_html) {
         try {
             //document.removeEventListener('keydown', kbd_listener, false);
             $(document).off('keydown.TFrmodal');
-            notAgain.off('change.TFrmodal');
+            if(show_dnsa && notAgain) {
+                notAgain.off('change.TFrmodal');
+            }
             $('#confirm-dialog .modal-footer button').off('click.TFrmodal');
         } catch(e) {
             log.info({'dialog cleanup exception': e});
@@ -1052,10 +1066,16 @@ function actionDeleteTab(node_id, node, unused_action_id, unused_action_el,
     let is_nokeep = (parent_val.keep === K.WIN_NOKEEP);
 
     // General rule...
-    let need_confirmation = (
-        (is_keep && S.getBool(S.CONFIRM_DEL_OF_SAVED_TABS)) ||
-        (is_nokeep && S.getBool(S.CONFIRM_DEL_OF_UNSAVED_TABS))
+    let need_confirmation_general = (
+        (is_keep && S.isCONFIRM_DEL_OF_SAVED_TABS()) ||
+        (is_nokeep && S.isCONFIRM_DEL_OF_UNSAVED_TABS())
     );
+    let need_confirmation_audible = (
+        (tab_val.isAudible && S.isCONFIRM_DEL_OF_AUDIBLE_TABS())
+    );
+
+    let need_confirmation = need_confirmation_general ||
+                            need_confirmation_audible;
 
     // ... but we don't usually need confirmation for empty tabs...
     if(/^((chrome:\/\/newtab\/?)|(about:blank))$/i.test(tab_val.raw_url)) {
@@ -1068,6 +1088,7 @@ function actionDeleteTab(node_id, node, unused_action_id, unused_action_el,
         if( (is_keep && S.getBool(S.CONFIRM_DEL_OF_SAVED)) ||
             (is_nokeep && S.getBool(S.CONFIRM_DEL_OF_UNSAVED)) ) {
             need_confirmation = true;
+            need_confirmation_general = true;
             prompt_name = 'dlgpDeleteTabAndWindow';
         }
     }
@@ -1077,8 +1098,10 @@ function actionDeleteTab(node_id, node, unused_action_id, unused_action_el,
         doDeletion();
 
     } else {    // Confirmation required
-        (showConfirmationModalDialog(
-            _T(prompt_name, M.get_html_label(tab_val)))
+        showConfirmationModalDialog(
+            _T(prompt_name, M.get_html_label(tab_val)),
+            !( !need_confirmation_general && need_confirmation_audible )
+                // "Don't show again" is hidden if it was just about audio
         )
 
         // Processing after the dialog closes
@@ -1201,7 +1224,7 @@ function addTabNodeActions(tab_node_id)
     });
 
     // Add the buttons in the layout chosen by the user (#152).
-    let order = S.getString(S.WIN_ACTION_ORDER);
+    let order = S.getString(S.S_WIN_ACTION_ORDER);
     if(order === 'ced') {
         addTabCloseAction(win_node_id);
         addTabEditAction(tab_node_id);
@@ -1321,7 +1344,7 @@ function addWindowNodeActions(win_node_id)
     });
 
     // Add the buttons in the layout chosen by the user (#152).
-    let order = S.getString(S.WIN_ACTION_ORDER);
+    let order = S.getString(S.S_WIN_ACTION_ORDER);
     if(order === 'ced') {
         addWinCloseAction(win_node_id);
         addWinEditAction(win_node_id);
@@ -2728,6 +2751,21 @@ function tabOnUpdated(tabid, changeinfo, ctab)
         tab_node_val.isPinned = new_pinned;
     }
 
+    // audible
+    let new_audible = null;
+
+    if('audible' in changeinfo) {
+        new_audible = changeinfo.audible;
+    } else if('audible' in ctab) {
+        new_audible = ctab.audible;
+    }
+
+    if( (new_audible !== null) && (tab_node_val.isAudible !== new_audible) ) {
+        dirty = true;
+        should_refresh_label = true;
+        tab_node_val.isAudible = new_audible;
+    }
+
     // title
     let new_raw_title = changeinfo.title || ctab.title || _T('labelBlankTabTitle');
     if(new_raw_title !== tab_node_val.raw_title) {
@@ -2746,6 +2784,7 @@ function tabOnUpdated(tabid, changeinfo, ctab)
         tab_node_val.raw_favicon_url = new_raw_favicon_url;
     }
 
+    // Update the model
     M.refresh(tab_node_val, { icon: should_refresh_icon,
             label: should_refresh_label, tooltip: should_refresh_tooltip });
 

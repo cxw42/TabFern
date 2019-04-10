@@ -213,6 +213,13 @@ vote at ${issue(125,true)}.
             "type": "checkbox",
             "label": future_i18n('Prompt for confirmation before deleting <b>tabs</b> in <b>unsaved</b> windows'),
         },
+        {
+            "tab": future_i18n("Behaviour"),
+            "group": future_i18n("Music"),
+            "name": S.CONFIRM_DEL_OF_AUDIBLE_TABS,
+            "type": "checkbox",
+            "label": future_i18n('Prompt for confirmation before closing or deleting a tab that is currently playing audio (<i class="fa fa-music"></i>)'),
+        },
 
         // Appearance
         {
@@ -312,7 +319,7 @@ bar (it will start with "file://")</li>
         {
             'tab': future_i18n('Appearance'),
             'group': future_i18n('Action-button order for windows'),
-            'name': S.WIN_ACTION_ORDER,
+            'name': S.S_WIN_ACTION_ORDER,
             'type': 'radioButtons',
             'options': [
                 {value: 'ced',

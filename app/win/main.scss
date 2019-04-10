@@ -31,3 +31,12 @@ $closed-tab-in-open-win: '.tf-window.tfs-open .tf-tab:not(.tfs-open) .jstree-who
 #maintree.jstree-default .jstree-node:not(.tfs-open) .jstree-anchor {
     color: #808080;
 }
+
+/* The audio-playing indicator */
+#maintree.jstree-default-dark span.is-audible {
+    color: #fff;
+}
+
+#maintree.jstree-default span.is-audible {
+    color: #000;
+}
