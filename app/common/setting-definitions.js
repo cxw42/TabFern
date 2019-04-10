@@ -2,6 +2,9 @@
 
 // Names of settings, and their defaults // {{{1
 
+// Boolean settings start with CFG_.  Non-boolean settings start with
+// /CFG[A-Z]+_/.  Currently, only CFGS_ is used, for string settings.
+
 /// An object to stash the names of the settings in.  The values here
 /// are the keys for _DEF and _VAL.
 let _NAM = { __proto__: null };
@@ -87,6 +90,10 @@ _NAM.CFG_CONFIRM_DEL_OF_UNSAVED_TABS = 'confirm-del-of-unsaved-tabs';
 _DEF[_NAM.CFG_CONFIRM_DEL_OF_UNSAVED_TABS] = false;
 _VAL[_NAM.CFG_CONFIRM_DEL_OF_UNSAVED_TABS] = _vbool;
 
+_NAM.CFG_CONFIRM_DEL_OF_AUDIBLE_TABS = 'confirm-del-of-audible-tabs';
+_DEF[_NAM.CFG_CONFIRM_DEL_OF_AUDIBLE_TABS] = false;
+_VAL[_NAM.CFG_CONFIRM_DEL_OF_AUDIBLE_TABS] = _vbool;
+
 _NAM.CFG_URL_IN_TOOLTIP = 'tooltip-has-url';
 _DEF[_NAM.CFG_URL_IN_TOOLTIP] = false;
 _VAL[_NAM.CFG_URL_IN_TOOLTIP] = _vbool;
@@ -146,8 +153,8 @@ _VAL[_NAM.CFGS_OPEN_REST_ON_CLICK] = (v)=>{
 };
 
 // #152.  Which order of action buttons to use for tabs.
-_NAM.CFG_WIN_ACTION_ORDER = 'win-button-action-order';
-_DEF[_NAM.CFG_WIN_ACTION_ORDER] = 'ecd';
+_NAM.CFGS_WIN_ACTION_ORDER = 'win-button-action-order';
+_DEF[_NAM.CFGS_WIN_ACTION_ORDER] = 'ecd';
 _VAL[_NAM.CFGS_OPEN_REST_ON_CLICK] = (v)=>{
     return (( v === 'ecd' || v === 'edc' || v === 'ced' ) ? v : undefined);
 };
@@ -295,6 +302,13 @@ let me = {
 for(let name in CFG_NAMES) {
     me[name.replace(/^CFG_/,'').replace(/^CFG/,'')] = CFG_NAMES[name];
         // CFG_FOO -> FOO; CFGS_FOO -> S_FOO
+
+    // Shorthand for bools: CFG_FOO -> isFOO()
+    if(name.match(/^CFG_/)) {
+        me['is' + name.replace(/^CFG_/,'')] = function() {
+            return getBoolSetting(me.names[name]);
+        }
+    }
 }
 
 module.exports = me;
