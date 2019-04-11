@@ -83,6 +83,16 @@
       }
     }
   }
+  , "dlgpCloseAudibleWindow": {
+    "message": "Fermer \"$TITLE$\"?  It is currently playing music."
+    ,"description":"Prompt for whether the user wants to delete a window that is playing music (audible).  TODO TRANSLATE"
+    ,"placeholders":{
+      "title": {
+        "content": "$1"
+        ,"example": "(this is the title of the window that will be closed)"
+      }
+    }
+  }
 
   , "dlgYesHTML": {
     "message": "<span class=\"accel\">O</span>ui"

@@ -83,6 +83,16 @@
       }
     }
   }
+  , "dlgpCloseAudibleWindow": {
+    "message": "Fenster \"$TITLE$\" schließen?  Es spielt jetzt Musik."
+    ,"description":"Prompt for whether the user wants to delete a window that is playing music (audible)."
+    ,"placeholders":{
+      "title": {
+        "content": "$1"
+        ,"example": "(this is the title of the window that will be closed)"
+      }
+    }
+  }
 
   , "dlgYesHTML": {
     "message": "<span class=\"accel\">J</span>a"

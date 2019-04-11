@@ -1,5 +1,6 @@
 // win/main_tl.js: main script for main.html in the popup window of TabFern
-// Copyright (c) cxw42, 2017--2018
+// (static/win/main.html).
+// Copyright (c) cxw42, 2017--2019
 // See /doc/design.md for information about notation and organization.
 
 // TODO: fix all move_node calls for partly-open windows
@@ -624,7 +625,7 @@ function collapseTreeNode(nodey) {
 } //collapseTreeNode
 
 // }}}1
-// jstree-action callbacks // {{{1
+// jstree-action callbacks (handle user clicks on the tree icons) // {{{1
 
 /// Wrapper to call jstree-action style callbacks from jstree contextmenu
 /// actions
@@ -731,9 +732,9 @@ function actionRememberWindow(node_id, node, unused_action_id, unused_action_el)
 } //actionForgetWindow()
 
 /// Close a window, but don't delete its tree nodes.  Used for saving windows.
-/// ** The caller must call saveTree() --- actionCloseWindowButDoNotSave() does not.
+/// ** The caller must call saveTree() --- actionCloseWindowButDoNotSave_internal() does not.
 /// TODO refactor this to use the model
-function actionCloseWindowButDoNotSave(node_id, node, unused_action_id, unused_action_el, is_ui_action)
+function actionCloseWindowButDoNotSave_internal(node_id, node, unused_action_id, unused_action_el, is_ui_action)
 {
     let win_val = D.windows.by_node_id(node_id);
     if(!win_val) return;
@@ -794,37 +795,93 @@ function actionCloseWindowButDoNotSave(node_id, node, unused_action_id, unused_a
         // On close, we can't know where the focus will go next.
 
     // don't call saveTree --- that's the caller's responsibility
-} //actionCloseWindowButDoNotSave
+} //actionCloseWindowButDoNotSave_internal
 
 /// Close the window and save
-function actionCloseWindowAndSave(node_id, node, unused_action_id, unused_action_el)
+function actionCloseWindowAndSave(win_node_id, win_node, unused_action_id, unused_action_el)
 {
-    actionCloseWindowButDoNotSave(node_id, node, unused_action_id, unused_action_el, true);     // true => it came from a user action.  The only places
-                // this is invoked are user actions.
-    saveTree();
+    /// Helper to actually close it
+    function doClose()
+    {
+        actionCloseWindowButDoNotSave_internal(win_node_id, win_node,
+                unused_action_id, unused_action_el, true);
+        // true => it came from a user action.  The only places
+        // this is invoked are user actions.
+        saveTree();
+    }
+
+    // Prompt for confirmation, if necessary
+    let is_audible = false;
+
+    if(S.isCONFIRM_DEL_OF_AUDIBLE_TABS()) {
+        for(let child_nodeid of win_node.children) {
+            let child_val = D.tabs.by_node_id(child_nodeid);
+            if(child_val && child_val.isAudible) {
+                is_audible = true;
+                break;
+            }
+        } //foreach tab
+    } //if confirm del of audible
+
+    if(!is_audible) {   // No confirmation required - just do it
+        doClose();
+
+    } else {            // Confirmation required
+
+        let win_val = D.windows.by_node_id(win_node_id);
+        showConfirmationModalDialog(
+            _T('dlgpCloseAudibleWindow', M.get_raw_text(win_val)),
+            false   // Hide "do not show again" for now
+        )
+
+        // Processing after the dialog closes
+        .val((result)=>{
+            //log.info({'Dialog closed; reason':result});
+            if(!result) return;     // no-op if we didn't get an answer
+
+            /* //////// Not yet - #177
+            // Handle "don't ask again", but cancel is always nop.
+            if(result.reason !== 'cancel' && result.notAgain) {
+                /// The configuration key to clear
+                let conf_key = (win_val.keep === K.WIN_KEEP) ?
+                    S.CONFIRM_DEL_OF_SAVED :
+                    S.CONFIRM_DEL_OF_UNSAVED;
+                //log.info({"Don't ask again":conf_key});
+                S.set(conf_key, false);
+            }
+            */
+
+            if(result.reason === 'yes') {
+                doClose();
+            }
+        }); //end post-dialog processing
+
+    } //endif confirmation required
+
 } //actionCloseWindowAndSave
 
 /// Delete a window's entry in the tree.
-/// @param node_id {string} the ID of the node to delete
-/// @param node the node to delete
+/// @param win_node_id {string} the ID of the node to delete
+/// @param win_node the node to delete
 /// @param evt {Event} (optional) If truthy, the event that triggered the action
 /// @param is_internal {Boolean} (optional) If truthy, this is an internal
 ///                              action, so don't prompt for confirmation.
-function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el,
+function actionDeleteWindow(win_node_id, win_node, unused_action_id, unused_action_el,
                             evt, is_internal)
 {
-    let win_val = D.windows.by_node_id(node_id);
+    let win_val = D.windows.by_node_id(win_node_id);
     if(!win_val) return;
 
     /// Helper to actually do the deletion
     function doDeletion()
     {
         // Close the window and adjust the tree
-        actionCloseWindowButDoNotSave(node_id, node, unused_action_id, unused_action_el);
+        actionCloseWindowButDoNotSave_internal(win_node_id, win_node,
+                                        unused_action_id, unused_action_el);
 
         lastDeletedWindow = [];
         // Remove the tabs from D.tabs
-        for(let tab_node_id of node.children) {
+        for(let tab_node_id of win_node.children) {
             let tab_val = D.tabs.by_node_id(tab_node_id);
             if(!tab_val) continue;
             D.tabs.remove_value(tab_val);
@@ -832,11 +889,11 @@ function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el,
             lastDeletedWindow.push(tab_val.raw_url);
         }
 
-        let next_node = T.treeobj.get_next_dom(node, true);
+        let next_node = T.treeobj.get_next_dom(win_node, true);
 
         // Remove the window's node and value
         let scrollOffsets = [window.scrollX, window.scrollY];
-        T.treeobj.delete_node(node_id);   //also deletes child nodes
+        T.treeobj.delete_node(win_node_id);   //also deletes child nodes
             // TODO don't actually delete the node until
             // the window is gone.  Test case: window.beforeonunload=()=>true;
         window.scrollTo(...scrollOffsets);
@@ -861,6 +918,7 @@ function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el,
 
     // Prompt for confirmation, if necessary
     let no_confirmation = !!is_internal;
+    let confirm_because_audible = false;
 
     no_confirmation = no_confirmation ||
         (win_val.keep === K.WIN_KEEP &&
@@ -870,13 +928,25 @@ function actionDeleteWindow(node_id, node, unused_action_id, unused_action_el,
         (win_val.keep === K.WIN_NOKEEP &&
             !S.getBool(S.CONFIRM_DEL_OF_UNSAVED))
 
-    if(no_confirmation) { // No confirmation required - just do it
+    if(S.isCONFIRM_DEL_OF_AUDIBLE_TABS()) {
+        for(let child_nodeid of win_node.children) {
+            let child_val = D.tabs.by_node_id(child_nodeid);
+            if(child_val && child_val.isAudible) {
+                confirm_because_audible = true;
+                break;
+            }
+        } //foreach tab
+    } //if confirm del of audible
+
+    if(no_confirmation && !confirm_because_audible) {
+        // No confirmation required - just do it
         doDeletion();
 
     } else {    // Confirmation required
 
         (showConfirmationModalDialog(
-            _T('dlgpDeleteWindow', M.get_raw_text(win_val))
+            _T('dlgpDeleteWindow', M.get_raw_text(win_val)),
+            !confirm_because_audible    // TODO #177
         ))
 
         // Processing after the dialog closes
@@ -2270,12 +2340,14 @@ function winOnRemoved(cwin_id)
             node.children && node.children.length > 0
     ) {
         node_val.isOpen = false;   // because it's already gone
-        if(node_val.win) actionCloseWindowButDoNotSave(node_id, node, null, null);
+        if(node_val.win) {
+            actionCloseWindowButDoNotSave_internal(node_id, node, null, null);
             // Since it was saved, leave it saved.  You can only get rid
             // of saved sessions by X-ing them expressly (actionDeleteWindow).
-            // if(node_val.win) because a window closed via actionCloseWindowButDoNotSave
+            // if(node_val.win) because a window closed via actionCloseWindowButDoNotSave_internal
             // or actionDeleteWindow will have a falsy node_val.win, so we
             // don't need to call those functions again.
+        }
         saveTree();     // TODO figure out if we need this.
     } else {
         // Not saved - just toss it.
