@@ -290,7 +290,7 @@ me.overrides.firefox = {
         onCompile: ()=>{
             console.log('Making public-ff tree');
             try {
-                child_process.execSync('node ffize.js');
+                child_process.execSync('node tools/ffize.js');
                 console.log('done');
             } catch(error) {
                 console.error(error);
