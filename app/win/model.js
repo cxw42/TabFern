@@ -498,7 +498,8 @@ me.vnRezWin = function(isFirstChild=false) {
         raw_bullet: null,
         isOpen: false,
         keep: undefined,
-        prune_data: undefined
+        prune_data: undefined,
+        isClosing: false
     });
 
     if(!val) {
@@ -846,6 +847,8 @@ me.markWinAsOpen = function(win_vorny, cwin) {
     val.isOpen = true;
     // keep unchanged
     // raw_bullet unchanged
+    // prune_data unchanged - pruning unused
+    // isClosing unchanged - TODO is this the Right Thing?
 
     T.treeobj.add_multitype(node_id, K.NST_OPEN);
 
@@ -909,6 +912,8 @@ me.markTabAsOpen = function(tab_vorny, ctab) {
 /// Remove the connection between #win_vorny and its Chrome window.
 /// Use this when the Chrome window has been closed.
 /// NOTE: does not do anything with the tabs.
+/// Idempotent --- doesn't care whether the window is open or not.  This is
+/// so that it can be used on window close whether initiated by Chrome or TF.
 /// @param win_vorny {mixed} The item
 /// @return {Boolean} true on success; false on error
 me.markWinAsClosed = function(win_vorny) {
@@ -917,11 +922,6 @@ me.markWinAsClosed = function(win_vorny) {
     let {val, node_id} = me.vn_by_vorny(win_vorny, K.IT_WIN);
     if(!val || !node_id) return false;
 
-    if(!val.isOpen || !val.win) {
-        log.info({'Refusing to re-mark already-closed window as closed':val});
-        return false;
-    }
-
     D.windows.change_key(val, 'win_id', K.NONE);
     // node_id unchanged
     val.win = undefined;
@@ -929,6 +929,8 @@ me.markWinAsClosed = function(win_vorny) {
     val.isOpen = false;
     // keep unchanged - this is an unmark, not an erase.
     // raw_bullet unchanged
+    // prune_data unchanged - pruning unused
+    val.isClosing = false;      // It's already closed, so is no longer closing
 
     T.treeobj.del_multitype(node_id, K.NST_OPEN);
 

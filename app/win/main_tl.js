@@ -22,13 +22,6 @@ Loading TabFern ${TABFERN_VERSION} from ${__filename}`);
 
 // Hacks so I can keep everything in the global scope for ease of
 // use or inspection in the console while developing.
-// TODO figure out a better way.
-//  --> TODO make this a requirejs module and move the loader into a
-//      standalone file.  Then the loader can populate the globals if
-//      running in development mode, and not otherwise.  The loader can also
-//      have a user-callable function to populate the globals, e.g., for
-//      debugging in the deployed package.
-
 // Note: globals are `var`, rather than `let`, so they can be accessed on
 // `window` from the developer console.  `let` variables are not attached
 // to the global object.
@@ -84,7 +77,7 @@ var newWinSize = {left: 0, top: 0, width: 300, height: 600};
 /// The size of this popup, and other non-normal windows, is not tracked here.
 var winSizes={};
 
-// TODO use content scripts to catch window resizing, a la
+// TODO? use content scripts to catch window resizing, a la
 // https://stackoverflow.com/q/13141072/2877364
 
 /// Whether to show a notification of new features
@@ -598,9 +591,7 @@ function actionURLSubstitute(node_id, node, unused_action_id, unused_action_el)
             });
         } else {
             tab_val.raw_url = new_url;
-            M.refresh_label(tab_val);   // do what tabOnUpdated() would
-            M.refresh_icon(tab_val);
-            M.refresh_tooltip(tab_val);
+            M.refresh(tab_val);
         }
     } // foreach child
 
@@ -732,70 +723,54 @@ function actionRememberWindow(node_id, node, unused_action_id, unused_action_el)
 } //actionForgetWindow()
 
 /// Close a window, but don't delete its tree nodes.  Used for saving windows.
-/// ** The caller must call saveTree() --- actionCloseWindowButDoNotSave_internal() does not.
-/// TODO refactor this to use the model
-function actionCloseWindowButDoNotSave_internal(node_id, node, unused_action_id, unused_action_el, is_ui_action)
+/// ** The caller must call saveTree() --- actionCloseWindowButDoNotSaveTree_internal() does not.
+/// @return An ASQ that will fire when the closing is complete
+function actionCloseWindowButDoNotSaveTree_internal(win_node_id, win_node,
+                            unused_action_id, unused_action_el, is_ui_action)
 {
-    let win_val = D.windows.by_node_id(node_id);
+    let win_val = D.windows.by_node_id(win_node_id);
     if(!win_val) return;
     let win = win_val.win;
-
-    // Mark the tree node closed
-    win_val.win = undefined;
-        // Prevents winOnRemoved() from calling us to handle the removal!
-    D.windows.change_key(win_val, 'win_id', K.NONE);
-        // Can't access by win_id, but can still access by node_id.
+    let was_open = win_val.isOpen && win;
 
     // TODO winOnFocusChanged(NONE, true) ?
 
-    let was_open = win_val.isOpen && win;
+    win_val.isClosing = true;
+        // Prevents winOnRemoved() from calling us to handle the removal!
+    M.remember(win_node_id);
+
+    let seq = ASQ();
 
     // Close the window
-    if(win_val.isOpen && win) {
-        win_val.keep = K.WIN_KEEP;
-            // has to be before winOnRemoved fires.  TODO cleanup -
-            // maybe add an `is_closing` flag to `win_val`?
-        chrome.windows.remove(win.id, ignore_chrome_error);
-        // Don't try to close an already-closed window.
-        // Ignore exceptions - when we are called from winOnRemoved,
-        // the window is already gone, so the remove() throws.
-        // See https://stackoverflow.com/a/45871870/2877364 by cxw
-
-        // TODO don't actually proceed until
-        // the window is gone.  Test case: window.beforeonunload=()=>true;
+    if(was_open) {
+        chrome.windows.remove(win.id, ASQH.CCgo(seq, true));
+        // True => ignore errors.
+        // See https://stackoverflow.com/a/45871870/2877364 by cxw.
     }
 
-    win_val.isOpen = false;
-    M.remember(node_id);
-    M.del_subtype(node_id, K.NST_OPEN);
+    seq.then(()=>{ M.markWinAsClosed(win_val); });
+
+    // TODO do all of the following after the windows.remove completes?
 
     // Collapse the tree, if the user wants that.
     // If the user hit close on a closed window, it's a collapse.
     if(S.getBool(S.COLLAPSE_ON_WIN_CLOSE) ||
             (is_ui_action && !was_open)
     ) {
-        collapseTreeNode(node);
+        collapseTreeNode(win_node);
     }
 
     // Mark the tabs in the tree node closed.
-    for(let tab_node_id of node.children) {
-        let tab_val = D.tabs.by_node_id(tab_node_id);
-        if(!tab_val) continue;
-
-        tab_val.tab = undefined;
-        tab_val.win_id = K.NONE;
-        tab_val.index = K.NONE;
-        tab_val.isOpen = false;
-        M.del_subtype(tab_node_id, K.NST_OPEN);
-        D.tabs.change_key(tab_val, 'tab_id', K.NONE);
-        // raw_url and raw_title are left alone
+    for(let tab_node_id of win_node.children) {
+        M.markTabAsClosed(tab_node_id);
     }
 
     T.treeobj.clear_flags();
         // On close, we can't know where the focus will go next.
 
     // don't call saveTree --- that's the caller's responsibility
-} //actionCloseWindowButDoNotSave_internal
+    return seq;
+} //actionCloseWindowButDoNotSaveTree_internal
 
 /// Close the window and save
 function actionCloseWindowAndSave(win_node_id, win_node, unused_action_id, unused_action_el)
@@ -803,11 +778,11 @@ function actionCloseWindowAndSave(win_node_id, win_node, unused_action_id, unuse
     /// Helper to actually close it
     function doClose()
     {
-        actionCloseWindowButDoNotSave_internal(win_node_id, win_node,
-                unused_action_id, unused_action_el, true);
+        actionCloseWindowButDoNotSaveTree_internal(win_node_id, win_node,
+                unused_action_id, unused_action_el, true)
         // true => it came from a user action.  The only places
         // this is invoked are user actions.
-        saveTree();
+        .then(()=> { saveTree(); });
     }
 
     // Prompt for confirmation, if necessary
@@ -876,8 +851,9 @@ function actionDeleteWindow(win_node_id, win_node, unused_action_id, unused_acti
     function doDeletion()
     {
         // Close the window and adjust the tree
-        actionCloseWindowButDoNotSave_internal(win_node_id, win_node,
+        actionCloseWindowButDoNotSaveTree_internal(win_node_id, win_node,
                                         unused_action_id, unused_action_el);
+        // TODO wait for the returned sequence?
 
         lastDeletedWindow = [];
         // Remove the tabs from D.tabs
@@ -1296,7 +1272,7 @@ function addTabNodeActions(tab_node_id)
     // Add the buttons in the layout chosen by the user (#152).
     let order = S.getString(S.S_WIN_ACTION_ORDER);
     if(order === 'ced') {
-        addTabCloseAction(win_node_id);
+        addTabCloseAction(tab_node_id);
         addTabEditAction(tab_node_id);
         addTabDeleteAction(tab_node_id);
     } else if(order === 'ecd') {
@@ -1380,27 +1356,25 @@ function createNodeForTab(ctab, parent_node_id)
 /// @return node_id         The node id for the new tab, or falsy on failure
 function createNodeForClosedTabV1(tab_data_v1, parent_node_id)
 {
-    let {node_id, val} = M.vnRezTab(parent_node_id);
-    if(!node_id) {
+    let {node_id: tab_node_id, val: tab_val} = M.vnRezTab(parent_node_id);
+    if(!tab_node_id) {
         log.debug({"<M> Could not create record for closed tab":tab_data_v1,parent_node_id});
         return false;
     }
 
     // Copy properties into the details
-    copyTruthyProperties(val, tab_data_v1,
+    copyTruthyProperties(tab_val, tab_data_v1,
             ['raw_url', 'raw_title', 'raw_bullet', 'raw_favicon_url'],
             String);
-    copyTruthyProperties(val, tab_data_v1, 'isPinned', Boolean);
+    copyTruthyProperties(tab_val, tab_data_v1, 'isPinned', Boolean);
 
-    M.refresh_label(node_id);
-    M.refresh_icon(val);
-    M.refresh_tooltip(val);
+    M.refresh(tab_val);
 
-    if(tab_data_v1.bordered) M.add_subtype(val, K.NST_TOP_BORDER);
+    if(tab_data_v1.bordered) M.add_subtype(tab_val, K.NST_TOP_BORDER);
 
-    addTabNodeActions(node_id);
+    addTabNodeActions(tab_node_id);
 
-    return node_id;
+    return tab_node_id;
 } //createNodeForClosedTabV1
 
 // = = = Windows = = = = = = = = = = = = = = = = =
@@ -1599,11 +1573,8 @@ function createNodeForClosedWindowV1(win_data_v1)
 
     val.raw_title = new_title;
 
-    M.refresh_label(node_id);
-    M.refresh_icon(val);
-    M.refresh_tooltip(val);
-
     addWindowNodeActions(node_id);
+    M.refresh(val);
 
     if(win_data_v1.tabs) {
         for(let tab_data_v1 of win_data_v1.tabs) {
@@ -2340,11 +2311,11 @@ function winOnRemoved(cwin_id)
             node.children && node.children.length > 0
     ) {
         node_val.isOpen = false;   // because it's already gone
-        if(node_val.win) {
-            actionCloseWindowButDoNotSave_internal(node_id, node, null, null);
+        if(node_val.win && !node_val.isClosing) {
+            actionCloseWindowButDoNotSaveTree_internal(node_id, node, null, null);
             // Since it was saved, leave it saved.  You can only get rid
             // of saved sessions by X-ing them expressly (actionDeleteWindow).
-            // if(node_val.win) because a window closed via actionCloseWindowButDoNotSave_internal
+            // if(node_val.win) because a window closed via actionCloseWindowButDoNotSaveTree_internal
             // or actionDeleteWindow will have a falsy node_val.win, so we
             // don't need to call those functions again.
         }
