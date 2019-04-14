@@ -498,7 +498,6 @@ me.vnRezWin = function(isFirstChild=false) {
         raw_bullet: null,
         isOpen: false,
         keep: undefined,
-        prune_data: undefined,
         isClosing: false
     });
 
@@ -847,7 +846,6 @@ me.markWinAsOpen = function(win_vorny, cwin) {
     val.isOpen = true;
     // keep unchanged
     // raw_bullet unchanged
-    // prune_data unchanged - pruning unused
     // isClosing unchanged - TODO is this the Right Thing?
 
     T.treeobj.add_multitype(node_id, K.NST_OPEN);
@@ -929,7 +927,6 @@ me.markWinAsClosed = function(win_vorny) {
     val.isOpen = false;
     // keep unchanged - this is an unmark, not an erase.
     // raw_bullet unchanged
-    // prune_data unchanged - pruning unused
     val.isClosing = false;      // It's already closed, so is no longer closing
 
     T.treeobj.del_multitype(node_id, K.NST_OPEN);

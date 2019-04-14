@@ -51,11 +51,6 @@
         INIT_MSG_SEL:  'div#init-incomplete',     // Selector for that message
         INIT_PROGRESS_SEL:  'div#init-progress',     // Selector for the x/y progress indicator
 
-        /// How long to wait after a winOnCreated or tabOnCreated before
-        /// checking whether pruning is required.  This is to give merge
-        /// detection priority over pruning.
-        WIN_PRUNE_TIMER_MS: 200,
-
         ACTION_GROUP_WIN_CLASS: 'tf-action-group',   // Class on action-group div
         ACTION_BUTTON_WIN_CLASS: 'tf-action-button', // Class on action buttons (<i>)
 

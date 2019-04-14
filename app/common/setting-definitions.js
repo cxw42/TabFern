@@ -102,11 +102,6 @@ _NAM.CFG_TITLE_IN_TOOLTIP = 'tooltip-has-title';
 _DEF[_NAM.CFG_TITLE_IN_TOOLTIP] = false;
 _VAL[_NAM.CFG_TITLE_IN_TOOLTIP] = _vbool;
 
-_NAM.CFG_PRUNE_NEW_WINDOWS = 'prune-new-windows';
-_DEF[_NAM.CFG_PRUNE_NEW_WINDOWS] = false;
-_VAL[_NAM.CFG_PRUNE_NEW_WINDOWS] = ()=>false;
-    // Always false --- don't permit a settings load to set prune to true.
-
 /// Not actually a setting, but an indicator that we loaded settings OK.
 /// Used by src/settings/main.js.
 _NAM.SETTINGS_LOADED_OK = '__settings_loaded_OK';

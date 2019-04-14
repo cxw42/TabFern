@@ -87,7 +87,6 @@
             'keep',         // whether the window should be saved or not
             //'raw_bullet',   // User-provided text (brief).  null => none
                 // Not currently used.
-            'prune_data',   // {timer_id,cwin} of a setTimeout used for pruning
             'isClosing',    // true if the window is currently being closed
                             // by TF itself, as opposed to in response to
                             // something done by the browser.
