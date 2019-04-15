@@ -216,6 +216,28 @@ me.install_resize_detector = function(win, jq_tree) {
      */
 
 // }}}1
+// --- Middle mouse button --- {{{1
+
+/// Set up handling of the middle mouse button on \p jqtree.
+function setUpMiddleButton(jqtree)
+{
+    function makeMMB(evtname) {
+        return function(evt) {
+            if(evt.which != 2) {    // We only care about MMB
+                return;
+            }
+            loginfo({[`MMB ${evtname}`]:evt});
+            evt.preventDefault();
+            return false;   // Also prevent default
+        };
+    }
+
+    ['mouseup', 'click', 'auxclick'].forEach((evtname)=>{
+        jqtree.on(`${evtname}.tabfern`, makeMMB(evtname));
+    });
+} //setUpMiddleButton()
+
+// }}}1
 // --- Tree creation --- {{{1
 
 // CSS classes
@@ -351,6 +373,8 @@ me.create = function(selector, check_callback, is_draggable,
     // TODO? make treeobj the prototype of me?  Then, e.g., T.get_node
     // would work, and you wouldn't have to say T.treeobj.get_node.
     // Or maybe make vscroll a jstree plugin?
+
+    setUpMiddleButton(me.treeobj.element);
 
 }; //me.create()
 // }}}1
