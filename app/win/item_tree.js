@@ -219,22 +219,82 @@ me.install_resize_detector = function(win, jq_tree) {
 // --- Middle mouse button --- {{{1
 
 /// Set up handling of the middle mouse button on \p jqtree.
-function setUpMiddleButton(jqtree)
+function setUpMiddleButton(treeobj)
 {
-    function makeMMB(evtname) {
+    function makeMMB(evtname, other) {
         return function(evt) {
             if(evt.which != 2) {    // We only care about MMB
                 return;
             }
-            loginfo({[`MMB ${evtname}`]:evt});
+
+            try {   // suppress all errors so the default gets prevented
+                    // no matter what happens
+                loginfo({[`MMB ${evtname}`]:evt});
+                if(other) { other(evt); }
+            } catch(e) {
+                loginfo({[`MMB ${evtname} error`]:e});
+            }
+
             evt.preventDefault();
             return false;   // Also prevent default
         };
     }
 
-    ['mouseup', 'click', 'auxclick'].forEach((evtname)=>{
+    let jqtree = treeobj.element;
+
+    // Ignore MMB click, auxclick events, since they are not consistent
+    // across the supported browser population.
+    ['click', 'auxclick'].forEach((evtname)=>{
         jqtree.on(`${evtname}.tabfern`, makeMMB(evtname));
     });
+
+    // Trigger on MMB mouseup instead
+    jqtree.on('mouseup.tabfern', makeMMB('mouseup', (evt)=>{
+        let test_id;
+        let tgt$ = evt.target ? $(evt.target) : null;   // jquery of target
+
+        // Ignore middle clicks other than on tab tree entries
+
+        do {    //once
+            // Normal case: click on a node
+            if(tgt$ && tgt$.prop('id') &&
+                (tgt$.hasClass('jstree-anchor') ||
+                 tgt$.hasClass('jstree-leaf'))
+            ) {
+                test_id = tgt$.prop('id');
+                break;
+            }
+
+            // A click on the wholerow, <i>, or other DOM inside a tree node.
+            // Move up through the DOM until reaching the tree node
+            // (li.jstree-node), and grab the tree node's ID.
+            let parents$ = tgt$.parentsUntil('li.jstree-node');
+            let node$ = parents$.length ? parents$.last().parent()
+                                        : tgt$.parent();
+            if(node$.length) {
+                test_id = node$.prop('id');
+                break;
+            }
+        } while(0);
+
+        if(!test_id) {
+            return;
+        }
+
+        // Get the tab ID
+        let matches = test_id.match(/^(j\d+_\d+)/);
+        if(!(matches && matches[0])) {
+            return;
+        }
+
+        let node_id = matches[0];
+
+        loginfo(`MMB clicked on new tab ${node_id}`);
+        jqtree.trigger('mmb_node.jstree', [node_id]);
+            // NOTE: not treeobj.trigger, since that is officially
+            // marked as internal to jstree.
+            // TODO use a jstree plugin for this instead?
+    }));
 } //setUpMiddleButton()
 
 // }}}1
@@ -374,7 +434,7 @@ me.create = function(selector, check_callback, is_draggable,
     // would work, and you wouldn't have to say T.treeobj.get_node.
     // Or maybe make vscroll a jstree plugin?
 
-    setUpMiddleButton(me.treeobj.element);
+    setUpMiddleButton(me.treeobj);
 
 }; //me.create()
 // }}}1

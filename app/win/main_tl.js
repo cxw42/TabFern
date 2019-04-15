@@ -624,9 +624,11 @@ function actionRememberWindow(node_id, node, unused_action_id, unused_action_el)
 } //actionForgetWindow()
 
 /// Close a window, but don't delete its tree nodes.  Used for saving windows.
-/// ** The caller must call saveTree() --- actionCloseWindowButDoNotSaveTree_internal() does not.
-/// @param options {Object} Current keys are is_ui_action and
-///                         no_confirmation_required.
+/// ** The caller must call saveTree() ---
+///     actionCloseWindowButDoNotSaveTree_internal() does not.
+/// ** The caller must also handle any prompting for confirmation that
+///     may be required.
+/// @param options {Object} Current keys are is_ui_action.
 /// @return An ASQ that will fire when the closing is complete
 function actionCloseWindowButDoNotSaveTree_internal(win_node_id, win_node,
                             unused_action_id, unused_action_el,
@@ -702,8 +704,7 @@ function actionCloseWindowAndSave(win_node_id, win_node, unused_action_id, unuse
         } //foreach tab
     } //if confirm del of audible
 
-    if(options.no_confirmation_required || !is_audible) {
-        // No confirmation required - just do it
+    if(!is_audible) {   // No confirmation required - just do it
         doClose();
 
     } else {            // Confirmation required
@@ -746,8 +747,8 @@ function actionCloseWindowAndSave(win_node_id, win_node, unused_action_id, unuse
 /// @param evt {Event} (optional) If truthy, the event that triggered the action
 /// @param is_internal {Boolean} (optional) If truthy, this is an internal
 ///                              action, so don't prompt for confirmation.
-function actionDeleteWindow(win_node_id, win_node, unused_action_id, unused_action_el,
-                            evt, is_internal)
+function actionDeleteWindow(win_node_id, win_node, unused_action_id,
+        unused_action_el, evt, is_internal)
 {
     let win_val = D.windows.by_node_id(win_node_id);
     if(!win_val) return;
@@ -1757,11 +1758,14 @@ var awaitSelectTimeoutId = undefined;
 
 /// Process clicks on items in the tree.  Also works for keyboard navigation
 /// with arrow keys and Enter.
-/// @param evt_unused {Event} Not currently used
-/// @param evt_data {Object} has fields node, action, selected, event.
-function treeOnSelect(evt_unused, evt_data)
+/// @param evt_unused {Event}   Not currently used
+/// @param evt_data {Object}    Has fields node, action, selected, event.
+/// @param options {Object}     Valid fields are:
+///     - raise_tabfern_after:  if truthy, put the TF popup back on top
+///                             once the action has been taken.  (#160)
+function treeOnSelect(evt_unused, evt_data, options={})
 {
-    log.info({'treeOnSelect':evt_data});
+    log.info({'treeOnSelect':evt_data, options});
 
     /// What kinds of things can happen as a result of a select event
     let ActionTy = Object.freeze({
@@ -2017,10 +2021,14 @@ function treeOnSelect(evt_unused, evt_data)
             already_flagged_window = true;
             flagOnlyCurrentTab(cwin);
 
-            win_id_to_highlight_and_raise = cwin.id;
+            //win_id_to_highlight_and_raise = cwin.id;
                 // TODO FIXME - this is ineffective here.
                 // May be related to #138
 
+            if(options.raise_tabfern_after) {
+                chrome.windows.update(my_winid, {focused:true},
+                        ignore_chrome_error);
+            }
         }; //win_create_cbk callback
 
         log.info({'Creating window': create_data});
@@ -2066,9 +2074,14 @@ function treeOnSelect(evt_unused, evt_data)
                 already_flagged_window = true;
                 chrome.windows.get(win_val.win_id, {populate:true}, flagOnlyCurrentTabCC);
 
-                win_id_to_highlight_and_raise = win_val.win_id;
+                //win_id_to_highlight_and_raise = win_val.win_id;
                     // TODO FIXME - this is ineffective here.
                     // May be related to #138
+
+                if(options.raise_tabfern_after) {
+                    chrome.windows.update(my_winid, {focused:true},
+                            ignore_chrome_error);
+                }
 
             } //tabs.create callback
         ); //tabs.create
@@ -2092,6 +2105,10 @@ function treeOnSelect(evt_unused, evt_data)
     } //endif need to flag
 
     // Activate the window, if it still exists.
+    if(options.raise_tabfern_after) {
+        win_id_to_highlight_and_raise = my_winid;
+    }
+
     if(win_id_to_highlight_and_raise) {
         log.debug({'About to activate': win_id_to_highlight_and_raise});
         chrome.windows.update(win_id_to_highlight_and_raise, {focused:true},
@@ -2172,18 +2189,18 @@ function winOnRemoved(cwin_id)
         node_val.isOpen = false;   // because it's already gone
         if(node_val.win && !node_val.isClosing) {
             actionCloseWindowButDoNotSaveTree_internal(node_id, node,
-                    null, null, {no_confirmation_required: true});
+                    null, null);
             // Since it was saved, leave it saved.  You can only get rid
             // of saved sessions by X-ing them expressly (actionDeleteWindow).
             // if(node_val.win) because a window closed via actionCloseWindowButDoNotSaveTree_internal
             // or actionDeleteWindow will have a falsy node_val.win, so we
             // don't need to call those functions again.
-            // true => it's internal, so don't prompt for confirmation.
+            // aCWBDNST_internal() never prompts for confirmation.
         }
         saveTree();     // TODO figure out if we need this.
     } else {
         // Not saved - just toss it.
-        actionDeleteWindow(node_id, node, null, null, null, true);
+        actionDeleteWindow(node_id,node, null,null, null, true);
             // This removes the node's children also.
             // actionDeleteWindow also saves the tree, so we don't need to.
             // true => it's internal, so don't prompt for confirmation.
@@ -4071,8 +4088,10 @@ function delete_all_closed_nodes(are_you_sure)
         let child_node_id = root.children[i];
         let isOpen = D.windows.by_node_id(child_node_id, 'isOpen');
         if( !isOpen && child_node_id != T.holding_node_id ) {
-            actionDeleteWindow(child_node_id, T.treeobj.get_node(child_node_id),
-                undefined, undefined, undefined, true);
+            actionDeleteWindow(
+                child_node_id, T.treeobj.get_node(child_node_id),   //node
+                null, null,                                         //action
+                null, true);                            //event, is_internal
         }
     }
 } //delete_all_closed_nodes
@@ -4384,6 +4403,14 @@ function addEventListeners(done)
         // Save after drag-and-drop.  TODO? find a better way to do this?
         // -> Is this redundant now?  I think the saving in the dnd handlers
         // should take care of this.
+
+    T.treeobj.element.on('mmb_node.jstree', (event, node_id)=>{
+        //log.info(`Saw the MMB click on ${node_id}`);
+        let node = T.treeobj.get_node(node_id);
+        treeOnSelect(event, {node}, {raise_tabfern_after: true});
+            // Design decision: do not pass event as part of event_data (2nd
+            // param) because middle-clicks shouldn't trigger action buttons.
+    });
 
     chrome.windows.onCreated.addListener(winOnCreated);
     chrome.windows.onRemoved.addListener(winOnRemoved);
