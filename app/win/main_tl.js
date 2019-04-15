@@ -2362,7 +2362,7 @@ function initFocusHandler()
 /// Process creation of a tab.  NOTE: in Chrome 60.0.3112.101, we sometimes
 /// get two consecutive tabs.onCreated events for the same tab.  Therefore,
 /// we check for that here.
-var tabOnCreated = (function(){
+var tabOnCreated = (function(){     // search key: function tabOnCreated()
 
     /// Detach nodes for existing windows and tabs from those windows/tabs,
     /// and destroy the parts of the model that used to represent those
@@ -2947,25 +2947,10 @@ function timedResizeDetector()
 ////////////////////////////////////////////////////////////////////////// }}}1
 // Hamburger menu // {{{1
 
-/// Open a window, setting do_not_prune_right_now around the call.
-let open_window_with_url = function(url) {
-    do_not_prune_right_now = true;
-    let seq =
-        K.openWindowForURL(url || 'about:blank');
-    seq
-    .val(()=>{
-        do_not_prune_right_now = false;
-    })
-    .or(()=>{
-        do_not_prune_right_now = false;
-    });
-    return seq;
-};
-
 /// Open a new window with the TabFern homepage.
 function hamAboutWindow()
 {
-    open_window_with_url('https://cxw42.github.io/TabFern/');
+    K.openWindowForURL('https://cxw42.github.io/TabFern/');
 } //hamAboutWindow()
 
 /// Reload the TabFern window (or, at least, the tree iframe)
@@ -2979,10 +2964,14 @@ function hamReloadTree()
 function hamSettings()
 {
     // Actually open the window
-    open_window_with_url(chrome.extension.getURL(
-        '/settings/index.html' +
-        (ShowWhatIsNew ? '#open=last' : ''))
-    );
+    let url =
+        chrome.extension.getURL( '/settings/index.html' +
+                                (ShowWhatIsNew ? '#open=last' : ''));
+    if(url) {
+        K.openWindowForURL(url);
+    } else {
+        log.error('Could not get settings URL');
+    }
 
     // Record that the user has seen the "what's new" for this version
     if(ShowWhatIsNew) {
@@ -3099,7 +3088,12 @@ function hamSorter(compare_fn)
 
 function hamRunJasmineTests()
 {
-    open_window_with_url(chrome.extension.getURL('/test/index.html'));
+    let url = chrome.extension.getURL('/test/index.html');
+    if(url) {
+        K.openWindowForURL(url);
+    } else {
+        log.error('Could not get Jasmine-test URL');
+    }
 } // hamRunJasmineTests
 
 function hamSortOpenToTop()
@@ -3982,7 +3976,7 @@ function checkWhatIsNew(selector)
                 { [K.LASTVER_KEY]: 'installed, but no version viewed yet' },
                 function() {
                     ignore_chrome_error();
-                    open_window_with_url('https://cxw42.github.io/TabFern/#usage');
+                    K.openWindowForURL('https://cxw42.github.io/TabFern/#usage');
                 }
             );
         }

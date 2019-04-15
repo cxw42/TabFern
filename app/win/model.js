@@ -57,6 +57,7 @@ me.vn_by_vorny = function(val_or_nodey, item_type) {
     if(!val_or_nodey) return me.VN_NONE;
 
     let val, node_id;
+
     if(typeof val_or_nodey === 'string') {          // a node_id
         node_id = val_or_nodey;
         switch(item_type) {
@@ -78,6 +79,11 @@ me.vn_by_vorny = function(val_or_nodey, item_type) {
         val = val_or_nodey;
         if(!val.node_id) return me.VN_NONE;
         node_id = val.node_id;
+
+    } else if(typeof val_or_nodey === 'object' && val_or_nodey.val &&
+            val_or_nodey.node_id) {                 // We got a vn as input
+        ({val, node_id} = val_or_nodey);
+
     } else {                                        // Unknown
         return me.VN_NONE;
     }
@@ -541,7 +547,12 @@ me.vnRezTab = function(vornyParent) {
         win_id: K.NONE,
         index: K.NONE,
         tab: undefined,
+        // being_opened falsy
+        // raw_url undefined
+        // raw_title undefined
         isOpen: false,
+        // raw_bullet undefined
+        // raw_favicon_url undefined
         isPinned: false,
         isAudible: false,
     });
@@ -1041,6 +1052,81 @@ me.eraseWin = function(win_vorny) {
 
     return true;
 }; //eraseWin()
+
+// }}}1
+// New model functions mapping Chrome <=> tree indices ///////////// {{{1
+
+// These functions relate to specific actions.  They do not try to
+// establish a universal mapping from one set of indices to another.
+// Instead, they adjust the model as necessary.
+// If the Chrome widgets need to be manipulated, they return the
+// necessary information.
+
+/// Add a newly-created tab to the tree and to the right place based on its
+/// Chrome index.
+/// @param  win_vorny   The window
+/// @param  tab_vorny   The newly-created tab (from vnRezTab)
+/// @param  ctab        The Chrome tab
+/// @return True on success; false on failure
+me.adjustOnTabCreated = function(win_vorny, tab_vorny, ctab) {
+    let tab = me.vn_by_vorny(tab_vorny, K.IT_TAB);
+    if(!tab) return false;
+
+    let win = me.vn_by_vorny(win_vorny, K.IT_WIN);
+    if(!win) return false;
+    let win_node = T.treeobj.get_node(win.node_id);
+    if(!win_node) return false;
+
+    let treeidx;    // Where it should go
+
+    // Figure out where to put it
+    if(!win.val.isOpen) return false;
+    let nkids = win_node.children.length;
+
+//        // Put it just after the opener tab ID, if possible
+//        OPENER: if(openerTabId) {
+//            let openerVal = D.tabs.by_tab_id(openerTabId);
+//            if(!openerVal) break OPENER;
+//            let tree_idx = win_node.children.indexOf(openerVal.node_id);
+//            if(tree_idx===-1) break OPENER;
+//
+//            return tree_idx+1;
+//        }
+
+    // Build a node list as if all the open tabs were packed together
+    let orig_idx = [];
+    win_node.children.forEach( (kid_node_id, kid_idx)=>{
+        if(D.tabs.by_node_id(kid_node_id, 'isOpen')) {
+            orig_idx.push(kid_idx);
+            // TODO break if we've gone far enough?
+        }
+    });
+
+    log.info({"Mapping in":orig_idx,"From":ctab.index});
+
+    // Pick the ctab.index from that list
+    if(ctab.index >= orig_idx.length) {           // New tab off the end
+        treeidx = 1 + orig_idx[orig_idx.length-1];
+
+    } else if(ctab.index>0) {                     // Tab that exists, not the 1st
+        // Group it to the left rather than the right if there's a gap
+        treeidx = orig_idx[ctab.index-1]+1;  // i.e., after the previous tab's node
+
+    } else {                                // New first tab
+        treeidx = orig_idx[ctab.index];
+    }
+
+    // Add the tab to the tree
+    me.markTabAsOpen(tab.val, ctab);
+    let tab_node = T.treeobj.get_node(tab.node_id);
+    if(!tab_node) return false;
+
+    // Put it where it goes
+    T.treeobj.because('chrome','move_node', tab.node_id, win.node_id, treeidx);
+
+    // Update the indices
+    me.updateTabIndexValues(win_node);
+}; //adjustOnTabCreated()
 
 // }}}1
 

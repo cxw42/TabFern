@@ -33,8 +33,10 @@ foo.*
 /dist/
 *-packed/
 
-# A holding pen
+# A holding pen, and other transient files
 /spare
+foo*
+foo/
 
 # Test outputs
 *.e

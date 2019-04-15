@@ -19,6 +19,6 @@ require('./spec/spec-validation');
 require('./spec/spec-multidex');
 require('./spec/spec-jstree');
 require('./spec/spec-jstree-multitype');
-require('./spec/spec-view-model');
+require('./spec/app-win-model');
 
 // vi: set ts=4 sts=4 sw=4 et ai fo-=o fo-=r: //
