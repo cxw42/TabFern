@@ -625,9 +625,12 @@ function actionRememberWindow(node_id, node, unused_action_id, unused_action_el)
 
 /// Close a window, but don't delete its tree nodes.  Used for saving windows.
 /// ** The caller must call saveTree() --- actionCloseWindowButDoNotSaveTree_internal() does not.
+/// @param options {Object} Current keys are is_ui_action and
+///                         no_confirmation_required.
 /// @return An ASQ that will fire when the closing is complete
 function actionCloseWindowButDoNotSaveTree_internal(win_node_id, win_node,
-                            unused_action_id, unused_action_el, is_ui_action)
+                            unused_action_id, unused_action_el,
+                            options={})
 {
     let win_val = D.windows.by_node_id(win_node_id);
     if(!win_val) return;
@@ -656,7 +659,7 @@ function actionCloseWindowButDoNotSaveTree_internal(win_node_id, win_node,
     // Collapse the tree, if the user wants that.
     // If the user hit close on a closed window, it's a collapse.
     if(S.getBool(S.COLLAPSE_ON_WIN_CLOSE) ||
-            (is_ui_action && !was_open)
+            (options.is_ui_action && !was_open)
     ) {
         collapseTreeNode(win_node);
     }
@@ -680,7 +683,7 @@ function actionCloseWindowAndSave(win_node_id, win_node, unused_action_id, unuse
     function doClose()
     {
         actionCloseWindowButDoNotSaveTree_internal(win_node_id, win_node,
-                unused_action_id, unused_action_el, true)
+                unused_action_id, unused_action_el, {is_ui_action: true})
         // true => it came from a user action.  The only places
         // this is invoked are user actions.
         .then(()=> { saveTree(); });
@@ -699,7 +702,8 @@ function actionCloseWindowAndSave(win_node_id, win_node, unused_action_id, unuse
         } //foreach tab
     } //if confirm del of audible
 
-    if(!is_audible) {   // No confirmation required - just do it
+    if(options.no_confirmation_required || !is_audible) {
+        // No confirmation required - just do it
         doClose();
 
     } else {            // Confirmation required
@@ -805,7 +809,10 @@ function actionDeleteWindow(win_node_id, win_node, unused_action_id, unused_acti
         (win_val.keep === K.WIN_NOKEEP &&
             !S.getBool(S.CONFIRM_DEL_OF_UNSAVED))
 
-    if(S.isCONFIRM_DEL_OF_AUDIBLE_TABS()) {
+    // Check if it's audible, and if that requires confirmation.
+    // The is_internal parameter overrides CONFIRM_DEL_OF_AUDIBLE_TABS
+    // since is_internal indicates, e.g., a response to winOnRemoved.
+    if(!is_internal && S.isCONFIRM_DEL_OF_AUDIBLE_TABS()) {
         for(let child_nodeid of win_node.children) {
             let child_val = D.tabs.by_node_id(child_nodeid);
             if(child_val && child_val.isAudible) {
@@ -2164,12 +2171,14 @@ function winOnRemoved(cwin_id)
     ) {
         node_val.isOpen = false;   // because it's already gone
         if(node_val.win && !node_val.isClosing) {
-            actionCloseWindowButDoNotSaveTree_internal(node_id, node, null, null);
+            actionCloseWindowButDoNotSaveTree_internal(node_id, node,
+                    null, null, {no_confirmation_required: true});
             // Since it was saved, leave it saved.  You can only get rid
             // of saved sessions by X-ing them expressly (actionDeleteWindow).
             // if(node_val.win) because a window closed via actionCloseWindowButDoNotSaveTree_internal
             // or actionDeleteWindow will have a falsy node_val.win, so we
             // don't need to call those functions again.
+            // true => it's internal, so don't prompt for confirmation.
         }
         saveTree();     // TODO figure out if we need this.
     } else {
