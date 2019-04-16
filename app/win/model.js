@@ -1062,13 +1062,16 @@ me.eraseWin = function(win_vorny) {
 // If the Chrome widgets need to be manipulated, they return the
 // necessary information.
 
+//TODO react_onWinCreated
+//TODO react_onWinRemoved
+
 /// Add a newly-created tab to the tree and to the right place based on its
 /// Chrome index.
 /// @param  win_vorny   The window
 /// @param  tab_vorny   The newly-created tab (from vnRezTab)
 /// @param  ctab        The Chrome tab
 /// @return True on success; false on failure
-me.adjustOnTabCreated = function(win_vorny, tab_vorny, ctab) {
+me.react_onTabCreated = function(win_vorny, tab_vorny, ctab) {
     let tab = me.vn_by_vorny(tab_vorny, K.IT_TAB);
     if(!tab) return false;
 
@@ -1126,7 +1129,14 @@ me.adjustOnTabCreated = function(win_vorny, tab_vorny, ctab) {
 
     // Update the indices
     me.updateTabIndexValues(win_node);
-}; //adjustOnTabCreated()
+
+    return true;
+}; //react_onTabCreated()
+
+// TODO react_onTabMoved()
+// TODO react_onTabRemoved()
+// TODO react_onTabDetached()
+// TODO react_onTabAttached()
 
 // }}}1
 

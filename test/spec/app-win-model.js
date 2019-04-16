@@ -278,6 +278,8 @@ describe('app/win/model', function() {
     // Index mapping /////////////////////////////////////////////////// {{{1
     describe('index mapping', ()=>{
 
+        // Jasmine setup {{{2
+
         beforeAll(()=>{     // Register a custom matcher to test truth value
             jasmine.addMatchers({
                 toBeEqv: function(util, customEqualityTesters) {
@@ -300,6 +302,7 @@ describe('app/win/model', function() {
             }); //addMatchers call
         }); //beforeAll call
 
+        // }}}2
         // Helper functions {{{2
         let next_win_id = 100;
         let next_tab_id = 2000;
@@ -350,6 +353,36 @@ describe('app/win/model', function() {
             return win_vn;
         } //makeFakeWindow()
 
+        /// Make a fake tab
+        /// @param win_vn   The window
+        /// @return tab_vn
+        function makeFakeTab(win_vn) {
+            let vn = M.vnRezTab(win_vn);
+            expect(vn).not.toBeUndefined();
+            expect(vn.val).toBeTruthy();
+            expect(vn.node_id).toBeTruthy();
+            return vn;
+        } //makeFakeTab()
+
+        /// Make a fake ctab
+        /// @param win_vn   The window
+        /// @param cindex {Numeric}     The index in the cwin
+        /// @param raw_title {String}   The new raw_title
+        /// @return ctab {Object}
+        function make_fake_ctab(win_vn, cindex, raw_title)
+        {
+            return {
+                id: next_tab_id++,
+                windowId: win_vn.val.win_id,
+                index: cindex,
+                url: 'about:blank',
+                title: raw_title,
+                favIconUrl: 'about:blank',
+                // pinned can be omitted
+                // audible can be omitted
+            }
+        } //make_fake_ctab()
+
         /// Add a fake tab to a window.
         /// NOTE: assumes tab isOpen values are correct.
         /// @param win_vn   The window
@@ -376,18 +409,8 @@ describe('app/win/model', function() {
                 } //foreach tab
             } //endif we need to compute cindex
 
-            M.adjustOnTabCreated(win_vn, tab_vn,
-                {   // Fake ctab
-                    id: next_tab_id++,
-                    windowId: win_vn.val.id,
-                    index: cindex,
-                    url: 'about:blank',
-                    title: raw_title,
-                    favIconUrl: 'about:blank',
-                    // pinned can be omitted
-                    // audible can be omitted
-                }
-            );
+            M.react_onTabCreated(win_vn, tab_vn,
+                make_fake_ctab(win_vn, cindex, raw_title));
         } //chromeAddsFakeTab
 
         /// Close a fake window as if in response to a Chrome event.
@@ -446,7 +469,6 @@ describe('app/win/model', function() {
         } //expectWindowState
 
         // }}}2
-
         // Basic tests {{{2
         it('assigns sequential indices when one tab is present and open', ()=>{
             let win_vn = makeFakeWindow('A');
@@ -475,12 +497,41 @@ describe('app/win/model', function() {
         // }}}2
 
         // Chrome adds tabs {{{2
-        it('updates the index when Chrome adds a tab at the end (all open initially)', ()=>{
-            let win_vn = makeFakeWindow('ABC');
-            chromeAddsFakeTab(win_vn, 'd');
-            expectWindowState(win_vn, 'ABCD');
-            expect(M.eraseWin(win_vn)).toBeTruthy();
-        });
+
+        // Each testcase is [description, fake-window tabs, ctab index,
+        //                      new-tab raw_title, expected window state]
+        const testcases = [
+            ['updates the index when Chrome adds a tab to an empty window',
+                '', 0, 'd', 'D'],
+            ['updates the index when Chrome adds a tab before the only tab',
+                'A', 0,'d', 'DA'],
+            ['updates the index when Chrome adds a tab after the only tab',
+                'A', 1,'d', 'AD'],
+            ['updates the index when Chrome adds a tab at the beginning (all open initially)',
+                'ABC', 0, 'd', 'DABC'],
+            ['updates the index when Chrome adds a tab after the first beginning (all open initially)',
+                'ABC', 1, 'd', 'ADBC'],
+            ['updates the index when Chrome adds a tab after the second (all open initially)',
+                'ABC', 2, 'd', 'ABDC'],
+            ['updates the index when Chrome adds a tab at the end (all open initially)',
+                'ABC', 3, 'd', 'ABCD'],
+        ];
+
+        for(const thetest of testcases) {
+            it(thetest[0], ()=>{
+                // Mock
+                let win_vn = makeFakeWindow(thetest[1]);
+                let ctab = make_fake_ctab(win_vn, thetest[2], thetest[3]);
+                let tab_vn = makeFakeTab(win_vn);
+
+                // Do the work
+                expect(M.react_onTabCreated(win_vn, tab_vn, ctab)).toBeTruthy();
+
+                // Check it
+                expectWindowState(win_vn, thetest[4]);
+                expect(M.eraseWin(win_vn)).toBeTruthy();
+            });
+        }
 
         // }}}2
     }); //index mapping
