@@ -515,6 +515,8 @@ describe('app/win/model', function() {
                 'ABC', 2, 'd', 'ABDC'],
             ['updates the index when Chrome adds a tab at the end (all open initially)',
                 'ABC', 3, 'd', 'ABCD'],
+            ['updates the index when Chrome adds a tab before a trailing closed tab',
+                'Ab', 1, 'd', 'ADb'],
         ];
 
         for(const thetest of testcases) {

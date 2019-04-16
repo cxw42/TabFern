@@ -235,8 +235,9 @@ function setUpMiddleButton(treeobj)
                 loginfo({[`MMB ${evtname} error`]:e});
             }
 
-            evt.preventDefault();
-            return false;   // Also prevent default
+            return false;
+                // Prevent default and stop bubbling so something else doesn't
+                // trigger the default action.
         };
     }
 
