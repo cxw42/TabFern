@@ -45,9 +45,13 @@ describe('app/win/model', function() {
         M = require('win/model');
 
         this.$div = $('<div />').appendTo('body');
-        T.create(this.$div, true);
-            // true = check-callback => allow all.
+        T.create(this.$div, {
+            check_callback: true,   // allow all
+            report_error: function(err) {   // NOT ()=>{} - this=jstree instance
+                expect(err).toBeUndefined();    // Cause a test failure
+            },
             // No dnd or context menu.
+        });
 
         // Create vars we will use below
         this.win_node_id = null;
@@ -496,46 +500,83 @@ describe('app/win/model', function() {
 
         // }}}2
 
-        // Chrome adds tabs {{{2
+        //TODO react_onWinCreated
+        //TODO react_onWinRemoved
 
-        // Each testcase is [description, fake-window tabs, ctab index,
-        //                      new-tab raw_title, expected window state]
-        const testcases = [
-            ['updates the index when Chrome adds a tab to an empty window',
-                '', 0, 'd', 'D'],
-            ['updates the index when Chrome adds a tab before the only tab',
-                'A', 0,'d', 'DA'],
-            ['updates the index when Chrome adds a tab after the only tab',
-                'A', 1,'d', 'AD'],
-            ['updates the index when Chrome adds a tab at the beginning (all open initially)',
-                'ABC', 0, 'd', 'DABC'],
-            ['updates the index when Chrome adds a tab after the first beginning (all open initially)',
-                'ABC', 1, 'd', 'ADBC'],
-            ['updates the index when Chrome adds a tab after the second (all open initially)',
-                'ABC', 2, 'd', 'ABDC'],
-            ['updates the index when Chrome adds a tab at the end (all open initially)',
-                'ABC', 3, 'd', 'ABCD'],
-            ['updates the index when Chrome adds a tab before a trailing closed tab',
-                'Ab', 1, 'd', 'ADb'],
-        ];
+        describe('onTabCreated',()=>{   // Chrome adds tabs {{{2
 
-        for(const thetest of testcases) {
-            it(thetest[0], ()=>{
-                // Mock
-                let win_vn = makeFakeWindow(thetest[1]);
-                let ctab = make_fake_ctab(win_vn, thetest[2], thetest[3]);
-                let tab_vn = makeFakeTab(win_vn);
+            // Each testcase is [description, fake-window tabs, ctab index,
+            //                      new-tab raw_title, expected window state]
+            const testcases = [
+                ['updates the index when Chrome adds a tab to an empty window',
+                    '', 0, 'd', 'D'],
+                ['updates the index when Chrome adds a tab before the only tab',
+                    'A', 0,'d', 'DA'],
+                ['updates the index when Chrome adds a tab after the only tab',
+                    'A', 1,'d', 'AD'],
+                ['updates the index when Chrome adds a tab at the beginning (all open initially)',
+                    'ABC', 0, 'd', 'DABC'],
+                ['updates the index when Chrome adds a tab after the first beginning (all open initially)',
+                    'ABC', 1, 'd', 'ADBC'],
+                ['updates the index when Chrome adds a tab after the second (all open initially)',
+                    'ABC', 2, 'd', 'ABDC'],
+                ['updates the index when Chrome adds a tab at the end (all open initially)',
+                    'ABC', 3, 'd', 'ABCD'],
+                ['updates the index when Chrome adds a tab before a trailing closed tab',
+                    'Ab', 1, 'd', 'ADb'],
+            ];
 
-                // Do the work
-                expect(M.react_onTabCreated(win_vn, tab_vn, ctab)).toBeTruthy();
+            for(const thetest of testcases) {
+                it(thetest[0], ()=>{
+                    // Mock
+                    let win_vn = makeFakeWindow(thetest[1]);
+                    let ctab = make_fake_ctab(win_vn, thetest[2], thetest[3]);
+                    let tab_vn = makeFakeTab(win_vn);
 
-                // Check it
-                expectWindowState(win_vn, thetest[4]);
-                expect(M.eraseWin(win_vn)).toBeTruthy();
-            });
-        }
+                    // Do the work
+                    expect(M.react_onTabCreated(win_vn, tab_vn, ctab)).toBeTruthy();
 
-        // }}}2
+                    // Check it
+                    expectWindowState(win_vn, thetest[4]);
+                    expect(M.eraseWin(win_vn)).toBeTruthy();
+                });
+            } //foreach testcase
+        }); // }}}2
+
+        describe('onTabMoved',()=>{   // Chrome moves tabs {{{2
+            // Each testcase is [description, fake-window tabs, ctab from,
+            //                      ctab to, expected window state]
+            const testcases = [
+                ['AB: A ->1', 'AB', 0, 1, 'BA'],  // "->1" = A moves L to R by 1
+                ['AB: B <-1', 'AB', 1, 0, 'BA'],
+            ];
+
+            for(const thetest of testcases) {
+                it(thetest[0], ()=>{
+                    // Mock
+                    let win_vn = makeFakeWindow(thetest[1]);
+                    let tab_vn = M.vn_by_vorny( // get the child makeFakeWindow created
+                        T.treeobj.get_node(win_vn.node_id).children[0]
+                    );
+                    expect(tab_vn).not.toBeUndefined();
+
+                    // Do the work
+                    expect(
+                        M.react_onTabMoved(win_vn, tab_vn,
+                                            thetest[2], thetest[3])
+                    ).toBeTruthy();
+
+                    // Check it
+                    expectWindowState(win_vn, thetest[4]);
+                    expect(M.eraseWin(win_vn)).toBeTruthy();
+                });
+            } //foreach testcase
+        }); // }}}2
+
+        // TODO react_onTabRemoved()
+        // TODO react_onTabDetached()
+        // TODO react_onTabAttached()
+
     }); //index mapping
 
     // }}}1

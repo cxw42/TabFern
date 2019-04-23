@@ -4,7 +4,7 @@
 "use strict";
 
 const $ = require('jquery');
-const log_orig = require('loglevel');
+const log = require('loglevel');
 const K = require('./const');
 const S = require('common/setting-definitions');    // in app/
 
@@ -15,7 +15,7 @@ require('lib/jstree-because');
 require('lib/jstree-multitype');
 require('lib/jstree-redraw-event');
 
-function loginfo(...args) { log_orig.info('TabFern win/item_tree.js: ', ...args); };
+function loginfo(...args) { log.info('TabFern win/item_tree.js: ', ...args); };
 // }}}1
 
 /// The module we are creating
@@ -310,13 +310,21 @@ const RECOVERED_CLASS = 'tfs-recovered';
 const TOP_BORDER_CLASS = 'tfs-top-bordered';
 
 /// Create the tree.
-/// @param selector {JQuery selector} where to make the tree
-/// @param check_callback {function}
-/// @param is_draggable {function}
-/// @param contextmenu_items {function} If truthy, show a context menu
-me.create = function(selector, check_callback, is_draggable,
-                            contextmenu_items)
+/// @param selector {JQuery selector}   Where to make the tree
+/// @param options {Object}             Options, if any
+///
+/// Current options are:
+///     check_callback {function|bool}  The check callback, or true to allow all
+///     is_draggable {function}         Whether an item is draggable
+///     contextmenu_items {function}    Provide the context menu items
+///     report_error {function}         Called on error.
+me.create = function(selector, options)
 {
+    const check_callback = options.check_callback;
+    const is_draggable = options.is_draggable;
+    const contextmenu_items = options.contextmenu_items;
+    const report_error = options.report_error;
+
     // Node types - use constants as the keys
     let jstreeTypes = {};
 
@@ -385,6 +393,7 @@ me.create = function(selector, check_callback, is_draggable,
 
     if(check_callback) jstreeConfig.core.check_callback = check_callback;
     if(is_draggable) jstreeConfig.dnd.is_draggable = is_draggable;
+    if(report_error) jstreeConfig.core.error = report_error;
 
     if(contextmenu_items) {
         jstreeConfig.plugins.push('contextmenu');

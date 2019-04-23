@@ -4265,8 +4265,11 @@ function createMainTreeIfWinIdReceived_catch(done, win_id_msg_or_error)
         T.rjustify_action_group_at(wid);
     });
 
-    T.create('#maintree', treeCheckCallback, dndIsDraggable,
-            contextmenu_items);
+    T.create('#maintree', {
+                check_callback: treeCheckCallback,
+                is_draggable: dndIsDraggable,
+                contextmenu_items: contextmenu_items,
+    });
 
     next_init_step('context-menu support');
     Bypasser = Modules.bypasser.create(window, T.treeobj);

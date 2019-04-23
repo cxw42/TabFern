@@ -1108,14 +1108,15 @@ me.react_onTabCreated = function(win_vorny, tab_vorny, ctab) {
     log.info({"Mapping in":orig_idx,"From":ctab.index});
 
     // Pick the ctab.index from that list
-    if(ctab.index >= orig_idx.length) {           // New tab off the end
-        treeidx = 1 + orig_idx[orig_idx.length-1];
+    if(ctab.index >= orig_idx.length) {         // New tab off the end
+        treeidx = (orig_idx.length === 0 ? 0 :
+            (1 + orig_idx[orig_idx.length-1]));
 
-    } else if(ctab.index>0) {                     // Tab that exists, not the 1st
+    } else if(ctab.index > 0) {                 // Tab that exists, not the 1st
         // Group it to the left rather than the right if there's a gap
         treeidx = orig_idx[ctab.index-1]+1;  // i.e., after the previous tab's node
 
-    } else {                                // New first tab
+    } else {                                    // New first tab
         treeidx = orig_idx[ctab.index];
     }
 
@@ -1124,8 +1125,13 @@ me.react_onTabCreated = function(win_vorny, tab_vorny, ctab) {
     let tab_node = T.treeobj.get_node(tab.node_id);
     if(!tab_node) return false;
 
-    // Put it where it goes
-    T.treeobj.because('chrome','move_node', tab.node_id, win.node_id, treeidx);
+    // Special-case the first tab in a window, since jstree is giving me
+    // "trying to move parent inside child" errors in that case.
+    // See vakata/jstree#2237.
+    if(orig_idx.length != 0 || treeidx != 0) {
+        // Put it where it goes
+        T.treeobj.because('chrome','move_node', tab.node_id, win.node_id, treeidx);
+    }
 
     // Update the indices
     me.updateTabIndexValues(win_node);
@@ -1133,7 +1139,47 @@ me.react_onTabCreated = function(win_vorny, tab_vorny, ctab) {
     return true;
 }; //react_onTabCreated()
 
-// TODO react_onTabMoved()
+/// Move a tab in the tree based on its new Chrome index.
+/// @param  win_vorny   The window the tab is moving in
+/// @param  tab_vorny   The tab that is moving
+/// @param  cidx_from   The Chrome old tabindex
+/// @param  cidx_to     The Chrome new tabindex
+/// @return True on success; false on failure
+me.react_onTabMoved = function(win_vorny, tab_vorny, cidx_from, cidx_to) {
+    let tab = me.vn_by_vorny(tab_vorny, K.IT_TAB);
+    if(!tab) return false;
+
+    let win = me.vn_by_vorny(win_vorny, K.IT_WIN);
+    if(!win) return false;
+
+    // XXX OLD
+    const from_idx = me.treeIdxByChromeIdx(win.node_id, cidx_from);
+    const to_idx = me.treeIdxByChromeIdx(win.node_id, cidx_to);
+    if(from_idx === false || to_idx === false) {
+        return false;
+    }
+
+    // As far as I can tell, in jstree, indices point between list
+    // elements.  E.g., with n items, index 0 is before the first and
+    // index n is after the last.  However, Chrome tab indices point to
+    // the tabs themselves, 0..(n-1).  Therefore, if we are moving
+    // right, bump the index by 1 so we will be _after_ that item
+    // rather than _before_ it.
+    // See the handling of `pos` values of "before" and "after"
+    // in the definition of move_node() in jstree.js.
+    const jstree_new_index =
+            to_idx+(to_idx>from_idx ? 1 : 0);
+
+    T.treeobj.because('chrome','move_node', tab.node_id, win.node_id, jstree_new_index);
+
+    // Update the indices of all the tabs in this window.  This will update
+    // the old tab and the new tab.
+    me.updateTabIndexValues(win.node_id);
+
+    return true;
+
+}; //react_onTabMoved()
+
 // TODO react_onTabRemoved()
 // TODO react_onTabDetached()
 // TODO react_onTabAttached()
