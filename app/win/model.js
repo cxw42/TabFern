@@ -1062,6 +1062,20 @@ me.eraseWin = function(win_vorny) {
 // If the Chrome widgets need to be manipulated, they return the
 // necessary information.
 
+/// Move a tree node.
+/// Special-case, since jstree is giving me
+/// "trying to move parent inside child" errors.
+/// See vakata/jstree#2237.
+let move_tree_node_ = function (tab_node_id, win_node, treeidx) {
+    if($.inArray(tab_node_id, win_node.children) !== treeidx) {
+        // Put it where it goes
+        T.treeobj.because('chrome','move_node', tab_node_id, win_node.id, treeidx);
+    } else {
+        log.warn(`Skipped move of tab ${tab_node_id} in win ${win_node.id} ` +
+                    `to ${treeidx} - vakata/jstree#2237`);
+    }
+}; //move_tree_node_()
+
 //TODO react_onWinCreated
 //TODO react_onWinRemoved
 
@@ -1122,16 +1136,9 @@ me.react_onTabCreated = function(win_vorny, tab_vorny, ctab) {
 
     // Add the tab to the tree
     me.markTabAsOpen(tab.val, ctab);
-    let tab_node = T.treeobj.get_node(tab.node_id);
-    if(!tab_node) return false;
 
-    // Special-case the first tab in a window, since jstree is giving me
-    // "trying to move parent inside child" errors in that case.
-    // See vakata/jstree#2237.
-    if(orig_idx.length != 0 || treeidx != 0) {
-        // Put it where it goes
-        T.treeobj.because('chrome','move_node', tab.node_id, win.node_id, treeidx);
-    }
+    // Put it where it goes
+    move_tree_node_(tab.node_id, win_node, treeidx);
 
     // Update the indices
     me.updateTabIndexValues(win_node);
@@ -1151,6 +1158,8 @@ me.react_onTabMoved = function(win_vorny, tab_vorny, cidx_from, cidx_to) {
 
     let win = me.vn_by_vorny(win_vorny, K.IT_WIN);
     if(!win) return false;
+    let win_node = T.treeobj.get_node(win.node_id);
+    if(!win_node) return false;
 
     // XXX OLD
     const from_idx = me.treeIdxByChromeIdx(win.node_id, cidx_from);
@@ -1170,7 +1179,7 @@ me.react_onTabMoved = function(win_vorny, tab_vorny, cidx_from, cidx_to) {
     const jstree_new_index =
             to_idx+(to_idx>from_idx ? 1 : 0);
 
-    T.treeobj.because('chrome','move_node', tab.node_id, win.node_id, jstree_new_index);
+    move_tree_node_(tab.node_id, win_node, jstree_new_index);
 
     // Update the indices of all the tabs in this window.  This will update
     // the old tab and the new tab.
