@@ -544,30 +544,39 @@ describe('app/win/model', function() {
         }); // }}}2
 
         describe('onTabMoved',()=>{   // Chrome moves tabs {{{2
-            // Each testcase is [description, fake-window tabs, ctab from,
+            // Each testcase is [description, fake-window tabs,
+            //                      which tab moves, ctab from,
             //                      ctab to, expected window state]
             const testcases = [
-                ['AB: A ->1', 'AB', 0, 1, 'BA'],  // "->1" = A moves L to R by 1
-                ['AB: B <-1', 'AB', 1, 0, 'BA'],
+                ['AB: A ->1', 'AB', 'a', 0, 1, 'BA'],  // "->1" = A moves L to R by 1
+                ['AB: B <-1', 'AB', 'b', 1, 0, 'BA'],
             ];
 
             for(const thetest of testcases) {
                 it(thetest[0], ()=>{
                     // Mock
                     let win_vn = makeFakeWindow(thetest[1]);
-                    let tab_vn = M.vn_by_vorny( // get the child makeFakeWindow created
-                        T.treeobj.get_node(win_vn.node_id).children[0]
-                    );
-                    expect(tab_vn).not.toBeUndefined();
+
+                    // Get the tab we are going to move
+                    let tab_node_ids = T.treeobj.get_node(win_vn.node_id).children;
+                    let tab_vn;
+                    for(const tab_node_id of tab_node_ids) {
+                        let tab_node = T.treeobj.get_node(tab_node_id);
+                        if(thetest[2].toLowerCase() === tab_node.text.toLowerCase()) {
+                            tab_vn = M.vn_by_vorny(tab_node_id);
+                            break;
+                        }
+                    }
+                    expect(tab_vn).toBeTruthy();
 
                     // Do the work
                     expect(
                         M.react_onTabMoved(win_vn, tab_vn,
-                                            thetest[2], thetest[3])
+                                            thetest[3], thetest[4])
                     ).toBeTruthy();
 
                     // Check it
-                    expectWindowState(win_vn, thetest[4]);
+                    expectWindowState(win_vn, thetest[5]);
                     expect(M.eraseWin(win_vn)).toBeTruthy();
                 });
             } //foreach testcase
