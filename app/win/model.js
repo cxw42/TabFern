@@ -1062,20 +1062,6 @@ me.eraseWin = function(win_vorny) {
 // If the Chrome widgets need to be manipulated, they return the
 // necessary information.
 
-/// Move a tree node.
-/// Special-case, since jstree is giving me
-/// "trying to move parent inside child" errors.
-/// See vakata/jstree#2237.
-let move_tree_node_ = function (tab_node_id, win_node, treeidx) {
-    if($.inArray(tab_node_id, win_node.children) !== treeidx) {
-        // Put it where it goes
-        T.treeobj.because('chrome','move_node', tab_node_id, win_node.id, treeidx);
-    } else {
-        log.warn(`Skipped move of tab ${tab_node_id} in win ${win_node.id} ` +
-                    `to ${treeidx} - vakata/jstree#2237`);
-    }
-}; //move_tree_node_()
-
 //TODO react_onWinCreated
 //TODO react_onWinRemoved
 
@@ -1138,7 +1124,7 @@ me.react_onTabCreated = function(win_vorny, tab_vorny, ctab) {
     me.markTabAsOpen(tab.val, ctab);
 
     // Put it where it goes
-    move_tree_node_(tab.node_id, win_node, treeidx);
+    T.treeobj.because('chrome','move_node', tab.node_id, win_node, treeidx);
 
     // Update the indices
     me.updateTabIndexValues(win_node);
@@ -1161,7 +1147,7 @@ me.react_onTabMoved = function(win_vorny, tab_vorny, cidx_from, cidx_to) {
     let win_node = T.treeobj.get_node(win.node_id);
     if(!win_node) return false;
 
-    // XXX OLD
+    // XXX OLD - this does not exhibit the behaviour I want it to.
     const from_idx = me.treeIdxByChromeIdx(win.node_id, cidx_from);
     const to_idx = me.treeIdxByChromeIdx(win.node_id, cidx_to);
     if(from_idx === false || to_idx === false) {
@@ -1176,10 +1162,10 @@ me.react_onTabMoved = function(win_vorny, tab_vorny, cidx_from, cidx_to) {
     // rather than _before_ it.
     // See the handling of `pos` values of "before" and "after"
     // in the definition of move_node() in jstree.js.
-    const jstree_new_index =
+    const treeidx =
             to_idx+(to_idx>from_idx ? 1 : 0);
 
-    move_tree_node_(tab.node_id, win_node, jstree_new_index);
+    T.treeobj.because('chrome','move_node', tab.node_id, win_node, treeidx);
 
     // Update the indices of all the tabs in this window.  This will update
     // the old tab and the new tab.

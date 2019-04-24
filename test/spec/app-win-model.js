@@ -48,6 +48,9 @@ describe('app/win/model', function() {
         T.create(this.$div, {
             check_callback: true,   // allow all
             report_error: function(err) {   // NOT ()=>{} - this=jstree instance
+                if(err && err.id && err.id === 'tabfern_nop') {
+                    return;     // Nothing to do
+                }
                 expect(err).toBeUndefined();    // Cause a test failure
             },
             // No dnd or context menu.
@@ -544,25 +547,37 @@ describe('app/win/model', function() {
         }); // }}}2
 
         describe('onTabMoved',()=>{   // Chrome moves tabs {{{2
-            // Each testcase is [description, fake-window tabs,
+            // Each testcase is [fake-window tabs,
             //                      which tab moves, ctab from,
-            //                      ctab to, expected window state]
+            //                      ctab to, expected window state,
+            //                      comments (if any)]
             const testcases = [
-                ['AB: A ->1', 'AB', 'a', 0, 1, 'BA'],  // "->1" = A moves L to R by 1
-                ['AB: B <-1', 'AB', 'b', 1, 0, 'BA'],
+                ['AB', 'a', 0, 1, 'BA'],  // "->1" = A moves L to R by 1
+                ['AB', 'b', 1, 0, 'BA'],
+                ['ABC', 'b', 1, 0, 'BAC'],
+                ['ABC', 'b', 1, 2, 'ACB'],
+                ['AbCD', 'd', 3, 2, 'AbDC']
             ];
 
             for(const thetest of testcases) {
-                it(thetest[0], ()=>{
+
+                // Convenient names for the pieces of the test
+                const [faketabs, moving_tab, f, t, expected] = thetest;
+                const comments = thetest[5] || '';
+                const testname = `${faketabs}: ${moving_tab.toUpperCase()}` +
+                    (f<t ? '->' : '<-') + Math.abs(f-t) +
+                    (comments ? `: ${comments}` : '');
+
+                it(testname, ()=>{
                     // Mock
-                    let win_vn = makeFakeWindow(thetest[1]);
+                    let win_vn = makeFakeWindow(faketabs);
 
                     // Get the tab we are going to move
                     let tab_node_ids = T.treeobj.get_node(win_vn.node_id).children;
                     let tab_vn;
                     for(const tab_node_id of tab_node_ids) {
                         let tab_node = T.treeobj.get_node(tab_node_id);
-                        if(thetest[2].toLowerCase() === tab_node.text.toLowerCase()) {
+                        if(moving_tab.toLowerCase() === tab_node.text.toLowerCase()) {
                             tab_vn = M.vn_by_vorny(tab_node_id);
                             break;
                         }
@@ -571,12 +586,11 @@ describe('app/win/model', function() {
 
                     // Do the work
                     expect(
-                        M.react_onTabMoved(win_vn, tab_vn,
-                                            thetest[3], thetest[4])
+                        M.react_onTabMoved(win_vn, tab_vn, f, t)
                     ).toBeTruthy();
 
                     // Check it
-                    expectWindowState(win_vn, thetest[5]);
+                    expectWindowState(win_vn, expected);
                     expect(M.eraseWin(win_vn)).toBeTruthy();
                 });
             } //foreach testcase
