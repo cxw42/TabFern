@@ -447,8 +447,22 @@ describe('app/win/model', function() {
             let win_node = T.treeobj.get_node(win_vn.node_id);
             expect(win_node).not.toBeUndefined();
 
-            let ctab_index = 0;     // Chrome tab index
+            let actualState = '';
 
+            // Build up the actual state.  Assumes single-letter raw_titles.
+            for(const tab_node_id of win_node.children) {
+                const tab_val = D.tabs.by_node_id(tab_node_id);
+                actualState +=
+                    tab_val.isOpen ? tab_val.raw_title.toUpperCase() :
+                    tab_val.raw_title.toLowerCase();
+            } //foreach tab
+
+            // Check it
+            expect(actualState).toBe(expectedTabState);
+
+            /*  // This is a more explicit way of testing the same thing.
+                // Use this block for raw_title values outside the range [a-z].
+            let ctab_index = 0;     // Chrome tab index
             expect(win_node.children.length).toEqual(expectedTabState.length);
             for(let idx=0; idx<expectedTabState.length; ++idx) {
                 let expectedState = expectedTabState[idx];
@@ -472,7 +486,7 @@ describe('app/win/model', function() {
                 }
 
             } //foreach tab
-
+            */
         } //expectWindowState
 
         // }}}2
@@ -556,7 +570,7 @@ describe('app/win/model', function() {
                 ['AB', 'b', 1, 0, 'BA'],
                 ['ABC', 'b', 1, 0, 'BAC'],
                 ['ABC', 'b', 1, 2, 'ACB'],
-                ['AbCD', 'd', 3, 2, 'AbDC']
+                ['AbCD', 'd', 2, 1, 'AbDC']
             ];
 
             for(const thetest of testcases) {

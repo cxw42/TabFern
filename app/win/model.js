@@ -1065,6 +1065,8 @@ me.eraseWin = function(win_vorny) {
 //TODO react_onWinCreated
 //TODO react_onWinRemoved
 
+// onTabCreated {{{2
+
 /// Add a newly-created tab to the tree and to the right place based on its
 /// Chrome index.
 /// @param  win_vorny   The window
@@ -1130,7 +1132,9 @@ me.react_onTabCreated = function(win_vorny, tab_vorny, ctab) {
     me.updateTabIndexValues(win_node);
 
     return true;
-}; //react_onTabCreated()
+}; //react_onTabCreated() }}}2
+
+// onTabMoved {{{2
 
 /// Move a tab in the tree based on its new Chrome index.
 /// @param  win_vorny   The window the tab is moving in
@@ -1147,23 +1151,45 @@ me.react_onTabMoved = function(win_vorny, tab_vorny, cidx_from, cidx_to) {
     let win_node = T.treeobj.get_node(win.node_id);
     if(!win_node) return false;
 
-    // XXX OLD - this does not exhibit the behaviour I want it to.
-    const from_idx = me.treeIdxByChromeIdx(win.node_id, cidx_from);
-    const to_idx = me.treeIdxByChromeIdx(win.node_id, cidx_to);
-    if(from_idx === false || to_idx === false) {
-        return false;
+    // How far has the _user_ moved the tab?  The vast majority of the time,
+    // Chrome gives us deltas of +1 or -1.  I did a quick-and-dirty test
+    // with a lot of fast motion, attach, and detach (i.e., drag a tab and
+    // wiggle the mouse like crazy) and got this histogram: {1: 22, -1: 29}.
+    // Therefore, special-case those.
+    const desired_delta = cidx_to - cidx_from;
+
+    /// Where the node is going to go
+    let treeidx;
+
+    // TODO RESUME HERE
+    if(desired_delta === -1) {          // Move one left
+        treeidx = win_node.children.indexOf(tab.node_id) - 1;
+
+    } else if(desired_delta === 1) {    // Move one right
+        treeidx = win_node.children.indexOf(tab.node_id) + 1;
+
+    } else {                            // Move other than +/- 1
+        // XXX OLD
+        const from_idx = me.treeIdxByChromeIdx(win.node_id, cidx_from);
+        const to_idx = me.treeIdxByChromeIdx(win.node_id, cidx_to);
+        if(from_idx === false || to_idx === false) {
+            return false;
+        }
+
+        // As far as I can tell, in jstree, indices point between list
+        // elements.  E.g., with n items, index 0 is before the first and
+        // index n is after the last.  However, Chrome tab indices point to
+        // the tabs themselves, 0..(n-1).  Therefore, if we are moving
+        // right, bump the index by 1 so we will be _after_ that item
+        // rather than _before_ it.
+        // See the handling of `pos` values of "before" and "after"
+        // in the definition of move_node() in jstree.js.
+        treeidx = to_idx+(to_idx>from_idx ? 1 : 0);
     }
 
-    // As far as I can tell, in jstree, indices point between list
-    // elements.  E.g., with n items, index 0 is before the first and
-    // index n is after the last.  However, Chrome tab indices point to
-    // the tabs themselves, 0..(n-1).  Therefore, if we are moving
-    // right, bump the index by 1 so we will be _after_ that item
-    // rather than _before_ it.
-    // See the handling of `pos` values of "before" and "after"
-    // in the definition of move_node() in jstree.js.
-    const treeidx =
-            to_idx+(to_idx>from_idx ? 1 : 0);
+    if(treeidx == null) {       // Sanity check
+        return false;
+    }
 
     T.treeobj.because('chrome','move_node', tab.node_id, win_node, treeidx);
 
@@ -1173,7 +1199,7 @@ me.react_onTabMoved = function(win_vorny, tab_vorny, cidx_from, cidx_to) {
 
     return true;
 
-}; //react_onTabMoved()
+}; //react_onTabMoved() }}}2
 
 // TODO react_onTabRemoved()
 // TODO react_onTabDetached()

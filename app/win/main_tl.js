@@ -2721,10 +2721,16 @@ function tabOnUpdated(tabid, changeinfo, ctab)
     });
 } //tabOnUpdated
 
+var tab_move_deltas = {};
+
 /// Handle movements of open tabs or groups of tabs within a window.
 function tabOnMoved(tabid, moveinfo)
 {
     log.info({'Tab moved': tabid, 'toIndex': moveinfo.toIndex, moveinfo});
+
+    // Count statistics
+    tab_move_deltas[moveinfo.toIndex-moveinfo.fromIndex] =
+        (tab_move_deltas[moveinfo.toIndex-moveinfo.fromIndex] || 0) + 1;
 
     // Get the parent (window)
     let window_node_id = D.windows.by_win_id(moveinfo.windowId, 'node_id');
