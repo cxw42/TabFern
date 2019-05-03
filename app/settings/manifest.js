@@ -472,7 +472,7 @@ ${issue(171)}</p>
     ${saveImg}${editImg}${delImg}, ${editImg}${saveImg}${delImg},
     or ${editImg}${delImg}${saveImg}.
 </li>
-<li>New logo!  Thanks to [Yasujizr](https://github.com/Yasujizr)
+<li>New logo!  Thanks to <a href="https://github.com/Yasujizr">Yasujizr</a>
     for the artwork.  ${issue(137)}</li>
 <li>(Developers only) Initial Firefox support ${issue(100)}.  See
     <a href="https://github.com/cxw42/TabFern/issues/100#issuecomment-450384941">here</a> for more details.</li>
