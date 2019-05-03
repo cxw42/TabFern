@@ -1,28 +1,49 @@
 # TabFern internals
 
-NOTE: this document has not yet been fully updated for brunch usage.
+TabFern is built using [brunch](https://brunch.io/).
+
+## Getting started
+
+Clone the repo, then `npm install`.  After that you should be able to
+run `npx brunch b` for a one-time build, or `npx brunch w` to rebuild
+automatically on changes.
+
+Load the `public/` directory as an unpacked extension to test in Chrome.
+
+For Firefox, see
+[the wiki](https://github.com/cxw42/TabFern/wiki/Developing-on-Firefox).
 
 ## Project layout
 
- - `/tabfern`: The development tree for TabFern itself
-   * `/tabfern/app`: Main source
-     - `/tabfern/src/bg`: Background page
-     - `/tabfern/src/win`: Popup
-     - `/tabfern/src/settings`: Options page
-   * `/tabfern/test`: Jasmine tests of TabFern
- - `/tools`: Useful scripts
- - `/webstore`: The latest version of TabFern released to the Chrome Web Store.
-   Updated manually by the maintainers.
- - `/doc`: Documentation
- - `/scraps`: Holding pen for code that may yet be useful.  Nothing in the
-   project relies on the contents of `/scraps`.
- - `/plugin`: Skeleton of a TabFern plugin
+Inputs:
+
+ - `app/`: Main source
+   - `app/win/`: Popup (the main TabFern window)
+   - `app/bg/`: Background page
+   - `app/settings/`: The settings page
+ - `static/`: Files that are copied directly while building
+   - `static/win/`: the HTML for the TabFern window
+   - `static/settings/`: the HTML for the settings page
+   - `static/test/`: the HTML for the Jasmine tests
+   - `static/assets/`: icons, CSS, ...
+ - `test/`: Jasmine tests of TabFern.  Note that not everything has a test yet.
+ - `tools/`: Scripts used during the build process
+
+Outputs:
+
+ - `public/`: The Chrome plugin, ready to be loaded unpacked or zipped up.
+ - `public-ff/`: The Firefox plugin, ready to be loaded unpacked or zipped up.
+
+Other:
+
+ - `doc/`: Documentation (to be created)
+ - `plugin/`: Skeleton of a TabFern plugin (to be created)
 
 ## Popup
 
 The popup is the main TabFern window, and the heart of the project.  It is
-`src/view/main.html`, which loads `src/view/tree.html` in an iframe.
-`tree.html` and `tree.js` are the primary files for the popup.
+`static/win/container.html`, which loads `static/win/main.html` in an iframe.
+`app/win/main_tl.js` is the primary script file for the popup.
 
 ### Data model
 
@@ -33,5 +54,9 @@ really at all) data model.  The jstree, including DOM and objects, plus the
 Although you might think of the jstree's DOM as part of the view, I am
 considering it grouped with the model so that I don't have to track
 parent-child relationships two places.  Those only live in the jstree.
+
+The tests generally test the model and stub the Chrome widgets.  The model
+is currently spread between `app/win/model.js` and `app/win/main_tl.js`.
+I am working on moving it all into `app/win/model.js`.
 
 []( vi: set ft=markdown: )

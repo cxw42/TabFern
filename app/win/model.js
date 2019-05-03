@@ -1,4 +1,4 @@
-// view/model.js: Routines for managing items as a whole (both tree nodes
+// app/win/model.js: Routines for managing items as a whole (both tree nodes
 // and detail records).  Part of TabFern.
 // Copyright (c) 2017--2018 Chris White, Jasmine Hegman.
 
