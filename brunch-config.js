@@ -26,6 +26,11 @@ let messages_en = require('./static/_locales/en/messages.json');
  * E.g., 1.2.3-pre.4 is `version='1.2.3.4'`, and 1.2.3 (release) is
  * `version='1.2.3.1337'`.
  * If you get up to -pre.1336, just bump the `z` value and reset `w` :) .
+ *
+ * If you specify all four digits in package.json, they will be copied across
+ * verbatim into Chrome's version, but the version_name will only be `x.y.z`.
+ * This is to support patch releases that don't trigger a new-version
+ * notification (e.g., x.y.z.1338).
  */
 
 // =======================================================================
@@ -34,7 +39,7 @@ let messages_en = require('./static/_locales/en/messages.json');
 try { fs.mkdirSync('public') } catch (err) {}
 
 // Parse the version from package.json
-let ver_re = /^(\d+)\.(\d+)\.(\d+)(?:-[a-z]+)?(?:\.(\d+))?$/;
+let ver_re = /^(\d+)\.(\d+)\.(\d+)(-[a-z]+)?(?:\.(\d+))?$/;
     // Permit x.y.z and x.y.z-pre.w (normal use)
     // Also permit x.y.z.w (for specifying w>1337)
 let matches = ver_re.exec(pkg_json.version);
@@ -44,16 +49,20 @@ if(matches == null) {
 }
 
 // Make the Chrome-format version
-if(matches[4] == null) {    // Non-prerelease has w=1337 by default
-    matches[4] = 1337;
+if(matches[5] == null) {    // Non-prerelease has w=1337 by default
+    matches[5] = 1337;
 }
-let ver_tuple = matches.slice(1,5).join('.');   // x.y.z.w
+let ver_tuple = matches.slice(1,4).join('.') + `.${matches[5]}`;    // x.y.z.w
+let ver_name = (matches[4] == null) ?
+                matches.slice(1,4).join('.') :
+                pkg_json.version;
 
-// Copy app/manifest.json->public/manifest.json and fill in versions
-console.log(`TF version ${pkg_json.version} -> ${ver_tuple}`);
+console.log(`TF version ${pkg_json.version} -> ${ver_tuple} ("${ver_name}")`);
+
+// Copy app/manifest.json->public/mjanifest.json and fill in versions
 fs.createReadStream(path.join(__dirname, 'app', 'manifest.json'))
   .pipe(replaceStream('$VER$', ver_tuple))
-  .pipe(replaceStream('$VERNAME$', pkg_json.version))
+  .pipe(replaceStream('$VERNAME$', ver_name))
   .pipe(fs.createWriteStream(path.join(__dirname, 'public', 'manifest.json')));
 
 // =======================================================================
@@ -216,7 +225,7 @@ me.plugins.replacer = {     // Permit using __filename in modules
     dict: [
         { key: kFN, },
         { key: /\bTABFERN_VERSION\b/,
-            value: `'${pkg_json.version}'` },
+            value: `'${ver_name}'` },
         { key: "0;///I18N_MESSAGES///",
             value: JSON.stringify(messages_en_trimmed) },
     ],

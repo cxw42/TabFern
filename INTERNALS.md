@@ -59,4 +59,26 @@ The tests generally test the model and stub the Chrome widgets.  The model
 is currently spread between `app/win/model.js` and `app/win/main_tl.js`.
 I am working on moving it all into `app/win/model.js`.
 
+## Versioning
+
+Chrome requires a version of the form `x.y.z.w`, and permits a version name
+that can have any form.  NPM (at least for purposes of `npm run`) requires
+a [semantic version](https://semver.org) of the form `x.y.z` in `package.json`.
+I want to show just `x.y.z` to the user as the version for regular releases,
+and follow semantic versioning.  I also want to be able to push patches
+without interrupting the user with a new-version notification
+(what I am calling a "silent patch release").
+
+Given these overlapping constraints, I currently store one of the following
+version forms in `package.json`:
+
+| `package.json` version | Type | Chrome version | Chrome version name |
+| ---------------------- | ---- | -------------- | ------------------- |
+| `x.y.z-pre.w` | Prerelease (development version) | `x.y.z.w` | `x.y.z-pre.w` |
+| `x.y.z` | Normal release | `x.y.z.1337` | `x.y.z` |
+| `x.y.z.w` | Silent patch release (`w`>=1338) | `x.y.z.w` | `x.y.z` |
+
+TODO: switch to straight semver, and control the showing of new-item
+notifications in a more flexible way.
+
 []( vi: set ft=markdown: )

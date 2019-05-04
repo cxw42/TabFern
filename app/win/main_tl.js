@@ -14,8 +14,12 @@
 
 // TODO break more of this into separate modules.
 
-console.log(`=============================================================
-Loading TabFern ${TABFERN_VERSION} from ${__filename}`);
+console.log(
+`=============================================================
+Loading TabFern ${TABFERN_VERSION} from ${__filename}
+    manifest ver ${chrome.runtime.getManifest().version}
+    manifest ver_name ${chrome.runtime.getManifest().version_name}`
+);
 
 //////////////////////////////////////////////////////////////////////////
 // Modules // {{{1
