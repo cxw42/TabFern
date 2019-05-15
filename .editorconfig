@@ -10,3 +10,6 @@ insert_final_newline = true
 
 [static/_locales/**/*.json]
 end_of_line = crlf
+
+[/*.json]
+indent_size = 2

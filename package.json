@@ -45,7 +45,6 @@
     "jquery": "^3.4.1",
     "keypress.js": "^2.1.5",
     "loglevel": "^1.6.1",
-    "npm": "^6.9.0",
     "path-browserify": "^1.0.0",
     "requirejs": "^2.3.5",
     "rmodal": "^1.0.33",
@@ -66,6 +65,7 @@
     "replacestream": "^4.0.3",
     "sass-brunch": "^2.10.8",
     "seedrandom": "^2.4.3",
+    "tar": "^2.2.2",
     "uglify-es-brunch": "^1.0.5"
   }
 }
