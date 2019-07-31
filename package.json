@@ -1,6 +1,6 @@
 {
   "name": "tabfern",
-  "version": "0.2.1-pre.1",
+  "version": "0.2.1-pre.2",
   "description": "Google Chrome extension for displaying, saving, and managing tabs",
   "main": "src/view/main.js",
   "directories": {
@@ -46,6 +46,7 @@
     "keypress.js": "^2.1.5",
     "loglevel": "^1.6.1",
     "path-browserify": "^1.0.0",
+    "process": "*",
     "requirejs": "^2.3.5",
     "rmodal": "^1.0.33",
     "signals": "^1.0.0",

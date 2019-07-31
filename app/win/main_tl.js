@@ -442,7 +442,7 @@ function saveTree(save_ephemeral_windows = true, cbk = undefined)
                 return;     // Saved OK
             }
             //else there was an error
-            let msg = _T('errCouldNotSave', chrome.runtime.lastError.toString());
+            let msg = _T('errCouldNotSave', lastBrowserErrorMessageString());
             log.error(msg);
             window.alert(msg);     // The user needs to know
             if(typeof cbk === 'function') cbk(new Error(msg));
@@ -561,7 +561,7 @@ function flagOnlyCurrentTabCC(cwin)
     if(!isLastError()) {
         flagOnlyCurrentTab(cwin);
     } else {
-        log.info({"Couldn't flag": chrome.runtime.lastError});
+        log.info({"Couldn't flag": lastBrowserErrorMessageString()});
     }
 } //flagOnlyCurrentTabCC
 
@@ -1710,7 +1710,7 @@ function loadSavedWindowsIntoTree(next_action) {
         READIT:
         if(isLastError()) {
             //Chrome couldn't load the data
-            log.error("Chrome couldn't load save data: " + chrome.runtime.lastError +
+            log.error("Chrome couldn't load save data: " + lastBrowserErrorMessageString() +
                     "\nHowever, if you didn't have any save data, this isn't " +
                     "a problem!");
 
@@ -1745,7 +1745,7 @@ function DBG_printSaveData()
 {
     chrome.storage.local.get(K.STORAGE_KEY, function(items) {
         if(isLastError()) {
-            console.log(chrome.runtime.lastError);
+            console.log(lastBrowserErrorMessageString());
         } else {
             let parsed = items[K.STORAGE_KEY];
             console.log('Save data:');
@@ -2005,7 +2005,7 @@ function treeOnSelect(evt_unused, evt_data, options={})
 
             if(isLastError()) {
                 window.alert(_T('errCouldNotOpenWindow',
-                                    chrome.runtime.lastError));
+                                    lastBrowserErrorMessageString()));
                 return;     // with the state in the tree unchanged
             }
 
@@ -4322,7 +4322,7 @@ function moveWinToLastPositionIfAny_catch(done, items_or_err)
         chrome.windows.update(my_winid, size_data,
             (win)=>{
                 if(isLastError()) {
-                    log.error(`Could not move window: ${chrome.runtime.lastError}`);
+                    log.error(`Could not move window: ${lastBrowserErrorMessageString()}`);
                 } else {
                     log.info({"Updated window size":$.extend({},win)});
                 }

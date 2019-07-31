@@ -5,6 +5,13 @@ console.log('TabFern: running ' + __filename);
 if(false) { // Vendor files - listed here only so they'll be bundled
     require('vendor/validation');
     require('vendor/common');
+
+    // The following require() seems to fix the 'cannot find module "process"
+    // from "/"' error mentioned at
+    // https://github.com/cxw42/TabFern/issues/100#issuecomment-450058252
+    // and discussed further at
+    // https://github.com/cxw42/TabFern/issues/100#issuecomment-513267574 .
+    require('process/browser');
 }
 
 const S = require('common/setting-definitions');    // in app/
@@ -144,7 +151,7 @@ function editNoteOnClick(info, tab)
         function(resp){
             if(isLastError()) {
                 console.log('Couldn\'t send edit-note to ' + tab.id + ': ' +
-                    chrome.runtime.lastError);
+                    lastBrowserErrorMessageString());
             } else {
                 console.log({[`response to edit-note for ${tab.id}`]: resp});
             }

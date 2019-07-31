@@ -17,7 +17,7 @@ const MSG_GET_VIEW_WIN_ID = 'getViewWindowID';
 const MSG_EDIT_TAB_NOTE = 'editTabNote';
 
 ////////////////////////////////////////////////////////////////////////// }}}1
-// Test for Firefox // {{{1
+// Cross-browser error handling, and browser tests // {{{1
 // Not sure if I need this, but I'm playing it safe for now.  Firefox returns
 // null rather than undefined in chrome.runtime.lastError when there is
 // no error.  This is to test for null in Firefox without changing my
@@ -53,6 +53,27 @@ BROWSER_TYPE=null;  // unknown
         win.isLastError = isLastError_chrome;
     }
 })(window);
+
+/// Return a string representation of chrome.runtime.lastError.
+///
+/// Somewhere around Chrome 75, chrome.runtime.lastError lost toString(),
+/// as far as I can tell.
+/// See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error
+///     https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/runtime/lastError
+///     https://developer.chrome.com/extensions/runtime#property-lastError
+function lastBrowserErrorMessageString() {
+    if(!chrome.runtime.lastError) {
+        return "<no error>";
+    }
+
+    if(typeof chrome.runtime.lastError !== 'object') {
+        return `${chrome.runtime.lastError}`;
+    }
+
+    return chrome.runtime.lastError.message ||
+            chrome.runtime.lastError.description ||
+            chrome.runtime.lastError.toString();
+}
 
 ////////////////////////////////////////////////////////////////////////// }}}1
 // DOM-related functions // {{{1
