@@ -2,19 +2,20 @@
 
 [![Join the chat at https://gitter.im/TabFern/Lobby](https://badges.gitter.im/TabFern/Lobby.svg)](https://gitter.im/TabFern/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
+**Welcome, Hacktoberfest participants!**
 For more information on developing TabFern, see the
 [wiki](https://github.com/cxw42/TabFern/wiki/Hacking-on-TabFern).
+See [INTERNALS.md](INTERNALS.md) for details of how the code is structured.
+
 
 ![screenshot](https://raw.githubusercontent.com/cxw42/TabFern/gh-pages/screenshot.png)
 
-A [Google Chrome extension](https://chrome.google.com/webstore/detail/tabfern-tab-manager-and-b/hbajjpcdbninabigakflkhiogmmjaakm) that:
+**TabFern** is a [Google Chrome extension](https://chrome.google.com/webstore/detail/tabfern-tab-manager-and-b/hbajjpcdbninabigakflkhiogmmjaakm) that:
 
  - Gives you a vertical list of all your open tabs
  - Groups your tabs by window
  - Saves sets of tabs so you can close them and resume later
  - Backs up and restores sets of tabs
-
-See [INTERNALS.md](INTERNALS.md) for details of how the code is structured.
 
 # Usage
 
@@ -47,7 +48,8 @@ See [INTERNALS.md](INTERNALS.md) for details of how the code is structured.
    of other tabs in the tree.
  - You cannot open and close individual tabs --- you have to open and close
    the window as a whole.
- - Where new windows open may not always be where Chrome would open a new window.
+ - Where new windows open may not always be where Chrome would open a new
+   window.
    Currently, the original size/position of the last-focused or last-closed
    window is generally where the new window will end up.
  - Lots of others I'm not going to list right now!
@@ -63,18 +65,11 @@ See [INTERNALS.md](INTERNALS.md) for details of how the code is structured.
 
 # Legal
 
-Copyright (c) 2017--2019 Chris White and contributors.  CC-BY-SA 4.0
-International.  See [LICENSE.md](LICENSE.md) for details, which are controlling
+Copyright (c) 2017--2019 Chris White and contributors.  CC-BY-SA 3.0, or any
+later version.  See [LICENSE.md](LICENSE.md) for details, which are controlling
 in case of any difference between that file and this section.
 
-Contributors (in alphabetical order, case-insensitive):
-
- - [Devin Rhode](https://github.com/devinrhode2) (other)
- - [Jasmine Hegman](https://github.com/r4j4h) (code)
- - [Procyon-b](https://github.com/Procyon-b) (translations)
- - [RiotPharaoh](https://github.com/RiotPharaoh) (code)
- - [rwexmd](https://github.com/rwexmd) (translations)
- - [Yasujizr](https://github.com/Yasujizr) (artwork)
+Contributors are listed in [LICENSE.md](LICENSE.md).
 
 Originally inspired by
 [Tabs Outliner](https://chrome.google.com/webstore/detail/tabs-outliner/eggkanocgddhmamlbiijnphhppkpkmkl)
