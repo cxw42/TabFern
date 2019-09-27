@@ -10,11 +10,12 @@ let messages_en = require('./static/_locales/en/messages.json');
 /*
  * Notes on the TabFern extension friendly version number.
  *
- * The friendly version is the version_name in static/manifest.json.  Since it
+ * The friendly version is the version in package.json and the
+ * version_name in public/manifest.json.  Since it
  * is displayed in the title bar of the popup window, it is lowercase (no
  * shouting!).  The following should match:
  *
- *  - static/manifest.json (both the version and version_name)
+ *  - public/manifest.json (both the version and version_name)
  *  - package.json (the version_name)
  *  - package-lock.json (the version_name)
  *
@@ -59,7 +60,7 @@ let ver_name = (matches[4] == null) ?
 
 console.log(`TF version ${pkg_json.version} -> ${ver_tuple} ("${ver_name}")`);
 
-// Copy app/manifest.json->public/mjanifest.json and fill in versions
+// Copy app/manifest.json->public/manifest.json and fill in versions
 fs.createReadStream(path.join(__dirname, 'app', 'manifest.json'))
   .pipe(replaceStream('$VER$', ver_tuple))
   .pipe(replaceStream('$VERNAME$', ver_name))
@@ -216,9 +217,8 @@ let me = {
 };
 
 // String replacement
-//let chrome_manifest = require('./static/manifest.json');
 
-// Regexes we will replace
+// Regexes we will replace in our source files
 const kFN = /\b__filename\b/;
 
 me.plugins.replacer = {     // Permit using __filename in modules
