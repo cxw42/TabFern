@@ -15,6 +15,10 @@ More information about TabFern is available at
 - The [famfamfam Silk icons](http://www.famfamfam.com/lab/icons/silk/)
   are used under the terms of the CC-BY 3.0 license.
 
+- The [Font Awesome 4 icons by Dave Gandy](https://fontawesome.com/v4.7.0/)
+  are used under the SIL OFL 1.1, MIT, and CC-BY 3.0 licenses, as specified
+  at <https://fontawesome.com/v4.7.0/license/>.  See <http://fontawesome.io>.
+
 - Other than those, unless otherwise specified by individual files or
   groups of files, you may use, modify, or redistribute the contents of TabFern
   under the CC-BY-SA 3.0 license, or any later version, at your option.
