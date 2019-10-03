@@ -411,7 +411,10 @@ function saveTree(save_ephemeral_windows = true, cbk = undefined)
                 if(!tab_val) continue;
 
                 // Dont't save blank tab
-                if (tab_val.raw_url === 'chrome://newtab/') continue;
+                if (
+                    tab_val.raw_url === 'chrome://newtab/' ||
+                    tab_val.raw_url === 'about:blank'
+                ) continue;
 
                 let thistab_v1 = {};    ///< the V1 save data for the tab
                 thistab_v1.raw_title = tab_val.raw_title;
