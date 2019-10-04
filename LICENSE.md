@@ -137,6 +137,7 @@ In no particular order!
 
  - [Jasmine Hegman](https://github.com/r4j4h)
  - [RiotPharaoh](https://github.com/RiotPharaoh)
+ - [ahonn](https://github.com/ahonn)
 
 ### Translation
 

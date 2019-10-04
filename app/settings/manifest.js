@@ -419,6 +419,7 @@ order within each category.`
 `<ul>
 <li><a href="https://github.com/r4j4h/">Jasmine Hegman</a></li>
 <li><a href="https://github.com/RiotPharaoh/">RiotPharaoh</a></li>
+<li><a href="https://github.com/ahonn/">ahonn</a></li>
 </ul>`
         },
         {
@@ -461,6 +462,7 @@ order within each category.`
             'group_html':true,
             "type": "description",
             "text":
+/*
 `<ul>
 <li class="gold-star">Opening one tab at a time!  Yes, the wait is over!  ${issue(35)}
 <ul>
@@ -475,6 +477,11 @@ order within each category.`
 recovered window will show up in TabFern as a separate, unsaved window
 (related to ${issue(41, true)}).</p>
 </li>
+</ul>`,
+*/
+`<ul>
+<li><code>about:blank</code> tabs and tab showing your new-tab page are no
+longer saved in the tree.  (${issue(186, true)}, ${issue(191, true)})
 </ul>`,
         },
         {
