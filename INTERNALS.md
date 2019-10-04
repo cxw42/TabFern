@@ -1,26 +1,49 @@
 # TabFern internals
 
+TabFern is built using [brunch](https://brunch.io/).
+
+## Getting started
+
+Clone the repo, then `npm install`.  After that you should be able to
+run `npx brunch b` for a one-time build, or `npx brunch w` to rebuild
+automatically on changes.
+
+Load the `public/` directory as an unpacked extension to test in Chrome.
+
+For Firefox, see
+[the wiki](https://github.com/cxw42/TabFern/wiki/Developing-on-Firefox).
+
 ## Project layout
 
- - `/tabfern`: The development tree for TabFern itself
-   * `/tabfern/src`: Main source
-     - `/tabfern/src/bg`: Background page
-     - `/tabfern/src/view`: Popup
-     - `/tabfern/src/options_custom`: Options page
-   * `/tabfern/test`: Jasmine tests of TabFern
- - `/dist`: where build output from the build process will eventually go.
- - `/webstore`: The latest version of TabFern released to the Chrome Web Store.
-   Updated manually by the maintainers.
- - `/doc`: Documentation
- - `/scraps`: Holding pen for code that may yet be useful.  Nothing in the
-   project relies on the contents of `/scraps`.
- - `/plugin`: Skeleton of a TabFern plugin
+Inputs:
+
+ - `app/`: Main source
+   - `app/win/`: Popup (the main TabFern window)
+   - `app/bg/`: Background page
+   - `app/settings/`: The settings page
+ - `static/`: Files that are copied directly while building
+   - `static/win/`: the HTML for the TabFern window
+   - `static/settings/`: the HTML for the settings page
+   - `static/test/`: the HTML for the Jasmine tests
+   - `static/assets/`: icons, CSS, ...
+ - `test/`: Jasmine tests of TabFern.  Note that not everything has a test yet.
+ - `tools/`: Scripts used during the build process
+
+Outputs:
+
+ - `public/`: The Chrome plugin, ready to be loaded unpacked or zipped up.
+ - `public-ff/`: The Firefox plugin, ready to be loaded unpacked or zipped up.
+
+Other:
+
+ - `doc/`: Documentation (to be created)
+ - `plugin/`: Skeleton of a TabFern plugin (to be created)
 
 ## Popup
 
 The popup is the main TabFern window, and the heart of the project.  It is
-`src/view/main.html`, which loads `src/view/tree.html` in an iframe.
-`tree.html` and `tree.js` are the primary files for the popup.
+`static/win/container.html`, which loads `static/win/main.html` in an iframe.
+`app/win/main_tl.js` is the primary script file for the popup.
 
 ### Data model
 
@@ -31,5 +54,31 @@ really at all) data model.  The jstree, including DOM and objects, plus the
 Although you might think of the jstree's DOM as part of the view, I am
 considering it grouped with the model so that I don't have to track
 parent-child relationships two places.  Those only live in the jstree.
+
+The tests generally test the model and stub the Chrome widgets.  The model
+is currently spread between `app/win/model.js` and `app/win/main_tl.js`.
+I am working on moving it all into `app/win/model.js`.
+
+## Versioning
+
+Chrome requires a version of the form `x.y.z.w`, and permits a version name
+that can have any form.  NPM (at least for purposes of `npm run`) requires
+a [semantic version](https://semver.org) of the form `x.y.z` in `package.json`.
+I want to show just `x.y.z` to the user as the version for regular releases,
+and follow semantic versioning.  I also want to be able to push patches
+without interrupting the user with a new-version notification
+(what I am calling a "silent patch release").
+
+Given these overlapping constraints, I currently store one of the following
+version forms in `package.json`:
+
+| `package.json` version | Type | Chrome version | Chrome version name |
+| ---------------------- | ---- | -------------- | ------------------- |
+| `x.y.z-pre.w` | Prerelease (development version) | `x.y.z.w` | `x.y.z-pre.w` |
+| `x.y.z` | Normal release | `x.y.z.1337` | `x.y.z` |
+| `x.y.z.w` | Silent patch release (`w`>=1338) | `x.y.z.w` | `x.y.z` |
+
+TODO: switch to straight semver, and control the showing of new-item
+notifications in a more flexible way.
 
 []( vi: set ft=markdown: )

@@ -1,0 +1,42 @@
+/* main.scss: SCSS file for win/main.html.
+ * N.B.: Ignore the deprecation warnings during build per
+ * https://github.com/sass/sass/issues/556#issuecomment-397771726 .
+ */
+
+/* === rmodal === */
+@import "__rmodal";
+
+/* === custom-scrollbars === */
+@import "__custom-scrollbars";
+    // TODO load dynamically only if needed?
+
+/* === spin.js === */
+@import "spin.js/spin";
+
+/* === custom === */
+
+$closed-tab-in-open-win: '.tf-window.tfs-open .tf-tab:not(.tfs-open) .jstree-wholerow-hovered';
+
+/* Show which tabs are closed in partly-open windows */
+#{$closed-tab-in-open-win} {
+    background: #ffffc8;
+}
+
+.jstree-default-dark #{$closed-tab-in-open-win} {
+    background: #555500;
+}
+
+/* Tweak up the light theme */
+
+#maintree.jstree-default .jstree-node:not(.tfs-open) .jstree-anchor {
+    color: #808080;
+}
+
+/* The audio-playing indicator */
+#maintree.jstree-default-dark span.is-audible {
+    color: #fff;
+}
+
+#maintree.jstree-default span.is-audible {
+    color: #000;
+}

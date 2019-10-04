@@ -1,0 +1,428 @@
+/* win/main.css: CSS for win/main.html */
+
+/* --- Local styles ----------------------------------------------- {{{1 -- */
+
+.clear {
+    clear: both;
+}
+
+.tabfern-popup-footer {
+    position:fixed;
+    bottom:0;
+    padding-bottom: 0.5em;
+}
+
+.tabfern-popup-footer a {
+    color: #888;
+    text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);  /* from jstree */
+}
+
+/* Items that are flagged, e.g., because they currently have focus */
+.tf-focused {
+    font-weight: bold;
+}
+
+/* Any browser window or tab that is currently open (as opposed to closed
+ * and saved) */
+/*
+.tf-visible-window a, .tf-window.tfs-open > a, .tf-tab.tfs-open > a {
+    color: #fff !important;    */ /* because it's a dark theme */
+/*
+}
+*/
+
+/* Color for open items, in a light theme */
+.jstree-default .tfs-open>a {
+    color: #000;
+}
+
+/* Color for open items, in a dark theme */
+.jstree-default-dark .tfs-open>a {
+    color: #fff;
+}
+
+.tf-action-button {
+    /* padding, not margin, so it's clickable */
+    padding-left: 0.4em;
+}
+
+#init-incomplete {
+    display: none;      /* initially */
+    font-size: large;
+    font-weight: bold;
+    color: #f33;
+}
+
+#init-progress {
+    display: none;      /* initially */
+    color: #f33;
+}
+
+li.ephemeral-recovered, .tfs-recovered {
+    background: darkslategray !important;
+}
+
+/* divider color, light theme */
+.jstree-default .tfs-top-bordered {
+    border-top: 1px solid #00b;
+}
+
+/* divider color, dark theme */
+.jstree-default-dark .tfs-top-bordered {
+    border-top: 1px solid #ffa;
+}
+
+.tf-bullet {
+    font-family: serif; /* since the default is sans */
+}
+
+/* Applied to the html */
+.tf--feature--hide-horizontal-scrollbars,
+.tf--feature--hide-horizontal-scrollbars body {
+    overflow-x: hidden;
+    width: 100%;
+}
+
+/* If you add a note, then forget the window, your notes are in danger of
+ * being lost.  Warn the user. */
+.jstree-node.tf-window.tfs-open:not(.tfs-saved) .jstree-node.tf-tab .tf-bullet {
+    color: #f44;
+}
+
+/* Same deal with borders. */
+.jstree-node.tf-window.tfs-open:not(.tfs-saved) .jstree-node.tf-tab.tfs-top-bordered {
+    border-top: 1px solid #f44;
+}
+
+/* }}}1 */
+/* --- Notification icon ------------------------------------------ {{{1 -- */
+
+/* Need the parents of notification icons to have position other than static.
+ * Thanks to https://stackoverflow.com/a/9404641/2877364 by
+ * https://stackoverflow.com/users/246246/animuson */
+#hamburger-menu ul li a i { position:relative; }
+.jstree-contextmenu a i { position:relative; }
+
+/* The notification icon itself */
+.tf-notification:after {
+    content: '\25cf';   /* a bullet */
+    /*text-shadow: none;*/
+    /*text-shadow: 2px 2px rgba(0,0,0,0.5);*/   /*maybe*/
+    z-index: 10000;
+    font-size: large;
+    color: #f22;        /* looks OK on black and white */
+    position:absolute;
+    transform: translateX(-50%);
+        /* thanks to https://stackoverflow.com/a/30631050/2877364 by
+         * https://stackoverflow.com/users/395910/terry */
+    top:-25%;
+}
+
+/* }}}1 */
+/* --- Action buttons and Z-order --------------------------------- {{{1 -- */
+
+/* Z order of items within a node - make sure the action group is on top */
+.jstree-node {
+    /* start a new stacking context - per
+     * http://examiningeverything.com/index.php/2017/02/10/css-stacking-contexts/
+     * See also
+     * https://philipwalton.com/articles/what-no-one-told-you-about-z-index/
+     * and https://stackoverflow.com/a/7421805/2877364 by
+     * https://stackoverflow.com/users/248129/richard-jp-le-guen
+     */
+    position: relative;
+    z-index: 0;
+}
+
+/* .jstree-wholerow: no express z-index on an absolute element =>
+ * don't make a new stacking context */
+
+.jstree-wholerow > .tf-action-group {
+    z-index: 10;
+    position: relative;     /* starts a new stacking context */
+    right: -100px;          /* slide it right to start with, for ease of debugging */
+    display: inline-block;  /* Be on the same row as the window */
+    padding-right: 0.5em;   /* same as hamburger menu, below */
+}
+
+.tf--feature--hide-horizontal-scrollbars .jstree-wholerow > .tf-action-group {
+    z-index: 10;
+    position: relative;     /* starts a new stacking context */
+    right: -100px;          /* for ease of debugging */
+    display: inline-block;  /* Be on the same row as the window */
+    padding-right: 0.5em;   /* same as hamburger menu, below */
+}
+
+.tf-action-group {
+    visibility: hidden;
+}
+
+div.jstree-wholerow-hovered > .tf-action-group {
+    visibility: visible;
+}
+
+
+/* TODO figure this out */
+/*.tf-action-group > i {*/  /* matches .jstree-hovered for consistency */
+    /*background-color: #555;*/ /*rgba(85,85,85, 0.5);*/
+    /*border-radius: 2px; */
+    /*transition: background-color 0.15s;*/
+/*}*/
+
+.tf-action-group > i {
+    border: 1px solid transparent;
+    border-radius: 2px;
+}
+
+.tf-action-group > i:hover {
+        /* Note: background-color set solid below */
+        /* Solid => makes it easier to see what you're about to click on
+         * when there's a long title under the buttons.  Thanks to
+         * https://stackoverflow.com/a/29630813/2877364 by
+         * https://stackoverflow.com/users/3436942/jbutler483 */
+    border: 1px solid #707070;  /* just a bit of an affordance */
+    border-radius: 2px;
+    /* TODO transition 0.15s? */
+}
+
+/* Background color of a hovered icon, light theme */
+.jstree-default .tf-action-group > i:hover {
+    background-color: #e7f4f9;  /* matches wholerow */
+}
+
+/* Background color of a hovered icon, dark theme */
+.jstree-default-dark .tf-action-group > i:hover {
+    background-color: #555;     /* matches wholerow */
+}
+
+/*.tf-action-group {*/  /* matches .jstree-animated, plus visibility */
+    /* Have to repeat here because a more-specific transition rule replaces
+     * any less-specific transition rules instead of supplementing them. */
+    /*transition: background-color 0.15s, box-shadow 0.15s, visibility 0.15s;*/
+        /* this doesn't work - need to control opacity and visibility,
+         * I think.
+         * TODO maybe try http://www.greywyvern.com/?post=337
+         */
+/*}*/
+
+.jstree-wholerow > i {  /* action buttons on top */
+    z-index: 10;
+    float: right;
+}
+
+.jstree-node > i {  /* icon and text in the middle */
+    z-index: 5;
+}
+
+.jstree-node > a {
+    z-index: 5;
+}
+
+/* Windows:
+ * The buttons are in order Rename, Close, Delete.  Add some space to the right
+ * of Close to move the "delete" button farther from the others.
+ * Tabs:
+ * The buttons are Edit, Delete.  Add space to the right of Edit.
+ *
+ * Use padding-right on Close/Edit rather than margin-left on Delete so there
+ * isn't a gap between buttons.  If there is such a gap, clicking it hits the
+ * node.
+ * TODO replace this with an invisible, narrow action button that just calls
+ * select_node().
+ */
+.tf-window > div > .tf-action-group .fff-picture-delete,
+.tf-tab > div > .tf-action-group  .fff-pencil {
+    padding-right: 0.5em;
+}
+
+/* No animations on the wholerow since I haven't figured out how to sync them
+ * with the action buttons.  This is more snappy, anyway. */
+.jstree-wholerow {
+    transition: unset;
+}
+
+/* }}}1 */
+/* --- Main (hamburger) menu and related -------------------------- {{{1 -- */
+
+#hamburger-menu {
+    position: fixed;
+    z-index: 100;
+
+    right: 0;
+    padding-right: 0.5em;
+    bottom: 0;
+    padding-bottom: 0.5em;
+}
+
+/* Z orders for other pertinent elements of the page, to put them in the
+ * correct place with respect to the hamburger menu. */
+
+.tabfern-container {
+    z-index: 0;     /* non-auto */
+    position: relative;
+}
+
+#maintree {
+    z-index: 0;
+    position: relative;
+}
+
+/* Make the hamburger menu symmetrical around the visible icon */
+
+#hamburger-menu i.jstree-icon.jstree-ocl {
+    display: none;
+}
+
+#hamburger-menu a.jstree-anchor {
+    padding-left: 4px;     /* matches padding-right from the theme */
+}
+
+#hamburger-menu a.jstree-anchor i.jstree-icon {
+    margin-left: 2px;       /* matches margin-right from the theme */
+}
+
+/* Make sure that the user can still click on action buttons on the very last
+ * row of the tree.  Without this, those buttons would be hidden behind the
+ * hamburger menu. */
+#maintree {
+    margin-bottom: 30px;    /* empirical, based on the hamburger menu's box */
+}
+
+/* }}}1 */
+/* --- Modal dialog ----------------------------------------------- {{{1 -- */
+/* This needs attention from a front-end designer :) */
+
+/* Position the dialog consistently in our use case */
+.modal .modal-dialog {
+    padding: 10px;
+    margin: 8px;    /* same as the space around the tree */
+    position: fixed;
+    left: 0;
+    right: 0;
+    width: auto;
+}
+
+.modal {
+    /* Darken the shadow a bit */
+    background: rgba(0, 0, 0, .70);
+}
+
+/* Clean up the look of the dialog just a bit */
+.modal-header {
+    padding-bottom: 10px;
+}
+
+.modal-footer button {
+    padding: 2px;
+    margin: 0px 3px;
+}
+
+/*
+.modal-footer .button-container {
+    float: right;
+}
+*/
+
+.modal-content .accel {
+    text-decoration: underline;
+}
+
+/* The grid */
+
+.modal-content {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    grid-gap: 0.5em;
+}
+
+.modal-content .col-3 {
+    grid-column: span 3;
+}
+
+.modal-content .col-0p5 {
+    grid-column: span 1;
+}
+
+.modal-content .col-1 {
+    grid-column: span 3;
+}
+
+.modal-content .end-align {
+    align-self: end;
+}
+
+.modal-content .col-5 {
+    grid-column: span 10;
+}
+
+.modal-content .full-row {
+    grid-row: span 1;
+    grid-column: span 12;
+}
+
+/* clip button labels, which otherwise overflow when the user zooms. */
+.modal-content .btn {
+    overflow: hidden;
+}
+
+/* }}}1 */
+/* --- Tweak up jstree -------------------------------------------- {{{1 -- */
+
+/* shrink large favicons to fit, if necessary */
+.jstree-children .jstree-children .jstree-anchor .jstree-icon.jstree-url-icon {
+    /* Two jstree-children: don't touch the top-level nodes, only second-level
+     * and lower. */
+    background-size: cover !important;
+}
+
+/* context menu rides over the tree */
+.jstree-contextmenu {
+    z-index: 200;
+}
+
+/* Don't expand icons in the context menu - leave them at their native size */
+ul.jstree-contextmenu i {
+    object-fit: none;
+}
+
+/* Make icons from the main menu not appear through the submenu.  The jstree
+ * css sets position:absolute, so setting z-index creates a new stacking
+ * context for the submenu. */
+.vakata-context ul {
+    z-index: 1;
+}
+
+/* A bit more space between rows, for easier reading.  TODO make this
+ * orthogonal to the theme. */
+#maintree.jstree-default-dark-small .jstree-anchor,
+#maintree.jstree-default-small .jstree-anchor {
+    line-height: 19px;
+    height: 19px;
+}
+
+/* The tree itself has no background, so that background images applied to
+ * the body can show through. */
+#maintree {
+    background: transparent;
+}
+
+/* }}}1 */
+/* --- Debug ------------------------------------------------------ {{{1 -- */
+/* Debug.  These come last, so they override any equally-specific styles
+ * earlier in the file. */
+
+.red > a {
+    color: #f88 !important;
+}
+
+.green > a {
+    color: #8f8 !important;
+}
+
+.blue > a {
+    color: #88f !important;
+}
+
+/* }}}1 */
+
+/* vi: set ts=4 sts=4 sw=4 et ai foldmethod=marker: */

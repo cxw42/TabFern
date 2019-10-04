@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<!-- win/main.html: TabFern popup main source.  CC-BY-SA 4.0 International -->
+<head>
+    <title>TabFern tree</title>
+    <meta http-equiv="Content-Type" content="text/html" />
+    <meta charset="utf-8" />
+
+    <!-- Stylesheets ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+    <!-- font-awesome is on its own since the fonts are relative to
+         the path to the stylesheet. -->
+    <link href="/assets/font-awesome/css/font-awesome.css" rel="stylesheet" type="text/css" />
+    <link href="main-pre.css" rel="stylesheet" type="text/css" />
+
+    <!-- jstree theme stylesheets are loaded before this -->
+
+    <link href="main-post.css" rel="stylesheet" type="text/css" media="all"
+        id="last-stylesheet" />
+        <!-- this one should always be the last stylesheet listed -->
+</head>
+
+<body>
+    <div id="tabfern-container">
+
+        <!-- Error messages ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+        <div id="init-incomplete">Initialization not complete (or not yet
+            complete).  Changes will not be saved.
+        </div>
+        <div id="init-progress"></div>
+        <!-- the above two divs are removed if init does complete. -->
+
+        <!-- Content ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+        <div id="maintree"></div><!-- the window tree -->
+        <div id="view-messages"></div><!-- for error messages -->
+
+        <div id="hamburger-menu" class="hamburger-menu"></div><!-- a jstree to use as a hamburger menu -->
+
+        <!-- Modal dialog ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+        <!-- rmodal sets display:none on .modal automatically, so we don't
+             have to here.  Note that the text below will be replaced from
+             the localized messages.json. -->
+        <div id="confirm-dialog" class="modal">
+            <div class="modal-dialog">
+                <form class="form-horizontal" method="get">
+                    <div class="modal-content">
+                        <strong id="confirm-dialog-question" class="full-row">
+                            Are you sure?
+                        </strong>
+
+                        <div id="notAgain" name="notAgain" class="full-row">
+                            <input type="checkbox" name="cbNotAgain"
+                                id="cbNotAgain"
+                                class="form-control col-0p5" />
+                            <label id="labelNotAgain" for="cbNotAgain"
+                                class="control-label col-xs-4 col-5">
+                                Don't ask again
+                                (<abbr title="You can change this in Settings | Behaviour">note</abbr>)
+                            </label>
+                        </div>
+                        <!-- note: don't use <button type=submit>, which
+                            reloads the page. -->
+                        <div class="col-3">&nbsp;</div>
+                        <button id="confirm-dialog-yes" data-which="yes"
+                            class="btn btn-primary col-1"
+                            type="button" accesskey="y">
+                            <span class="accel">Y</span>es
+                        </button>
+                        <button id="confirm-dialog-no" data-which="no"
+                            class="btn col-1"
+                            type="button" accesskey="n">
+                            <span class="accel">N</span>o
+                        </button>
+                        <button id="confirm-dialog-cancel" data-which="cancel"
+                            class="btn btn-default col-1" type="button"
+                            accesskey="c">
+                            <span class="accel">C</span>ancel
+                        </button>
+                    </div><!-- .modal-content -->
+                </form>
+            </div>
+        </div><!-- #confirm-dialog -->
+
+    </div><!-- tabfern-container -->
+
+    <!-- Main script ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+    <script src="main.js" type="text/javascript"></script>
+</body>
+</html>
+<!-- vi: set ts=4 sts=4 sw=4 et ai: -->
