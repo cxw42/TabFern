@@ -410,6 +410,12 @@ function saveTree(save_ephemeral_windows = true, cbk = undefined)
                 let tab_val = D.tabs.by_node_id(tab_node_id);
                 if(!tab_val) continue;
 
+                // Dont't save blank tab
+                if (
+                    tab_val.raw_url === 'chrome://newtab/' ||
+                    tab_val.raw_url === 'about:blank'
+                ) continue;
+
                 let thistab_v1 = {};    ///< the V1 save data for the tab
                 thistab_v1.raw_title = tab_val.raw_title;
                 thistab_v1.raw_url = tab_val.raw_url;
@@ -424,6 +430,9 @@ function saveTree(save_ephemeral_windows = true, cbk = undefined)
                 result_win.tabs.push(thistab_v1);
             } //foreach tab
         } //endif window has child tabs
+
+        // Don't save blank window
+        if (result_win.tabs.length === 0) continue;
 
         result.push(result_win);
     } //foreach window
