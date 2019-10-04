@@ -2962,19 +2962,22 @@ function saveViewSize(size_data)
 /// When the user resizes the tabfern popup, save the size for next time.
 function eventOnResize(evt)
 {
+  chrome.windows.get(my_winid,function(cwin){
+    // window must be normal, not minimized/maximized
+    if (cwin.state != 'normal') return;
     // Clear any previous timer we may have had running
     if(resize_save_timer_id) {
         window.clearTimeout(resize_save_timer_id);
         resize_save_timer_id = undefined;
     }
 
-    let size_data = getWindowSize(window);
+    let size_data = getWindowSizeFromWindowRecord(cwin);
 
     // Save the size, but only after two seconds go by.  This is to avoid
     // saving until the user is actually done resizing.
     resize_save_timer_id = window.setTimeout(
             ()=>{saveViewSize(size_data);}, 2000);
-
+  });
 } //eventOnResize
 
 // On a timer, save the window size if it has changed.  Inspired by, but not
@@ -2982,11 +2985,16 @@ function eventOnResize(evt)
 // https://stackoverflow.com/users/144833/oscar-godson
 function timedResizeDetector()
 {
-    let size_data = getWindowSize(window);
-    if(!ObjectCompare(size_data, last_saved_size)) {
-        saveViewSize(size_data);
+  chrome.windows.get(my_winid,function(cwin){
+    // update only if window is normal
+    if (cwin.state == 'normal') {
+      let size_data = getWindowSizeFromWindowRecord(cwin);
+      if(!ObjectCompare(size_data, last_saved_size)) {
+          saveViewSize(size_data);
+      }
     }
     setTimeout(timedResizeDetector, K.RESIZE_DETECTOR_INTERVAL_MS);
+  });
 } //timedResizeDetector
 
 ////////////////////////////////////////////////////////////////////////// }}}1
