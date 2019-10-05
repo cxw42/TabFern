@@ -183,36 +183,28 @@ function escapeRegExp(string) {
 ////////////////////////////////////////////////////////////////////////// }}}1
 // General record helpers // {{{1
 
-/// Get the size of a window, as an object
-/// @param win {DOM window} The window
-function getWindowSize(win)
+/// Return truthy if a Chrome window is in a state for which we consider
+/// its size data valid.
+/// @param cwin {Chrome Window} The window record
+function isCwinSizeDataUsable(cwin)
+{
+    return ( (cwin.state == 'normal') || (cwin.state == 'maximized') );
+} //isCwinSizeDataUsable
+
+/// Get the size of a window, as an object, from a Chrome window record.
+/// @param cwin {Chrome Window} The window record
+function getWindowSizeFromWindowRecord(cwin)
 {
     // || is to provide some sensible defaults - thanks to
     // https://stackoverflow.com/a/7540412/2877364 by
     // https://stackoverflow.com/users/113716/user113716
-
-    // Are these the right fields of #win to use?  They seem to work.
-
     return {
-          'left': win.screenLeft || 0
-        , 'top': win.screenTop || 0
-        , 'width': win.outerWidth || 300
-        , 'height': win.outerHeight || 600
+          'left': cwin.left || 0
+        , 'top': cwin.top || 0
+        , 'width': cwin.width || 300
+        , 'height': cwin.height || 600
     };
-} //getWindowSize
-
-/// Get the size of a window, as an object, from a Chrome window record.
-/// See comments in getWindowSize().
-/// @param win {Chrome Window} The window record
-function getWindowSizeFromWindowRecord(win)
-{
-    return {
-          'left': win.left || 0
-        , 'top': win.top || 0
-        , 'width': win.width || 300
-        , 'height': win.height || 600
-    };
-} //getWindowSize
+} //getWindowSizeFromWindowRecord
 
 /// Clear flags on all windows; leave tabs alone.
 function unflagAllWindows() {
@@ -2963,8 +2955,11 @@ function saveViewSize(size_data)
 function eventOnResize(evt)
 {
   chrome.windows.get(my_winid,function(cwin){
-    // window must be normal, not minimized/maximized
-    if (cwin.state != 'normal') return;
+    // Don't save the size of minimized or fullscreen windows
+    if ( !isCwinSizeDataUsable(cwin) ) {
+        return;
+    }
+
     // Clear any previous timer we may have had running
     if(resize_save_timer_id) {
         window.clearTimeout(resize_save_timer_id);
@@ -2980,14 +2975,16 @@ function eventOnResize(evt)
   });
 } //eventOnResize
 
-// On a timer, save the window size if it has changed.  Inspired by, but not
-// copied from, https://stackoverflow.com/q/4319487/2877364 by
-// https://stackoverflow.com/users/144833/oscar-godson
+/// On a timer, save the window size/pos if it has changed.  Inspired by, but
+/// not copied from, https://stackoverflow.com/q/4319487/2877364 by
+/// https://stackoverflow.com/users/144833/oscar-godson .
+/// This is a workaround for the fact that we do not have a good way
+/// (that I know of) to detect a move (without resize).
 function timedResizeDetector()
 {
   chrome.windows.get(my_winid,function(cwin){
-    // update only if window is normal
-    if (cwin.state == 'normal') {
+    // Don't update if the window is minimized or fullscreen
+    if (isCwinSizeDataUsable(cwin)) {
       let size_data = getWindowSizeFromWindowRecord(cwin);
       if(!ObjectCompare(size_data, last_saved_size)) {
           saveViewSize(size_data);
@@ -4243,7 +4240,12 @@ function basicInit(done)
     initFocusHandler();
 
     // Stash our current size, which is the default window size.
-    newWinSize = getWindowSize(window);
+    newWinSize = {
+        left: Math.max(window.screenLeft, 0),
+        top: Math.max(window.screenTop, 0),
+        width: Math.max(window.outerWidth, 300),
+        height: Math.max(window.outerHeight, 600),
+    };
 
     // TODO? get screen size of the current monitor and make sure the TabFern
     // window is fully visible -
