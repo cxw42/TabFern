@@ -1621,11 +1621,17 @@ var loadSavedWindowsFromData = (function(){
     ///     - bordered:<truthy> (default false) to mark windows with borders
     function loadSaveDataV1(data) {
         if(!data.tree) return false;
-        //log.info({'loadSaveDataV1':data});
+        const blankTabsRawUrl = ['about:blank', 'chrome://newtab'];
+        // log.info({'loadSaveDataV1':data});
         let numwins=0;
         for(let win_data_v1 of data.tree) {
-            createNodeForClosedWindowV1(win_data_v1);
-            ++numwins;
+            const notOnlyBlankTabs = win_data_v1.tabs.every(({ raw_url }) => {
+                return ~blankTabsRawUrl.indexOf(raw_url);
+            });
+            if (notOnlyBlankTabs) {
+                createNodeForClosedWindowV1(win_data_v1);
+                ++numwins;
+            }
         }
         return numwins;
     } //loadSaveDataV1
