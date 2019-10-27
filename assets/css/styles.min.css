@@ -1,1 +1,33 @@
-what-we-do li:nth-child(n){padding:100px 0}.what-we-do li:nth-child(n){padding:10px;font-size:18px}.nav-list li:nth-child(n){padding:2px 10px}.usage-list li div{font-size:18px!important}.usage-list li:nth-child(n){padding:10px;font-size:18px}.rower{padding:120px 30px 10px}@media (min-width:768px){.col-md-6{-ms-flex:0 0 50%;flex:0 0 50%;max-width:50%}.container{max-width:720px}}
+/* Unminified via https://www.cleancss.com/css-beautify/ */
+/* what-we-do li:nth-child(n){padding:100px 0}.what-we-do li:nth-child(n){padding:10px;font-size:18px}.nav-list li:nth-child(n){padding:2px 10px}.usage-list li div{font-size:18px!important}.usage-list li:nth-child(n){padding:10px;font-size:18px}.rower{padding:120px 30px 10px}@media (min-width:768px){.col-md-6{-ms-flex:0 0 50%;flex:0 0 50%;max-width:50%}.container{max-width:720px}} */
+what-we-do li:nth-child(n){
+    padding:100px 0
+}
+.what-we-do li:nth-child(n){
+    padding:10px;
+    font-size:18px
+}
+.nav-list li:nth-child(n){
+    padding:2px 10px
+}
+.usage-list li div{
+    font-size:18px!important
+}
+.usage-list li:nth-child(n){
+    padding:10px;
+    font-size:18px
+}
+.rower{
+    padding:120px 30px 10px
+}
+@media (min-width:768px){
+    .col-md-6{
+        -ms-flex:0 0 50%;
+        flex:0 0 50%;
+        max-width:50%
+    }
+    .container{
+        max-width:720px
+    }
+}
+
