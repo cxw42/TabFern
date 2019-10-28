@@ -143,6 +143,7 @@ In no particular order!
 
  - [Procyon-b](https://github.com/Procyon-b/) (French)
  - [rwexmd](https://github.com/rwexmd/">rwexmd) (Russian)
+ - [Makemeloco](https://github.com/rwexmd/">Makemeloco) (Russian)
 
 ### Artwork
 
