@@ -431,6 +431,7 @@ order within each category.`
 `<ul>
 <li><a href="https://github.com/Procyon-b/">Procyon-b</a> (French)</li>
 <li><a href="https://github.com/rwexmd/">rwexmd</a> (Russian)</li>
+<li><a href="https://github.com/Makemeloco/">Makemeloco</a> (Russian)</li>
 </ul>`
         },
         {
