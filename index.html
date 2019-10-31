@@ -4,97 +4,114 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
-    <title>Tabfern</title>
+    <title>TabFern</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/css/bootstrap.min.css">
     <link rel="manifest" href="/manifest.json">
-    <link rel="stylesheet" href="/assets/css/styles.min.css">
+    <link rel="stylesheet" href="/assets/css/styles.css">
 <link href="https://fonts.googleapis.com/css?family=Josefin+Sans&display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css?family=Josefin+Sans&display=swap" rel="stylesheet">
 </head>
 
 <body style="overflow-x: hidden !important;">
-    <nav class="navbar navbar-light navbar-expand-md navbar-expand-xl sticky-top" style="background-color: white;">
-        <div class="container-fluid"><a class="navbar-brand" href="#"><img src="/assets/img/fern128.png" style="width: 50px;"></a><button data-toggle="collapse" class="navbar-toggler" data-target="#navcol-1"><span class="sr-only">Toggle navigation</span><span class="navbar-toggler-icon"></span></button>
-            <div
-                class="collapse navbar-collapse" id="navcol-1" style="justify-content: flex-end;">
+
+    <!--Navbar -->
+    <nav class="navbar navbar-light navbar-expand-md navbar-expand-xl sticky-top" id="navbar">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <img src="/assets/img/fern128.png" id="navbar-brand-img">
+            </a>
+            <button data-toggle="collapse" class="navbar-toggler" data-target="#navbar-item-container" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="sr-only">Toggle navigation</span><span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbar-item-container">
                 <ul class="nav navbar-nav nav-list">
-                    <li class="nav-item" role="presentation"><a class="nav-link" href="#usage">Usage</a></li>
-                    <li class="nav-item" role="presentation"><a class="nav-link" href="#backup">Backup &amp; Restore</a></li>
-                    <li class="nav-item" role="presentation"><a class="nav-link" href="#limit">Limitations</a></li>
-                    <li class="nav-item" role="presentation"><a class="nav-link" href="#related">Privacy policy</a></li>
+                    <li class="nav-item" role="presentation" data-toggle="collapse" data-target=".navbar-collapse"><a class="nav-link" href="#usage">Usage</a></li>
+                    <li class="nav-item" role="presentation" data-toggle="collapse" data-target=".navbar-collapse"><a class="nav-link" href="#backup">Backup &amp; Restore</a></li>
+                    <li class="nav-item" role="presentation" data-toggle="collapse" data-target=".navbar-collapse"><a class="nav-link" href="#limit">Limitations</a></li>
+                    <li class="nav-item" role="presentation" data-toggle="collapse" data-target=".navbar-collapse"><a class="nav-link" href="#related">Privacy policy</a></li>
                     <li class="nav-item" role="presentation"><a class="nav-link" href="https://github.com/cxw42/TabFern">View on Github</a></li>
                     <li class="nav-item" role="presentation"><a class="nav-link" href="https://chrome.google.com/webstore/detail/tabfern-tab-manager-and-b/hbajjpcdbninabigakflkhiogmmjaakm">Add to Chrome</a></li>
                 </ul>
-        </div>
+            </div>
         </div>
     </nav>
-    <div style="min-width: 100vw;font-family: 'Josefin Sans', sans-serif;background-color: #4C8BF5;">
+
+    <!--TabFerm page head-->
+    <div id="main-header-container">
         <div class="row">
             <div class="col">
-                <div style="display: flex;flex-direction: column;padding: 20px 5px;">
-                    <header style="margin: auto;padding: 20px 5px;">
-                        <h1 style="font-size: 80px;text-align: center;color: white;font-weight: 800;margin: 60px 0px;">TabFern</h1>
-                        <p style="text-align: center;font-weight: 100;font-size: 22px;padding: 10px;word-break: break-all;color: #000000;margin-top: 40px;">Google Chrome extension for saving and restoring sets of tabs, and for switching between windows and tabs from a vertical, grouped list.</p>
+                <div id="main-header">
+                    <header>
+                        <h1>TabFern</h1>
+                        <p>Google Chrome extension for saving and restoring sets of tabs, and for switching between windows and tabs from a vertical, grouped list.</p>
                     </header>
                 </div>
             </div>
         </div>
     </div>
+
+    <!--What we do section-->
     <div>
-        <div class="container" style="padding: 0px;max-width: 1400px;">
+        <div class="container" id="sub-headers">
             <div>
                 <div class="row rower">
                     <div class="col-md-6">
-                        <div style="padding: 50px 10px;display: flex;flex-direction: column;">
-                            <header style="justify-content: flex-start;justify-self: flex-start;">
-                                <h1 style="font-size: 64px;">What we do?</h1>
+                        <div id="what-we-do">
+                            <header>
+                                <h1>What we do?</h1>
                             </header>
-                            <ul class="text-capitalize what-we-do" style="margin: auto;margin-top: 20px;list-style-image: url(&quot;/assets/img/bullet.png&quot;);width: 100%;">
+                            <ul>
                                 <li>Saves browser windows so you can close them and come back to them later with all their tabs intact</li>
                                 <li>Backs up your windows and tabs with just two clicks!</li>
                                 <li>Gives you a single window showing all your open browser windows and tabs,<br>listed vertically.</li>
                             </ul>
                         </div>
                     </div>
-                    <div class="col-md-6" style="padding: 40px;">
-                        <div style="display: flex;"><img style="width: 100%;margin: auto;margin-top: 5vw;" src="/assets/img/screenshot.png"></div>
+                    <div class="col-md-6" id="what-we-do-img-container">
+                        <img id="what-we-do-img" src="/assets/img/screenshot.png">
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!--Usage section-->
     <div>
-        <div class="container" style="padding: 0px;max-width: 1400px;">
+        <div class="container" id="sub-headers">
             <div>
                 <div class="row">
                     <div class="col">
-                        <div style="display: flex;height: auto;"><a href="https://chrome.google.com/webstore/detail/tabfern-tab-manager-and-b/hbajjpcdbninabigakflkhiogmmjaakm" style="margin: auto;"><img style="margin: auto;width: 300px;" src="/assets/img/ChromeWebStore_Badge_v2_206x58.png"></a></div>
+                        <div style="display: flex;height: auto;">
+                            <a href="https://chrome.google.com/webstore/detail/tabfern-tab-manager-and-b/hbajjpcdbninabigakflkhiogmmjaakm" style="margin: auto;">
+                                <img style="margin: auto;width: 300px;" src="/assets/img/ChromeWebStore_Badge_v2_206x58.png">
+                            </a>
+                        </div>
                     </div>
                 </div>
                 <div class="row rower" id="usage">
                     <div class="col">
                         <div>
                             <header>
-                                <h1 style="font-size: 64px;">Usage</h1>
+                                <h1>Usage</h1>
                             </header>
-                            <ul class="usage-list" style="margin: 1vw;margin-top: 20px;list-style-image: url(&quot;/assets/img/bullet.png&quot;);/*width: 80%;*/">
+                            <ul id="usage-list">
                                 <li>
                                     <div>
-                                        <p style="margin: 0px;">Click the fern icon&nbsp; &nbsp;<img src="/assets/img/fern16icon.png">&nbsp; &nbsp;in the Chrome toolbar to open the TabFern view.&nbsp;The view will also open when you start Chrome. (If you can’t find the TabFern window,
-                                            double-click the fern icon in the taskbar in any Chrome window. That will summon the TabFern window&nbsp;to that Chrome window.)&nbsp;&nbsp;</p>
+                                        Click the fern icon&nbsp; &nbsp;<img src="/assets/img/fern16icon.png">&nbsp; &nbsp;in the Chrome toolbar to open the TabFern view.&nbsp;The view will also open when you start Chrome. (If you can’t find the TabFern window,
+                                        double-click the fern icon in the taskbar in any Chrome window. That will summon the TabFern window&nbsp;to that Chrome window.)&nbsp;&nbsp;
                                     </div>
                                 </li>
+                                <br/>
                                 <li>The TabFern view shows a list of all your open windows and tabs, in white. It shows you saved windows and tabs in gray.</li>
+                                <br/>
                                 <li>You can control other Chrome windows from the TabFern window by right-clicking their entries, or by clicking the corresponding buttons that appear at the right when you hover the mouse pointer over the window’s name.</li>
+                                <br/>
                                 <li>To mark a window to be saved, you have two choices:-
                                     <ul>
-                                        <li>
-                                            <div>
-                                                <p style="margin: 0px;">Give the window a name using the pencil icon&nbsp;<img src="/assets/img/pencil.png"></p>
-                                            </div>
-                                        </li>
+                                        <li>Give the window a name using the pencil icon&nbsp;<img src="/assets/img/pencil.png"></li>
                                         <li>Hit the middle icon showing a rectangle with a red dot <img src="/assets/img/picture_delete.png">. The window will close.</li>
                                     </ul>
                                 </li>
+                                <br/>
                                 <li>Folder icons are:-
                                     <ul>
                                         <li>Open, unsaved: a monitor&nbsp; &nbsp;&nbsp;<img src="/assets/img/monitor.png"><br></li>
@@ -102,10 +119,14 @@
                                         <li>Closed, saved (closed unsaved aren’t in the tree): a white file folder.</li>
                                     </ul>
                                 </li>
+                                <br/>
                                 <li>Saved windows will be saved even if you close them manually. To remove them from the tree, hit the delete icon&nbsp; &nbsp;<img src="/assets/img/cross.png">&nbsp; &nbsp;{&nbsp; If you accidentally delete a window, look on the
-                                    main menu (bottom-right of the TabFern window — see next section). There will be a “Restore last deleted” option that will bring the tabs back.&nbsp; }<br></li>
+                                    main menu (bottom-right of the TabFern window — see next section). There will be a “Restore last deleted” option that will bring the tabs back.&nbsp; }</li>
+                                <br/>
                                 <li>To change the text size in the TabFern window, click into the window, then hit Control+Plus for larger or ontrol+Minus for smaller. This is the normal Google Chrome browser zoom.</li>
+                                <br/>
                                 <li>For help, sorting, options, or more functions, click the menu icon (<strong>≡</strong>) at the bottom right of the TabFern window.</li>
+                                <br/>
                                 <li>Note: windows you do not expressly save will not be saved when you exit!<br>I am open to discussion of better ways to handle this.</li>
                             </ul>
                         </div>
@@ -114,89 +135,93 @@
             </div>
         </div>
     </div>
+
+    <!--Backup & Restore section-->
     <div>
-        <div class="container" style="padding: 0px;max-width: 1400px;">
+        <div class="container" id="sub-headers">
             <div>
                 <div class="row rower" id="backup">
-                    <div class="col" style="padding: 0px;">
-                        <div id="usage">
+                    <div class="col">
+                        <div>
                             <header>
-                                <h1 style="font-size: 64px;">Backup &amp; Restore</h1>
+                                <h1>Backup &amp; Restore</h1>
                             </header>
                         </div>
-                        <p style="font-size: 18px;">On the menu in the bottom right (<strong>≡</strong>), you have options for “Backup” and&nbsp;“Load contents”:</p>
+                        <p>On the menu in the bottom right (<strong>≡</strong>), you have options for “Backup” and&nbsp;“Load contents”:</p>
                     </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-6">
-                        <div style="padding: 10px 10px;display: flex;flex-direction: column;">
-                            <ul class="text-capitalize what-we-do" style="margin: auto;margin-top: 20px;list-style-image: url(&quot;/assets/img/bullet.png&quot;);width: 100%;">
+                    <div class="row">
+                        <div class="col-md-6" id="backup-list">
+                            <ul>
                                 <li>Click “Backup now” to save a backup as a .tabfern file in our Downloads directory.</li>
+                                <br/>
                                 <li>Click “Load contents of a backup”, then choose the file ou want and hit OK, to add the backed-up windows to your tree.</li>
+                                <br/>
                                 <li>Loading a backup is not a “restore” operation that takes ou back to where you were. Instead, it <em>adds</em> the loaded information to the windows and tabs you already have open or saved. That way you don’t have to worry
                                     about losing your current place.</li>
                             </ul>
                         </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div style="display: flex;"><img style="width: 60%;height: 100%;margin: auto;margin-top: 2vh;" src="/assets/img/hamburger-screenshot.png"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div style="margin-bottom: 50px;">
-        <div class="container" style="padding: 0px;max-width: 1400px;">
-            <div>
-                <div class="row rower" id="limit">
-                    <div class="col">
-                        <div id="usage">
-                            <header>
-                                <h1 style="font-size: 64px;">Limits</h1>
-                            </header>
-                            <ul class="usage-list" style="margin: 1vw;margin-top: 20px;list-style-image: url(&quot;/assets/img/bullet.png&quot;);/*width: 80%;*/">
-                                <li>
-                                    <div>
-                                        <p style="margin: 0px;">There is only a two-level hierarchy — tabs cannot be the children&nbsp;of other tabs in the tree.</p>
-                                    </div>
-                                </li>
-                                <li>You cannot open and close individual tabs — you have to open and close the window as a whole.</li>
-                                <li>Windows will not necessarily open at the size of the last-closed window,&nbsp;like they do normally in Chrome.</li>
-                            </ul>
-                            <p style="font-size: 18px;">See the&nbsp;&nbsp;<a href="https://github.com/cxw42/TabFern/issues">issue tracker</a>&nbsp; on GitHub for&nbsp;more about current limitations, and where TabFern is going in the future!</p>
+                        <div class="col-md-6" id="backup-image-container">
+                            <img id="backup-image" src="/assets/img/hamburger-screenshot.png">
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    <div style="background-color: #7E544D;color: white;">
-        <div class="container" style="padding: 0px;max-width: 1400px;">
+
+    <!--Limits section-->
+    <div>
+        <div class="container" id="sub-headers">
+            <div>
+                <div class="row rower" id="limit">
+                    <div class="col">
+                        <div>
+                            <header>
+                                <h1>Limits</h1>
+                            </header>
+                        </div>
+                        <div class="col-md-12" id="limit-list">
+                            <ul>
+                                <li>There is only a two-level hierarchy — tabs cannot be the children&nbsp;of other tabs in the tree.</li>
+                                <br/>
+                                <li>You cannot open and close individual tabs — you have to open and close the window as a whole.</li>
+                                <br/>
+                                <li>Windows will not necessarily open at the size of the last-closed window,&nbsp;like they do normally in Chrome.</li>
+                                <br/>
+                                See the&nbsp;&nbsp;<a href="https://github.com/cxw42/TabFern/issues">issue tracker</a>&nbsp; on GitHub for&nbsp;more about current limitations, and where TabFern is going in the future!
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!--Footer-->
+    <div id="footer-main-container">
+        <div class="container">
             <div>
                 <div class="row rower" id="related">
-                    <div class="col" style="padding: 0px;">
-                        <div id="usage-related" style="display: flex;flex-direction: column;">
-                            <header style="margin: auto;">
-                                <h1>Related information</h1>
+                    <div class="col">
+                        <div id="related-container">
+                            <header>
+                                <h1>Related Information</h1>
                             </header>
-                            <div style="margin: auto;color: white !important;font-size: 18px;"><a href="/privacy.html" style="color: white;border-radius: 5px;background-color: grey;padding: 5px;">Privacy Policy</a></div>
-                            <div style="margin: auto;display: flex;flex-direction: column;margin-top: 40px;">
-                                <header style="margin: auto;">
+                            <a id="privacy-toggler" class="btn btn-secondary" data-toggle="modal" data-target="#privacy">Privacy Policy</a>
+                            <div id="related-container-list">
+                                <header>
                                     <h1>Thanks</h1>
                                 </header>
-                                <ul style="display: flex;flex-direction: column;list-style-type: none;">
-                                    <li style="margin: auto;text-align: center;">Inspired by (but not in any way related to or affiliated with)&nbsp;<a href="https://chrome.google.com/webstore/detail/tabs-outliner/eggkanocgddhmamlbiijnphhppkpkmkl">Tabs Outliner</a>&nbsp;by&nbsp; <code>Vladyslav Volovyk</code>&nbsp;.</li>
-                                    <li></li>
-                                    <li style="margin: auto;"><code><a href="https://extensionizr.com">Extensionizr</a></code></li>
-                                    <li style="margin: auto;"><code><a href="https://www.jstree.com/">jstree</a><br></code></li>
-                                    <li style="margin: auto;"><code><a href="https://github.com/alexandernst/jstree-actions">jstree-actions</a><br></code></li>
-                                    <li style="margin: auto;"><code><a href="https://jquery.com/">jquery</a></code></li>
-                                    <li style="margin: auto;"><code><a href="http://www.chradams.co.uk/fern/maker.html">Barnsley fern generator</a><br></code></li>
-                                    <li style="margin: auto;"><code><a href="http://www.famfamfam.com/lab/icons/silk/">famfamfam Silk icons</a><br></code></li>
-                                    <li style="margin: auto;"><code><a href="http://fontawesome.io/">Font Awesome</a><br></code></li>
-                                    <li style="margin: auto;text-align: center;"><code style="margin: auto;text-align: center;">Hosted on GitHub Pages — Theme modified from&nbsp;<a href="https://github.com/pages-themes/leap-day">Leap Day</a>&nbsp;by&nbsp;<a href="https://twitter.com/michigangraham">mattgraham</a><br></code></li>
-                                    <li
-                                        style="margin: auto;"><code><br></code></li>
+                                <ul>
+                                    <li>Inspired by (but not in any way related to or affiliated with)&nbsp;<a href="https://chrome.google.com/webstore/detail/tabs-outliner/eggkanocgddhmamlbiijnphhppkpkmkl">Tabs Outliner</a>&nbsp;by&nbsp; <code>Vladyslav Volovyk</code>&nbsp;</li>
+                                    <li><code></code><a href="https://extensionizr.com">Extensionizr</a></code></li>
+                                    <li><code><a href="https://www.jstree.com/">jstree</a><br></code></li>
+                                    <li><code><a href="https://github.com/alexandernst/jstree-actions">jstree-actions</a><br></code></li>
+                                    <li><code><a href="https://jquery.com/">jquery</a></code></li>
+                                    <li><code><a href="http://www.chradams.co.uk/fern/maker.html">Barnsley fern generator</a><br></code></li>
+                                    <li><code><a href="http://www.famfamfam.com/lab/icons/silk/">famfamfam Silk icons</a><br></code></li>
+                                    <li><code><a href="http://fontawesome.io/">Font Awesome</a><br></code></li>
+                                    <li><code>Hosted on GitHub Pages — Theme modified from&nbsp;<a href="https://github.com/pages-themes/leap-day">Leap Day</a>&nbsp;by&nbsp;<a href="https://twitter.com/michigangraham">mattgraham</a><br></code></li>
                                 </ul>
                             </div>
                         </div>
@@ -205,6 +230,41 @@
             </div>
         </div>
     </div>
+
+
+    <!-- Modal For Privacy Policy -->
+    <div class="modal fade" id="privacy" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="background-color: #4C8BF5;">
+            <h5 class="modal-title"><h2>TabFern Privacy Policy</h2></h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 18px;">
+                    TabFern collects window and tab titles, URLs, and favicon URLs in order to
+                    do what it is supposed to do!  All information is stored only locally, on
+                    your computer.  The TabFern extension does not send any data to any party.
+                    <br/>
+                    <br/>
+                    Google may collect information when you install or uninstall TabFern, 
+                    but TabFern itself does not report those activities or otherwise collect data
+                    about usage.  If you like TabFern, please
+                    star it on GitHub (Link Below)
+                </p>
+            </div>
+            <div class="modal-footer">
+                <a id="model-buttons" style="background-color: #4C8BF5;" type="button" class="btn" href="https://chrome.google.com/webstore/detail/tabfern-tab-manager-and-b/hbajjpcdbninabigakflkhiogmmjaakm">Add To Chrome</a>
+                <a id="model-buttons" style="background-color: #4C8BF5;" type="button" class="btn" href="https://github.com/cxw42/TabFern">GitHub</a>
+                <button id="model-buttons" type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+        </div>
+    </div>
+
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/js/bootstrap.bundle.min.js"></script>
 </body>
