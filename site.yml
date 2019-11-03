@@ -47,6 +47,11 @@ site:
         # rewritten appropriately.
         base_url: 'https://cxw42.github.io/TabFern'
 
+        # Plugins
+        plugins:
+            side_image:
+                '$class': SideImage
+
         # apps: These are the applications in this site. The name of the app,
         # "blog", "page", or "static", is used to refer to it in commands.
         apps:
@@ -94,9 +99,18 @@ site:
                 #- text: 'Blog'
                 #  href: '/blog'
 
+        links:
+            stylesheet:
+                - href: /assets/css/styles.css
+
+        images:
+            icon: /theme/images/fern16icon.png
+
         # deploy: This is the deploy object, used to deploy this site.
         deploy:
             $ref: 'deploy'
+
+    # end of site.args
 
 # theme: These are the settings for the theme.  See Statocles::Help::Theme for
 # more information, and Statocles::Theme for a full list of attributes and what

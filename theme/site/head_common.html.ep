@@ -1,0 +1,45 @@
+   <!-- theme/site/head_common.html.ep -->
+   <meta charset="utf-8">
+   <title><%= $self->title ? $self->title . ' - ' : '' %><%= $site->title %></title>
+
+   <!-- meta -->
+   <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+   % if ( $self->data->{description} ) {
+   <meta name="description" content="<%= $self->data->{description} %>"></meta>
+   % } elsif( $site->data->{description} ) {
+   <meta name="description" content="<%= $site->data->{description} %>"></meta>
+   % }
+
+   % if ( my $author = $self->author ) {
+   <meta name="author" content="<%= $author->name %>">
+   % }
+   <meta name="generator" content="Statocles <%= $Statocles::VERSION %> - Perl <%= $] %>" />
+
+   % for my $link ( $self->links( 'feed' ) ) {
+   <link rel="alternate" href="<%= $link->href %>" type="<%= $link->type %>" ></link>
+   % }
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/css/bootstrap.min.css">
+   <link rel="manifest" href="manifest.json">
+   <link href="https://fonts.googleapis.com/css?family=Mina:700&display=swap" rel="stylesheet">
+   <link href="https://fonts.googleapis.com/css?family=Josefin+Sans&display=swap" rel="stylesheet">
+
+   %# CSS
+   % for my $link ( $site->links( 'stylesheet' ) ) {
+   <link rel="stylesheet" href="<%= $link->href %>" type="<%= $link->type || 'text/css' %>"></link>
+   % }
+
+   %# JS
+   % for my $link ( $self->links( 'script' ) ) {
+      % if ( $link->{ 'text' } ) {
+      <script><%= $link->text %></script>
+      % } else {
+      <script src="<%= $link->href %>"></script>
+      % }
+   % }
+
+   %# Favicon
+   % if ( my $img = $site->images->{ 'icon' } ) {
+   <link rel="shortcut icon" href="<%= $img->src %>"></link>
+   % }
+
+   <!-- end theme/site/head_common.html.ep -->

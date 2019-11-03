@@ -1,0 +1,22 @@
+    <!-- site/nav.html.ep -->
+    <nav class="navbar navbar-light navbar-expand-md navbar-expand-xl sticky-top" id="navbar">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/TabFern">
+                <img src="assets/img/fern128.png" id="navbar-brand-img">
+            </a>
+            <button data-toggle="collapse" class="navbar-toggler" data-target="#navbar-item-container" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="sr-only">Toggle navigation</span><span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbar-item-container">
+                <ul class="nav navbar-nav nav-list">
+                    <li class="nav-item" role="presentation" data-toggle="collapse" data-target=".navbar-collapse"><a class="nav-link" href="#usage">Usage</a></li>
+                    <li class="nav-item" role="presentation" data-toggle="collapse" data-target=".navbar-collapse"><a class="nav-link" href="#backup">Backup &amp; Restore</a></li>
+                    <li class="nav-item" role="presentation" data-toggle="collapse" data-target=".navbar-collapse"><a class="nav-link" href="#limit">Limitations</a></li>
+                    <li class="nav-item" role="presentation" data-toggle="collapse" data-target=".navbar-collapse"><a class="nav-link" href="#related">Privacy policy</a></li>
+                    <li class="nav-item" role="presentation"><a class="nav-link" href="https://github.com/cxw42/TabFern">View on Github&#x2197;</a></li>
+                    <li class="nav-item" role="presentation"><a class="nav-link" href="https://chrome.google.com/webstore/detail/tabfern-tab-manager-and-b/hbajjpcdbninabigakflkhiogmmjaakm">Add to Chrome&#x2197;</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <!-- end site/nav.html.ep -->

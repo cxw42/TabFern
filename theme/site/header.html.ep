@@ -1,0 +1,56 @@
+   <!-- site/header.html.ep -->
+   <header id="top">
+
+      <div class="row">
+
+         <div class="header-content twelve columns">
+
+            <h1 id="logo-text"><a href="/index.html" title=""><%= $site->title %></a></h1>
+            % if($site->data->{tagline}) {
+            <p id="intro"><%= $site->data->{tagline} %></p>
+            % }
+
+         </div>
+
+      </div>
+
+      %= include 'site/nav.html.ep'
+
+   </header> <!-- Header End -->
+
+    <!--Navbar -->
+    <nav class="navbar navbar-light navbar-expand-md navbar-expand-xl sticky-top" id="navbar">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="<%= $site->url('/') %>">
+                <img src="<%= $site->url('assets/img/fern128.png') %>" id="navbar-brand-img">
+            </a>
+            <button data-toggle="collapse" class="navbar-toggler" data-target="#navbar-item-container" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="sr-only">Toggle navigation</span><span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbar-item-container">
+                <ul class="nav navbar-nav nav-list">
+                    <li class="nav-item" role="presentation" data-toggle="collapse" data-target=".navbar-collapse"><a class="nav-link" href="#usage">Usage</a></li>
+                    <li class="nav-item" role="presentation" data-toggle="collapse" data-target=".navbar-collapse"><a class="nav-link" href="#backup">Backup &amp; Restore</a></li>
+                    <li class="nav-item" role="presentation" data-toggle="collapse" data-target=".navbar-collapse"><a class="nav-link" href="#limit">Limitations</a></li>
+                    <li class="nav-item" role="presentation" data-toggle="collapse" data-target=".navbar-collapse"><a class="nav-link" href="#related">Privacy policy</a></li>
+                    <li class="nav-item" role="presentation"><a class="nav-link" href="https://github.com/cxw42/TabFern">View on Github&#x2197;</a></li>
+                    <li class="nav-item" role="presentation"><a class="nav-link" href="https://chrome.google.com/webstore/detail/tabfern-tab-manager-and-b/hbajjpcdbninabigakflkhiogmmjaakm">Add to Chrome&#x2197;</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!--TabFern page head-->
+    <div id="main-header-container">
+        <div class="row">
+            <div class="col">
+                <div id="main-header">
+                    <header>
+                        <h1><%= $site->title %></h1>
+                        <p><%= $site->data->{tagline} %></p>
+                    </header>
+                </div>
+            </div>
+        </div>
+    </div>
+   <!-- end site/header.html.ep -->

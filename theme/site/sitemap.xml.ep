@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+% for my $page ( @$pages ) {
+    <url>
+        <loc><%= $site->url( $page->path ) %></loc>
+        <changefreq><%= $page->search_change_frequency %></changefreq>
+        <priority><%= $page->search_priority %></priority>
+        <lastmod><%= $page->date->strftime( '%Y-%m-%d' ) %></lastmod>
+    </url>
+% }
+</urlset>

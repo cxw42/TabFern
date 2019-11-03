@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    %= include 'site/head_common.html.ep'
+</head>
+
+<body>
+
+    <div id="content">
+        <%= content %>
+    </div> <!-- end content -->
+
+    %= include 'site/footer.html.ep'
+</body>
+
+</html>

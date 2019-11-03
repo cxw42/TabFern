@@ -1,0 +1,281 @@
+html {
+    font-family: 'Josefin Sans', sans-serif;
+}
+
+body {
+    font-family: 'Josefin Sans', sans-serif;
+    overflow-x: hidden;
+}
+
+#navbar {
+    background-color: white;
+}
+
+#navbar-brand-img {
+    width: 50px;
+}
+
+#navbar-item-container {
+    justify-content: flex-end;
+}
+
+.nav-list li:nth-child(n){
+    padding:2px 10px
+}
+
+#main-header-container {
+    min-width: 100vw;
+    background-color: #4C8BF5;
+}
+
+#main-header {
+    display: flex;
+    flex-direction: column;
+    padding: 20px 5px;
+}
+
+#main-header header {
+    margin: auto;
+    padding: 20px 5px;
+}
+
+#main-header header h1 {
+    font-family: "Mina";
+    font-size: 80px;
+    text-align: center;
+    color: white;
+    font-weight: 800;
+    margin: 60px 0px;
+}
+
+#main-header header p {
+    text-align: center;
+    font-weight: 100;
+    font-size: 22px;
+    padding: 10px;
+    word-break: keep-all;
+    color: #000000;
+    margin-top: 40px;
+}
+
+/* Provide to every other section leaving the Header and Footer */
+#sub-headers {
+    padding: 0px;
+    max-width: 1400px;
+}
+
+.rower{
+    padding:120px 30px 10px
+}
+
+#what-we-do {
+    padding: 0px 10px;
+    display: flex;
+    flex-direction: column;
+}
+
+#what-we-do header {
+    justify-content: flex-start;
+    justify-self: flex-start;
+}
+
+#what-we-do header h1 {
+    font-size: 64px;
+}
+
+#what-we-do ul {
+    margin: auto;
+    margin-top: 20px;
+    list-style-image: url("../images/bullet.png");
+    width: 100%;
+}
+
+#what-we-do ul li {
+    padding: 10px;
+    font-size: 18px;
+}
+
+#what-we-do-img-container {
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+}
+
+#what-we-do-img {
+    width: 100%;
+    margin: auto;
+}
+
+
+#usage header h1{
+    font-size: 64px;
+}
+
+#usage-list {
+    margin: 1vw;
+    margin-top: 20px;
+    list-style-image: url("../images/bullet.png");
+    font-size: 18px !important;
+}
+
+#backup .col {
+    padding: 0px;
+}
+
+#backup .col p {
+    font-size: 18px;
+}
+
+#backup header h1 {
+    font-size: 64px;
+}
+
+#backup-list {
+    padding: 10px 10px;
+    display: flex;
+    flex-direction: column;
+    font-size: 18px !important;
+}
+
+#backup-list ul {
+    margin: auto;
+    list-style-image: url("../images/bullet.png");
+    width: 100%;
+}
+
+#backup-image-container {
+    display: flex;
+    flex-direction: column;
+}
+
+#backup-image {
+    width: 60%;
+    height: auto;
+    margin: auto;
+}
+
+#limit .col {
+    padding: 0px;
+}
+
+#limit header h1 {
+    font-size: 64px;
+    margin: 0px;
+}
+
+#limit-list {
+    padding: 10px 10px;
+    display: flex;
+    flex-direction: column;
+    font-size: 18px !important;
+}
+
+#limit-list ul {
+    margin: auto;
+    margin-top: 20px;
+    list-style-image: url("../images/bullet.png");
+    width: 100%;
+}
+
+#limit ul li {
+    font-size: 18px;
+}
+
+#footer-main-container {
+    margin-top: 10vh;
+    background-color: #4C8BF5;
+    color: white;
+}
+
+#related-container {
+    display: flex;
+    flex-direction: column;
+}
+
+#related-container header {
+    display: flex;
+    flex-direction: column;
+}
+
+#related-container header h1 {
+    margin: auto;
+    font-size: 64px;
+}
+
+#privacy-toggler {
+    margin: auto;
+    margin-top: 40px;
+    width: 140px;
+    font-size: 18px;
+    font-weight: 400;
+}
+
+#related-container-list {
+    margin: auto;
+    display: flex;
+    flex-direction: column;
+    margin-top: 80px;
+}
+
+#related-container-list header {
+    margin: auto;
+}
+
+#related-container-list ul {
+    display: flex;
+    flex-direction: column;
+    list-style-type: none;
+    padding: 0px;
+}
+
+#related-container-list ul li {
+    margin: auto;
+    text-align: center;
+}
+
+#related-container-list ul li a{
+    color: yellow;
+}
+
+#modal-buttons {
+    color: white;
+}
+
+.modal-body p {
+    font-size: 18px;
+}
+
+@media (max-width:768px){
+
+    #main-header header h1 {
+        font-family: "Mina";
+        font-size: 60px;
+        text-align: center;
+        color: white;
+        font-weight: 800;
+        margin: 60px 0px;
+    }
+
+    #what-we-do header h1 {
+        font-size: 40px;
+    }
+
+    #usage header h1{
+        font-size: 40px;
+    }
+
+    #backup header h1 {
+        font-size: 40px;
+    }
+
+    #limit header h1 {
+        font-size: 40px;
+        margin: 0px;
+    }
+
+    #related-container header h1 {
+        margin: auto;
+        font-size: 40px;
+        text-align: center;
+    }
+}

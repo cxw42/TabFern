@@ -1,7 +1,11 @@
-.PHONY: all serve
+.PHONY: all build serve
 
 all:
-	statocles build && statocles daemon
+	$(MAKE) build
+	$(MAKE) serve
+
+build:
+	export PERL5LIB="lib:$$PERL5LIB" ; statocles build
 
 serve:
-	statocles daemon
+	export PERL5LIB="lib:$$PERL5LIB" ; statocles daemon
