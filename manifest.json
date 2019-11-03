@@ -1,0 +1,15 @@
+{
+    "short_name": "TabFern",
+    "name": "TabFern Tab Manager",
+    "icons": [
+        {
+            "src": "/assets/img/fern128.png",
+            "type": "image/png",
+            "size": "192x192"
+        }
+    ],
+    "start_url": "/index.html",
+    "display": "fullscreen",
+    "theme_color": "#4C8BF5"
+}
+      
