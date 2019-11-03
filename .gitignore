@@ -1,0 +1,55 @@
+# Backup files and output files
+*~
+~*
+*.swp
+*.bak
+*.bin
+*.o
+*.a
+*.obj
+*.exe
+*.dll
+*.lib
+*.ncb
+*.pdb
+*.suo
+*.idb
+*.sdf
+*.opensdf
+.DS_Store
+.qmake.stash
+*~
+*.log
+core
+*.stackdump
+/*_history
+/tags
+
+# Output directories
+/build*
+
+# Test outputs
+*.e
+*.map
+*.txt
+
+# readline history
+*.history
+
+#Statocles
+.statocles
+/theme/
+
+!Build/
+.last_cover_stats
+/META.yml
+/META.json
+/MYMETA.*
+*.pm.tdy
+*.bs
+
+# Devel::Cover
+cover_db/
+
+# Devel::NYTProf
+nytprof.out
