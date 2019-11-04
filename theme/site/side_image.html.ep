@@ -1,0 +1,20 @@
+    <!-- theme/site/side_image.html.ep -->
+    <div>
+        <div class="container" id="sub-headers">
+            <div>
+                <div class="row rower">
+                    <div class="col-md-6">
+                        <div>
+                            %= markdown begin
+                            %= $content
+                            %= end
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <img src="<%= $image %>" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- end theme/site/side_image.html.ep -->

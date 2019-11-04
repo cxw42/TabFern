@@ -50,7 +50,9 @@ site:
         # Plugins
         plugins:
             side_image:
-                '$class': SideImage
+                $class: SideImage
+                $args:
+                    template: site/side_image.html
 
         # apps: These are the applications in this site. The name of the app,
         # "blog", "page", or "static", is used to refer to it in commands.
@@ -101,7 +103,7 @@ site:
 
         links:
             stylesheet:
-                - href: /assets/css/styles.css
+                - href: /theme/assets/css/styles.css
 
         images:
             icon: /theme/images/fern16icon.png
@@ -160,9 +162,9 @@ page_app:
         store: 'page'
         url_root: '/page'
 
-# static_app: These are the settings for the static application.
-static_app:
-    class: 'Statocles::App::Basic'
-    args:
-        store: 'static'
-        url_root: '/static'
+## static_app: These are the settings for the static application.
+#static_app:
+#    class: 'Statocles::App::Basic'
+#    args:
+#        store: 'static'
+#        url_root: '/static'
