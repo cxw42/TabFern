@@ -1,14 +1,10 @@
     <!-- theme/site/side_image.html.ep -->
-    <div>
+    <div><%# Text::Markdown automatically passes HTML block-level elements unchanged %>
         <div class="container" id="sub-headers">
             <div>
                 <div class="row rower">
                     <div class="col-md-6">
-                        <div>
-                            %= markdown begin
-                            %= $content
-                            %= end
-                        </div>
+                        <div><%= markdown $content %></div><%# We need there not to be a blank line after the rendered content, or Text::Markdown gets confused and thinks the rest is a code block. %>
                     </div>
                     <div class="col-md-6">
                         <img src="<%= $image %>" />

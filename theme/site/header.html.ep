@@ -1,32 +1,15 @@
-   <!-- site/header.html.ep -->
-   <header id="top">
-
-      <div class="row">
-
-         <div class="header-content twelve columns">
-
-            <h1 id="logo-text"><a href="/index.html" title=""><%= $site->title %></a></h1>
-            % if($site->data->{tagline}) {
-            <p id="intro"><%= $site->data->{tagline} %></p>
-            % }
-
-         </div>
-
-      </div>
-
-      %= include 'site/nav.html.ep'
-
-   </header> <!-- Header End -->
+    <!-- site/header.html.ep -->
 
     <!--Navbar -->
     <nav class="navbar navbar-light navbar-expand-md navbar-expand-xl sticky-top" id="navbar">
         <div class="container-fluid">
-            <a class="navbar-brand" href="<%= $site->url('/') %>">
-                <img src="<%= $site->url('assets/img/fern128.png') %>" id="navbar-brand-img">
+            <a class="navbar-brand" href="/">
+                <img src="/theme/images/fern128.png" id="navbar-brand-img">
             </a>
             <button data-toggle="collapse" class="navbar-toggler" data-target="#navbar-item-container" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="sr-only">Toggle navigation</span><span class="navbar-toggler-icon"></span>
             </button>
+            <!-- TODO generate these from site.yml -->
             <div class="collapse navbar-collapse" id="navbar-item-container">
                 <ul class="nav navbar-nav nav-list">
                     <li class="nav-item" role="presentation" data-toggle="collapse" data-target=".navbar-collapse"><a class="nav-link" href="#usage">Usage</a></li>
@@ -47,10 +30,12 @@
                 <div id="main-header">
                     <header>
                         <h1><%= $site->title %></h1>
+                        % if($site->data->{tagline}) {
                         <p><%= $site->data->{tagline} %></p>
+                        % }
                     </header>
                 </div>
             </div>
         </div>
     </div>
-   <!-- end site/header.html.ep -->
+    <!-- end site/header.html.ep -->

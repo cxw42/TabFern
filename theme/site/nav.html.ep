@@ -2,7 +2,7 @@
     <nav class="navbar navbar-light navbar-expand-md navbar-expand-xl sticky-top" id="navbar">
         <div class="container-fluid">
             <a class="navbar-brand" href="/TabFern">
-                <img src="assets/img/fern128.png" id="navbar-brand-img">
+                <img src="/theme/images/fern128.png" id="navbar-brand-img">
             </a>
             <button data-toggle="collapse" class="navbar-toggler" data-target="#navbar-item-container" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="sr-only">Toggle navigation</span><span class="navbar-toggler-icon"></span>

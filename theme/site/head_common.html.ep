@@ -19,7 +19,7 @@
    <link rel="alternate" href="<%= $link->href %>" type="<%= $link->type %>" ></link>
    % }
    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/css/bootstrap.min.css">
-   <link rel="manifest" href="manifest.json">
+   <link rel="manifest" href="/static/manifest.json">
    <link href="https://fonts.googleapis.com/css?family=Mina:700&display=swap" rel="stylesheet">
    <link href="https://fonts.googleapis.com/css?family=Josefin+Sans&display=swap" rel="stylesheet">
 

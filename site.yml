@@ -66,9 +66,9 @@ site:
             page:
                 $ref: 'page_app'
 
-            ## static: This app does no processing at all. Good for images
-            #static:
-            #    $ref: 'static_app'
+            # static: This app does no processing at all. Good for images
+            static:
+                $ref: 'static_app'
 
         # plugins: These are plugins that can add features and alter the
         # content of the site.
@@ -103,10 +103,10 @@ site:
 
         links:
             stylesheet:
-                - href: /theme/assets/css/styles.css
+                - href: /theme/css/styles.css
 
         images:
-            icon: /theme/images/fern16icon.png
+            icon: /static/fern16icon.png
 
         # deploy: This is the deploy object, used to deploy this site.
         deploy:
@@ -162,9 +162,9 @@ page_app:
         store: 'page'
         url_root: '/page'
 
-## static_app: These are the settings for the static application.
-#static_app:
-#    class: 'Statocles::App::Basic'
-#    args:
-#        store: 'static'
-#        url_root: '/static'
+# static_app: These are the settings for the static application.
+static_app:
+    class: 'Statocles::App::Basic'
+    args:
+        store: 'static'
+        url_root: '/static'

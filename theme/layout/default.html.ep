@@ -7,7 +7,7 @@
 <body>
 
     %= include 'site/header.html.ep'
-    %= include 'site/nav.html.ep'
+    %# Note: header.html.ep also pulls in the nav.
 
     <!-- TODO -->
     <div id="content">

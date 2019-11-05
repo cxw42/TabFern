@@ -12,6 +12,7 @@ use Statocles::Base 'Class';
 with 'Statocles::Plugin';
 
 use Carp qw(croak);
+use Mojo::ByteStream;
 
 =head1 NAME
 
@@ -35,7 +36,9 @@ In a C<.markdown> file:
     Markdown content to put next to the image
     % end
 
-The C<image filename> will be passed to C<< $site->url(...) >>.
+The C<image filename> is used as-is.  You can provide the result of
+a C<< $site->url(...) >> call to get a full URL, but that can interfere
+with local testing.
 
 =head1 ATTRIBUTES
 
@@ -77,14 +80,19 @@ C<$doc>, C<$app>, C<$site>, and C<$page>
 =cut
 
 sub side_image {
-    say STDERR 'side_image: ', Dumper(\@_);     # DEBUG
+    #say STDERR 'side_image: ', Dumper(\@_);     # DEBUG
     my ($self, $render_args, $img, $content) = @_;
         # $render_args is a hashref with keys doc, app, site, page, ...
 
+$DB::single=1;
     my $template = $render_args->{site}->theme->read($self->{template})
         or croak "No template";
+
+    eval { $content = $content->(); };      # In case it's a begin...end block
+    #say STDERR "Content: >>>$content<<<";
+
     my $retval = $template->render(
-        image => $render_args->{site}->url($img),
+        image => $img,
         content => $content,
         map {; $_ => $render_args->{$_} } qw(app doc site page)
     );
@@ -95,7 +103,8 @@ sub side_image {
     #    "<!-- side_image -->\n" . (Dumper(\@_) =~ s/^/    /gmr) .
     #    "\n<!-- /side_image -->\n"
     #);
-    say STDERR $retval; # DEBUG
+    $retval = Mojo::ByteStream->new($retval);
+    #say STDERR 'Retval: ', ref($retval), " >>>$retval<<<"; # DEBUG
     return $retval;
 } #side_image()
 
