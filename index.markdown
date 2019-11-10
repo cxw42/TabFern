@@ -13,21 +13,24 @@ links:
           text: Other
 ---
 
+<div class="content-section">
 %= side_image '/static/screenshot.png' , begin
-## What TabFern does
+# What TabFern does
 - Saves browser windows so you can close them and come back to them later
   with all their tabs intact
 - Backs up your windows and tabs with just two clicks!
 - Gives you a single window showing all your open browser windows and tabs,
   listed vertically.
 % end
+</div>
 
 <!-- TODO center -->
 %= markdown '![Chrome Web Store badge](/static/ChromeWebStore_Badge_v2_206x58.png)'
 
+<div class="content-section">
 %= offset_anchor 'usage'
 %= markdown begin
-## Usage
+# Usage
 
 - Click the fern icon&nbsp;&nbsp;<img src="/static/fern16icon.png">&nbsp;&nbsp;in the Chrome toolbar to open the TabFern view.  The view will also open when you start Chrome. (If you can’t find the TabFern window,
     double-click the fern icon in the taskbar in any Chrome window. That will summon the TabFern window to that Chrome window.)
@@ -53,12 +56,13 @@ main menu (bottom-right of the TabFern window — see next section). There will 
 - For help, sorting, options, or more functions, click the menu icon (<strong>≡</strong>) at the bottom right of the TabFern window.
 
 - Note: windows you do not expressly save will not be saved when you exit!<br>I am open to discussion of better ways to handle this.
-
 %= end
+</div>
 
+<div class="content-section">
 %= offset_anchor 'backup'
 %= side_image '/static/hamburger-screenshot.png', begin
-## Backup and Restore
+# Backup and Restore
 
 On the menu in the bottom right (**≡**), you have options for "Backup"
 and&nbsp;"Load contents".
@@ -67,10 +71,12 @@ and&nbsp;"Load contents".
 - Click "Load contents of a backup", then choose the file ou want and hit OK, to add the backed-up windows to your tree.
 - Loading a backup is not a "restore" operation that takes you back to where you were. Instead, it **adds** the loaded information to the windows and tabs you already have open or saved. That way you don’t have to worry about losing your current place.
 %= end
+</div>
 
+<div class="content-section">
 %= offset_anchor 'limit'
 %= markdown begin
-## Limitations
+# Limitations
 
 - There is only a two-level hierarchy — tabs cannot be the children&nbsp;of other tabs in the tree.
 
@@ -80,9 +86,13 @@ and&nbsp;"Load contents".
 
 See the&nbsp;&nbsp;<a href="https://github.com/cxw42/TabFern/issues">issue tracker</a>&nbsp; on GitHub for&nbsp;more about current limitations, and where TabFern is going in the future!
 %= end
+</div>
 
+<div class="content-section">
 %= offset_anchor 'related'
 %= markdown begin
+# Related information
+
 ## Privacy Policy
 
 Click [here](privacy.html).

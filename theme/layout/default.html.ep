@@ -17,6 +17,4 @@
    %= include 'site/footer.html.ep'
 
 </body>
-
-</html>
-<!-- end layout/default.html.ep -->
+<!-- end layout/default.html.ep --></html>

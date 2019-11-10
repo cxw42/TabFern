@@ -68,29 +68,29 @@ body {
     padding:120px 30px 10px
 }
 
-#what-we-do {
+.content-section {
     padding: 0px 10px;
     display: flex;
     flex-direction: column;
 }
 
-#what-we-do header {
+.content-section>div {
     justify-content: flex-start;
     justify-self: flex-start;
 }
 
-#what-we-do header h1 {
+.content-section h1 {
     font-size: 64px;
 }
 
-#what-we-do ul {
+.content-section ul {
     margin: auto;
     margin-top: 20px;
     list-style-image: url("../images/bullet.png");
     width: 100%;
 }
 
-#what-we-do ul li {
+.content-section ul li {
     padding: 10px;
     font-size: 18px;
 }
@@ -107,7 +107,7 @@ body {
 }
 
 
-#usage header h1{
+#usage h1 {
     font-size: 64px;
 }
 

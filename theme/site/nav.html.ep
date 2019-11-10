@@ -1,7 +1,8 @@
     <!-- site/nav.html.ep -->
+    % use Mojo::URL;
     <nav class="navbar navbar-light navbar-expand-md navbar-expand-xl sticky-top" id="navbar">
         <div class="container-fluid">
-            <a class="navbar-brand" href="/TabFern">
+            <a class="navbar-brand" href="<%= Mojo::URL->new($site->base_url)->path %>">
                 <img src="/theme/images/fern128.png" id="navbar-brand-img">
             </a>
             <button data-toggle="collapse" class="navbar-toggler" data-target="#navbar-item-container" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
@@ -10,6 +11,7 @@
             %# % use Data::Dumper; BEGIN { $Data::Dumper::Indent=1; }
             %# <pre>
             %# %== Dumper $self
+            %#   %# Note: %== in the line above escapes the lt/gt/amp.
             %# </pre>
             <!-- TODO generate these from site.yml -->
             <div class="collapse navbar-collapse" id="navbar-item-container">
