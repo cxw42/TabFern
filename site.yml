@@ -54,6 +54,10 @@ site:
                 $args:
                     template: site/side_image.html
 
+        ## Markdown parser:
+        #markdown:
+        #    $class: Text::MultiMarkdown
+
         # apps: These are the applications in this site. The name of the app,
         # "blog", "page", or "static", is used to refer to it in commands.
         apps:
@@ -82,7 +86,7 @@ site:
             $ref: 'theme'
 
         # index: The path to the page that should be used for the site index.
-        index: '/page'
+        index: 'page'
 
         # nav: These are lists of navigation links used by the theme.
         # Navigations are used to move between applications, or to go to

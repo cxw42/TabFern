@@ -84,7 +84,6 @@ sub side_image {
     my ($self, $render_args, $img, $content) = @_;
         # $render_args is a hashref with keys doc, app, site, page, ...
 
-$DB::single=1;
     my $template = $render_args->{site}->theme->read($self->{template})
         or croak "No template";
 
@@ -103,7 +102,7 @@ $DB::single=1;
     #    "<!-- side_image -->\n" . (Dumper(\@_) =~ s/^/    /gmr) .
     #    "\n<!-- /side_image -->\n"
     #);
-    $retval = Mojo::ByteStream->new($retval);
+    #$retval = Mojo::ByteStream->new($retval);
     #say STDERR 'Retval: ', ref($retval), " >>>$retval<<<"; # DEBUG
     return $retval;
 } #side_image()

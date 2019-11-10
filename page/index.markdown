@@ -1,5 +1,6 @@
 ---
 title: TabFern
+non_markdown: 1
 ---
 
 %= side_image '/static/screenshot.png' , begin
@@ -12,11 +13,11 @@ title: TabFern
 % end
 
 <!-- TODO center -->
+%= markdown '![Chrome Web Store badge](/static/ChromeWebStore_Badge_v2_206x58.png)'
 
-![Chrome Web Store badge](/static/ChromeWebStore_Badge_v2_206x58.png)
-
+<a name="usage"/>
+%= markdown begin
 ## Usage
-
 
 - Click the fern icon&nbsp;&nbsp;<img src="/static/fern16icon.png">&nbsp;&nbsp;in the Chrome toolbar to open the TabFern view.  The view will also open when you start Chrome. (If you can’t find the TabFern window,
     double-click the fern icon in the taskbar in any Chrome window. That will summon the TabFern window to that Chrome window.)
@@ -43,8 +44,12 @@ main menu (bottom-right of the TabFern window — see next section). There will 
 
 - Note: windows you do not expressly save will not be saved when you exit!<br>I am open to discussion of better ways to handle this.
 
+%= end
+
+<a name="backup" />
 %= side_image '/static/hamburger-screenshot.png', begin
 ## Backup and Restore
+
 On the menu in the bottom right (**≡**), you have options for "Backup"
 and&nbsp;"Load contents".
 
@@ -53,6 +58,8 @@ and&nbsp;"Load contents".
 - Loading a backup is not a "restore" operation that takes you back to where you were. Instead, it **adds** the loaded information to the windows and tabs you already have open or saved. That way you don’t have to worry about losing your current place.
 %= end
 
+<a name="limit" />
+%= markdown begin
 ## Limitations
 
 - There is only a two-level hierarchy — tabs cannot be the children&nbsp;of other tabs in the tree.
@@ -62,3 +69,29 @@ and&nbsp;"Load contents".
 - Windows will not necessarily open at the size of the last-closed window,&nbsp;like they do normally in Chrome.
 
 See the&nbsp;&nbsp;<a href="https://github.com/cxw42/TabFern/issues">issue tracker</a>&nbsp; on GitHub for&nbsp;more about current limitations, and where TabFern is going in the future!
+%= end
+
+<a name="related" />
+%= markdown begin
+## Privacy Policy
+
+TabFern collects window and tab titles, URLs, and favicon URLs in order to
+do what it is supposed to do!  All information is stored only locally, on
+your computer.  The TabFern extension does not send any data to any party.
+
+Google may collect information when you install or uninstall TabFern,
+but TabFern itself does not report those activities or otherwise collect data
+about usage.  If you like TabFern, please star it on GitHub (link at top of page).
+
+## Thanks to
+
+%= end
+<ul>
+<li>Inspired by (but not in any way related to or affiliated with)&nbsp;<a href="https://chrome.google.com/webstore/detail/tabs-outliner/eggkanocgddhmamlbiijnphhppkpkmkl">Tabs Outliner</a>&nbsp;by&nbsp; Vladyslav Volovyk&nbsp;</li>
+<li><code></code><a href="https://extensionizr.com">Extensionizr</a></code></li>
+<li><code><a href="https://www.jstree.com/">jstree</a><br></code></li>
+<li><code><a href="https://github.com/alexandernst/jstree-actions">jstree-actions</a><br></code></li>
+<li><code><a href="https://jquery.com/">jquery</a></code></li>
+<li><a href="http://www.chradams.co.uk/fern/maker.html">Barnsley fern generator</a><br></li>
+<li><a href="http://www.famfamfam.com/lab/icons/silk/">famfamfam Silk icons</a><br></li>
+</ul>
