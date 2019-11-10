@@ -5,14 +5,16 @@ use 5.014;
 use strict;
 use warnings;
 
+# Debugging
 use Data::Dumper;
-BEGIN { $Data::Dumper::Indent = 1; }
+sub _d { Data::Dumper->new(\@_)->Indent(1)->Dump }
+my $VERBOSE = 0;
+sub vlog { STDERR->say(@_) if $VERBOSE }
 
 use Statocles::Base 'Class';
 with 'Statocles::Plugin';
 
 use Carp qw(croak);
-use Mojo::ByteStream;
 
 =head1 NAME
 
@@ -32,7 +34,7 @@ In C<site.yml>:
 
 In a C<.markdown> file:
 
-    % side_image 'image filename' => begin
+    %= side_image 'image filename' => begin
     Markdown content to put next to the image
     % end
 
@@ -80,7 +82,7 @@ C<$doc>, C<$app>, C<$site>, and C<$page>
 =cut
 
 sub side_image {
-    #say STDERR 'side_image: ', Dumper(\@_);     # DEBUG
+    vlog 'side_image: ', _d(@_);
     my ($self, $render_args, $img, $content) = @_;
         # $render_args is a hashref with keys doc, app, site, page, ...
 
@@ -88,7 +90,7 @@ sub side_image {
         or croak "No template";
 
     eval { $content = $content->(); };      # In case it's a begin...end block
-    #say STDERR "Content: >>>$content<<<";
+    vlog "Content: >>>$content<<<";
 
     my $retval = $template->render(
         image => $img,
@@ -97,13 +99,7 @@ sub side_image {
     );
     croak "No rendered output" unless defined $retval;
 
-    #my $retval = $render_args->{site}->markdown->markdown(
-    #    #"Foo **bold** _italic_ bar\n```\nAnother paragraph\n```"
-    #    "<!-- side_image -->\n" . (Dumper(\@_) =~ s/^/    /gmr) .
-    #    "\n<!-- /side_image -->\n"
-    #);
-    #$retval = Mojo::ByteStream->new($retval);
-    #say STDERR 'Retval: ', ref($retval), " >>>$retval<<<"; # DEBUG
+    vlog 'Retval: ', ref($retval), " >>>$retval<<<";
     return $retval;
 } #side_image()
 
@@ -115,7 +111,7 @@ Register the plugin.  Called automatically.
 
 sub register {
     my ( $self, $site ) = @_;
-    #say STDERR Register => Dumper(\@_);    # DEBUG
+    vlog Register => _d(@_);
     $site->theme->helper( side_image => sub { return $self->side_image(@_) } );
 } #register()
 

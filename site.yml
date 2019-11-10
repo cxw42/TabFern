@@ -47,17 +47,6 @@ site:
         # rewritten appropriately.
         base_url: 'https://cxw42.github.io/TabFern'
 
-        # Plugins
-        plugins:
-            side_image:
-                $class: SideImage
-                $args:
-                    template: site/side_image.html
-
-        ## Markdown parser:
-        #markdown:
-        #    $class: Text::MultiMarkdown
-
         # apps: These are the applications in this site. The name of the app,
         # "blog", "page", or "static", is used to refer to it in commands.
         apps:
@@ -77,8 +66,15 @@ site:
         # plugins: These are plugins that can add features and alter the
         # content of the site.
         plugins:
-            link_check:
-                $class: 'Statocles::Plugin::LinkCheck'
+            # Link checker doesn't seem to work since base_url includes a directory
+            #link_check:
+            #    $class: 'Statocles::Plugin::LinkCheck'
+            side_image:
+                $class: SideImage
+                $args:
+                    template: site/side_image.html
+            offset_anchor:
+                $class: OffsetAnchor
 
         # theme: The theme builds and manages the templates. Use themes to
         # change how your site looks.

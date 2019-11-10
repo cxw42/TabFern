@@ -1,6 +1,16 @@
 ---
 title: TabFern
 non_markdown: 1
+links:
+    nav:
+        - href: '#usage'
+          text: Usage
+        - href: '#backup'
+          text: Backup & Restore
+        - href: '#limit'
+          text: Limitations
+        - href: '#privacy'
+          text: Privacy policy
 ---
 
 %= side_image '/static/screenshot.png' , begin
@@ -15,7 +25,7 @@ non_markdown: 1
 <!-- TODO center -->
 %= markdown '![Chrome Web Store badge](/static/ChromeWebStore_Badge_v2_206x58.png)'
 
-<a name="usage"/>
+%= offset_anchor 'usage'
 %= markdown begin
 ## Usage
 
@@ -46,7 +56,7 @@ main menu (bottom-right of the TabFern window — see next section). There will 
 
 %= end
 
-<a name="backup" />
+%= offset_anchor 'backup'
 %= side_image '/static/hamburger-screenshot.png', begin
 ## Backup and Restore
 
@@ -58,7 +68,7 @@ and&nbsp;"Load contents".
 - Loading a backup is not a "restore" operation that takes you back to where you were. Instead, it **adds** the loaded information to the windows and tabs you already have open or saved. That way you don’t have to worry about losing your current place.
 %= end
 
-<a name="limit" />
+%= offset_anchor 'limit'
 %= markdown begin
 ## Limitations
 
@@ -71,7 +81,7 @@ and&nbsp;"Load contents".
 See the&nbsp;&nbsp;<a href="https://github.com/cxw42/TabFern/issues">issue tracker</a>&nbsp; on GitHub for&nbsp;more about current limitations, and where TabFern is going in the future!
 %= end
 
-<a name="related" />
+%= offset_anchor 'privacy'
 %= markdown begin
 ## Privacy Policy
 
@@ -83,6 +93,7 @@ Google may collect information when you install or uninstall TabFern,
 but TabFern itself does not report those activities or otherwise collect data
 about usage.  If you like TabFern, please star it on GitHub (link at top of page).
 
+%= offset_anchor 'thanks'
 ## Thanks to
 
 %= end
@@ -94,4 +105,5 @@ about usage.  If you like TabFern, please star it on GitHub (link at top of page
 <li><code><a href="https://jquery.com/">jquery</a></code></li>
 <li><a href="http://www.chradams.co.uk/fern/maker.html">Barnsley fern generator</a><br></li>
 <li><a href="http://www.famfamfam.com/lab/icons/silk/">famfamfam Silk icons</a><br></li>
+<li><a href="https://www.caktusgroup.com/blog/2017/10/23/css-tip-fixed-headers-and-section-anchors/">Caktus Group</a>
 </ul>
