@@ -9,8 +9,8 @@ links:
           text: Backup & Restore
         - href: '#limit'
           text: Limitations
-        - href: '#privacy'
-          text: Privacy policy
+        - href: '#related'
+          text: Other
 ---
 
 %= side_image '/static/screenshot.png' , begin
@@ -81,17 +81,11 @@ and&nbsp;"Load contents".
 See the&nbsp;&nbsp;<a href="https://github.com/cxw42/TabFern/issues">issue tracker</a>&nbsp; on GitHub for&nbsp;more about current limitations, and where TabFern is going in the future!
 %= end
 
-%= offset_anchor 'privacy'
+%= offset_anchor 'related'
 %= markdown begin
 ## Privacy Policy
 
-TabFern collects window and tab titles, URLs, and favicon URLs in order to
-do what it is supposed to do!  All information is stored only locally, on
-your computer.  The TabFern extension does not send any data to any party.
-
-Google may collect information when you install or uninstall TabFern,
-but TabFern itself does not report those activities or otherwise collect data
-about usage.  If you like TabFern, please star it on GitHub (link at top of page).
+Click [here](privacy.html).
 
 %= offset_anchor 'thanks'
 ## Thanks to

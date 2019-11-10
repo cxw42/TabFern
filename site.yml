@@ -55,9 +55,9 @@ site:
             #blog:
             #    $ref: 'blog_app'
 
-            # page: This app turns any Markdown page into HTML
-            page:
-                $ref: 'page_app'
+            ## page: This app turns any Markdown page into HTML
+            #page:
+            #    $ref: 'page_app'
 
             # static: This app does no processing at all. Good for images
             static:
@@ -82,7 +82,7 @@ site:
             $ref: 'theme'
 
         # index: The path to the page that should be used for the site index.
-        index: 'page'
+        index: '/'
 
         # nav: These are lists of navigation links used by the theme.
         # Navigations are used to move between applications, or to go to
