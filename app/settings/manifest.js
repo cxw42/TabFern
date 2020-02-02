@@ -475,7 +475,9 @@ recovered window will show up in TabFern as a separate, unsaved window
 (related to ${issue(41, true)}).</p>
 </li>
 </ul>`) +
-`<li><code>about:blank</code> tabs and tab showing your new-tab page are no
+`<li>Reopening the last tab in a window positions the action buttons
+correctly.  ${issue(200)}</li>
+<li><code>about:blank</code> tabs and tab showing your new-tab page are no
 longer saved in the tree.  (${issue(186, true)}, ${issue(191, true)})
 </ul>`
             ),

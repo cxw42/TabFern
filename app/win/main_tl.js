@@ -1287,6 +1287,14 @@ function createNodeForTab(ctab, parent_node_id)
 
     addTabNodeActions(node_id);
 
+    // The rjustify is a no-op until the actions are added.  If we just added
+    // the last child, we haven't necessaryly redrawn, so do so. (#200)
+    let parent_node = T.treeobj.get_node(parent_node_id);
+    if(parent_node.children[parent_node.children.length - 1] === node_id) {
+        T.install_rjustify(null, 'redraw_event.jstree', 'once');
+        T.treeobj.redraw_node(node_id);
+    }
+
     return node_id;
 } //createNodeForTab
 
