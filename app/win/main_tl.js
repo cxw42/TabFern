@@ -157,6 +157,7 @@ function local_init()
     ASQ = Modules.ASQ;
     ASQH = Modules.ASQH;
     S = Modules.S;
+    console.log(`Issue #35 support: ${S.ISSUE35 ? 'enabled' : 'disabled'}`);
 } //init()
 
 /// Copy properties named #property_names from #source to #dest.
@@ -179,6 +180,30 @@ function copyTruthyProperties(dest, source, property_names, modifier)
 function escapeRegExp(string) {
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
 } //escapeRegExp
+
+/// Get the node ID from a NEW_TAB_URL.  Returns falsy on failure, or the ID
+/// on success.
+function getNewTabNodeID(ctab) {
+    if(!ctab || !(ctab.url || ctab.pendingUrl)) return false;
+    let hash;
+    try {
+        let url = new URL(ctab.url || ctab.pendingUrl);
+            // Since Chrome 79, we get url == "" and pendingUrl != "" in tabOnCreated
+        if(!url.hash) return false;
+
+        hash = url.hash.slice(1);
+        if(!hash) return false;
+
+        if(url.href.split('#')[0] !== NEW_TAB_URL) {
+            return false;
+        }
+    } catch(e) {
+        log.info({[`tabOnCreated handle_tabfern_action exception: ${e}`]: ctab});
+        return false;
+    }
+
+    return hash;
+} //getNewTabNodeID
 
 ////////////////////////////////////////////////////////////////////////// }}}1
 // General record helpers // {{{1
@@ -422,7 +447,7 @@ function saveTree(save_ephemeral_windows = true, cbk = undefined)
                 }
 
                 result_win.tabs.push(thistab_v1);
-            } //foreach tab
+            } //foreach tab_node_id
         } //endif window has child tabs
 
         result.push(result_win);
@@ -705,7 +730,7 @@ function actionCloseWindowAndSave(win_node_id, win_node, unused_action_id, unuse
                 is_audible = true;
                 break;
             }
-        } //foreach tab
+        } //foreach child_nodeid
     } //if confirm del of audible
 
     if(!is_audible) {   // No confirmation required - just do it
@@ -824,7 +849,7 @@ function actionDeleteWindow(win_node_id, win_node, unused_action_id,
                 confirm_because_audible = true;
                 break;
             }
-        } //foreach tab
+        } //foreach child_nodeid
     } //if confirm del of audible
 
     if(no_confirmation && !confirm_because_audible) {
@@ -1185,17 +1210,17 @@ function addTabNodeActions(tab_node_id)
     // Add the buttons in the layout chosen by the user (#152).
     let order = S.getString(S.S_WIN_ACTION_ORDER);
     if(order === 'ced') {
-        addTabCloseAction(tab_node_id);
+        if(S.ISSUE35) addTabCloseAction(tab_node_id);
         addTabEditAction(tab_node_id);
         addTabDeleteAction(tab_node_id);
     } else if(order === 'ecd') {
         addTabEditAction(tab_node_id);
-        addTabCloseAction(tab_node_id);
+        if(S.ISSUE35) addTabCloseAction(tab_node_id);
         addTabDeleteAction(tab_node_id);
     } else if(order === 'edc') {
         addTabEditAction(tab_node_id);
         addTabDeleteAction(tab_node_id);
-        addTabCloseAction(tab_node_id);
+        if(S.ISSUE35) addTabCloseAction(tab_node_id);
     } else {
         //don't add any buttons, but don't crash.
         log.error(`Unknown tab-button order ${order}`);
@@ -1385,9 +1410,9 @@ function createNodeForWindow(cwin, keep)
     addWindowNodeActions(node_id);
 
     if(cwin.tabs) {                      // new windows may have no tabs
-        for(let tab of cwin.tabs) {
-            log.info('   ' + tab.id.toString() + ': ' + tab.title);
-            createNodeForTab(tab, node_id);     //TODO handle errors
+        for(let ctab of cwin.tabs) {
+            log.info('   ' + ctab.id.toString() + ': ' + ctab.title);
+            createNodeForTab(ctab, node_id);    //TODO handle errors
         }
     }
 
@@ -1517,7 +1542,7 @@ function connectChromeWindowToTreeWindowItem(cwin, existing_win, options = {})
         let ctab = cwin.tabs[idx];
 
         // Do we need these?
-        ctab.url = ctab.url || tab_val.raw_url || 'about:blank';
+        ctab.url = ctab.url || ctab.pendingUrl || tab_val.raw_url || 'about:blank';
         ctab.title = ctab.title || tab_val.raw_title || _T('labelUnknownTitle');
 
         let pinned = tab_val.isPinned;
@@ -1561,8 +1586,9 @@ function winAlreadyExistsInTree(cwin)
     // Get #cwin's hash
     let child_urls = [];
     for(let ctab of cwin.tabs) {
-        if(!ctab.url) return false;     // Assume not existent if we can't tell.
-        child_urls.push(ctab.url);
+        if(!(ctab.url || ctab.pendingUrl)) return false;
+            // Assume not existent if we can't tell.
+        child_urls.push(ctab.url || ctab.pendingUrl);
     }
 
     let ordered_url_hash = M.orderedHashOfStrings(child_urls);
@@ -2491,34 +2517,16 @@ var tabOnCreated = (function(){     // search key: function tabOnCreated()
     /// @return {Boolean} true if we handled the action, false otherwise
     function handle_tabfern_action(tab_val, ctab)
     {
-        if(tab_val || !ctab.url) return false;
+        let tab_node_id = getNewTabNodeID(ctab);
+        if(!tab_node_id) return false;      // Not a NEW_TAB_URL
 
-        let hash;
-
-        try {
-            let url = new URL(ctab.url);
-            if(!url.hash) return false;
-
-            hash = url.hash.slice(1);
-            if(!hash) return false;
-
-            if(url.href.split('#')[0] !== NEW_TAB_URL) {
-                return false;
-            }
-
-            // See if the hash is a node ID for a tab.
-            tab_val = D.tabs.by_node_id(hash);
-            if(!tab_val || !tab_val.being_opened) return false;
-
-        } catch(e) {
-            log.info({[`tabOnCreated handle_tabfern_action exception: ${e}`]: ctab});
-            return false;
-        }
+        // See if the hash is a node ID for a tab.
+        tab_val = D.tabs.by_node_id(tab_node_id);
+        if(!tab_val || !tab_val.being_opened) return false;
 
         // If we get here, it is a tab we are opening.  Change the URL
         // to the URL we actually wanted (the NEW_TAB_URL page is a placeholder)
 
-        let tab_node_id = hash;
         tab_val.being_opened = false;
 
         // Attach the ctab to the value
@@ -2552,8 +2560,6 @@ var tabOnCreated = (function(){     // search key: function tabOnCreated()
             log.info(`Unknown window ID ${ctab.windowId} - ignoring`);
             return;
         }
-
-        let tab_node_id;
 
         // See if this is a duplicate of an existing tab
         let tab_val = D.tabs.by_tab_id(ctab.id);
@@ -2645,7 +2651,7 @@ function tabOnUpdated(tabid, changeinfo, ctab)
     // actionURLSubstitute.
 
     // URL
-    let new_raw_url = changeinfo.url || ctab.url || 'about:blank';
+    let new_raw_url = changeinfo.url || ctab.url || ctab.pendingUrl || 'about:blank';
     if(new_raw_url !== tab_node_val.raw_url) {
         dirty = true;
         should_refresh_tooltip = true;

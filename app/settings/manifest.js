@@ -31,16 +31,7 @@ let settings = `${ham} ${gt} Settings ${gt}`;
 let refresh_message = " (refresh the TabFern window after you change this to make the change take effect)";
 
 // Settings {{{2
-// Assign the settings
-let manifest = {
-    "name":
-        `${_T('wsSettings')} - ${_T('wsShortName')} (v${TABFERN_VERSION})`,
-
-    "icon": "/assets/fern128.png",
-    //"settingsLabel":'',
-    //"searchLabel":'',
-    //"nothingFoundMessage":'',
-    "settings": [
+let setting_definitions = ([
 
         // Welcome page
         {
@@ -316,6 +307,9 @@ bar (it will start with "file://")</li>
             "type": "description",
             "text": future_i18n("This also sets the order of the corresponding buttons for tabs."),
         },
+    ]);
+
+if(S.ISSUE35) setting_definitions.push(
         {
             'tab': future_i18n('Appearance'),
             'group': future_i18n('Action-button order for windows'),
@@ -329,8 +323,9 @@ bar (it will start with "file://")</li>
                 {value: 'edc',
                     html: `Edit ${editImg} &bull; Delete ${delImg} &bull; Close and Save ${saveImg}` },
             ],
-        },
+        });
 
+setting_definitions.push(
         // Features
         {
             "tab": "Features",
@@ -431,6 +426,7 @@ order within each category.`
 `<ul>
 <li><a href="https://github.com/Procyon-b/">Procyon-b</a> (French)</li>
 <li><a href="https://github.com/rwexmd/">rwexmd</a> (Russian)</li>
+<li><a href="https://github.com/Makemeloco/">Makemeloco</a> (Russian)</li>
 </ul>`
         },
         {
@@ -452,19 +448,20 @@ order within each category.`
 `<ul>
 <li><a href="https://github.com/devinrhode2/">Devin Rhode</a></li>
 </ul>`
-        },
+        });
 
 // }}}2
-        // Changelog                                          {{{1
+// Changelog                                          {{{1
+setting_definitions.push(
         {
             "tab": future_i18n("What's new?"),
             "group": `Version 0.2.1${brplain('2019-xx-xx')}`,
             'group_html':true,
             "type": "description",
-            "text":
-/*
-`<ul>
-<li class="gold-star">Opening one tab at a time!  Yes, the wait is over!  ${issue(35)}
+            "text": (
+`<ul>` +
+(!S.ISSUE35 ? '' :
+`<li class="gold-star">Opening one tab at a time!  Yes, the wait is over!  ${issue(35)}
 <ul>
 <li>Click on a tab in a closed window to open only that tab.</li>
 <li>Click the "close and save" icon (${icon('fff-picture-delete')})
@@ -477,12 +474,11 @@ order within each category.`
 recovered window will show up in TabFern as a separate, unsaved window
 (related to ${issue(41, true)}).</p>
 </li>
-</ul>`,
-*/
-`<ul>
-<li><code>about:blank</code> tabs and tab showing your new-tab page are no
+</ul>`) +
+`<li><code>about:blank</code> tabs and tab showing your new-tab page are no
 longer saved in the tree.  (${issue(186, true)}, ${issue(191, true)})
-</ul>`,
+</ul>`
+            ),
         },
         {
             "tab": future_i18n("What's new?"),
@@ -807,8 +803,18 @@ and Expand All/Collapse All.</li></ul>`
                 "text":
 "<ul><li>First version released to the Chrome Web Store</li></ul>"
             }                                                     // }}}1
-        ]
-    };
+        );
+
+let manifest = {
+    "name":
+        `${_T('wsSettings')} - ${_T('wsShortName')} (v${TABFERN_VERSION})`,
+
+    "icon": "/assets/fern128.png",
+    //"settingsLabel":'',
+    //"searchLabel":'',
+    //"nothingFoundMessage":'',
+    "settings": setting_definitions,
+};
 
 module.exports = manifest;
 // vi: set fdm=marker foldenable fdl=1: //

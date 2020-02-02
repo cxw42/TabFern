@@ -49,6 +49,7 @@
             'index',        // of the Chrome tab in its Chrome window
             'tab',          // the actual Tab record from Chrome
                 // TODO remove this --- tab_id should be enough
+                // Or, if I keep it, at least rename it to `ctab` for consistency
             'being_opened', // true if we are manually opening the Chrome tab
             'raw_url',      // the tab's URL
             'raw_title',    // the tab's title.  null => default.

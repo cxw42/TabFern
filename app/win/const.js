@@ -71,7 +71,7 @@
         // must be truthy.  These are used as the types in multidexes.
         // They are also applied to nodes using jstree-multitype.
         IT_WIN:  'win',      // strings are used as required by multidex
-        IT_TAB:     'tab',
+        IT_TAB:  'tab',
 
         // Node subtypes that can be layered onto the basic node types using jstree-multitype
         NST_OPEN:           'open',     // Present if a window or tab is open
@@ -102,6 +102,8 @@
         let win_id;     // TODO is there a better way to pass data down
                         // the sequence?
 
+        log.info({'Opening window for': desired_url});
+
         let seq =
         ASQH.NowCC((cc)=>{
             chrome.windows.create(cc);
@@ -124,14 +126,14 @@
 
             let gates = [];
 
-            for(let tab of cwin.tabs) {
-                if(tab.url != desired_url) {
+            for(let ctab of cwin.tabs) {
+                if((ctab.url || ctab.pendingUrl) != desired_url) {
                     gates.push((done_gate)=>{
-                        log.info({'Removing undesired tab': tab});
-                        chrome.tabs.remove(tab.id, ASQH.CC(done_gate));
+                        log.info({'Removing undesired tab': ctab});
+                        chrome.tabs.remove(ctab.id, ASQH.CC(done_gate));
                     });
                 }
-            } //foreach tab
+            } //foreach ctab
 
             if(gates.length === 0) {
                 done();
