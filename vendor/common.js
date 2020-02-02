@@ -54,6 +54,23 @@ BROWSER_TYPE=null;  // unknown
     }
 })(window);
 
+/// Return a string representation of an error message.
+/// @param err {Any}: The error object/message to process.
+function ErrorMessageString(err) {
+    if(!err) {
+        return "<no error>";
+    }
+
+    try {
+        if(typeof err !== 'object') {
+            return `${err}`;
+        }
+        return err.message || err.description || err.toString();
+    } catch(e) {
+        return `Error that I could not stringify (meta-error = ${e})`;
+    }
+} // ErrorMessageString()
+
 /// Return a string representation of chrome.runtime.lastError.
 ///
 /// Somewhere around Chrome 75, chrome.runtime.lastError lost toString(),
@@ -62,17 +79,7 @@ BROWSER_TYPE=null;  // unknown
 ///     https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/runtime/lastError
 ///     https://developer.chrome.com/extensions/runtime#property-lastError
 function lastBrowserErrorMessageString() {
-    if(!chrome.runtime.lastError) {
-        return "<no error>";
-    }
-
-    if(typeof chrome.runtime.lastError !== 'object') {
-        return `${chrome.runtime.lastError}`;
-    }
-
-    return chrome.runtime.lastError.message ||
-            chrome.runtime.lastError.description ||
-            chrome.runtime.lastError.toString();
+    return ErrorMessageString(chrome.runtime.lastError);
 }
 
 ////////////////////////////////////////////////////////////////////////// }}}1
@@ -166,6 +173,7 @@ function ignore_chrome_error() { void chrome.runtime.lastError; }
 /// All member comparisons are ===.
 /// @param obj1 An object to compare
 /// @param obj2 The other object to compare
+/// @return True if the objects are equal; false otherwise.
 /// Modified from https://gist.github.com/nicbell/6081098 by
 /// https://gist.github.com/nicbell
 function ObjectCompare(obj1, obj2) {
