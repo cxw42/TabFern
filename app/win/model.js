@@ -895,7 +895,7 @@ me.markTabAsOpen = function(tab_vorny, ctab) {
     val.index = ctab.index;
     val.tab = ctab;
     // val.being_opened unchanged
-    val.raw_url = ctab.url;
+    val.raw_url = ctab.url || ctab.pendingUrl;
     val.raw_title = ctab.title;
     val.isOpen = true;
     // val.raw_bullet is unchanged since it doesn't come from ctab

@@ -1541,7 +1541,7 @@ function connectChromeWindowToTreeWindowItem(cwin, existing_win, options = {})
         let ctab = cwin.tabs[idx];
 
         // Do we need these?
-        ctab.url = ctab.url || tab_val.raw_url || 'about:blank';
+        ctab.url = ctab.url || ctab.pendingUrl || tab_val.raw_url || 'about:blank';
         ctab.title = ctab.title || tab_val.raw_title || _T('labelUnknownTitle');
 
         let pinned = tab_val.isPinned;
@@ -1585,8 +1585,9 @@ function winAlreadyExistsInTree(cwin)
     // Get #cwin's hash
     let child_urls = [];
     for(let ctab of cwin.tabs) {
-        if(!ctab.url) return false;     // Assume not existent if we can't tell.
-        child_urls.push(ctab.url);
+        if(!(ctab.url || ctab.pendingUrl)) return false;
+            // Assume not existent if we can't tell.
+        child_urls.push(ctab.url || ctab.pendingUrl);
     }
 
     let ordered_url_hash = M.orderedHashOfStrings(child_urls);
@@ -2649,7 +2650,7 @@ function tabOnUpdated(tabid, changeinfo, ctab)
     // actionURLSubstitute.
 
     // URL
-    let new_raw_url = changeinfo.url || ctab.url || 'about:blank';
+    let new_raw_url = changeinfo.url || ctab.url || ctab.pendingUrl || 'about:blank';
     if(new_raw_url !== tab_node_val.raw_url) {
         dirty = true;
         should_refresh_tooltip = true;
