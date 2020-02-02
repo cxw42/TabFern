@@ -1074,8 +1074,8 @@ me.eraseWin = function(win_vorny) {
 /// @param  ctab        The Chrome tab
 /// @return True on success; false on failure
 me.react_onTabCreated = function(win_vorny, tab_vorny, ctab) {
-    let tab = me.vn_by_vorny(tab_vorny, K.IT_TAB);
-    if(!tab) return false;
+    let tabvn = me.vn_by_vorny(tab_vorny, K.IT_TAB);
+    if(!tabvn) return false;
 
     let win = me.vn_by_vorny(win_vorny, K.IT_WIN);
     if(!win) return false;
@@ -1123,10 +1123,10 @@ me.react_onTabCreated = function(win_vorny, tab_vorny, ctab) {
     }
 
     // Add the tab to the tree
-    me.markTabAsOpen(tab.val, ctab);
+    me.markTabAsOpen(tabvn.val, ctab);
 
     // Put it where it goes
-    T.treeobj.because('chrome','move_node', tab.node_id, win_node, treeidx);
+    T.treeobj.because('chrome','move_node', tabvn.node_id, win_node, treeidx);
 
     // Update the indices
     me.updateTabIndexValues(win_node);
@@ -1143,8 +1143,8 @@ me.react_onTabCreated = function(win_vorny, tab_vorny, ctab) {
 /// @param  cidx_to     The Chrome new tabindex
 /// @return True on success; false on failure
 me.react_onTabMoved = function(win_vorny, tab_vorny, cidx_from, cidx_to) {
-    let tab = me.vn_by_vorny(tab_vorny, K.IT_TAB);
-    if(!tab) return false;
+    let tabvn = me.vn_by_vorny(tab_vorny, K.IT_TAB);
+    if(!tabvn) return false;
 
     let win = me.vn_by_vorny(win_vorny, K.IT_WIN);
     if(!win) return false;
@@ -1163,10 +1163,10 @@ me.react_onTabMoved = function(win_vorny, tab_vorny, cidx_from, cidx_to) {
 
     // TODO RESUME HERE
     if(desired_delta === -1) {          // Move one left
-        treeidx = win_node.children.indexOf(tab.node_id) - 1;
+        treeidx = win_node.children.indexOf(tabvn.node_id) - 1;
 
     } else if(desired_delta === 1) {    // Move one right
-        treeidx = win_node.children.indexOf(tab.node_id) + 1;
+        treeidx = win_node.children.indexOf(tabvn.node_id) + 1;
 
     } else {                            // Move other than +/- 1
         // XXX OLD
@@ -1191,7 +1191,7 @@ me.react_onTabMoved = function(win_vorny, tab_vorny, cidx_from, cidx_to) {
         return false;
     }
 
-    T.treeobj.because('chrome','move_node', tab.node_id, win_node, treeidx);
+    T.treeobj.because('chrome','move_node', tabvn.node_id, win_node, treeidx);
 
     // Update the indices of all the tabs in this window.  This will update
     // the old tab and the new tab.

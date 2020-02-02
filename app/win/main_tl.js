@@ -447,7 +447,7 @@ function saveTree(save_ephemeral_windows = true, cbk = undefined)
                 }
 
                 result_win.tabs.push(thistab_v1);
-            } //foreach tab
+            } //foreach tab_node_id
         } //endif window has child tabs
 
         result.push(result_win);
@@ -730,7 +730,7 @@ function actionCloseWindowAndSave(win_node_id, win_node, unused_action_id, unuse
                 is_audible = true;
                 break;
             }
-        } //foreach tab
+        } //foreach child_nodeid
     } //if confirm del of audible
 
     if(!is_audible) {   // No confirmation required - just do it
@@ -849,7 +849,7 @@ function actionDeleteWindow(win_node_id, win_node, unused_action_id,
                 confirm_because_audible = true;
                 break;
             }
-        } //foreach tab
+        } //foreach child_nodeid
     } //if confirm del of audible
 
     if(no_confirmation && !confirm_because_audible) {
@@ -1410,9 +1410,9 @@ function createNodeForWindow(cwin, keep)
     addWindowNodeActions(node_id);
 
     if(cwin.tabs) {                      // new windows may have no tabs
-        for(let tab of cwin.tabs) {
-            log.info('   ' + tab.id.toString() + ': ' + tab.title);
-            createNodeForTab(tab, node_id);     //TODO handle errors
+        for(let ctab of cwin.tabs) {
+            log.info('   ' + ctab.id.toString() + ': ' + ctab.title);
+            createNodeForTab(ctab, node_id);    //TODO handle errors
         }
     }
 
