@@ -479,7 +479,11 @@ recovered window will show up in TabFern as a separate, unsaved window
 correctly.  ${issue(200)}</li>` +
 //`<li><code>about:blank</code> tabs and tab showing your new-tab page are no
 //longer saved in the tree.  (${issue(186, true)}, ${issue(191, true)})</li>` +
-`</ul>`
+`<li>Special thanks to Hacktoberfest 2019 participants!  ahonn and Procyon-b
+contributed code, Makemeloco contributed a translation, and sarthakpranesh
+contributed a new website.</li>
+<li>Russian translation ${issue(194)}</li>
+</ul>`
             ),
         },
         {
