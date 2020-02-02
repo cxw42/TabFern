@@ -891,6 +891,7 @@ function actionDeleteWindow(win_node_id, win_node, unused_action_id,
 /// @param win_node {object} the window's node
 function actionOpenRestOfTabs(win_node_id, win_node, unused_action_id, unused_action_el)
 {
+    if(!S.ISSUE35) return;
     if(!win_node_id || !win_node) return;
     let win_val = D.windows.by_node_id(win_node_id);
     if(!win_val) return;
@@ -1154,6 +1155,7 @@ function actionDeleteTab(node_id, node, unused_action_id, unused_action_el,
 /// Close the tab and save
 function actionCloseTabAndSave(tab_node_id, tab_node, unused_action_id, unused_action_el)
 {
+    if(!S.ISSUE35) return;
     let tab_val = D.tabs.by_node_id(tab_node_id);
     if(!tab_val || tab_val.tab_id === K.NONE) return;   //already closed => nop
     let window_node_id = tab_node.parent;
@@ -1927,7 +1929,7 @@ function treeOnSelect(evt_unused, evt_data, options={})
     if(win_val.isOpen) {
         if(is_win) {    // clicked on an open window
 
-            if( M.isWinPartlyOpen(win_node) &&
+            if( S.ISSUE35 && M.isWinPartlyOpen(win_node) &&
                 (S.getString(S.S_OPEN_REST_ON_CLICK) === S.OROC_DO)
             ) {
                 action = ActionTy.open_rest;
@@ -1936,7 +1938,7 @@ function treeOnSelect(evt_unused, evt_data, options={})
             }
 
         } else {        // clicked on a tab in an open window
-            action = tab_val.isOpen ?  ActionTy.activate_tab
+            action = (tab_val.isOpen || !S.ISSUE35) ?  ActionTy.activate_tab
                                     : ActionTy.open_tab_in_win;
         }
     } else {    // window is closed
@@ -1976,7 +1978,7 @@ function treeOnSelect(evt_unused, evt_data, options={})
     } else if(action === ActionTy.activate_win) {
         win_id_to_highlight_and_raise = node_val.win_id;
 
-    } else if(action === ActionTy.open_rest) {
+    } else if(S.ISSUE35 && action === ActionTy.open_rest) {
         win_id_to_highlight_and_raise = win_val.win_id;
         actionOpenRestOfTabs(win_node.id, win_node, null, null);
 
@@ -1990,7 +1992,7 @@ function treeOnSelect(evt_unused, evt_data, options={})
         let urls=[];
         let tab_node_ids;
 
-        if(action === ActionTy.open_win) {      // Open all tabs
+        if(!S.ISSUE35 || action === ActionTy.open_win) {    // Open all tabs
             for(let child_id of win_node.children) {
                 let child_val = D.tabs.by_node_id(child_id);
                 urls.push(child_val.raw_url);
@@ -2073,14 +2075,10 @@ function treeOnSelect(evt_unused, evt_data, options={})
             return;
         }
 
-    } else if(action === ActionTy.open_tab_in_win) {    // add tab to existing win
+    } else if(S.ISSUE35 && action === ActionTy.open_tab_in_win) {
+        // add tab to existing win
+
         // Figure out where to put it
-        //let newindex=0;
-        //for(let other_tab_node_id of win_node.children) {
-        //    if(other_tab_node_id === tab_node.id) break;
-        //    let tab_val = D.tabs.by_node_id(other_tab_node_id);
-        //    if(tab_val.isOpen) ++newindex;
-        //}
         let newindex = M.chromeIdxOfTab(win_node_id, tab_node.id);
 
         // Open the tab
@@ -3321,7 +3319,7 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
             },
         };
 
-        if(val.isOpen) {
+        if(S.ISSUE35 && val.isOpen) {
             tabItems.closeItem = {
                     label: 'Close and remember',
                     icon: 'fff-picture-delete',
@@ -3377,7 +3375,7 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
                 };
         }
 
-        if( M.isWinPartlyOpen(node) &&
+        if( S.ISSUE35 && M.isWinPartlyOpen(node) &&
             (S.getString(S.S_OPEN_REST_ON_CLICK) === S.OROC_DO_NOT)
         ) {
             winItems.openAllItem = {
@@ -3490,7 +3488,7 @@ function dndIsDraggable(nodes, evt_unused)
 ///
 /// @return {boolean} whether or not the operation is permitted
 ///
-var treeCheckCallback = (function()
+var treeCheckCallback = (function treeCheck()
 {
 
     /// The move_node callback we will use to remove empty windows
