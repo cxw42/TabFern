@@ -157,6 +157,7 @@ function local_init()
     ASQ = Modules.ASQ;
     ASQH = Modules.ASQH;
     S = Modules.S;
+    console.log(`Issue #35 support: ${S.ISSUE35 ? 'enabled' : 'disabled'}`);
 } //init()
 
 /// Copy properties named #property_names from #source to #dest.
@@ -1209,17 +1210,17 @@ function addTabNodeActions(tab_node_id)
     // Add the buttons in the layout chosen by the user (#152).
     let order = S.getString(S.S_WIN_ACTION_ORDER);
     if(order === 'ced') {
-        addTabCloseAction(tab_node_id);
+        if(S.ISSUE35) addTabCloseAction(tab_node_id);
         addTabEditAction(tab_node_id);
         addTabDeleteAction(tab_node_id);
     } else if(order === 'ecd') {
         addTabEditAction(tab_node_id);
-        addTabCloseAction(tab_node_id);
+        if(S.ISSUE35) addTabCloseAction(tab_node_id);
         addTabDeleteAction(tab_node_id);
     } else if(order === 'edc') {
         addTabEditAction(tab_node_id);
         addTabDeleteAction(tab_node_id);
-        addTabCloseAction(tab_node_id);
+        if(S.ISSUE35) addTabCloseAction(tab_node_id);
     } else {
         //don't add any buttons, but don't crash.
         log.error(`Unknown tab-button order ${order}`);
