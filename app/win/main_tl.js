@@ -180,6 +180,30 @@ function escapeRegExp(string) {
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
 } //escapeRegExp
 
+/// Get the node ID from a NEW_TAB_URL.  Returns falsy on failure, or the ID
+/// on success.
+function getNewTabNodeID(ctab) {
+    if(!ctab || !(ctab.url || ctab.pendingUrl)) return false;
+    let hash;
+    try {
+        let url = new URL(ctab.url || ctab.pendingUrl);
+            // Since Chrome 79, we get url == "" and pendingUrl != "" in tabOnCreated
+        if(!url.hash) return false;
+
+        hash = url.hash.slice(1);
+        if(!hash) return false;
+
+        if(url.href.split('#')[0] !== NEW_TAB_URL) {
+            return false;
+        }
+    } catch(e) {
+        log.info({[`tabOnCreated handle_tabfern_action exception: ${e}`]: ctab});
+        return false;
+    }
+
+    return hash;
+} //getNewTabNodeID
+
 ////////////////////////////////////////////////////////////////////////// }}}1
 // General record helpers // {{{1
 
@@ -2491,34 +2515,16 @@ var tabOnCreated = (function(){     // search key: function tabOnCreated()
     /// @return {Boolean} true if we handled the action, false otherwise
     function handle_tabfern_action(tab_val, ctab)
     {
-        if(tab_val || !ctab.url) return false;
+        let tab_node_id = getNewTabNodeID(ctab);
+        if(!tab_node_id) return false;      // Not a NEW_TAB_URL
 
-        let hash;
-
-        try {
-            let url = new URL(ctab.url);
-            if(!url.hash) return false;
-
-            hash = url.hash.slice(1);
-            if(!hash) return false;
-
-            if(url.href.split('#')[0] !== NEW_TAB_URL) {
-                return false;
-            }
-
-            // See if the hash is a node ID for a tab.
-            tab_val = D.tabs.by_node_id(hash);
-            if(!tab_val || !tab_val.being_opened) return false;
-
-        } catch(e) {
-            log.info({[`tabOnCreated handle_tabfern_action exception: ${e}`]: ctab});
-            return false;
-        }
+        // See if the hash is a node ID for a tab.
+        tab_val = D.tabs.by_node_id(tab_node_id);
+        if(!tab_val || !tab_val.being_opened) return false;
 
         // If we get here, it is a tab we are opening.  Change the URL
         // to the URL we actually wanted (the NEW_TAB_URL page is a placeholder)
 
-        let tab_node_id = hash;
         tab_val.being_opened = false;
 
         // Attach the ctab to the value
@@ -2552,8 +2558,6 @@ var tabOnCreated = (function(){     // search key: function tabOnCreated()
             log.info(`Unknown window ID ${ctab.windowId} - ignoring`);
             return;
         }
-
-        let tab_node_id;
 
         // See if this is a duplicate of an existing tab
         let tab_val = D.tabs.by_tab_id(ctab.id);
