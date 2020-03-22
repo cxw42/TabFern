@@ -1,4 +1,4 @@
-// test/test-main.js: main script for test/index.html.
+// t/test-main.js: main script for test/index.html.
 // Part of TabFern.  Copyright (c) cxw42 2017--2018.
 
 module.exports = {};

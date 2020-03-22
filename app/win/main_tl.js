@@ -3172,7 +3172,7 @@ function hamSorter(compare_fn)
 
 function hamRunJasmineTests()
 {
-    let url = chrome.extension.getURL('/test/index.html');
+    let url = chrome.extension.getURL('/t/index.html');  // from /static/t
     if(url) {
         K.openWindowForURL(url);
     } else {
