@@ -208,9 +208,9 @@ function getNewTabNodeID(ctab) {
 ////////////////////////////////////////////////////////////////////////// }}}1
 // General record helpers // {{{1
 
-/// Get the size of a window, as an object
+/// Get the geometry (size, position, and state) of a window, as an object
 /// @param win {DOM window} The window
-function getWindowSize(win)
+function getWindowGeometry(win)
 {
     // || is to provide some sensible defaults - thanks to
     // https://stackoverflow.com/a/7540412/2877364 by
@@ -223,21 +223,24 @@ function getWindowSize(win)
         , 'top': win.screenTop || 0
         , 'width': win.outerWidth || 300
         , 'height': win.outerHeight || 600
+        , 'winState': 'normal'
+            // assume normal since we don't implement the full Page Visibility API
     };
-} //getWindowSize
+} //getWindowGeometry
 
-/// Get the size of a window, as an object, from a Chrome window record.
-/// See comments in getWindowSize().
-/// @param win {Chrome Window} The window record
-function getWindowSizeFromWindowRecord(win)
+/// Get the geometry of a window, as an object, from a Chrome window record.
+/// See comments in getWindowGeometry().
+/// @param cwin {Chrome Window} The window record
+function getCWinGeometry(cwin)
 {
     return {
-          'left': win.left || 0
-        , 'top': win.top || 0
-        , 'width': win.width || 300
-        , 'height': win.height || 600
+          'left': cwin.left || 0
+        , 'top': cwin.top || 0
+        , 'width': cwin.width || 300
+        , 'height': cwin.height || 600
+        , 'winState': cwin.state || 'normal'
     };
-} //getWindowSize
+} //getWindowGeometry
 
 /// Clear flags on all windows; leave tabs alone.
 function unflagAllWindows() {
@@ -1421,7 +1424,7 @@ function createNodeForWindow(cwin, keep)
 
     if(cwin.tabs) {                      // new windows may have no tabs
         for(let ctab of cwin.tabs) {
-            log.info('   ' + ctab.id.toString() + ': ' + ctab.title);
+            log.info(`   ${ctab.id}: ${ctab.title}`);
             createNodeForTab(ctab, node_id);    //TODO handle errors
         }
     }
@@ -2173,7 +2176,7 @@ function winOnCreated(cwin)
 
     // Save the window's size
     if(cwin.type === 'normal') {
-        winSizes[cwin.id] = getWindowSizeFromWindowRecord(cwin);
+        winSizes[cwin.id] = getCWinGeometry(cwin);
         newWinSize = winSizes[cwin.id];
             // Chrome appears to use the last-resized window as its size
             // template even when you haven't closed it, so do similarly.
@@ -2939,58 +2942,91 @@ function tabOnReplaced(addedTabId, removedTabId)
 /// ID of a timer to save the new window size after a resize event
 var resize_save_timer_id;
 
-/// A cache of the last size we saved to disk
+/// A cache of the last size we successfully saved to disk.
+/// @invariant last_saved_size.winState === 'normal' always (#192).
 var last_saved_size;
 
 /// Save #size_data as the size of our popup window
 function saveViewSize(size_data)
 {
-    //log.info('Saving new size ' + size_data.toString());
+    log.debug({'Saving new size': size_data});
 
-    let to_save = {};
-    to_save[K.LOCN_KEY] = size_data;
+    let to_save = { [K.LOCN_KEY]: size_data };
 
     ASQH.NowCC((cc)=>{
         chrome.storage.local.set(to_save, cc);
     })
     .val(()=>{
-        last_saved_size = $.extend({}, size_data);
-        log.info('Saved size');
+        last_saved_size = K.dups(size_data);
+        if(size_data.winState != 'normal') {
+            // I think that, if everything is working as it should, we will
+            // only save normal states.  Modify as needed based on the
+            // answer to the OPEN QUESTION below.
+            log.warn({'Window size saved with state other than "normal"':size_data});
+        }
+        log.info({'Saved size': last_saved_size});
     })
     .or((err)=>{
-        log.error({"TabFern: couldn't save location": err});
+        log.error({"TabFern: couldn't save view size": err});
     });
 } //saveViewSize()
 
 /// When the user resizes the tabfern popup, save the size for next time.
+/// @invariant last_saved_size.winState === 'normal'
 function eventOnResize(evt)
 {
-    // Clear any previous timer we may have had running
-    if(resize_save_timer_id) {
-        window.clearTimeout(resize_save_timer_id);
-        resize_save_timer_id = undefined;
-    }
+    // log.debug({"TF window resized": evt});
 
-    let size_data = getWindowSize(window);
+    chrome.windows.get(my_winid, (cwin)=>{
+        // Clear any previous timer we may have had running
+        if(resize_save_timer_id) {
+            window.clearTimeout(resize_save_timer_id);
+            resize_save_timer_id = undefined;
+        }
 
-    // Save the size, but only after two seconds go by.  This is to avoid
-    // saving until the user is actually done resizing.
-    resize_save_timer_id = window.setTimeout(
-            ()=>{saveViewSize(size_data);}, 2000);
+        // Only save size if the window state is normal.
+        // OPEN QUESTION: should the size be saved if maximized or fullscreen,
+        // even if not the state?  Or should max/fullscreen states be saved
+        // as well?
+        let size_data = (cwin.state == 'normal') ?
+            getCWinGeometry(cwin) : last_saved_size;
 
+        // Save the size, but only after 200 ms go by.  This is to avoid
+        // saving until the user is actually done resizing.
+        // 200 ms is empirically enough time to reduce the disk writes
+        // without waiting so long that the user closes the window and
+        // the user's last-set size is not saved.
+        resize_save_timer_id = window.setTimeout(
+                ()=>{
+                    // log.debug('Resize-save function running');
+                    if(!ObjectCompare(size_data, last_saved_size)) {
+                        saveViewSize(size_data);
+                    }
+                }, K.RESIZE_DEBOUNCE_INTERVAL_MS);
+    });
 } //eventOnResize
 
-// On a timer, save the window size if it has changed.  Inspired by, but not
-// copied from, https://stackoverflow.com/q/4319487/2877364 by
-// https://stackoverflow.com/users/144833/oscar-godson
-function timedResizeDetector()
+// On a timer, save the window size and position if it has changed.
+// We need this because Chrome doesn't give us an event when the TF window
+// moves.  To work around this, we poll the window position.
+// Inspired by, but not copied from, https://stackoverflow.com/q/4319487/2877364
+// by https://stackoverflow.com/users/144833/oscar-godson .
+function timedMoveDetector()
 {
-    let size_data = getWindowSize(window);
-    if(!ObjectCompare(size_data, last_saved_size)) {
-        saveViewSize(size_data);
+  chrome.windows.get(my_winid, (cwin)=>{
+    // log.debug('Move detector running');
+
+    // Update only if window is normal.  If the state or size changed, we will
+    // have caught it in eventOnResize.
+    if (cwin.state == 'normal') {
+        let size_data = getCWinGeometry(cwin);
+        if(!ObjectCompare(size_data, last_saved_size)) {
+            saveViewSize(size_data);
+        }
     }
-    setTimeout(timedResizeDetector, K.RESIZE_DETECTOR_INTERVAL_MS);
-} //timedResizeDetector
+    setTimeout(timedMoveDetector, K.MOVE_DETECTOR_INTERVAL_MS);
+  });
+} //timedMoveDetector
 
 ////////////////////////////////////////////////////////////////////////// }}}1
 // Hamburger menu // {{{1
@@ -4238,7 +4274,8 @@ function basicInit(done)
     initFocusHandler();
 
     // Stash our current size, which is the default window size.
-    newWinSize = getWindowSize(window);
+    // We can't use chrome.windows.get() because we don't have my_winid yet.
+    newWinSize = getWindowGeometry(window);
 
     // TODO? get screen size of the current monitor and make sure the TabFern
     // window is fully visible -
@@ -4300,6 +4337,7 @@ function createMainTreeIfWinIdReceived_catch(done, win_id_msg_or_error)
 } //createMainTreeIfWinIdReceived_catch()
 
 /// Called after ASQ.try(chrome.storage.local.get(LOCN_KEY))
+/// @post last_saved_size.winState === 'normal'
 function moveWinToLastPositionIfAny_catch(done, items_or_err)
 {   // move the popup window to its last position/size.
     // If there was an error (e.g., nonexistent key), just
@@ -4307,15 +4345,15 @@ function moveWinToLastPositionIfAny_catch(done, items_or_err)
 
     next_init_step('reposition window');
     if(ASQH.is_asq_try_err(items_or_err)) {
-        log.warn({"Couldn't get saved location":$.extend({},items_or_err)});
-        // Note: $.extend() used to force evaluation at the time of logging
+        log.warn({"Couldn't get saved location": K.dups(items_or_err)});
+        // Note: dups() used to force evaluation at the time of logging
     } else { //we have a location
-        log.info({"Got saved location":$.extend({},items_or_err)});
+        log.info({"Got saved location":K.dups(items_or_err)});
 
         let parsed = items_or_err[K.LOCN_KEY];
         if(!( (parsed !== null) && (typeof parsed === 'object') )) {
-            log.info({"Could not parse size from":$.extend({},items_or_err)});
-            parsed = { left: 100, top: 100, width: 500, height: 400 };
+            log.info({"Could not parse size from": K.dups(items_or_err)});
+            parsed = { left: 100, top: 100, width: 500, height: 400, winState: 'normal' };
                 // Some kind of hopefully-reasonable size
         }
 
@@ -4329,22 +4367,33 @@ function moveWinToLastPositionIfAny_catch(done, items_or_err)
                 , 'width': Math.max(+parsed.width || 300, 100)
                     // don't let it shrink too small, in case something went wrong
                 , 'height': Math.max(+parsed.height || 600, 200)
+                // Note: purposefully not updating winState here (#192).
             };
-        last_saved_size = $.extend({}, size_data);
-        chrome.windows.update(my_winid, size_data,
-            (win)=>{
-                if(isLastError()) {
-                    log.error(`Could not move window: ${lastBrowserErrorMessageString()}`);
-                } else {
-                    log.info({"Updated window size":$.extend({},win)});
-                }
+        ASQH.NowCC((cc)=>{  // Resize.  Assumes window is in "normal" state when created.
+            chrome.windows.update(my_winid, size_data, cc);
+        })
+        .then((done, cwin)=>{   // Restore the state, if other than "normal".
+                                // Docs for chrome.windows.update require this
+                                // be done separately from setting the size.
+            last_saved_size = K.dups(size_data);
+            last_saved_size.winState = 'normal';
+            if(parsed.winState && (parsed.winState != 'normal')) {
+                chrome.windows.update(my_winid, {state: parsed.winState},
+                    ASQH.CC(done));
+            } else {
+                done(cwin);
             }
-        );
-
+        })
+        .val((cwin)=>{
+            log.info({"Updated window size/state": cwin});
+        })
+        .or((err)=>{
+            log.error({'Could not update window size/state': err});
+        });
     } //endif storage.local.get worked
 
-    // Start the detection of moved or resized windows
-    setTimeout(timedResizeDetector, K.RESIZE_DETECTOR_INTERVAL_MS);
+    // Start polling for moves (without resize) of the TF window
+    setTimeout(timedMoveDetector, K.MOVE_DETECTOR_INTERVAL_MS);
 
     done();
 } //moveWinToLastPositionIfAny_catch()
@@ -4557,7 +4606,7 @@ function main()
     window.addEventListener('unload', shutdownTree, { 'once': true });
     window.addEventListener('resize', eventOnResize);
         // This doesn't detect window movement without a resize, which is why
-        // we have timedResizeDetector above.
+        // we have timedMoveDetector above.
 
     // Run the main init steps once the page has loaded
     let s = ASQ();
