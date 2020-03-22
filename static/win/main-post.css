@@ -406,6 +406,12 @@ ul.jstree-contextmenu i {
     background: transparent;
 }
 
+/* When horizontal scrollbars are hidden, make sure the tree's <ul> doesn't
+ * run over the edge (#201). */
+#maintree > ul.jstree-ellipsis {
+    width: calc(100% - 29px);   /* from style.css for jstree-default-dark */
+}
+
 /* }}}1 */
 /* --- Debug ------------------------------------------------------ {{{1 -- */
 /* Debug.  These come last, so they override any equally-specific styles
