@@ -14,13 +14,14 @@ if(false) { // Vendor files - listed here only so they'll be bundled
 
 require('./lib/jasmine2-custom-message');
 
-// XXX commenting these out for now, for the sake of faster test runs
+// XXX comment these out if you want faster test runs
 // on spec/app-win-model.
-//require('./spec/spec-asq');
-//require('./spec/spec-validation');
-//require('./spec/spec-multidex');
-//require('./spec/spec-jstree');
-//require('./spec/spec-jstree-multitype');
+require('./spec/spec-asq');
+require('./spec/spec-validation');
+require('./spec/spec-multidex');
+require('./spec/spec-jstree');
+require('./spec/spec-jstree-multitype');
+
 require('./spec/app-win-model');
 
 // vi: set ts=4 sts=4 sw=4 et ai fo-=o fo-=r: //

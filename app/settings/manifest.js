@@ -458,11 +458,15 @@ order within each category.`
 setting_definitions.push(
         {
             "tab": future_i18n("What's new?"),
-            "group": `Version 0.2.1${brplain('2020-xx-xx')}`,
+            "group": `Version 0.2.1${brplain('2020-04-04')}`,
             'group_html':true,
             "type": "description",
             "text": (
 `<ul>` +
+`<li class="gold-star">Special thanks to Hacktoberfest 2019 participants!
+    ahonn and Procyon-b contributed code, Makemeloco contributed a translation,
+    and sarthakpranesh contributed a new website.</li>` +
+
 (!S.ISSUE35 ? '' :
 `<li class="gold-star">Opening one tab at a time!  Yes, the wait is over!  ${issue(35)}
 <ul>
@@ -478,8 +482,8 @@ recovered window will show up in TabFern as a separate, unsaved window
 (related to ${issue(41, true)}).</p>
 </li>
 </ul>`) +
-`
-<li>The TabFern window should no longer appear off-screen (unless you have
+
+`<li>The TabFern window should no longer appear off-screen (unless you have
     changed monitors recently).  ${issue(189)}</li>
 <li>Russian translation ${issue(194)}</li>
 <li>Fix for a Chrome change that caused <tt>new_tab.html</tt> tabs to open.
@@ -491,10 +495,7 @@ recovered window will show up in TabFern as a separate, unsaved window
 ` +
 //`<li><code>about:blank</code> tabs and tab showing your new-tab page are no
 //longer saved in the tree.  (${issue(186, true)}, ${issue(191, true)})</li>` +
-`<li class="gold-star">Special thanks to Hacktoberfest 2019 participants!
-    ahonn and Procyon-b contributed code, Makemeloco contributed a translation,
-    and sarthakpranesh contributed a new website.</li>
-</ul>`
+`</ul>`
             ),
         },
         {
