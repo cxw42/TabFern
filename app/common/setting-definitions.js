@@ -132,6 +132,20 @@ _VAL[_NAM.CFGS_THEME_NAME] = (v)=>{
     return (( v === 'default-dark' || v === 'default' ) ? v : undefined);
 };
 
+// language options
+_NAM.CFGS_LANG_NAME = 'language';
+_DEF[_NAM.CFGS_LANG_NAME] = 'fr';
+_VAL[_NAM.CFGS_LANG_NAME] = (v)=>{
+    return v;
+};
+_NAM.CFGS_LANG_LOCALE = 'lang-locale';
+_DEF[_NAM.CFGS_LANG_LOCALE] = '';
+_VAL[_NAM.CFGS_LANG_LOCALE] = (v)=>{
+    return v;
+};
+// END language
+
+
 _NAM.CFGS_SCROLLBAR_COLOR = 'skinny-scrollbar-color';
 _DEF[_NAM.CFGS_SCROLLBAR_COLOR] = '';
 _VAL[_NAM.CFGS_SCROLLBAR_COLOR] = (v)=>{
