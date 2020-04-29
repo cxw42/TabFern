@@ -1,5 +1,7 @@
-// view/const.js: constants and generic helpers for the TabFern view
-// Copyright (c) 2017 Chris White, Jasmine Hegman.
+// view/const.js: constants and generic helpers for the TabFern view.
+// The functions are here for historical reasons - they could be elsewhere
+// if desired.
+// Copyright (c) 2017--2020 Chris White and TabFern contributors
 
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
@@ -54,8 +56,11 @@
         ACTION_GROUP_WIN_CLASS: 'tf-action-group',   // Class on action-group div
         ACTION_BUTTON_WIN_CLASS: 'tf-action-button', // Class on action buttons (<i>)
 
+        /// How long after a resize to save the size to disk
+        RESIZE_DEBOUNCE_INTERVAL_MS:  300,
+
         /// How often to check whether our window has been moved or resized
-        RESIZE_DETECTOR_INTERVAL_MS:  5000,
+        MOVE_DETECTOR_INTERVAL_MS:  5000,
 
         /// This many ms after mouseout, a context menu will disappear
         CONTEXT_MENU_MOUSEOUT_TIMEOUT_MS:  1500,
@@ -71,7 +76,7 @@
         // must be truthy.  These are used as the types in multidexes.
         // They are also applied to nodes using jstree-multitype.
         IT_WIN:  'win',      // strings are used as required by multidex
-        IT_TAB:     'tab',
+        IT_TAB:  'tab',
 
         // Node subtypes that can be layered onto the basic node types using jstree-multitype
         NST_OPEN:           'open',     // Present if a window or tab is open
@@ -102,6 +107,8 @@
         let win_id;     // TODO is there a better way to pass data down
                         // the sequence?
 
+        log.info({'Opening window for': desired_url});
+
         let seq =
         ASQH.NowCC((cc)=>{
             chrome.windows.create(cc);
@@ -124,14 +131,14 @@
 
             let gates = [];
 
-            for(let tab of cwin.tabs) {
-                if(tab.url != desired_url) {
+            for(let ctab of cwin.tabs) {
+                if((ctab.url || ctab.pendingUrl) != desired_url) {
                     gates.push((done_gate)=>{
-                        log.info({'Removing undesired tab': tab});
-                        chrome.tabs.remove(tab.id, ASQH.CC(done_gate));
+                        log.info({'Removing undesired tab': ctab});
+                        chrome.tabs.remove(ctab.id, ASQH.CC(done_gate));
                     });
                 }
-            } //foreach tab
+            } //foreach ctab
 
             if(gates.length === 0) {
                 done();
@@ -153,6 +160,25 @@
         return seq;
 
     } //openWindowForURL
+
+    /// Shallow-copy an object.  This is used, e.g., to force evaluation of
+    /// and object at the time of logging rather than at the time the log
+    /// message is expanded in the developer console.
+    /// Returns the new object, or a string error message beginning with '!'
+    /// on failure.
+    module.dups = function(obj) {
+        let retval;
+        if(!obj || typeof obj !== 'object') {   // null or undefined, or scalar
+            return obj;
+        } else {
+            try {
+                retval = Object.assign({}, obj);
+            } catch(e) {
+                retval = '!' + e.toString();
+            }
+            return retval;
+        }
+    } //dups
 
     return Object.freeze(module);   // all fields constant
 }));

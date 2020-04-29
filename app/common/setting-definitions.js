@@ -1,5 +1,8 @@
 // setting-definitions.js: The TabFern settings, and setting-access functions
 
+// Fixed configuration
+let ISSUE35 = false;  // Set to true to enable #35 functions, false to disable
+
 // Names of settings, and their defaults // {{{1
 
 // Boolean settings start with CFG_.  Non-boolean settings start with
@@ -289,7 +292,10 @@ let me = {
     have: haveSetting,
     set: setSetting,
     setIfNonexistent: setSettingIfNonexistent,
-    getThemeName
+    getThemeName,
+
+    // fixed configuration
+    ISSUE35,
 };
 
 // Each of the names is a property directly on the export object,

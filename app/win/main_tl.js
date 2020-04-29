@@ -157,6 +157,7 @@ function local_init()
     ASQ = Modules.ASQ;
     ASQH = Modules.ASQH;
     S = Modules.S;
+    console.log(`Issue #35 support: ${S.ISSUE35 ? 'enabled' : 'disabled'}`);
 } //init()
 
 /// Copy properties named #property_names from #source to #dest.
@@ -180,12 +181,36 @@ function escapeRegExp(string) {
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
 } //escapeRegExp
 
+/// Get the node ID from a NEW_TAB_URL.  Returns falsy on failure, or the ID
+/// on success.
+function getNewTabNodeID(ctab) {
+    if(!ctab || !(ctab.url || ctab.pendingUrl)) return false;
+    let hash;
+    try {
+        let url = new URL(ctab.url || ctab.pendingUrl);
+            // Since Chrome 79, we get url == "" and pendingUrl != "" in tabOnCreated
+        if(!url.hash) return false;
+
+        hash = url.hash.slice(1);
+        if(!hash) return false;
+
+        if(url.href.split('#')[0] !== NEW_TAB_URL) {
+            return false;
+        }
+    } catch(e) {
+        log.info({[`tabOnCreated handle_tabfern_action exception: ${e}`]: ctab});
+        return false;
+    }
+
+    return hash;
+} //getNewTabNodeID
+
 ////////////////////////////////////////////////////////////////////////// }}}1
 // General record helpers // {{{1
 
-/// Get the size of a window, as an object
+/// Get the geometry (size, position, and state) of a window, as an object
 /// @param win {DOM window} The window
-function getWindowSize(win)
+function getWindowGeometry(win)
 {
     // || is to provide some sensible defaults - thanks to
     // https://stackoverflow.com/a/7540412/2877364 by
@@ -198,21 +223,24 @@ function getWindowSize(win)
         , 'top': win.screenTop || 0
         , 'width': win.outerWidth || 300
         , 'height': win.outerHeight || 600
+        , 'winState': 'normal'
+            // assume normal since we don't implement the full Page Visibility API
     };
-} //getWindowSize
+} //getWindowGeometry
 
-/// Get the size of a window, as an object, from a Chrome window record.
-/// See comments in getWindowSize().
-/// @param win {Chrome Window} The window record
-function getWindowSizeFromWindowRecord(win)
+/// Get the geometry of a window, as an object, from a Chrome window record.
+/// See comments in getWindowGeometry().
+/// @param cwin {Chrome Window} The window record
+function getCWinGeometry(cwin)
 {
     return {
-          'left': win.left || 0
-        , 'top': win.top || 0
-        , 'width': win.width || 300
-        , 'height': win.height || 600
+          'left': cwin.left || 0
+        , 'top': cwin.top || 0
+        , 'width': cwin.width || 300
+        , 'height': cwin.height || 600
+        , 'winState': cwin.state || 'normal'
     };
-} //getWindowSize
+} //getWindowGeometry
 
 /// Clear flags on all windows; leave tabs alone.
 function unflagAllWindows() {
@@ -410,12 +438,6 @@ function saveTree(save_ephemeral_windows = true, cbk = undefined)
                 let tab_val = D.tabs.by_node_id(tab_node_id);
                 if(!tab_val) continue;
 
-                // Dont't save blank tab
-                if (
-                    tab_val.raw_url === 'chrome://newtab/' ||
-                    tab_val.raw_url === 'about:blank'
-                ) continue;
-
                 let thistab_v1 = {};    ///< the V1 save data for the tab
                 thistab_v1.raw_title = tab_val.raw_title;
                 thistab_v1.raw_url = tab_val.raw_url;
@@ -428,11 +450,8 @@ function saveTree(save_ephemeral_windows = true, cbk = undefined)
                 }
 
                 result_win.tabs.push(thistab_v1);
-            } //foreach tab
+            } //foreach tab_node_id
         } //endif window has child tabs
-
-        // Don't save blank window
-        if (result_win.tabs.length === 0) continue;
 
         result.push(result_win);
     } //foreach window
@@ -714,7 +733,7 @@ function actionCloseWindowAndSave(win_node_id, win_node, unused_action_id, unuse
                 is_audible = true;
                 break;
             }
-        } //foreach tab
+        } //foreach child_nodeid
     } //if confirm del of audible
 
     if(!is_audible) {   // No confirmation required - just do it
@@ -833,7 +852,7 @@ function actionDeleteWindow(win_node_id, win_node, unused_action_id,
                 confirm_because_audible = true;
                 break;
             }
-        } //foreach tab
+        } //foreach child_nodeid
     } //if confirm del of audible
 
     if(no_confirmation && !confirm_because_audible) {
@@ -875,6 +894,7 @@ function actionDeleteWindow(win_node_id, win_node, unused_action_id,
 /// @param win_node {object} the window's node
 function actionOpenRestOfTabs(win_node_id, win_node, unused_action_id, unused_action_el)
 {
+    if(!S.ISSUE35) return;
     if(!win_node_id || !win_node) return;
     let win_val = D.windows.by_node_id(win_node_id);
     if(!win_val) return;
@@ -1138,6 +1158,7 @@ function actionDeleteTab(node_id, node, unused_action_id, unused_action_el,
 /// Close the tab and save
 function actionCloseTabAndSave(tab_node_id, tab_node, unused_action_id, unused_action_el)
 {
+    if(!S.ISSUE35) return;
     let tab_val = D.tabs.by_node_id(tab_node_id);
     if(!tab_val || tab_val.tab_id === K.NONE) return;   //already closed => nop
     let window_node_id = tab_node.parent;
@@ -1194,17 +1215,17 @@ function addTabNodeActions(tab_node_id)
     // Add the buttons in the layout chosen by the user (#152).
     let order = S.getString(S.S_WIN_ACTION_ORDER);
     if(order === 'ced') {
-        addTabCloseAction(tab_node_id);
+        if(S.ISSUE35) addTabCloseAction(tab_node_id);
         addTabEditAction(tab_node_id);
         addTabDeleteAction(tab_node_id);
     } else if(order === 'ecd') {
         addTabEditAction(tab_node_id);
-        addTabCloseAction(tab_node_id);
+        if(S.ISSUE35) addTabCloseAction(tab_node_id);
         addTabDeleteAction(tab_node_id);
     } else if(order === 'edc') {
         addTabEditAction(tab_node_id);
         addTabDeleteAction(tab_node_id);
-        addTabCloseAction(tab_node_id);
+        if(S.ISSUE35) addTabCloseAction(tab_node_id);
     } else {
         //don't add any buttons, but don't crash.
         log.error(`Unknown tab-button order ${order}`);
@@ -1268,6 +1289,14 @@ function createNodeForTab(ctab, parent_node_id)
     }
 
     addTabNodeActions(node_id);
+
+    // The rjustify is a no-op until the actions are added.  If we just added
+    // the last child, we haven't necessaryly redrawn, so do so. (#200)
+    let parent_node = T.treeobj.get_node(parent_node_id);
+    if(parent_node.children[parent_node.children.length - 1] === node_id) {
+        T.install_rjustify(null, 'redraw_event.jstree', 'once');
+        T.treeobj.redraw_node(node_id);
+    }
 
     return node_id;
 } //createNodeForTab
@@ -1394,9 +1423,9 @@ function createNodeForWindow(cwin, keep)
     addWindowNodeActions(node_id);
 
     if(cwin.tabs) {                      // new windows may have no tabs
-        for(let tab of cwin.tabs) {
-            log.info('   ' + tab.id.toString() + ': ' + tab.title);
-            createNodeForTab(tab, node_id);     //TODO handle errors
+        for(let ctab of cwin.tabs) {
+            log.info(`   ${ctab.id}: ${ctab.title}`);
+            createNodeForTab(ctab, node_id);    //TODO handle errors
         }
     }
 
@@ -1526,7 +1555,7 @@ function connectChromeWindowToTreeWindowItem(cwin, existing_win, options = {})
         let ctab = cwin.tabs[idx];
 
         // Do we need these?
-        ctab.url = ctab.url || tab_val.raw_url || 'about:blank';
+        ctab.url = ctab.url || ctab.pendingUrl || tab_val.raw_url || 'about:blank';
         ctab.title = ctab.title || tab_val.raw_title || _T('labelUnknownTitle');
 
         let pinned = tab_val.isPinned;
@@ -1570,8 +1599,9 @@ function winAlreadyExistsInTree(cwin)
     // Get #cwin's hash
     let child_urls = [];
     for(let ctab of cwin.tabs) {
-        if(!ctab.url) return false;     // Assume not existent if we can't tell.
-        child_urls.push(ctab.url);
+        if(!(ctab.url || ctab.pendingUrl)) return false;
+            // Assume not existent if we can't tell.
+        child_urls.push(ctab.url || ctab.pendingUrl);
     }
 
     let ordered_url_hash = M.orderedHashOfStrings(child_urls);
@@ -1910,7 +1940,7 @@ function treeOnSelect(evt_unused, evt_data, options={})
     if(win_val.isOpen) {
         if(is_win) {    // clicked on an open window
 
-            if( M.isWinPartlyOpen(win_node) &&
+            if( S.ISSUE35 && M.isWinPartlyOpen(win_node) &&
                 (S.getString(S.S_OPEN_REST_ON_CLICK) === S.OROC_DO)
             ) {
                 action = ActionTy.open_rest;
@@ -1919,7 +1949,7 @@ function treeOnSelect(evt_unused, evt_data, options={})
             }
 
         } else {        // clicked on a tab in an open window
-            action = tab_val.isOpen ?  ActionTy.activate_tab
+            action = (tab_val.isOpen || !S.ISSUE35) ?  ActionTy.activate_tab
                                     : ActionTy.open_tab_in_win;
         }
     } else {    // window is closed
@@ -1959,7 +1989,7 @@ function treeOnSelect(evt_unused, evt_data, options={})
     } else if(action === ActionTy.activate_win) {
         win_id_to_highlight_and_raise = node_val.win_id;
 
-    } else if(action === ActionTy.open_rest) {
+    } else if(S.ISSUE35 && action === ActionTy.open_rest) {
         win_id_to_highlight_and_raise = win_val.win_id;
         actionOpenRestOfTabs(win_node.id, win_node, null, null);
 
@@ -1973,7 +2003,7 @@ function treeOnSelect(evt_unused, evt_data, options={})
         let urls=[];
         let tab_node_ids;
 
-        if(action === ActionTy.open_win) {      // Open all tabs
+        if(!S.ISSUE35 || action === ActionTy.open_win) {    // Open all tabs
             for(let child_id of win_node.children) {
                 let child_val = D.tabs.by_node_id(child_id);
                 urls.push(child_val.raw_url);
@@ -2056,14 +2086,10 @@ function treeOnSelect(evt_unused, evt_data, options={})
             return;
         }
 
-    } else if(action === ActionTy.open_tab_in_win) {    // add tab to existing win
+    } else if(S.ISSUE35 && action === ActionTy.open_tab_in_win) {
+        // add tab to existing win
+
         // Figure out where to put it
-        //let newindex=0;
-        //for(let other_tab_node_id of win_node.children) {
-        //    if(other_tab_node_id === tab_node.id) break;
-        //    let tab_val = D.tabs.by_node_id(other_tab_node_id);
-        //    if(tab_val.isOpen) ++newindex;
-        //}
         let newindex = M.chromeIdxOfTab(win_node_id, tab_node.id);
 
         // Open the tab
@@ -2150,7 +2176,7 @@ function winOnCreated(cwin)
 
     // Save the window's size
     if(cwin.type === 'normal') {
-        winSizes[cwin.id] = getWindowSizeFromWindowRecord(cwin);
+        winSizes[cwin.id] = getCWinGeometry(cwin);
         newWinSize = winSizes[cwin.id];
             // Chrome appears to use the last-resized window as its size
             // template even when you haven't closed it, so do similarly.
@@ -2500,34 +2526,16 @@ var tabOnCreated = (function(){     // search key: function tabOnCreated()
     /// @return {Boolean} true if we handled the action, false otherwise
     function handle_tabfern_action(tab_val, ctab)
     {
-        if(tab_val || !ctab.url) return false;
+        let tab_node_id = getNewTabNodeID(ctab);
+        if(!tab_node_id) return false;      // Not a NEW_TAB_URL
 
-        let hash;
-
-        try {
-            let url = new URL(ctab.url);
-            if(!url.hash) return false;
-
-            hash = url.hash.slice(1);
-            if(!hash) return false;
-
-            if(url.href.split('#')[0] !== NEW_TAB_URL) {
-                return false;
-            }
-
-            // See if the hash is a node ID for a tab.
-            tab_val = D.tabs.by_node_id(hash);
-            if(!tab_val || !tab_val.being_opened) return false;
-
-        } catch(e) {
-            log.info({[`tabOnCreated handle_tabfern_action exception: ${e}`]: ctab});
-            return false;
-        }
+        // See if the hash is a node ID for a tab.
+        tab_val = D.tabs.by_node_id(tab_node_id);
+        if(!tab_val || !tab_val.being_opened) return false;
 
         // If we get here, it is a tab we are opening.  Change the URL
         // to the URL we actually wanted (the NEW_TAB_URL page is a placeholder)
 
-        let tab_node_id = hash;
         tab_val.being_opened = false;
 
         // Attach the ctab to the value
@@ -2561,8 +2569,6 @@ var tabOnCreated = (function(){     // search key: function tabOnCreated()
             log.info(`Unknown window ID ${ctab.windowId} - ignoring`);
             return;
         }
-
-        let tab_node_id;
 
         // See if this is a duplicate of an existing tab
         let tab_val = D.tabs.by_tab_id(ctab.id);
@@ -2654,7 +2660,7 @@ function tabOnUpdated(tabid, changeinfo, ctab)
     // actionURLSubstitute.
 
     // URL
-    let new_raw_url = changeinfo.url || ctab.url || 'about:blank';
+    let new_raw_url = changeinfo.url || ctab.url || ctab.pendingUrl || 'about:blank';
     if(new_raw_url !== tab_node_val.raw_url) {
         dirty = true;
         should_refresh_tooltip = true;
@@ -2936,58 +2942,91 @@ function tabOnReplaced(addedTabId, removedTabId)
 /// ID of a timer to save the new window size after a resize event
 var resize_save_timer_id;
 
-/// A cache of the last size we saved to disk
+/// A cache of the last size we successfully saved to disk.
+/// @invariant last_saved_size.winState === 'normal' always (#192).
 var last_saved_size;
 
 /// Save #size_data as the size of our popup window
 function saveViewSize(size_data)
 {
-    //log.info('Saving new size ' + size_data.toString());
+    log.debug({'Saving new size': size_data});
 
-    let to_save = {};
-    to_save[K.LOCN_KEY] = size_data;
+    let to_save = { [K.LOCN_KEY]: size_data };
 
     ASQH.NowCC((cc)=>{
         chrome.storage.local.set(to_save, cc);
     })
     .val(()=>{
-        last_saved_size = $.extend({}, size_data);
-        log.info('Saved size');
+        last_saved_size = K.dups(size_data);
+        if(size_data.winState != 'normal') {
+            // I think that, if everything is working as it should, we will
+            // only save normal states.  Modify as needed based on the
+            // answer to the OPEN QUESTION below.
+            log.warn({'Window size saved with state other than "normal"':size_data});
+        }
+        log.info({'Saved size': last_saved_size});
     })
     .or((err)=>{
-        log.error({"TabFern: couldn't save location": err});
+        log.error({"TabFern: couldn't save view size": err});
     });
 } //saveViewSize()
 
 /// When the user resizes the tabfern popup, save the size for next time.
+/// @invariant last_saved_size.winState === 'normal'
 function eventOnResize(evt)
 {
-    // Clear any previous timer we may have had running
-    if(resize_save_timer_id) {
-        window.clearTimeout(resize_save_timer_id);
-        resize_save_timer_id = undefined;
-    }
+    // log.debug({"TF window resized": evt});
 
-    let size_data = getWindowSize(window);
+    chrome.windows.get(my_winid, (cwin)=>{
+        // Clear any previous timer we may have had running
+        if(resize_save_timer_id) {
+            window.clearTimeout(resize_save_timer_id);
+            resize_save_timer_id = undefined;
+        }
 
-    // Save the size, but only after two seconds go by.  This is to avoid
-    // saving until the user is actually done resizing.
-    resize_save_timer_id = window.setTimeout(
-            ()=>{saveViewSize(size_data);}, 2000);
+        // Only save size if the window state is normal.
+        // OPEN QUESTION: should the size be saved if maximized or fullscreen,
+        // even if not the state?  Or should max/fullscreen states be saved
+        // as well?
+        let size_data = (cwin.state == 'normal') ?
+            getCWinGeometry(cwin) : last_saved_size;
 
+        // Save the size, but only after 200 ms go by.  This is to avoid
+        // saving until the user is actually done resizing.
+        // 200 ms is empirically enough time to reduce the disk writes
+        // without waiting so long that the user closes the window and
+        // the user's last-set size is not saved.
+        resize_save_timer_id = window.setTimeout(
+                ()=>{
+                    // log.debug('Resize-save function running');
+                    if(!ObjectCompare(size_data, last_saved_size)) {
+                        saveViewSize(size_data);
+                    }
+                }, K.RESIZE_DEBOUNCE_INTERVAL_MS);
+    });
 } //eventOnResize
 
-// On a timer, save the window size if it has changed.  Inspired by, but not
-// copied from, https://stackoverflow.com/q/4319487/2877364 by
-// https://stackoverflow.com/users/144833/oscar-godson
-function timedResizeDetector()
+// On a timer, save the window size and position if it has changed.
+// We need this because Chrome doesn't give us an event when the TF window
+// moves.  To work around this, we poll the window position.
+// Inspired by, but not copied from, https://stackoverflow.com/q/4319487/2877364
+// by https://stackoverflow.com/users/144833/oscar-godson .
+function timedMoveDetector()
 {
-    let size_data = getWindowSize(window);
-    if(!ObjectCompare(size_data, last_saved_size)) {
-        saveViewSize(size_data);
+  chrome.windows.get(my_winid, (cwin)=>{
+    // log.debug('Move detector running');
+
+    // Update only if window is normal.  If the state or size changed, we will
+    // have caught it in eventOnResize.
+    if (cwin.state == 'normal') {
+        let size_data = getCWinGeometry(cwin);
+        if(!ObjectCompare(size_data, last_saved_size)) {
+            saveViewSize(size_data);
+        }
     }
-    setTimeout(timedResizeDetector, K.RESIZE_DETECTOR_INTERVAL_MS);
-} //timedResizeDetector
+    setTimeout(timedMoveDetector, K.MOVE_DETECTOR_INTERVAL_MS);
+  });
+} //timedMoveDetector
 
 ////////////////////////////////////////////////////////////////////////// }}}1
 // Hamburger menu // {{{1
@@ -3133,7 +3172,7 @@ function hamSorter(compare_fn)
 
 function hamRunJasmineTests()
 {
-    let url = chrome.extension.getURL('/test/index.html');
+    let url = chrome.extension.getURL('/t/index.html');  // from /static/t
     if(url) {
         K.openWindowForURL(url);
     } else {
@@ -3324,7 +3363,7 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
             },
         };
 
-        if(val.isOpen) {
+        if(S.ISSUE35 && val.isOpen) {
             tabItems.closeItem = {
                     label: 'Close and remember',
                     icon: 'fff-picture-delete',
@@ -3380,7 +3419,7 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
                 };
         }
 
-        if( M.isWinPartlyOpen(node) &&
+        if( S.ISSUE35 && M.isWinPartlyOpen(node) &&
             (S.getString(S.S_OPEN_REST_ON_CLICK) === S.OROC_DO_NOT)
         ) {
             winItems.openAllItem = {
@@ -3493,7 +3532,7 @@ function dndIsDraggable(nodes, evt_unused)
 ///
 /// @return {boolean} whether or not the operation is permitted
 ///
-var treeCheckCallback = (function()
+var treeCheckCallback = (function treeCheck()
 {
 
     /// The move_node callback we will use to remove empty windows
@@ -4235,7 +4274,8 @@ function basicInit(done)
     initFocusHandler();
 
     // Stash our current size, which is the default window size.
-    newWinSize = getWindowSize(window);
+    // We can't use chrome.windows.get() because we don't have my_winid yet.
+    newWinSize = getWindowGeometry(window);
 
     // TODO? get screen size of the current monitor and make sure the TabFern
     // window is fully visible -
@@ -4297,6 +4337,7 @@ function createMainTreeIfWinIdReceived_catch(done, win_id_msg_or_error)
 } //createMainTreeIfWinIdReceived_catch()
 
 /// Called after ASQ.try(chrome.storage.local.get(LOCN_KEY))
+/// @post last_saved_size.winState === 'normal'
 function moveWinToLastPositionIfAny_catch(done, items_or_err)
 {   // move the popup window to its last position/size.
     // If there was an error (e.g., nonexistent key), just
@@ -4304,15 +4345,15 @@ function moveWinToLastPositionIfAny_catch(done, items_or_err)
 
     next_init_step('reposition window');
     if(ASQH.is_asq_try_err(items_or_err)) {
-        log.warn({"Couldn't get saved location":$.extend({},items_or_err)});
-        // Note: $.extend() used to force evaluation at the time of logging
+        log.warn({"Couldn't get saved location": K.dups(items_or_err)});
+        // Note: dups() used to force evaluation at the time of logging
     } else { //we have a location
-        log.info({"Got saved location":$.extend({},items_or_err)});
+        log.info({"Got saved location":K.dups(items_or_err)});
 
         let parsed = items_or_err[K.LOCN_KEY];
         if(!( (parsed !== null) && (typeof parsed === 'object') )) {
-            log.info({"Could not parse size from":$.extend({},items_or_err)});
-            parsed = { left: 100, top: 100, width: 500, height: 400 };
+            log.info({"Could not parse size from": K.dups(items_or_err)});
+            parsed = { left: 100, top: 100, width: 500, height: 400, winState: 'normal' };
                 // Some kind of hopefully-reasonable size
         }
 
@@ -4326,22 +4367,33 @@ function moveWinToLastPositionIfAny_catch(done, items_or_err)
                 , 'width': Math.max(+parsed.width || 300, 100)
                     // don't let it shrink too small, in case something went wrong
                 , 'height': Math.max(+parsed.height || 600, 200)
+                // Note: purposefully not updating winState here (#192).
             };
-        last_saved_size = $.extend({}, size_data);
-        chrome.windows.update(my_winid, size_data,
-            (win)=>{
-                if(isLastError()) {
-                    log.error(`Could not move window: ${lastBrowserErrorMessageString()}`);
-                } else {
-                    log.info({"Updated window size":$.extend({},win)});
-                }
+        ASQH.NowCC((cc)=>{  // Resize.  Assumes window is in "normal" state when created.
+            chrome.windows.update(my_winid, size_data, cc);
+        })
+        .then((done, cwin)=>{   // Restore the state, if other than "normal".
+                                // Docs for chrome.windows.update require this
+                                // be done separately from setting the size.
+            last_saved_size = K.dups(size_data);
+            last_saved_size.winState = 'normal';
+            if(parsed.winState && (parsed.winState != 'normal')) {
+                chrome.windows.update(my_winid, {state: parsed.winState},
+                    ASQH.CC(done));
+            } else {
+                done(cwin);
             }
-        );
-
+        })
+        .val((cwin)=>{
+            log.info({"Updated window size/state": cwin});
+        })
+        .or((err)=>{
+            log.error({'Could not update window size/state': err});
+        });
     } //endif storage.local.get worked
 
-    // Start the detection of moved or resized windows
-    setTimeout(timedResizeDetector, K.RESIZE_DETECTOR_INTERVAL_MS);
+    // Start polling for moves (without resize) of the TF window
+    setTimeout(timedMoveDetector, K.MOVE_DETECTOR_INTERVAL_MS);
 
     done();
 } //moveWinToLastPositionIfAny_catch()
@@ -4554,7 +4606,7 @@ function main()
     window.addEventListener('unload', shutdownTree, { 'once': true });
     window.addEventListener('resize', eventOnResize);
         // This doesn't detect window movement without a resize, which is why
-        // we have timedResizeDetector above.
+        // we have timedMoveDetector above.
 
     // Run the main init steps once the page has loaded
     let s = ASQ();

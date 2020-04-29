@@ -31,16 +31,7 @@ let settings = `${ham} ${gt} Settings ${gt}`;
 let refresh_message = " (refresh the TabFern window after you change this to make the change take effect)";
 
 // Settings {{{2
-// Assign the settings
-let manifest = {
-    "name":
-        `${_T('wsSettings')} - ${_T('wsShortName')} (v${TABFERN_VERSION})`,
-
-    "icon": "/assets/fern128.png",
-    //"settingsLabel":'',
-    //"searchLabel":'',
-    //"nothingFoundMessage":'',
-    "settings": [
+let setting_definitions = ([
 
         // Welcome page
         {
@@ -316,6 +307,9 @@ bar (it will start with "file://")</li>
             "type": "description",
             "text": future_i18n("This also sets the order of the corresponding buttons for tabs."),
         },
+    ]);
+
+if(S.ISSUE35) setting_definitions.push(
         {
             'tab': future_i18n('Appearance'),
             'group': future_i18n('Action-button order for windows'),
@@ -329,8 +323,9 @@ bar (it will start with "file://")</li>
                 {value: 'edc',
                     html: `Edit ${editImg} &bull; Delete ${delImg} &bull; Close and Save ${saveImg}` },
             ],
-        },
+        });
 
+setting_definitions.push(
         // Features
         {
             "tab": "Features",
@@ -406,7 +401,7 @@ bar (it will start with "file://")</li>
 `TabFern is by Chris White (<a href="https://devwrench.wordpress.com">blog</a>,
 <a href="https://github.com/cxw42/">GitHub</a>).  I greatly appreciate
 the following contributors!  If I have accidentally missed you, please let
-me know so I can correct the omission.  All names below are in alphabetical
+me know so I can correct the omission.  All names below are in asciibetical
 order within each category.`
         },
 
@@ -418,8 +413,9 @@ order within each category.`
             "text":
 `<ul>
 <li><a href="https://github.com/r4j4h/">Jasmine Hegman</a></li>
+<li><a href="https://github.com/Procyon-b/">Marc Boucher</a></li>
 <li><a href="https://github.com/RiotPharaoh/">RiotPharaoh</a></li>
-<li><a href="https://github.com/ahonn/">ahonn</a></li>
+<li><a href="https://github.com/ahonn/">Yuexun Jiang</a></li>
 </ul>`
         },
         {
@@ -429,18 +425,20 @@ order within each category.`
             "type": "description",
             "text":
 `<ul>
-<li><a href="https://github.com/Procyon-b/">Procyon-b</a> (French)</li>
+<li><a href="https://github.com/Makemeloco/">Makemeloco</a> (Russian)</li>
+<li><a href="https://github.com/Procyon-b/">Marc Boucher</a> (French)</li>
 <li><a href="https://github.com/rwexmd/">rwexmd</a> (Russian)</li>
 </ul>`
         },
         {
             "tab": future_i18n("Credits and thanks"),
-            "group": future_i18n("Artwork"),
+            "group": future_i18n("Artwork and publicity"),
             'group_html':true,
             "type": "description",
             "text":
 `<ul>
-<li><a href="https://github.com/Yasujizr/">Yasujizr</a></li>
+<li><a href="https://github.com/sarthakpranesh/">Sarthak Pranesh</a> (website)</li>
+<li><a href="https://github.com/Yasujizr/">Yasujizr</a> (logo)</li>
 </ul>`
         },
         {
@@ -451,20 +449,26 @@ order within each category.`
             "text":
 `<ul>
 <li><a href="https://github.com/devinrhode2/">Devin Rhode</a></li>
+<li><a href="https://github.com/philiprhoades/">Phil Rhoades</a></li>
 </ul>`
-        },
+        });
 
 // }}}2
-        // Changelog                                          {{{1
+// Changelog                                          {{{1
+setting_definitions.push(
         {
             "tab": future_i18n("What's new?"),
-            "group": `Version 0.2.1${brplain('2019-xx-xx')}`,
+            "group": `Version 0.2.1${brplain('2020-04-04')}`,
             'group_html':true,
             "type": "description",
-            "text":
-/*
-`<ul>
-<li class="gold-star">Opening one tab at a time!  Yes, the wait is over!  ${issue(35)}
+            "text": (
+`<ul>` +
+`<li class="gold-star">Special thanks to Hacktoberfest 2019 participants!
+    ahonn and Procyon-b contributed code, Makemeloco contributed a translation,
+    and sarthakpranesh contributed a new website.</li>` +
+
+(!S.ISSUE35 ? '' :
+`<li class="gold-star">Opening one tab at a time!  Yes, the wait is over!  ${issue(35)}
 <ul>
 <li>Click on a tab in a closed window to open only that tab.</li>
 <li>Click the "close and save" icon (${icon('fff-picture-delete')})
@@ -477,12 +481,22 @@ order within each category.`
 recovered window will show up in TabFern as a separate, unsaved window
 (related to ${issue(41, true)}).</p>
 </li>
-</ul>`,
-*/
-`<ul>
-<li><code>about:blank</code> tabs and tab showing your new-tab page are no
-longer saved in the tree.  (${issue(186, true)}, ${issue(191, true)})
-</ul>`,
+</ul>`) +
+
+`<li>The TabFern window should no longer appear off-screen (unless you have
+    changed monitors recently).  ${issue(189)}</li>
+<li>Russian translation ${issue(194)}</li>
+<li>Fix for a Chrome change that caused <tt>new_tab.html</tt> tabs to open.
+    ${issue(198)}</li>
+<li>Reopening the last tab in a window positions the action buttons
+    correctly.  ${issue(200)}</li>
+<li>The TabFern window no longer scrolls as far to the right when you click on
+    long-name tabs in recent Chrome versions.  ${issue(201)}.</li>
+` +
+//`<li><code>about:blank</code> tabs and tab showing your new-tab page are no
+//longer saved in the tree.  (${issue(186, true)}, ${issue(191, true)})</li>` +
+`</ul>`
+            ),
         },
         {
             "tab": future_i18n("What's new?"),
@@ -807,8 +821,18 @@ and Expand All/Collapse All.</li></ul>`
                 "text":
 "<ul><li>First version released to the Chrome Web Store</li></ul>"
             }                                                     // }}}1
-        ]
-    };
+        );
+
+let manifest = {
+    "name":
+        `${_T('wsSettings')} - ${_T('wsShortName')} (v${TABFERN_VERSION})`,
+
+    "icon": "/assets/fern128.png",
+    //"settingsLabel":'',
+    //"searchLabel":'',
+    //"nothingFoundMessage":'',
+    "settings": setting_definitions,
+};
 
 module.exports = manifest;
 // vi: set fdm=marker foldenable fdl=1: //

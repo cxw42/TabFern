@@ -195,7 +195,7 @@ let me = {
 
         babel: {
             ignore: [ 'app/**', 'lib/**', /^node_modules\/(?!spin\.js)/,
-                        'test/**', 'vendor/**' ],
+                        't/**', 'vendor/**' ],
                 // At the moment, only spin.js needs Babel treatment.
                 // Ignore everything else to save time and reduce the
                 // chance of surprise.  An example of surprise:
@@ -241,14 +241,14 @@ me.plugins.replacer = {     // Permit using __filename in modules
 // Run tests in development only.
 me.overrides.development = {
     paths: {
-        watched: me.paths.watched.concat(['test']),
+        watched: me.paths.watched.concat(['t']),
     },
 
     files: {
         javascripts: {
             entryPoints: {
                 ...me.files.javascripts.entryPoints,
-                'test/test-main.js': 'test/test-main.js',
+                't/test-main.js': 't/test-main.js',
             },
             order: {
                 // Have to copy it, or else it gets blown away.
@@ -265,12 +265,12 @@ me.overrides.development = {
     modules: {
         autoRequire: {
             ...me.modules.autoRequire,
-            'test/test-main.js': ['test/test-main'],
+            't/test-main.js': ['t/test-main'],
         },
     },
 
     conventions: {
-        vendor: me.conventions.vendor.concat(['test/lib/jasmine*/*']),
+        vendor: me.conventions.vendor.concat(['t/lib/jasmine*/*']),
     },
 
 };
