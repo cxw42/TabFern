@@ -144,9 +144,91 @@ function loadCSS(doc, url, before) {
 // Miscellaneous functions // {{{1
 
 /// Shortcut for i18n.  Call _T("name") to pull the localized "name".
-var _T;
+var _T, _locale;
 if(chrome && chrome.i18n && chrome.i18n.getMessage) {
-    _T = chrome.i18n.getMessage;
+    if (!_T) _T = chrome.i18n.getMessage;
+
+    function LoadLocale(L) {
+      var locale, f=new XMLHttpRequest();
+      f.open("GET", chrome.runtime.getURL('_locales/'+L+'/messages.json'), false);
+      try {
+        f.send();
+        if (f.responseText) locale=JSON.parse(f.responseText);
+        }catch(e){ void chrome.runtime.lastError; }
+      return locale;
+      }
+    
+    // fill missing keys in O1 with keys from O2
+    function MergeObjects(O1,O2) {
+      for (let k in O2) {
+        if (!O1[k]) O1[k]=O2[k];
+        }
+    }
+
+    if (!_locale) {
+      let lang=localStorage['store.settings.language'],
+        defaultLang=chrome.runtime.getManifest().default_locale,
+        isDefault=false,
+        tried={};
+      if (lang) lang=lang.replace(/"/g,'');
+      
+      let langs=[lang || '', chrome.i18n.getUILanguage()].concat(navigator.languages).concat([defaultLang]);
+      
+console.info(langs);
+      
+      let L;
+      for (let i=0; i<langs.length; i++) {
+        L=langs[i];
+        if (!L) continue;
+        
+        if (L=='_user_') {
+          try{
+            _locale=JSON.parse( JSON.parse(localStorage['store.settings.lang-locale']) );
+           }catch(e){ void chrome.runtime.lastError; }
+//console.info('user locale ?', _locale);
+        }
+        else if (!tried[L]) _locale=LoadLocale(L);
+        tried[L]=1;
+        if (_locale) break;
+        let sL=L.split('-');
+        if (sL.length>1) {
+          langs.splice(i+1,0,sL[0]);
+          }
+        }
+      if (L==defaultLang) isDefault=true;
+      L=L.split('-');
+      if (L.length>1) {
+        L=L[0];
+        let loc2=LoadLocale(L);
+        if (loc2) MergeObjects(_locale,loc2);
+        if (L==defaultLang) isDefault=true;
+        }
+      
+      if (!isDefault) {
+        let loc2=LoadLocale(defaultLang);
+        if (loc2) MergeObjects(_locale,loc2);
+        }
+//console.info('parsed locale:', _locale);
+      /**/
+
+      // if something has failed, use _T definition above
+      // else link our own function
+      if (_locale) _T = function(v){
+//console.info(arguments);
+        let m=_locale[v], r;
+        if (m) {
+          r=m.message;
+          if (r && m.placeholders) {
+//console.info(m);
+            for (let i in m.placeholders) {
+              r=r.replace( new RegExp('\\$'+i+'\\$' ,'gi') , arguments[ m.placeholders[i].content.substring(1) ] || '')
+              }
+            }
+          }
+        return r;
+        }
+      /**/
+    }
 } else {    // #171 HACK
     console.warn("Using #171 hack");
     // The following line is substituted at build time with the messages
