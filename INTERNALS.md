@@ -24,9 +24,9 @@ Inputs:
  - `static/`: Files that are copied directly while building
    - `static/win/`: the HTML for the TabFern window
    - `static/settings/`: the HTML for the settings page
-   - `static/test/`: the HTML for the Jasmine tests
+   - `static/t/`: the HTML for the Jasmine tests
    - `static/assets/`: icons, CSS, ...
- - `test/`: Jasmine tests of TabFern.  Note that not everything has a test yet.
+ - `t/`: Jasmine tests of TabFern.  Note that not everything has a test yet.
  - `tools/`: Scripts used during the build process
 
 Outputs:

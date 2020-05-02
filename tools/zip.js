@@ -37,7 +37,7 @@ archive.glob(
     {
         cwd: 'public',  // https://github.com/archiverjs/node-archiver/issues/221#issuecomment-360070387
         ignore: [ '**/*.map',   // Source maps
-                  'test/**', '_locales/*.txt'],
+                  't/**', '_locales/*.txt'],
     },
     {}
 );

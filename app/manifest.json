@@ -39,7 +39,7 @@
   ],
   "web_accessible_resources": [
     "/assets/*",
-    "/test/*"
+    "/t/*"
   ],
   "commands": {
     "reveal-view": {

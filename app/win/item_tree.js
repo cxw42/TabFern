@@ -174,24 +174,24 @@ me.install_resize_detector = function(win, jq_tree) {
     //jq_tree.on('after_close.jstree', me.rjustify_action_group_at);
 }; //install_resize_detector
 
-    /// Install an event handler that calls rjustify_node_actions.
-    /// If me.do_not_rjustify is truthy, do nothing.
-    /// @param jq_tree  {Object}    A JQuery object for the element holding the
-    ///                             tree, or null to use me.treeobj.element
-    /// @param event_name {String}  Which event to catch
-    /// @param once {mixed} If truthy, catch only once.
-    me.install_rjustify = function(jq_tree, event_name, once) {
-        if(me.do_not_rjustify) return;
+/// Install an event handler that calls rjustify_node_actions.
+/// If me.do_not_rjustify is truthy, do nothing.
+/// @param jq_tree  {Object}    A JQuery object for the element holding the
+///                             tree, or null to use me.treeobj.element
+/// @param event_name {String}  Which event to catch
+/// @param once {mixed} If truthy, catch only once.
+me.install_rjustify = function(jq_tree, event_name, once) {
+    if(me.do_not_rjustify) return;
 
-        jq_tree = jq_tree || me.treeobj.element;
-        jq_tree[once?'one':'on'](event_name, function(evt, evt_data){
-            //log.info({[event_name]]:arguments});
-            if(evt_data && typeof evt_data === 'object' && evt_data.obj) {
-                me.rjustify_node_actions(evt_data.obj);
-                    // Has to run in this tick, as far as I can tell.
-            }
-        });
-    }; //install_rjustify
+    jq_tree = jq_tree || me.treeobj.element;
+    jq_tree[once?'one':'on'](event_name, function(evt, evt_data){
+        //log.info({[event_name]]:arguments});
+        if(evt_data && typeof evt_data === 'object' && evt_data.obj) {
+            me.rjustify_node_actions(evt_data.obj);
+                // Has to run in this tick, as far as I can tell.
+        }
+    });
+}; //install_rjustify
 
     /* Comments on install_rjustify:
      *
@@ -362,6 +362,7 @@ me.create = function(selector, options)
             themes: {
                 name: S.getThemeName(),
                 variant: 'small',
+                ellipsis: S.getBool(S.HIDE_HORIZONTAL_SCROLLBARS),  // #201
             },
         },
         state: {
