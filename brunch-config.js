@@ -15,11 +15,12 @@ let messages_en = require('./static/_locales/en/messages.json');
  * is displayed in the title bar of the popup window, it is lowercase (no
  * shouting!).  The following should match:
  *
- *  - public/manifest.json (both the version and version_name)
- *  - package.json (the version_name)
+ *  - package.json (the version_name)   <--- single source of truth
  *  - package-lock.json (the version_name)
+ *  - public/manifest.json (both the version and version_name)
  *
- * Design decision: version numbers follow semver.org.
+ * Design decision: version numbers are defied in package.jsin and
+ * follow semver.org.
  * In the Chrome manifest, the version_name attribute tracks the above.
  * The version attribute, `x.y.z.w`, which is compared in numeric order L-R,
  * is as follows: x.y.z track the above.  w is the "-pre." or "-rc." number.
@@ -38,6 +39,7 @@ let messages_en = require('./static/_locales/en/messages.json');
 // Copy the manifest file and populate version numbers from package.json.
 // TODO make this a Brunch plugin instead.
 try { fs.mkdirSync('public') } catch (err) {}
+try { fs.mkdirSync('public/assets') } catch (err) {}
 
 // Parse the version from package.json
 let ver_re = /^(\d+)\.(\d+)\.(\d+)(-[a-z]+)?(?:\.(\d+))?$/;
@@ -53,18 +55,34 @@ if(matches == null) {
 if(matches[5] == null) {    // Non-prerelease has w=1337 by default
     matches[5] = 1337;
 }
+const IS_DEV = (matches[5] < 1337);
+
 let ver_tuple = matches.slice(1,4).join('.') + `.${matches[5]}`;    // x.y.z.w
-let ver_name = (matches[4] == null) ?
-                matches.slice(1,4).join('.') :
-                pkg_json.version;
+let ver_name =  (   (matches[4] == null) ?
+                    matches.slice(1,4).join('.') :
+                    pkg_json.version
+                ) +
+                (IS_DEV ? ' (development)' : '');
 
 console.log(`TF version ${pkg_json.version} -> ${ver_tuple} ("${ver_name}")`);
 
 // Copy app/manifest.json->public/manifest.json and fill in versions
-fs.createReadStream(path.join(__dirname, 'app', 'manifest.json'))
+fs.createReadStream(path.join(__dirname, 'var', 'manifest.json'))
   .pipe(replaceStream('$VER$', ver_tuple))
   .pipe(replaceStream('$VERNAME$', ver_name))
   .pipe(fs.createWriteStream(path.join(__dirname, 'public', 'manifest.json')));
+
+// Copy icons from var/ to public/assets/ depending on whether or not it's
+// a dev version.
+if(!IS_DEV) {
+    fs.copyFileSync('./var/green16.png', './public/assets/favicon.png');
+    fs.copyFileSync('./var/green48.png', './public/assets/fern48.png');
+    fs.copyFileSync('./var/green128.png', './public/assets/fern128.png');
+} else {
+    fs.copyFileSync('./var/orange16.png', './public/assets/favicon.png');
+    fs.copyFileSync('./var/orange48.png', './public/assets/fern48.png');
+    fs.copyFileSync('./var/orange128.png', './public/assets/fern128.png');
+}
 
 // =======================================================================
 // Make the backup 18n config
