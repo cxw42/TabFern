@@ -2,7 +2,7 @@
 
 [![Join the chat at https://gitter.im/TabFern/Lobby](https://badges.gitter.im/TabFern/Lobby.svg)](https://gitter.im/TabFern/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-## Welcome, Hacktoberfest participants!
+## Developing on TabFern
 
  - For more information on developing TabFern, see
    [CONTRIBUTING.md](CONTRIBUTING.md).
@@ -52,7 +52,7 @@ see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
  - There is only a two-level hierarchy --- tabs cannot be the children
    of other tabs in the tree.
  - You cannot open and close individual tabs --- you have to open and close
-   the window as a whole.
+   the window as a whole (work is in progress --- see issue 35).
  - Where new windows open may not always be where Chrome would open a new
    window.
    Currently, the original size/position of the last-focused or last-closed

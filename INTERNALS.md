@@ -28,6 +28,7 @@ Inputs:
    - `static/assets/`: icons, CSS, ...
  - `t/`: Jasmine tests of TabFern.  Note that not everything has a test yet.
  - `tools/`: Scripts used during the build process
+ - 'var/': Files that vary depending on build options
 
 Outputs:
 
@@ -38,6 +39,19 @@ Other:
 
  - `doc/`: Documentation (to be created)
  - `plugin/`: Skeleton of a TabFern plugin (to be created)
+
+## Build notes
+
+- A tweaked version of Brunch builds the plugin into public/.
+  The tweaks are [here](https://github.com/cxw42/brunch/tree/1527).
+
+- If you get a warning that says:
+
+  > Browserslist: caniuse-lite is outdated. Please run next command `npm update`
+
+  run `npx browserslist@latest --update-db`.  `npm update` won't actually help.
+  Thanks to Andrey Sitnik for this
+  [answer](https://github.com/postcss/autoprefixer/issues/1184#issuecomment-456729370).
 
 ## Popup
 
@@ -60,6 +74,8 @@ is currently spread between `app/win/model.js` and `app/win/main_tl.js`.
 I am working on moving it all into `app/win/model.js`.
 
 ## Versioning
+
+The version number is defined in package.json.  Read on for details.
 
 Chrome requires a version of the form `x.y.z.w`, and permits a version name
 that can have any form.  NPM (at least for purposes of `npm run`) requires

@@ -458,15 +458,11 @@ order within each category.`
 setting_definitions.push(
         {
             "tab": future_i18n("What's new?"),
-            "group": `Version 0.2.1${brplain('2020-04-04')}`,
+            "group": `Version 0.2.2${brplain('2020-xx-xx')}`,
             'group_html':true,
             "type": "description",
             "text": (
-`<ul>` +
-`<li class="gold-star">Special thanks to Hacktoberfest 2019 participants!
-    ahonn and Procyon-b contributed code, Makemeloco contributed a translation,
-    and sarthakpranesh contributed a new website.</li>` +
-
+'<ul>' +
 (!S.ISSUE35 ? '' :
 `<li class="gold-star">Opening one tab at a time!  Yes, the wait is over!  ${issue(35)}
 <ul>
@@ -480,9 +476,21 @@ setting_definitions.push(
 <p>Please note that if Chrome crashes while you have only some tabs open, the
 recovered window will show up in TabFern as a separate, unsaved window
 (related to ${issue(41, true)}).</p>
-</li>
-</ul>`) +
+</li></ul>`) +
+'</ul>'
+            ),
 
+        },
+        {
+            "tab": future_i18n("What's new?"),
+            "group": `Version 0.2.1${brplain('2020-04-04')}`,
+            'group_html':true,
+            "type": "description",
+            "text": (
+`<ul>` +
+`<li class="gold-star">Special thanks to Hacktoberfest 2019 participants!
+    ahonn and Procyon-b contributed code, Makemeloco contributed a translation,
+    and sarthakpranesh contributed a new website.</li>` +
 `<li>The TabFern window should no longer appear off-screen (unless you have
     changed monitors recently).  ${issue(189)}</li>
 <li>Russian translation ${issue(194)}</li>
