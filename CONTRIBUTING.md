@@ -3,7 +3,7 @@
 This file replaces the old
 [wiki page](https://github.com/cxw42/TabFern/wiki/Hacking-on-TabFern).
 
-At the moment, TabFern has a split personality: the `master` branch is where development is happening, but the version on the Chrome Web Store is the `legacy` branch.  Please do development on the `master` branch.
+See [INTERNALS.md](INTERNALS.md) for more about the structure of the code.
 
 ## Legal
 
@@ -50,18 +50,30 @@ below for why.  Developing on the `master` branch involves:
    - In Chrome, go to `chrome://extensions`.  Turn on "Developer Mode" in the
      upper right.  Click "Load unpacked" and navigate to the `public/`
      directory.  Click "Select folder."
-
    - For Firefox, see the
-    [Firefox wiki page](https://github.com/cxw42/TabFern/wiki/Developing-on-Firefox).
+     [Firefox wiki page](https://github.com/cxw42/TabFern/wiki/Developing-on-Firefox).
 1. Hack away!  As you make changes, `brunch` will automatically rebuild the
    files in `public/`.
 1. After you make changes to any files, refresh the TabFern or settings window
    to see them.
-   - If you change anything in `manifest.json` or `app/bg`, you will probably
-     need to reload the extension.  In Chrome, got to `chrome://extensions` and
-     click the circular arrow in TabFern's box.
+   - If you change anything in `manifest.json`, `var/`, `brunch-config.js`,
+     or `app/bg`, you will probably need to reload the extension.  In Chrome,
+     go to `chrome://extensions` and click the circular arrow in TabFern's box.
 
-## Why `brunch`?
+### Build notes
+
+- A tweaked version of Brunch builds the plugin into public/.
+  The tweaks are [here](https://github.com/cxw42/brunch/tree/1527).
+
+- If you get a warning that says:
+
+  > Browserslist: caniuse-lite is outdated. Please run next command `npm update`
+
+  run `npx browserslist@latest --update-db`.  `npm update` won't actually help.
+  Thanks to Andrey Sitnik for this
+  [answer](https://github.com/postcss/autoprefixer/issues/1184#issuecomment-456729370).
+
+### Why `brunch`?
 
 Two reasons:
 
@@ -72,3 +84,51 @@ Two reasons:
 
 This workflow takes a bit of getting used to, but works fairly well.
 
+## Cookbook
+
+This section includes instructions for some specific tasks.
+
+### Adding a new setting
+
+A good example is [this commit](https://github.com/cxw42/TabFern/commit/3ac0f27415048ad86eb20626bed4859d70766a4d).
+
+1. Decide what type of setting it is.  Currently TF divides
+   Booleans (checkboxes) from everything else.
+
+2. Edit `app/common/setting-definitions.js` to add the data storage
+   and code interface to the setting:
+   - In the "Names of settings" section, go to the end of the "Booleans"
+     or "Strings", depending on the type (boolean or other, respectively).
+   - For booleans, add a paragraph following this template:
+
+         _NAM.CFG_POPUP_ON_STARTUP = 'SETTING-NAME';
+         _DEF[_NAM.CFG_POPUP_ON_STARTUP] = DEFAULT;
+         _VAL[_NAM.CFG_POPUP_ON_STARTUP] = _vbool;
+
+   - For other, add a paragraph following this template:
+
+         _NAM.CFGS_THEME_NAME = 'SETTING-NAME';
+         _DEF[_NAM.CFGS_THEME_NAME] = DEFAULT;
+         _VAL[_NAM.CFGS_THEME_NAME] = (v)=>{
+             CODE
+        };
+
+     `CODE` is a validator.  It should check the given input and return a
+     valid value for the setting, or `undefined` to use the default.
+
+   - In the above paragraphs:
+     - `DEFAULT` must be `true` or `false` for booleans, or a string for others.
+     - `SETTING-NAME` should be a name that is all lowercase ASCII plus hyphens.
+
+3. Edit `app/settings/manifest.js` to add the user interface to the setting:
+   - In the "Settings" section, find the tab to which you want to add the
+     setting.  It will be listed as a value of the `tab` field.
+   - Scroll down to the point at which you want to add the setting.  This
+     should be after the last setting in that tab unless there is a
+     compelling reason to do otherwise.  Settings appear in the interface
+     in the order given in the `setting_definitions` array.
+   - Copy and paste one of the `{ }` blocks, each of which is a setting.
+     Pick one that matches the type of UI control you want (e.g.,
+     `type: checkbox` or `type: text`).  See [here](https://github.com/altryne/extensionizr/blob/a6ca3352b1d8b97fa4961209fd050ed7f8bd6e53/ext/src/options_custom/README.md)
+     for more documentation of the available options.
+   - Edit the values appropriately.

@@ -2,13 +2,7 @@
 
 TabFern is built using [brunch](https://brunch.io/).
 
-## Getting started
-
-Clone the repo, then `npm install`.  After that you should be able to
-run `npx brunch b` for a one-time build, or `npx brunch w` to rebuild
-automatically on changes.
-
-Load the `public/` directory as an unpacked extension to test in Chrome.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for more about how to work with the code.
 
 For Firefox, see
 [the wiki](https://github.com/cxw42/TabFern/wiki/Developing-on-Firefox).
@@ -21,6 +15,8 @@ Inputs:
    - `app/win/`: Popup (the main TabFern window)
    - `app/bg/`: Background page
    - `app/settings/`: The settings page
+ - `brunch-config.js`: The control file that directs a build
+ - `package.json`: where the version number is defined
  - `static/`: Files that are copied directly while building
    - `static/win/`: the HTML for the TabFern window
    - `static/settings/`: the HTML for the settings page
@@ -39,19 +35,6 @@ Other:
 
  - `doc/`: Documentation (to be created)
  - `plugin/`: Skeleton of a TabFern plugin (to be created)
-
-## Build notes
-
-- A tweaked version of Brunch builds the plugin into public/.
-  The tweaks are [here](https://github.com/cxw42/brunch/tree/1527).
-
-- If you get a warning that says:
-
-  > Browserslist: caniuse-lite is outdated. Please run next command `npm update`
-
-  run `npx browserslist@latest --update-db`.  `npm update` won't actually help.
-  Thanks to Andrey Sitnik for this
-  [answer](https://github.com/postcss/autoprefixer/issues/1184#issuecomment-456729370).
 
 ## Popup
 

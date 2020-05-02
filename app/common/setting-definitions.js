@@ -153,7 +153,7 @@ _VAL[_NAM.CFGS_OPEN_REST_ON_CLICK] = (v)=>{
 // #152.  Which order of action buttons to use for tabs.
 _NAM.CFGS_WIN_ACTION_ORDER = 'win-button-action-order';
 _DEF[_NAM.CFGS_WIN_ACTION_ORDER] = 'ecd';
-_VAL[_NAM.CFGS_OPEN_REST_ON_CLICK] = (v)=>{
+_VAL[_NAM.CFGS_WIN_ACTION_ORDER] = (v)=>{
     return (( v === 'ecd' || v === 'edc' || v === 'ced' ) ? v : undefined);
 };
 
