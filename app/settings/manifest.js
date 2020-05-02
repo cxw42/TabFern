@@ -31,7 +31,7 @@ let settings = `${ham} ${gt} Settings ${gt}`;
 let refresh_message = " (refresh the TabFern window after you change this to make the change take effect)";
 
 // Settings {{{2
-let setting_definitions = ([
+let setting_definitions = [
 
         // Welcome page
         {
@@ -160,6 +160,9 @@ vote at ${issue(125,true)}.
                     open windows" box above.`
         },
 
+]; //setting_definitions
+
+if(S.ISSUE35) setting_definitions.push(
         {
             'tab': future_i18n('Behaviour'),
             'group': future_i18n('Partly-open windows'),
@@ -173,8 +176,10 @@ vote at ${issue(125,true)}.
                 {value: S.OROC_DO_NOT, text: 'Just bring the window to the front' +
                     ' (you can open the remaining tabs from the right-click menu)'},
             ],
-        },
+        }
+);
 
+setting_definitions.push(
         {
             "tab": future_i18n("Behaviour"),
             "group": future_i18n("Deleting windows"),
@@ -301,15 +306,18 @@ bar (it will start with "file://")</li>
             "type": "checkbox",
             "label": future_i18n("Show page title in each item's tooltip"),
         },
+);
+
+if(S.ISSUE35) setting_definitions.push(
         {
             'tab': future_i18n('Appearance'),
             'group': future_i18n('Action-button order for windows'),
             "type": "description",
             "text": future_i18n("This also sets the order of the corresponding buttons for tabs."),
-        },
-    ]);
+        }
+);
 
-if(S.ISSUE35) setting_definitions.push(
+setting_definitions.push(
         {
             'tab': future_i18n('Appearance'),
             'group': future_i18n('Action-button order for windows'),
@@ -323,9 +331,8 @@ if(S.ISSUE35) setting_definitions.push(
                 {value: 'edc',
                     html: `Edit ${editImg} &bull; Delete ${delImg} &bull; Close and Save ${saveImg}` },
             ],
-        });
+        },
 
-setting_definitions.push(
         // Features
         {
             "tab": "Features",
@@ -463,6 +470,8 @@ setting_definitions.push(
             "type": "description",
             "text": (
 `<ul>
+<li>Fixed a regression in the settings: it is now possible to set the
+window action-button order again.  ${issue(208)}</li>
 <li>When running a development version of TF, the commit hash will be
 listed in the title bar.  This will make it easier to reference the
 commit in bug reports.  ${issue(210)}</li>` +
