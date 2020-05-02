@@ -462,7 +462,10 @@ setting_definitions.push(
             'group_html':true,
             "type": "description",
             "text": (
-'<ul>' +
+`<ul>
+<li>When running a development version of TF, the commit hash will be
+listed in the title bar.  This will make it easier to reference the
+commit in bug reports.  ${issue(210)}</li>` +
 (!S.ISSUE35 ? '' :
 `<li class="gold-star">Opening one tab at a time!  Yes, the wait is over!  ${issue(35)}
 <ul>

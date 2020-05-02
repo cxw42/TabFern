@@ -57,12 +57,35 @@ if(matches[5] == null) {    // Non-prerelease has w=1337 by default
 }
 const IS_DEV = (matches[5] < 1337);
 
+// Check the git status
+let repo_version = '';
+while(IS_DEV) { // do once
+    repo_version = ' (development)';    // default if no git info is available
+
+    let git_status;
+    try { git_status = child_process.execSync('git s --porcelain=v2 -b -v -u'); }
+    catch(err) { break; }
+
+    let hash;
+    let hash_re = /^# branch.oid (.{7}).+$/m;
+    let matches = hash_re.exec(git_status);
+    if(matches && matches[1]) {
+        hash = matches[1];
+    }
+
+    let dirty = (/^[^#]/m).test(git_status) ? '-dirty' : '';
+
+    repo_version = ' (' + (hash ? hash : 'development') + dirty + ')';
+
+    break;
+}
+
 let ver_tuple = matches.slice(1,4).join('.') + `.${matches[5]}`;    // x.y.z.w
 let ver_name =  (   (matches[4] == null) ?
                     matches.slice(1,4).join('.') :
                     pkg_json.version
                 ) +
-                (IS_DEV ? ' (development)' : '');
+                repo_version;
 
 console.log(`TF version ${pkg_json.version} -> ${ver_tuple} ("${ver_name}")`);
 
