@@ -60,7 +60,7 @@ let createPicker = function createPicker() {
 
     // Add the text that would otherwise have gone in the manifest
     let newlabel = $j('<span>').text(
-            'Skinny-scrollbar color ("X" for the default): ')   // TODO i18n
+            _T('s_skinnyColor') || 'Skinny-scrollbar color ("X" for the default): ' )   // TODO i18n
         .addClass('setting label');
     $j(picker).before(newlabel);
 
@@ -244,6 +244,20 @@ function main()
             $j('#import-settings').after(elem);
             S.set(S.SETTINGS_LOADED_OK, false);
         }
+
+        // handle locale selection events
+        let SL=$j('#s_select_lang'), SLb = $j('#user_locale_btn'), SLtxt = $j('#user_locale')[0];
+        function toggleLocaleBtn(e) {
+          let val = e.value == '_user_';
+          SLb[0].classList.toggle('show',val);
+          if (!val) SLtxt.classList.remove('show');
+          }
+        SL.on('change', (e)=>{toggleLocaleBtn(e.target);});
+        SLb.on('click', ()=>{SLtxt.classList.toggle('show');});
+        // set classes and init button state (visible or hidden)
+        SL[0].parentNode.classList.add('floatLeft');
+        SLb[0].classList.add('floatLeft');
+        toggleLocaleBtn(SL[0]);
 
         // ----------------------------
         // open tab specified in a query parm, if known.
