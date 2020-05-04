@@ -25,4 +25,20 @@ span.plain {
     text-decoration: none;
 }
 
+#user_locale {
+    display: none;
+    resize: vertical;
+}
+
+#user_locale_btn {
+    display: none;
+    margin-left: 0.5em;
+}
+.floatLeft {
+    float: left;
+}
+.show {
+    display: initial;
+}
+
 /* vi: set ts=4 sts=4 sw=4 et ai: */

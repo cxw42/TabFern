@@ -20,7 +20,10 @@ function issue(nums, noparens) {
 
 function brplain(text){return `<br/><span class="plain">${text}</span>`;}
 
-function future_i18n(x) { return x; }
+function future_i18n(x,n) {
+    var r = n && _T.apply(null, [].slice.call(arguments,1) );
+    return r || x;
+}
 
 let ham = icon('fa fa-bars');
 let gt = icon('fa fa-lg fa-caret-right');
@@ -28,97 +31,97 @@ var editImg = icon('fff-pencil tf-action-button');
 var delImg = icon('fff-cross tf-action-button');
 var saveImg = icon('fff-picture-delete tf-action-button');
 let settings = `${ham} ${gt} Settings ${gt}`;
-let refresh_message = " (refresh the TabFern window after you change this to make the change take effect)";
+let refresh_message = future_i18n(" (refresh the TabFern window after you change this to make the change take effect)", 's_refresh_msg');
 
 // Settings {{{2
 let setting_definitions = ([
 
         // Welcome page
         {
-            "tab": future_i18n("Welcome / Help"),
-            "group": future_i18n("Introduction"),
+            "tab": future_i18n("Welcome / Help", 's_welcome'),
+            "group": future_i18n("Introduction", 's_intro'),
             "name": "welcome-intro",
             "type": "description",
-            "text": "<p>Welcome to TabFern!  Each Chrome window you have open "+
+            "text": future_i18n("<p>Welcome to TabFern!  Each Chrome window you have open "+
                     "or saved is represented in the TabFern window.  "+
                     "Right-click on those representations or hover " +
                     "the mouse over them for options.  Click the " +
                     ham + ' menu for more options.</p>' +
                     '<p>The tabs at the left have settings and, at the bottom'+
                     ' of the list, information about recent feature additions'+
-                    ' or changes.</p>'
+                    ' or changes.</p>', 's_intro_txt', ham)
         },
         {
-            "tab": future_i18n("Welcome / Help"),
-            "group": future_i18n("Incognito mode"),
+            "tab": future_i18n("Welcome / Help", 's_welcome'),
+            "group": future_i18n("Incognito mode", 's_inco'),
             "type": "description",
-            "text":
+            "text": future_i18n(
 `TabFern cannot see Incognito windows or tabs, and is not yet tested in
 Incognito mode.  If you would like Incognito support in TabFern, please
 vote at ${issue(125,true)}.
-`,
+`, 's_inco_txt', issue(125,true) ),
         },
         {
-            "tab": future_i18n("Welcome / Help"),
-            "group": future_i18n("Import/Export"),
+            "tab": future_i18n("Welcome / Help", 's_welcome'),
+            "group": future_i18n("Import/Export", 's_import'),
             "name": "export-settings",
             "id": "export-settings",
             "type": "button",
-            "text": "Save settings to a file"
+            "text": future_i18n("Save settings to a file", 's_save')
         },
         {
-            "tab": future_i18n("Welcome / Help"),
-            "group": future_i18n("Import/Export"),
+            "tab": future_i18n("Welcome / Help", 's_welcome'),
+            "group": future_i18n("Import/Export", 's_import'),
             "name": "import-settings",
             "id": "import-settings",
             "type": "button",
-            "text": "Load settings from a file"
+            "text": future_i18n("Load settings from a file", 's_load')
         },
         {
-            "tab": future_i18n("Welcome / Help"),
-            "group": future_i18n("Legal"),
+            "tab": future_i18n("Welcome / Help", 's_welcome'),
+            "group": future_i18n("Legal", 's_legal'),
             "name": "legal",
             "type": "description",
-            "text": "The TabFern name, logo, and icons are trademarks of Chris White."
+            "text": future_i18n("The TabFern name, logo, and icons are trademarks of Chris White.", 's_legal_txt')
         },
 
         // Behaviour.  Yeah, there's a "u" in there!
         {
-            "tab": future_i18n("Behaviour"),
-            "group": future_i18n("When Chrome starts..."),
+            "tab": future_i18n("Behaviour", 's_behaviour'),
+            "group": future_i18n("When Chrome starts...", 's_chr_st'),
             "name": S.POPUP_ON_STARTUP,
             "type": "checkbox",
-            "label": future_i18n("Open the TabFern window automatically"),
+            "label": future_i18n("Open the TabFern window automatically", 's_auto_openTF'),
         },
         {
-            "tab": future_i18n("Behaviour"),
-            "group": future_i18n("When Chrome starts..."),
+            "tab": future_i18n("Behaviour", 's_behaviour'),
+            "group": future_i18n("When Chrome starts...", 's_chr_st'),
             "type": "description",
-            "text": future_i18n("You can open the TabFern window any time by clicking the fern icon next to the address bar."),
+            "text": future_i18n("You can open the TabFern window any time by clicking the fern icon next to the address bar.", 's_openTF_txt'),
         },
         {
-            "tab": future_i18n("Behaviour"),
-            "group": future_i18n("On startup or refresh..."),
+            "tab": future_i18n("Behaviour", 's_behaviour'),
+            "group": future_i18n("On startup or refresh...", 's_startup'),
             "name": S.COLLAPSE_ON_STARTUP,
             "type": "checkbox",
-            "label": future_i18n("Collapse all the saved trees"),
+            "label": future_i18n("Collapse all the saved trees", 's_collapse'),
             //"text": future_i18n("x-characters")
         },
         {
-            "tab": future_i18n("Behaviour"),
-            "group": future_i18n("On startup or refresh..."),
+            "tab": future_i18n("Behaviour", 's_behaviour'),
+            "group": future_i18n("On startup or refresh...", 's_startup'),
             "name": S.OPEN_TOP_ON_STARTUP,
             "type": "checkbox",
-            "label": future_i18n("Sort open windows to the top")
+            "label": future_i18n("Sort open windows to the top", 's_sort_open')
             //"text": future_i18n("x-characters")
         },
 
         {
-            "tab": future_i18n("Behaviour"),
-            "group": future_i18n("When I..."),
+            "tab": future_i18n("Behaviour", 's_behaviour'),
+            "group": future_i18n("When I...", 's_when'),
             "name": S.COLLAPSE_ON_WIN_CLOSE,
             "type": "checkbox",
-            "label": future_i18n("Close an open window, collapse its tree"),
+            "label": future_i18n("Close an open window, collapse its tree", 's_close_open'),
             //"text": future_i18n("x-characters")
         },
 //        {
@@ -130,140 +133,145 @@ vote at ${issue(125,true)}.
 //            //"text": future_i18n("x-characters")
 //        },
         {
-            "tab": future_i18n("Behaviour"),
-            "group": future_i18n("When I..."),
+            "tab": future_i18n("Behaviour", 's_behaviour'),
+            "group": future_i18n("When I...", 's_when'),
             "name": S.RESTORE_ON_LAST_DELETED,
             "type": "checkbox",
-            "label": future_i18n("Restore the last-deleted window, reopen its tabs"),
+            "label": future_i18n("Restore the last-deleted window, reopen its tabs", 's_restore_del'),
         },
         {
-            "tab": future_i18n("Behaviour"),
-            "group": future_i18n("When I..."),
+            "tab": future_i18n("Behaviour", 's_behaviour'),
+            "group": future_i18n("When I...", 's_when'),
             "name": S.JUMP_WITH_SORT_OPEN_TOP,
             "type": "checkbox",
-            "label": future_i18n('Sort open windows to the top, scroll to the top of the list'),
+            "label": future_i18n('Sort open windows to the top, scroll to the top of the list', 's_sort_scroll'),
         },
         {
-            "tab": future_i18n("Behaviour"),
-            "group": future_i18n("When I..."),
+            "tab": future_i18n("Behaviour", 's_behaviour'),
+            "group": future_i18n("When I...", 's_when'),
             "name": S.NEW_WINS_AT_TOP,
             "type": "checkbox",
-            "label": future_i18n('Open a new window, move it to the top of the list'),
+            "label": future_i18n('Open a new window, move it to the top of the list', 's_new_top'),
         },
         {   // some extra descriptive text for S.NEW_WINS_AT_TOP
-            "tab": future_i18n("Behaviour"),
-            "group": future_i18n("When I..."),
+            "tab": future_i18n("Behaviour", 's_behaviour'),
+            "group": future_i18n("When I...", 's_when'),
             "type": "description",
-            "text": `This has the practical side-effect that all open
+            "text": future_i18n(
+                    `This has the practical side-effect that all open
                     windows will be sorted to the top when you open the
                     TabFern window, even if you didn't check the "Sort
-                    open windows" box above.`
+                    open windows" box above.`, 's_new_top_txt')
         },
 
         {
-            'tab': future_i18n('Behaviour'),
-            'group': future_i18n('Partly-open windows'),
+            'tab': future_i18n('Behaviour', 's_behaviour'),
+            'group': future_i18n('Partly-open windows', 's_partly'),
             'name': S.S_OPEN_REST_ON_CLICK,
             'type': 'radioButtons',
-            'label': `When only some of the tabs in a window are open,
+            'label': future_i18n(
+                     `When only some of the tabs in a window are open,
                         what should happen when you click the
-                        name of the window?`,
+                        name of the window?`, 's_partly_txt'),
             'options': [
-                {value: S.OROC_DO, text: 'Open all the remaining closed tabs'},
-                {value: S.OROC_DO_NOT, text: 'Just bring the window to the front' +
-                    ' (you can open the remaining tabs from the right-click menu)'},
+                {value: S.OROC_DO, text: future_i18n('Open all the remaining closed tabs', 's_partly_openAllRem')},
+                {value: S.OROC_DO_NOT, text: future_i18n('Just bring the window to the front' +
+                    ' (you can open the remaining tabs from the right-click menu)', 's_partly_toFront')},
             ],
         },
 
         {
-            "tab": future_i18n("Behaviour"),
-            "group": future_i18n("Deleting windows"),
+            "tab": future_i18n("Behaviour", 's_behaviour'),
+            "group": future_i18n("Deleting windows", 's_del_win'),
             "name": S.CONFIRM_DEL_OF_SAVED,
             "type": "checkbox",
-            "label": future_i18n('Prompt for confirmation before deleting <b>saved</b> windows'),
+            "label": future_i18n('Prompt for confirmation before deleting <b>saved</b> windows', 's_del_SWin'),
         },
         {
-            "tab": future_i18n("Behaviour"),
-            "group": future_i18n("Deleting windows"),
+            "tab": future_i18n("Behaviour", 's_behaviour'),
+            "group": future_i18n("Deleting windows", 's_del_win'),
             "name": S.CONFIRM_DEL_OF_UNSAVED,
             "type": "checkbox",
-            "label": future_i18n('Prompt for confirmation before deleting <b>unsaved</b> windows'),
+            "label": future_i18n('Prompt for confirmation before deleting <b>unsaved</b> windows', 's_del_UnsWin'),
         },
 
         {
-            "tab": future_i18n("Behaviour"),
-            "group": future_i18n("Deleting tabs"),
+            "tab": future_i18n("Behaviour", 's_behaviour'),
+            "group": future_i18n("Deleting tabs", 's_del_tab'),
             "name": S.CONFIRM_DEL_OF_SAVED_TABS,
             "type": "checkbox",
-            "label": future_i18n('Prompt for confirmation before deleting <b>tabs</b> in <b>saved</b> windows'),
+            "label": future_i18n('Prompt for confirmation before deleting <b>tabs</b> in <b>saved</b> windows', 's_del_STab'),
         },
         {
-            "tab": future_i18n("Behaviour"),
-            "group": future_i18n("Deleting tabs"),
+            "tab": future_i18n("Behaviour", 's_behaviour'),
+            "group": future_i18n("Deleting tabs", 's_del_tab'),
             "name": S.CONFIRM_DEL_OF_UNSAVED_TABS,
             "type": "checkbox",
-            "label": future_i18n('Prompt for confirmation before deleting <b>tabs</b> in <b>unsaved</b> windows'),
+            "label": future_i18n('Prompt for confirmation before deleting <b>tabs</b> in <b>unsaved</b> windows', 's_del_UnsTab'),
         },
         {
-            "tab": future_i18n("Behaviour"),
-            "group": future_i18n("Music"),
+            "tab": future_i18n("Behaviour", 's_behaviour'),
+            "group": future_i18n("Music", 's_music'),
             "name": S.CONFIRM_DEL_OF_AUDIBLE_TABS,
             "type": "checkbox",
-            "label": future_i18n('Prompt for confirmation before closing or deleting a tab that is currently playing audio (<i class="fa fa-music"></i>)'),
+            "label": future_i18n('Prompt for confirmation before closing or deleting a tab that is currently playing audio (<i class="fa fa-music"></i>)', 's_music_tab', '<span style="display:inline-block">(<i class="fa fa-music"></i>)</span>'),
         },
 
         // Appearance
         {
-            "tab": future_i18n("Appearance"),
+            "tab": future_i18n("Appearance", 's_appear'),
             "group": '',
             "type": "description",
-            "text": future_i18n("Refresh the TabFern window to apply changes to these options.  To refresh, click TabFern's title bar and hit F5."),
+            "text": future_i18n("Refresh the TabFern window to apply changes to these options.  To refresh, click TabFern's title bar and hit F5.", 's_appear_txt'),
         },
         {
-            "tab": future_i18n("Appearance"),
-            "group": future_i18n("Language"),
+            "tab": future_i18n("Appearance", 's_appear'),
+            "group": future_i18n("Language", 's_lang'),
             "name": S.S_LANG_NAME,
             "type": "popupButton",
-            "label": future_i18n('Select a language'),
+            "label": future_i18n('Select a language', 's_lang_txt'),
+            "id": "s_select_lang",
             'options': [
-                { value: '', text: 'Browser default' },
-                { value: '_user_', text: '[ User defined ]' },
+                { value: '', text: future_i18n('Browser default', 's_locDef') },
+                { value: '_user_', text: future_i18n('[ User defined ]', 's_locUser') },
                 { value: 'en', text: 'English (EN)' },
                 { value: 'de', text: 'Deutsch (DE)' },
                 { value: 'fr', text: 'Français (FR)' },
-                { value: 'ru', text: 'Russian (RU)' },
+                { value: 'ru', text: 'русский (RU)' },
             ],
         },
         {
-            "tab": future_i18n("Appearance"),
-            "group": future_i18n("Language"),
-            "type": "description",
-            "text": future_i18n('Locale:'),
+            "tab": future_i18n("Appearance", 's_appear'),
+            "group": future_i18n("Language", 's_lang'),
+            "type": "button",
+            "text": future_i18n('Edit locale', 's_loc_btn'),
+            "id": 'user_locale_btn',
         },
         {
-            "tab": future_i18n("Appearance"),
-            "group": future_i18n("Language"),
+            "tab": future_i18n("Appearance", 's_appear'),
+            "group": future_i18n("Language", 's_lang'),
             "name": S.S_LANG_LOCALE,
             "type": "textarea",
-            "NOlabel": future_i18n('Locale'),
+            "style": 'display: none;',
+            "id": 'user_locale',
         },
         {
-            "tab": future_i18n("Appearance"),
-            "group": future_i18n("Scrollbars"),
+            "tab": future_i18n("Appearance", 's_appear'),
+            "group": future_i18n("Scrollbars", 's_scroll'),
             "name": S.HIDE_HORIZONTAL_SCROLLBARS,
             "type": "checkbox",
-            "label": future_i18n('Hide horizontal scrollbar'),
+            "label": future_i18n('Hide horizontal scrollbar', 's_hideHscroll'),
         },
         {
-            "tab": future_i18n("Appearance"),
-            "group": future_i18n("Scrollbars"),
+            "tab": future_i18n("Appearance", 's_appear'),
+            "group": future_i18n("Scrollbars", 's_scroll'),
             "name": S.SKINNY_SCROLLBARS,
             "type": "checkbox",
-            "label": future_i18n('Skinny scrollbars'),
+            "label": future_i18n('Skinny scrollbars', 's_skinnyScroll'),
         },
         {
-            "tab": future_i18n("Appearance"),
-            "group": future_i18n("Scrollbars"),
+            "tab": future_i18n("Appearance", 's_appear'),
+            "group": future_i18n("Scrollbars", 's_scroll'),
             "id": 'scrollbar-color-picker-label',
             //"name": '',     // Don't save - settings.js handles that
             "type": "text",
@@ -274,37 +282,37 @@ vote at ${issue(125,true)}.
                 // appear properly in search results
         },
         {
-            "tab": future_i18n("Appearance"),
-            "group": future_i18n("Tree"),
+            "tab": future_i18n("Appearance", 's_appear'),
+            "group": future_i18n("Tree", 's_tree'),
             "name": S.SHOW_TREE_LINES,
             "type": "checkbox",
-            "label": future_i18n('Show connecting lines between nodes'),
+            "label": future_i18n('Show connecting lines between nodes', 's_tree_txt'),
         },
 
         // Theming options
         {
-            "tab": future_i18n("Appearance"),
-            "group": future_i18n("Theme"),
+            "tab": future_i18n("Appearance", 's_appear'),
+            "group": future_i18n("Theme", 's_theme'),
             "name": S.S_THEME_NAME,
             "type": "popupButton",
-            "label": future_i18n('Theme'),
+            "label": future_i18n('Theme', 's_theme'),
             'options': [
                 { value: 'default-dark', text: 'Dark' },
                 { value: 'default', text: 'Light' },
             ],
         },
         {
-            "tab": future_i18n("Appearance"),
-            "group": future_i18n("Theme"),
+            "tab": future_i18n("Appearance", 's_appear'),
+            "group": future_i18n("Theme", 's_theme'),
             "name": S.S_BACKGROUND,
             "type": "text",
-            "label": future_i18n('Background color or image'),
+            "label": future_i18n('Background color or image', 's_background'),
         },
         {
-            "tab": future_i18n("Appearance"),
-            "group": future_i18n("Theme"),
+            "tab": future_i18n("Appearance", 's_appear'),
+            "group": future_i18n("Theme", 's_theme'),
             "type": "description",
-            "text":
+            "text": future_i18n(
 `The background can be specified as a CSS color name, rgb(r,g,b), hsl(h,s,l),
 or a URL (data, https, chrome-extension, or file).
 To use images from your local disk (file):
@@ -312,35 +320,35 @@ To use images from your local disk (file):
 <li>Check the box for "Allow access to file URLs" in chrome://extensions</li>
 <li>Open the image you want in Chrome and copy the address out of the address
 bar (it will start with "file://")</li>
-<li>Paste the "file://..." URL into the box above.</li>`
+<li>Paste the "file://..." URL into the box above.</li>`, 's_theme_txt')
         },
 
         {
-            "tab": future_i18n("Appearance"),
-            "group": future_i18n("Tooltips"),
+            "tab": future_i18n("Appearance", 's_appear'),
+            "group": future_i18n("Tooltips", 's_tooltips'),
             "name": S.URL_IN_TOOLTIP,
             "type": "checkbox",
-            "label": future_i18n("Show URL in each item's tooltip"),
+            "label": future_i18n("Show URL in each item's tooltip", 's_TT_showURL'),
         },
         {
-            "tab": future_i18n("Appearance"),
-            "group": future_i18n("Tooltips"),
+            "tab": future_i18n("Appearance", 's_appear'),
+            "group": future_i18n("Tooltips", 's_tooltips'),
             "name": S.TITLE_IN_TOOLTIP,
             "type": "checkbox",
-            "label": future_i18n("Show page title in each item's tooltip"),
+            "label": future_i18n("Show page title in each item's tooltip", 's_TT_showTitle'),
         },
         {
-            'tab': future_i18n('Appearance'),
-            'group': future_i18n('Action-button order for windows'),
+            'tab': future_i18n('Appearance', 's_appear'),
+            'group': future_i18n('Action-button order for windows', 's_actionB_order'),
             "type": "description",
-            "text": future_i18n("This also sets the order of the corresponding buttons for tabs."),
+            "text": future_i18n("This also sets the order of the corresponding buttons for tabs.", 's_action_txt'),
         },
     ]);
 
 if(S.ISSUE35) setting_definitions.push(
         {
-            'tab': future_i18n('Appearance'),
-            'group': future_i18n('Action-button order for windows'),
+            'tab': future_i18n('Appearance', 's_appear'),
+            'group': future_i18n('Action-button order for windows', 's_actionB_order'),
             'name': S.S_WIN_ACTION_ORDER,
             'type': 'radioButtons',
             'options': [
@@ -356,11 +364,11 @@ if(S.ISSUE35) setting_definitions.push(
 setting_definitions.push(
         // Features
         {
-            "tab": "Features",
-            "group": "Context Menu",
+            "tab": future_i18n("Features", 's_features'),
+            "group": future_i18n("Context Menu", 's_cMenu'),
             "name": S.ENB_CONTEXT_MENU,
             "type": "checkbox",
-            "label": "Enable right-click menus" + refresh_message,
+            "label": future_i18n("Enable right-click menus" + refresh_message, 's_rcMenu', refresh_message),
         },
 /*
         {
@@ -421,7 +429,7 @@ setting_definitions.push(
 // }}}2
 // Credits {{{2
         {
-            "tab": future_i18n("Credits and thanks"),
+            "tab": future_i18n("Credits and thanks", 's_credits'),
             "group": 'TabFern',
             'group_html':true,
             "type": "description",
@@ -434,8 +442,8 @@ order within each category.`
         },
 
         {
-            "tab": future_i18n("Credits and thanks"),
-            "group": future_i18n("Programming"),
+            "tab": future_i18n("Credits and thanks", 's_credits'),
+            "group": future_i18n("Programming", 's_progr'),
             'group_html':true,
             "type": "description",
             "text":
@@ -447,8 +455,8 @@ order within each category.`
 </ul>`
         },
         {
-            "tab": future_i18n("Credits and thanks"),
-            "group": future_i18n("Translation"),
+            "tab": future_i18n("Credits and thanks", 's_credits'),
+            "group": future_i18n("Translation", 's_transl'),
             'group_html':true,
             "type": "description",
             "text":
@@ -459,8 +467,8 @@ order within each category.`
 </ul>`
         },
         {
-            "tab": future_i18n("Credits and thanks"),
-            "group": future_i18n("Artwork and publicity"),
+            "tab": future_i18n("Credits and thanks", 's_credits'),
+            "group": future_i18n("Artwork and publicity", 's_art_pub'),
             'group_html':true,
             "type": "description",
             "text":
@@ -470,8 +478,8 @@ order within each category.`
 </ul>`
         },
         {
-            "tab": future_i18n("Credits and thanks"),
-            "group": future_i18n("Other"),
+            "tab": future_i18n("Credits and thanks", 's_credits'),
+            "group": future_i18n("Other", 's_other'),
             'group_html':true,
             "type": "description",
             "text":
@@ -485,7 +493,7 @@ order within each category.`
 // Changelog                                          {{{1
 setting_definitions.push(
         {
-            "tab": future_i18n("What's new?"),
+            "tab": future_i18n("What's new?", 's_whatsnew'),
             "group": `Version 0.2.1${brplain('2020-04-04')}`,
             'group_html':true,
             "type": "description",
@@ -527,7 +535,7 @@ recovered window will show up in TabFern as a separate, unsaved window
             ),
         },
         {
-            "tab": future_i18n("What's new?"),
+            "tab": future_i18n("What's new?", 's_whatsnew'),
             "group": `Version 0.2.0${brplain('2019-04-07')}`,
             'group_html':true,
             "type": "description",
@@ -557,7 +565,7 @@ ${issue(171)}</p>
 </ul>`
         },
         {
-            "tab": future_i18n("What's new?"),
+            "tab": future_i18n("What's new?", 's_whatsnew'),
             "group": `Version 0.1.19${brplain('2018-10-03')}`,
             'group_html':true,
             "type": "description",
@@ -565,7 +573,7 @@ ${issue(171)}</p>
                     ${issue([102, 131, 149],true)}</li></ul>`,
         },
         {
-            "tab": future_i18n("What's new?"),
+            "tab": future_i18n("What's new?", 's_whatsnew'),
             "group": `Version 0.1.18${brplain('2018-09-17')}`,
             'group_html':true,
             "type": "description",
@@ -579,7 +587,7 @@ ${issue(143)} </li>
 </ul>`,
         },
         {
-            "tab": future_i18n("What's new?"),
+            "tab": future_i18n("What's new?", 's_whatsnew'),
             "group": `Version 0.1.17${brplain('2018-09-02')}`,
             'group_html':true,
             "type": "description",
@@ -617,7 +625,7 @@ and Chrome get out of sync.  ${issue(127)}</li>
 </ul>`
         },
         {
-            "tab": future_i18n("What's new?"),
+            "tab": future_i18n("What's new?", 's_whatsnew'),
             "group": `Version 0.1.16${brplain('2018-03-08')}`,
             'group_html':true,
             "type": "description",
@@ -630,7 +638,7 @@ Hopefully this saves you a little bit of time.  ${issue(109)}</li>
 </ul>`
         },
         {
-            "tab": future_i18n("What's new?"),
+            "tab": future_i18n("What's new?", 's_whatsnew'),
             "group": `Version 0.1.15${brplain('2018-02-09')}`,
             'group_html':true,
             "type": "description",
@@ -643,7 +651,7 @@ status!  One step closer to <a href="https://github.com/cxw42/TabFern/issues?q=i
 </ul>`
         },
         {
-            "tab": future_i18n("What's new?"),
+            "tab": future_i18n("What's new?", 's_whatsnew'),
             "group": `Version 0.1.14${brplain('2018-01-12')}`,
             'group_html':true,
             "type": "description",
@@ -662,7 +670,7 @@ ${issue(97)}</li>
 </ul>`,
         },
         {
-            "tab": future_i18n("What's new?"),
+            "tab": future_i18n("What's new?", 's_whatsnew'),
             "group": `Version 0.1.13${brplain('2017-12-12')}`,
             'group_html':true,
             "type": "description",
@@ -685,7 +693,7 @@ scrollbars."  ${issue(68)}
 </ul>`
         },
         {
-            "tab": future_i18n("What's new?"),
+            "tab": future_i18n("What's new?", 's_whatsnew'),
             "group": `Version 0.1.12${brplain('2017-11-05')}`,
             'group_html':true,
             "type": "description",
@@ -714,7 +722,7 @@ ${issue(78)}</li>
 </ul>`
         },
         {
-            "tab": future_i18n("What's new?"),
+            "tab": future_i18n("What's new?", 's_whatsnew'),
             "group": `Version 0.1.11${brplain('2017-10-19')}`,
             'group_html':true,
             "type": "description",
@@ -747,7 +755,7 @@ if you run across them.  Thanks for considering this request!
         },
 
         {
-            "tab": future_i18n("What's new?"),
+            "tab": future_i18n("What's new?", 's_whatsnew'),
             "group": `Version 0.1.10${brplain('2017-09-26')}`,
             'group_html':true,
             "type": "description",
@@ -769,7 +777,7 @@ locally-stored PDFs, and this helps me find them more quickly.</li>
 </ul>`,
         },
         {
-            "tab": future_i18n("What's new?"),
+            "tab": future_i18n("What's new?", 's_whatsnew'),
             "group": `Versions 0.1.8 and 0.1.9${brplain('2017-09-22')}`,
             'group_html':true,
             "type": "description",
@@ -792,7 +800,7 @@ ready yet.)  ${issue(36)}</li>
 </ul>`,
             },
             {
-                "tab": future_i18n("What's new?"),
+                "tab": future_i18n("What's new?", 's_whatsnew'),
                 "group": `Version 0.1.7${brplain('2017-09-18')}`,
                 'group_html':true,
                 "type": "description",
@@ -808,7 +816,7 @@ ready yet.)  ${issue(36)}</li>
     '</ul>'
             },
             {
-                "tab": future_i18n("What's new?"),
+                "tab": future_i18n("What's new?", 's_whatsnew'),
                 "group": `Version 0.1.6${brplain('2017-09-10')}`,
                 'group_html':true,
                 "type": "description",
@@ -821,7 +829,7 @@ ready yet.)  ${issue(36)}</li>
     '</ul>'
             },
             {
-                "tab": future_i18n("What's new?"),
+                "tab": future_i18n("What's new?", 's_whatsnew'),
                 "group": `Version 0.1.5${brplain('2017-09-07')}`,
                 'group_html':true,
                 "type": "description",
@@ -832,7 +840,7 @@ ready yet.)  ${issue(36)}</li>
                     'workarounds for Chrome 61 changes.</li></ul>'
             },
             {
-                "tab": future_i18n("What's new?"),
+                "tab": future_i18n("What's new?", 's_whatsnew'),
                 "group": `Version 0.1.4${brplain('2017-09-06')}`,
                 'group_html':true,
                 "type": "description",
@@ -842,7 +850,7 @@ saving of TabFern window position ${issue(22)},
 and Expand All/Collapse All.</li></ul>`
             },
             {
-                "tab": future_i18n("What's new?"),
+                "tab": future_i18n("What's new?", 's_whatsnew'),
                 "group": `Version 0.1.2${brplain('2017-09-02')}`,
                 'group_html':true,
                 "type": "description",

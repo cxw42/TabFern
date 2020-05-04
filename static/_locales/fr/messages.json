@@ -332,4 +332,155 @@
     ,"description":"The lines below here do not need translation."
   }
   ,"modeline":{"description":"Keep the following on the last line of the file"
-    ,"message":" // vi: set ts=2 sts=2 sw=2 et ai fenc=utf8 ff=dos: //"}}
+    ,"message":" // vi: set ts=2 sts=2 sw=2 et ai fenc=utf8 ff=dos: //"}
+
+
+  ,"s_welcome": {
+    "message": "Bienvenue / Aide"}
+  ,"s_intro": {
+    "message": "Introduction"}
+  ,"s_intro_txt": {
+    "message": "<p>Bienvenue sur TabFern!  Dans Chrome, chaque fenêtre que vous avez ouverte ou sauvegardée est représentée dans la fenêtre de TabFern. Cliquez avec le bouton droit sur ces éléments ou déplacez la souris par dessus pour accéder aux options.  Cliquez le menu $HAM$ pour plus d'options.</p><p>Les onglets à gauche contiennent des options et, en bas de la liste, des informations à propos des changements ou ajouts récents.</p>"
+    ,"placeholders": {
+      "ham": { "content": "$1" }
+      }
+    }
+  ,"s_inco": {
+    "message": "Navigation privée"}
+  ,"s_inco_txt": {
+    "message": "TabFern ne peut pas voir les fenêtres et onglets en mode navigation privée, et n'a pas encore été testé en mode navigation privée. Si vous désirez que ce mode soit pris en charge par TabFern, votez ici: $VOTE$"
+    ,"placeholders": {
+      "vote": { "content": "$1" }
+      }
+    }
+  ,"s_import": {
+    "message": "Importer/Exporter"}
+  ,"s_save": {
+    "message": "Sauvegarder les réglages dans un fichier"}
+  ,"s_load": {
+    "message": "Charger les réglages depuis un fichier"}
+  ,"s_legal": {
+    "message": "Mention légale"}
+  ,"s_legal_txt": {
+    "message": "Le nom TabFern, le logo, et les icônes sont des marques déposées de Chris White."}
+  ,"s_behaviour": {
+    "message": "Comportement"}
+  ,"s_chr_st": {
+    "message": "Démarrage de Chrome"}
+  ,"s_auto_openTF": {
+    "message": "Ouvrir TabFern automatiquement"}
+  ,"s_openTF_txt": {
+    "message": "Vous pouvez ouvrir la fenêtre de TabFern à tout moment en cliquant sur l'icône \"fougère\" à côté de la barre d'adresse."}
+  ,"s_startup": {
+    "message": "Au démarrage ou au raffaîchissement..."}
+  ,"s_collapse": {
+    "message": "Réduire toutes les arborescences sauvées"}
+  ,"s_sort_open": {
+    "message": "Trier les fenêtres ouvertes en haut"}
+  ,"s_when": {
+    "message": "Quand je..."}
+  ,"s_close_open": {
+    "message": "Ferme une fenêtre, réduire son arborescence"}
+  ,"s_restore_del": {
+    "message": "Restaure la dernière fenêtre effacée, rouvrir ses onglets"}
+  ,"s_sort_scroll": {
+    "message": "Trie les fenetres ouvertes en haut, faire défiler en faut de la liste"}
+  ,"s_new_top": {
+    "message": "Ouvre une nouvelle fenêtre, la déplacer en haut de la liste"}
+  ,"s_new_top_txt": {
+    "message": "Ceci a aussi pour effet que toutes fenêtres ouvertes seront triés en haut au moment de l'ouverture de la fenêtre de TabFern. Et ceci même si vous n'avez pas coché l'option \"Trie les fenetres ouvertes\" çi-dessus."}
+  ,"s_partly": {
+    "message": "Fenêtres partiellement ouvertes"}
+  ,"s_partly_txt": {
+    "message": "Quand seulement certains des onglets sont ouverts, que doit-il se passer quand vous cliquez sur le nom de cette fenêtre ?"}
+  ,"s_partly_openAllRem": {
+    "message": "Ouvrir tous les onglets restants"}
+  ,"s_partly_toFront": {
+    "message": "Afficher la fenêtre à l'avant-plan (vous pouvez ouvrir les onglets restants depuis le menu clic-droit)"}
+  ,"s_del_win": {
+    "message": "Supprimer des fenêtres"}
+  ,"s_del_SWin": {
+    "message": "Demander confirmation avant de supprimer une fenêtre <b>sauvegardée</b>"}
+  ,"s_del_UnsWin": {
+    "message": "Demander confirmation avant de supprimer une fenêtre <b>non-sauvegardée</b>"}
+  ,"s_del_tab": {
+    "message": "Deleting tabs"}
+  ,"s_del_STab": {
+    "message": "Demander confirmation avant de supprimer un <b>onglet</b> dans une fenêtre <b>sauvegardée</b>"}
+  ,"s_del_UnsTab": {
+    "message": "Demander confirmation avant de supprimer un <b>onglet</b> dans une fenêtre <b>non-sauvegardée</b>"}
+  ,"s_music": {
+    "message": "Musique"}
+  ,"s_music_tab": {
+    "message": "Demander confirmation avant de fermer ou supprimer un onglet qui diffuse du son $music$"
+    ,"placeholders": {
+      "music": { "content": "$1" }
+      }
+    }
+  ,"s_appear": {
+    "message": "Apparence"}
+  ,"s_appear_txt": {
+    "message": "Raffraichir la fenêtre de TabFern pour appliquer la modification des options. Pour raffraichir, cliquer sur la barre de titre de TabFern et appuyer sur F5."}
+  ,"s_lang": {
+    "message": "Langue"}
+  ,"s_lang_txt": {
+    "message": "Choisissez une langue"}
+  ,"s_locDef": {
+    "message": "Défauts du navigateur"}
+  ,"s_locUser": {
+    "message": "[ Fournie par l'utilisateur ]"}
+  ,"s_loc_btn": {
+    "message": "Editer"}
+  ,"s_scroll": {
+    "message": "Barres de défilement"}
+  ,"s_hideHscroll": {
+    "message": "Cacher la barre de défilement horizontale"}
+  ,"s_skinnyScroll": {
+    "message": "Barres de défilement fines"}
+  ,"s_skinnyColor": {
+    "message": "Couleur de la barre de défilement fine (\"X\" pour couleur par défaut)"}
+  ,"s_tree": {
+    "message": "Arborescence"}
+  ,"s_tree_txt": {
+    "message": "Afficher les lignes de connexion entre les nœuds "}
+  ,"s_theme": {
+    "message": "Thème"}
+  ,"s_background": {
+    "message": "Couleur ou image de fond"}
+  ,"s_theme_txt": {
+    "message": "L'arrière-plan peut être une couleur CSS, rgb(r,g,b), hsl(h,s,l), ou une URL (donnée, https, chrome-extension, ou fichier). Pour utiliser une image de votre disque dur (fichier):<ul><li>Cocher la case \"Autoriser l'accès aux URL de fichier\" dans chrome://extensions</li><li>Ouvrir dans Chrome l'image que vous voulez utiliser et copier l'adresse depuis la barre d'adresse (cela commence pas \"file://\")</li><li>Coller l'URL \"file://...\" dans le champ de saisie çi-dessus.</li>"}
+  ,"s_tooltips": {
+    "message": "Info-bulles"}
+  ,"s_TT_showURL": {
+    "message": "Montrer l'URL dans l'info-bulle de chaque élément"}
+  ,"s_TT_showTitle": {
+    "message": "Montrer le titre de la page dans l'info-bulle de chaque élément"}
+  ,"s_actionB_order": {
+    "description": "Action-button order for windows"}
+  ,"s_action_txt": {
+    "description": "This also sets the order of the corresponding buttons for tabs."}
+  ,"s_features": {
+    "message": "Fonctionnalités"}
+  ,"s_cmenu": {
+    "message": "Menu contextuel"}
+  ,"s_refresh_msg": {
+    "message": " (rafraîchir la fenêtre de TabFern après avoir modifié cette option pour que le changement prenne effet)"}
+  ,"s_rcMenu": {
+    "message": "Activer les menus clic-droit $REFRESH$"
+    ,"placeholders": {
+      "refresh": { "content": "$1" }
+      }
+    }
+  ,"s_credits": {
+    "message": "Crédits et remerciements"}
+  ,"s_progr": {
+    "message": "Programmation"}
+  ,"s_transl": {
+    "message": "Traduction"}
+  ,"s_art_pub": {
+    "message": "Artwork et publicité"}
+  ,"s_other": {
+    "message": "Autre"}
+  ,"s_whatsnew": {
+    "message": "Quoi de neuf ?"}
+}
