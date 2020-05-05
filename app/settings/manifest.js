@@ -397,6 +397,25 @@ setting_definitions.push(
         },
 */
 
+        {
+            "tab": future_i18n("Advanced"),
+            "group": '',
+            "type": "description",
+            "text": future_i18n("Refresh the TabFern window to apply changes to these options.  To refresh, click TabFern's title bar and hit F5."),
+        },
+        {
+            "tab": future_i18n("Advanced"),
+            "group": future_i18n("Favicons"),
+            "name": S.S_FAVICON_SOURCE,
+            'type': 'radioButtons',
+            'label': 'Where should I fetch favicons from?',
+            'options': [
+                {value: S.FAVICON_SITE, text: 'The site itself (normal usage)'},
+                {value: S.FAVICON_CHROME, text: 'Chrome.  Faster, but not all icons will appear.'},
+                {value: S.FAVICON_DDG, text: 'DuckDuckGo'},
+            ],
+        },
+
 // }}}2
 // Credits {{{2
         {

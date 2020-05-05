@@ -305,6 +305,38 @@ me.refresh_label = function(vorny) {
     return retval;
 }; //refresh_label()
 
+// Get the favicon URL for a site.  Only used internally,
+// but exposed so it can be tested.
+me.favicon_url_by_site_url = function(raw_favicon_url, mode) {
+    let retval = raw_favicon_url;
+    if(!mode) {
+        mode = S.getString(S.S_FAVICON_SOURCE);
+    }
+
+    // If we can't parse the URL, leave it unchanged.
+    let url;
+    try {
+        url = new URL(raw_favicon_url);
+    } catch(e) {
+        return retval;  // *** EXIT POINT ***
+    }
+
+    if(url.hostname === 'localhost') {  // Don't hit DDG with localhost requests
+        return retval;  // *** EXIT POINT ***
+
+    } else if(url.protocol === 'chrome-extension:') {     // #202
+        retval = 'chrome://favicon/size/16@1x/' + url.protocol + '//' +
+            url.hostname;
+
+    } else if(mode === S.FAVICON_CHROME) {       // #196
+        retval = 'chrome://favicon/' + url.protocol + '//' + url.hostname;
+    } else if(mode === S.FAVICON_DDG) {
+        retval = 'https://icons.duckduckgo.com/ip2/' + url.hostname + '.ico'
+    } // else leave it as is
+
+    return retval;
+}; //favicon_url_by_site_url()
+
 /// Update the icon of #vorny
 /// @param vorny {Mixed} The item
 /// @return {Boolean} true on success; false on error
@@ -319,7 +351,7 @@ me.refresh_icon = function(vorny) {
         case K.IT_TAB:
             icon = 'fff-page';
             if(val.raw_favicon_url) {
-                icon = encodeURI(val.raw_favicon_url);
+                icon = encodeURI(me.favicon_url_by_site_url(val.raw_favicon_url));
             } else if((/\.pdf$/i).test(val.raw_url)) {  //special-case PDFs
                 icon = 'fff-page-white-with-red-banner';
             }

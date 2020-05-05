@@ -157,6 +157,17 @@ _VAL[_NAM.CFGS_WIN_ACTION_ORDER] = (v)=>{
     return (( v === 'ecd' || v === 'edc' || v === 'ced' ) ? v : undefined);
 };
 
+// #196.  Where to get favicons from.
+const FAVICON_SITE = 'actual';
+const FAVICON_CHROME = 'chrome';
+const FAVICON_DDG = 'ddg';
+
+_NAM.CFGS_FAVICON_SOURCE = 'favicon-source';
+_DEF[_NAM.CFGS_FAVICON_SOURCE] = 'actual';
+_VAL[_NAM.CFGS_FAVICON_SOURCE] = (v)=>{
+    return (( v === FAVICON_SITE || v === FAVICON_CHROME || v === FAVICON_DDG ) ? v : undefined);
+};
+
 // }}}2
 
 /// The default values for the configuration settings.
@@ -281,6 +292,11 @@ let me = {
     OROC_DO_NOT: CFG_OROC_DO_NOT,
     TRUE: CFG_TRUE,
     FALSE: CFG_FALSE,
+
+    // FAVICON_SOURCE values
+    FAVICON_SITE,
+    FAVICON_CHROME,
+    FAVICON_DDG,
 
     // special accessors
     isOROC: ()=>(getStringSetting(CFG_NAMES.CFG_OPEN_REST_ON_CLICK) === CFG_OROC_DO),
