@@ -105,6 +105,14 @@ _NAM.CFG_TITLE_IN_TOOLTIP = 'tooltip-has-title';
 _DEF[_NAM.CFG_TITLE_IN_TOOLTIP] = false;
 _VAL[_NAM.CFG_TITLE_IN_TOOLTIP] = _vbool;
 
+_NAM.CFG_FIXED_WINDOW_SIZE = 'window-size-is-fixed';
+_DEF[_NAM.CFG_FIXED_WINDOW_SIZE] = false;
+_VAL[_NAM.CFG_FIXED_WINDOW_SIZE] = _vbool;
+
+_NAM.CFG_PREFERRED_WINDOW_POSITION_OFFSET = 'window-position-offset-is-fixed';
+_DEF[_NAM.CFG_PREFERRED_WINDOW_POSITION_OFFSET] = false;
+_VAL[_NAM.CFG_PREFERRED_WINDOW_POSITION_OFFSET] = _vbool;
+
 /// Not actually a setting, but an indicator that we loaded settings OK.
 /// Used by src/settings/main.js.
 _NAM.SETTINGS_LOADED_OK = '__settings_loaded_OK';
@@ -166,6 +174,20 @@ _NAM.CFGS_FAVICON_SOURCE = 'favicon-source';
 _DEF[_NAM.CFGS_FAVICON_SOURCE] = 'actual';
 _VAL[_NAM.CFGS_FAVICON_SOURCE] = (v)=>{
     return (( v === FAVICON_SITE || v === FAVICON_CHROME || v === FAVICON_DDG ) ? v : undefined);
+};
+
+_NAM.CFGS_WINDOW_SIZE = 'window-size';
+_DEF[_NAM.CFGS_WINDOW_SIZE] = '800x600';
+_VAL[_NAM.CFGS_WINDOW_SIZE] = (v)=>{
+    let regex = RegExp(/^[0-9]+[xX][0-9]+$/);
+    return (( v.match(regex) ) ? v : undefined);
+};
+
+_NAM.CFGS_WINDOW_POSITION_OFFSET_VALUES = 'window-position-offset-values';
+_DEF[_NAM.CFGS_WINDOW_POSITION_OFFSET_VALUES] = '+36:+36';
+_VAL[_NAM.CFGS_WINDOW_POSITION_OFFSET_VALUES] = (v)=>{
+    let regex = RegExp(/^\+?[0-9]+:\+?[0-9]+$/);
+    return (( v.match(regex) ) ? v : undefined);
 };
 
 // }}}2
