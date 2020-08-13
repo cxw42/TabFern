@@ -13,7 +13,7 @@ see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ## What is TabFern?
 
-![screenshot](https://raw.githubusercontent.com/cxw42/TabFern/gh-pages/screenshot.png)
+![screenshot](https://raw.githubusercontent.com/cxw42/TabFern/gh-pages/assets/img/screenshot.png)
 
 **TabFern** is a [Google Chrome extension](https://chrome.google.com/webstore/detail/tabfern-tab-manager-and-b/hbajjpcdbninabigakflkhiogmmjaakm) that:
 
@@ -81,4 +81,4 @@ Originally inspired by
 by Vladyslav Volovyk.  However, TabFern is not derived from Tabs Outliner.
 TabFern is not affiliated in any way with Vladyslav or Tabs Outliner.
 
-![logo](https://raw.githubusercontent.com/cxw42/TabFern/master/static/assets/fern128.png)
+![logo](https://raw.githubusercontent.com/cxw42/TabFern/gh-pages/assets/img/fern128.png)
