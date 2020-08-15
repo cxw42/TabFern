@@ -146,6 +146,77 @@ vote at ${issue(125,true)}.
         {
             "tab": future_i18n("Behaviour"),
             "group": future_i18n("When I..."),
+            "name": S.FIXED_WINDOW_SIZE,
+            "type": "checkbox",
+            "label": future_i18n('Open a window, always open it with a preferred fixed size'),
+        },
+        {   // some extra descriptive text for S.FIXED_WINDOW_SIZE
+            "tab": future_i18n("Behaviour"),
+            "group": future_i18n("When I..."),
+            "type": "description",
+            "text": future_i18n(`If you change this value please refresh Settings
+                    page (this page) to reveal preferred window size parameter`)
+        },
+    ];
+
+    if(S.getBool(S.FIXED_WINDOW_SIZE)) setting_definitions.push(
+        {
+            "tab": future_i18n("Behaviour"),
+            "group": future_i18n("When I..."),
+            "name": S.S_WINDOW_SIZE,
+            "type": "text",
+            "label": future_i18n('Window size'),
+        },
+        {   // some extra descriptive text for S.FIXED_WINDOW_SIZE
+            "tab": future_i18n("Behaviour"),
+            "group": future_i18n("When I..."),
+            "type": "description",
+            "text": future_i18n(`The format of the window size parameter is <em>[width]x[height]</em>
+             e.g. <strong>800x600</strong>`)
+        },
+    );
+
+    setting_definitions.push(
+        {
+            "tab": future_i18n("Behaviour"),
+            "group": future_i18n("When I..."),
+            "name": S.PREFERRED_WINDOW_POSITION_OFFSET,
+            "type": "checkbox",
+            "label": future_i18n('Open a window, use preferred window position offset'),
+        },
+        {   // some extra descriptive text for S.PREFERRED_WINDOW_POSITION_OFFSET
+            "tab": future_i18n("Behaviour"),
+            "group": future_i18n("When I..."),
+            "type": "description",
+            "text": future_i18n(`Refresh Settings page (this page) when changed
+                    to reveal preferred window position offset parameter`)
+        },
+    )
+
+    if(S.getBool(S.PREFERRED_WINDOW_POSITION_OFFSET)) setting_definitions.push(
+        {
+            "tab": future_i18n("Behaviour"),
+            "group": future_i18n("When I..."),
+            "name": S.S_WINDOW_POSITION_OFFSET_VALUES,
+            "type": "text",
+            "label": future_i18n('Window position offset'),
+        },
+        {   // some extra descriptive text for S.FIXED_WINDOW_SIZE
+            "tab": future_i18n("Behaviour"),
+            "group": future_i18n("When I..."),
+            "type": "description",
+            "text": future_i18n(
+                `If format is <em>[top]:[left]</em> e.g. <strong>16:16</strong> the offset is relative to <strong>screen</strong><br/>
+                If format is <em>+[top]:+[left]</em> e.g. <strong>+36:+36</strong> the offset is relative to <strong>last focused window</strong><br/>
+                <strong>+0:+0</strong> opens new window exactly <strong>on top of previously focused window</strong><br>
+                <strong>0:0</strong> opens new window exactly <strong>positioned top left corner of screen</strong><br>`)
+        },
+    );
+
+    setting_definitions.push(
+        {
+            "tab": future_i18n("Behaviour"),
+            "group": future_i18n("When I..."),
             "name": S.NEW_WINS_AT_TOP,
             "type": "checkbox",
             "label": future_i18n('Open a new window, move it to the top of the list'),
@@ -159,8 +230,7 @@ vote at ${issue(125,true)}.
                     TabFern window, even if you didn't check the "Sort
                     open windows" box above.`
         },
-
-]; //setting_definitions
+);
 
 if(S.ISSUE35) setting_definitions.push(
         {

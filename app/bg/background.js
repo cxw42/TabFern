@@ -127,6 +127,37 @@ let onCommandListener = function(cmd) {
 } //onCommandListener()
 chrome.commands.onCommand.addListener(onCommandListener);
 
+// When a window is created
+chrome.windows.onCreated.addListener(function(window){
+  // Leave TabFern window alone...
+  if (window.id === me.viewWindowID) return;
+  
+  if (S.getBool(S.FIXED_WINDOW_SIZE) && window.type === 'normal') {
+    let windowSize = S.getString(S.S_WINDOW_SIZE);
+    [windowWidth, windowHeight] = windowSize.split('x').map((value) => parseInt(value));
+    chrome.windows.update(window.id, {width: windowWidth, height: windowHeight});
+  }
+  if (S.getBool(S.PREFERRED_WINDOW_POSITION_OFFSET) && window.type === 'normal') {
+    let fixedOffsetFormat = RegExp(/^([0-9]+):([0-9]+)$/)
+    let fixedOffsetValues = S.getString(S.S_WINDOW_POSITION_OFFSET_VALUES).match(fixedOffsetFormat);
+    if(fixedOffsetValues) {
+      topOffset = parseInt(fixedOffsetValues[1]);
+      leftOffset = parseInt(fixedOffsetValues[2]);
+      chrome.windows.update(window.id, {top:topOffset, left:leftOffset});  
+    }
+    let relativeOffsetFormat = RegExp(/^\+([0-9]+):\+([0-9]+)$/)
+    let relativeOffsetValues = S.getString(S.S_WINDOW_POSITION_OFFSET_VALUES).match(relativeOffsetFormat);
+    if(relativeOffsetValues) {
+      // According to Window features documentation default new window offset is 22px 
+      // https://developer.mozilla.org/en-US/docs/Web/API/Window/open#Window_features
+      // If user has a preferred relative offset preference we need to discount the default offset
+      topOffset = window.top + parseInt(relativeOffsetValues[1])-22;
+      leftOffset = window.left + parseInt(relativeOffsetValues[2])-22;
+      chrome.windows.update(window.id, {top:topOffset, left:leftOffset});  
+    }
+  }
+});
+
 // When a window is closed
 chrome.windows.onRemoved.addListener(function(windowId) {
   // If the window getting closed is the popup we created
