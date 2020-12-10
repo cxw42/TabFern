@@ -48,7 +48,7 @@ describe('app/win/model', function() {
         T.create(this.$div, {
             check_callback: true,   // allow all
             report_error: function(err) {   // NOT ()=>{} - this=jstree instance
-                if(err && err.id && err.id === 'tabfern_nop') {
+                if(err && err.id && err.id === 'core_08') {
                     return;     // Nothing to do
                 }
                 expect(err).toBeUndefined();    // Cause a test failure
