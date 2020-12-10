@@ -329,6 +329,10 @@ describe('app/win/model', function() {
 
             // Make the window
             let win_vn = makeWin();
+            expect(win_vn).not.toBeUndefined();
+            expect(win_vn.val).toBeTruthy();
+            expect(win_vn.node_id).toBeTruthy();
+
             M.markWinAsOpen(win_vn,
                 {   // Fake cwin
                     id: next_win_id++,
@@ -360,7 +364,7 @@ describe('app/win/model', function() {
             return win_vn;
         } //makeFakeWindow()
 
-        /// Make a fake tab
+        /// Make a fake tab in the model
         /// @param win_vn   The window
         /// @return tab_vn
         function makeFakeTab(win_vn) {
@@ -390,7 +394,7 @@ describe('app/win/model', function() {
             }
         } //make_fake_ctab()
 
-        /// Add a fake tab to a window.
+        /// Add a fake tab to a window, as if Chrome had done so.
         /// NOTE: assumes tab isOpen values are correct.
         /// @param win_vn   The window
         /// @param raw_title    The raw_title for the new tab
@@ -439,8 +443,8 @@ describe('app/win/model', function() {
             M.markWinAsClosed(win_vn.val);
         } //closeFakeWindowAsIfChrome
 
-        /// Check whether the configuration of a window matches the given
-        /// configuration.  \p tabState is as for makeFakeWindow.
+        /// Check whether the configuration of a window in the model matches
+        /// the given configuration.  \p tabState is as for makeFakeWindow.
         /// @param win_vn   The window
         /// @param expectedTabState {String}    as makeFakeWindow():tabState
         function expectWindowState(win_vn, expectedTabState) {
@@ -457,61 +461,38 @@ describe('app/win/model', function() {
                     tab_val.raw_title.toLowerCase();
             } //foreach tab
 
-            // Check it
             expect(actualState).toBe(expectedTabState);
-
-            /*  // This is a more explicit way of testing the same thing.
-                // Use this block for raw_title values outside the range [a-z].
-            let ctab_index = 0;     // Chrome tab index
-            expect(win_node.children.length).toEqual(expectedTabState.length);
-            for(let idx=0; idx<expectedTabState.length; ++idx) {
-                let expectedState = expectedTabState[idx];
-
-                let tab_node_id = win_node.children[idx];
-                expect(tab_node_id).toBeTruthy();
-
-                let tab_val = D.tabs.by_node_id(tab_node_id);
-                expect(tab_val).not.toBeUndefined();
-
-                // Uppercase => open
-                expect(tab_val.isOpen).toBeEqv(shouldBeOpen(expectedState));
-                expect(tab_val.raw_title).toBe(expectedState.toLowerCase());
-
-                // Check the tab's index based on whether the expected state
-                // indicates this tab should be open.
-                if(shouldBeOpen(expectedState)) {
-                    expect(tab_val.index).toEqual(ctab_index++);
-                } else {
-                    expect(tab_val.index).toEqual(K.NONE);
-                }
-
-            } //foreach tab
-            */
         } //expectWindowState
 
         // }}}2
         // Basic tests {{{2
-        it('assigns sequential indices when one tab is present and open', ()=>{
+        it('records one tab present and open', ()=>{
             let win_vn = makeFakeWindow('A');
             expectWindowState(win_vn, 'A');
             expect(M.eraseWin(win_vn)).toBeTruthy();
         });
 
-        it('has no index when one tab is present and closed', ()=>{
+        it('records one tab is present and closed', ()=>{
             let win_vn = makeFakeWindow('a');
             expectWindowState(win_vn, 'a');
             expect(M.eraseWin(win_vn)).toBeTruthy();
         });
 
-        it('assigns sequential indices when all tabs are open', ()=>{
+        it('records three tabs, all open', ()=>{
             let win_vn = makeFakeWindow('ABC');
             expectWindowState(win_vn, 'ABC');
             expect(M.eraseWin(win_vn)).toBeTruthy();
         });
 
-        it('has no index when all tabs are closed', ()=>{
+        it('records three tabs, all closed', ()=>{
             let win_vn = makeFakeWindow('abc');
             expectWindowState(win_vn, 'abc');
+            expect(M.eraseWin(win_vn)).toBeTruthy();
+        });
+
+        it('records a mix of open and closed tabs', ()=>{
+            let win_vn = makeFakeWindow('AbCdEf');
+            expectWindowState(win_vn, 'AbCdEf');
             expect(M.eraseWin(win_vn)).toBeTruthy();
         });
 
@@ -562,8 +543,8 @@ describe('app/win/model', function() {
 
         describe('onTabMoved',()=>{   // Chrome moves tabs {{{2
             // Each testcase is [fake-window tabs,
-            //                      which tab moves, ctab from,
-            //                      ctab to, expected window state,
+            //                      which tab moves, ctab index from,
+            //                      ctab index to, expected window state,
             //                      comments (if any)]
             const testcases = [
                 ['AB', 'a', 0, 1, 'BA'],  // "->1" = A moves L to R by 1
@@ -576,10 +557,10 @@ describe('app/win/model', function() {
             for(const thetest of testcases) {
 
                 // Convenient names for the pieces of the test
-                const [faketabs, moving_tab, f, t, expected] = thetest;
+                const [faketabs, moving_tab, fromidx, toidx, expected] = thetest;
                 const comments = thetest[5] || '';
                 const testname = `${faketabs}: ${moving_tab.toUpperCase()}` +
-                    (f<t ? '->' : '<-') + Math.abs(f-t) +
+                    (fromidx<toidx ? '->' : '<-') + Math.abs(fromidx-toidx) +
                     (comments ? `: ${comments}` : '');
 
                 it(testname, ()=>{
@@ -600,7 +581,7 @@ describe('app/win/model', function() {
 
                     // Do the work
                     expect(
-                        M.react_onTabMoved(win_vn, tab_vn, f, t)
+                        M.react_onTabMoved(win_vn, tab_vn, fromidx, toidx)
                     ).toBeTruthy();
 
                     // Check it
