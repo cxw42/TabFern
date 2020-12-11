@@ -40,6 +40,13 @@ let me = {};
 /// Value returned by vn*() on error.  Both members are falsy.
 me.VN_NONE = {val: null, node_id: ''};
 
+/// Gravity values used when positioning tab nodes in the tree.
+me.GravityTy = Object.freeze({
+    NONE: 'none',
+    LEFT: 'left',
+    RIGHT: 'right',
+});
+
 // Querying the model ////////////////////////////////////////////// {{{1
 
 /// Get a {val, node_id} pair (vn) from one of those (vorny).
@@ -771,10 +778,11 @@ me.getWinOpenChildCount = function getWinOpenChildCount(win_nodey)
 /// @pre The window must be open.
 /// @param win_nodey {mixed} The window in question
 /// @param cidx {nonnegative integer} the Chrome ctab.index
-/// @param openerTabId {optional integer} The ctab ID of the opener,
-///                                         if any.
+/// @param openerTabId {optional integer} The ctab ID of the opener, if any.
+/// @param gravity {optional GravityTy} The gravity to use in case of gaps
 me.treeIdxByChromeIdx = function treeIdxByChromeIdx(win_nodey, cidx,
-                                        openerTabId)
+                                        openerTabId,
+                                        gravity = me.GravityTy.NONE)
 {
     let win_node = T.treeobj.get_node(win_nodey);
     if(!win_node || !Number.isInteger(cidx) || cidx<0 ) return false;
@@ -798,22 +806,45 @@ me.treeIdxByChromeIdx = function treeIdxByChromeIdx(win_nodey, cidx,
     win_node.children.forEach( (kid_node_id, kid_idx)=>{
         if(D.tabs.by_node_id(kid_node_id, 'isOpen')) {
             orig_idx.push(kid_idx);
-            // TODO break if we've gone far enough?
         }
     });
 
-    log.info({"Mapping in":orig_idx,"From":cidx});
+    log.info({"Mapping in":orig_idx, "From":cidx});
 
-    // Pick the cidx from that list
+    // Pick the cidx based on that list.  At present, the default gravity
+    // is away from the ends, towards the middle.
+
     if(cidx >= orig_idx.length) {           // New tab off the end
-        return 1 + orig_idx[orig_idx.length-1];
+        if(gravity == me.GravityTy.LEFT || gravity == me.GravityTy.NONE) {
+            return 1 + orig_idx[orig_idx.length-1]; // After the last open tab
+        } else if(gravity == me.GravityTy.RIGHT) {
+            return win_node.children.length-1;      // The very end
+        } else {
+            log.error("Assuming gravity LEFT");
+            return 1 + orig_idx[orig_idx.length-1];
+        }
 
-    } else if(cidx>0) {                     // Tab that exists, not the 1st
-        // Group it to the left rather than the right if there's a gap
-        return orig_idx[cidx-1]+1;  // i.e., after the previous tab's node
+    } else if(cidx == 0) {                  // New first tab
+        if(gravity == me.GravityTy.RIGHT || gravity == me.GravityTy.NONE) {
+            return orig_idx[0]; // Before the first open tab
+        } else if(gravity == me.GravityTy.LEFT) {
+            return 0;           // The very beginning
+        } else {
+            log.error("Assuming gravity RIGHT");
+            return orig_idx[0];
+        }
 
-    } else {                                // New first tab
-        return orig_idx[cidx];
+    } else {                                // Tab that exists, not the 1st
+        // Arbitrary design decision: group it to the left by default
+        if(gravity == me.GravityTy.LEFT || gravity == me.GravityTy.NONE) {
+            return 1 + orig_idx[cidx-1];    // Just right of an open tab
+        } else if(gravity == me.GravityTy.RIGHT) {
+            return orig_idx[cidx];          // Just left of an open tab
+        } else {
+            log.error("Assuming gravity LEFT");
+            return 1 + orig_idx[orig_idx.length-1];
+        }
+
     }
 
 } //treeIdxByChromeIdx()
@@ -1117,6 +1148,7 @@ me.react_onTabCreated = function(win_vorny, tab_vorny, ctab) {
     let treeidx;    // Where it should go
 
     // Figure out where to put it
+    // TODO refactor to remove duplication of code between this and treeIdxByChromeIdx
     if(!win.val.isOpen) return false;
     let nkids = win_node.children.length;
 
@@ -1175,6 +1207,11 @@ me.react_onTabCreated = function(win_vorny, tab_vorny, ctab) {
 /// @param  cidx_to     The Chrome new tabindex
 /// @return True on success; false on failure
 me.react_onTabMoved = function(win_vorny, tab_vorny, cidx_from, cidx_to) {
+    if(cidx_from == cidx_to) {
+        log.info("Nothing to do");
+        return true;
+    }
+
     let tabvn = me.vn_by_vorny(tab_vorny, K.IT_TAB);
     if(!tabvn) return false;
 
@@ -1182,33 +1219,19 @@ me.react_onTabMoved = function(win_vorny, tab_vorny, cidx_from, cidx_to) {
     if(!win) return false;
     let win_node = T.treeobj.get_node(win.node_id);
     if(!win_node) return false;
+    let moving_right = (cidx_to>cidx_from);
+    let gravity = moving_right ? me.GravityTy.LEFT : me.GravityTy.RIGHT;
 
-    // How far has the _user_ moved the tab?  The vast majority of the time,
-    // Chrome gives us deltas of +1 or -1.  I did a quick-and-dirty test
-    // with a lot of fast motion, attach, and detach (i.e., drag a tab and
-    // wiggle the mouse like crazy) and got this histogram: {1: 22, -1: 29}.
-    // Therefore, special-case those.
-    const desired_delta = cidx_to - cidx_from;
-
-    /// Where the node is going to go
-    let treeidx;
-
-    // TODO RESUME HERE
-    if(desired_delta === -1) {          // Move one left
-        treeidx = win_node.children.indexOf(tabvn.node_id) - 1;
-
-    } else if(desired_delta === 1) {    // Move one right
-        treeidx = win_node.children.indexOf(tabvn.node_id) + 1;
-
-    } else {                            // Move other than +/- 1
-        // XXX OLD
-        const from_idx = me.treeIdxByChromeIdx(win.node_id, cidx_from);
-        const to_idx = me.treeIdxByChromeIdx(win.node_id, cidx_to);
-        if(from_idx === false || to_idx === false) {
-            return false;
-        }
-        treeidx = to_idx;
+    // Even though the delta is almost always +/-1 ctab position, that may
+    // be any number of tree positions.  Therefore, for now, use the
+    // slow method.
+    const tidx_from = me.treeIdxByChromeIdx(win.node_id, cidx_from, undefined,
+        gravity);
+    const tidx_to = me.treeIdxByChromeIdx(win.node_id, cidx_to, undefined, gravity);
+    if(tidx_from === false || tidx_to === false) {
+        return false;
     }
+    treeidx = tidx_to;
 
     // As far as I can tell, in jstree, indices point between list
     // elements.  E.g., with n items, index 0 is before the first and
@@ -1218,7 +1241,7 @@ me.react_onTabMoved = function(win_vorny, tab_vorny, cidx_from, cidx_to) {
     // rather than _before_ it.
     // See the handling of `pos` values of "before" and "after"
     // in the definition of move_node() in jstree.js.
-    treeidx += (cidx_to>cidx_from ? 1 : 0);
+    treeidx += (moving_right ? 1 : 0);
 
     if(treeidx == null) {       // Sanity check
         return false;
