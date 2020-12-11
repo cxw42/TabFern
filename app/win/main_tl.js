@@ -1275,9 +1275,10 @@ function addTabNodeActions(tab_node_id)
 } //addTabNodeActions
 
 /// Create a tree node for an open tab.
+/// @deprecated in favor of M.react_onTabCreated().
 /// @param ctab {Chrome Tab} the tab record
 /// @return The node ID on success, or falsy on failure.
-function createNodeForTab(ctab, parent_node_id)
+function createNodeForOpenTab(ctab, parent_node_id)
 {
     let {node_id, val} = M.vnRezTab(parent_node_id);
     if(!node_id) {
@@ -1291,7 +1292,7 @@ function createNodeForTab(ctab, parent_node_id)
     addTabNodeActions(node_id);
 
     // The rjustify is a no-op until the actions are added.  If we just added
-    // the last child, we haven't necessaryly redrawn, so do so. (#200)
+    // the last child, we haven't necessarily redrawn, so do so. (#200)
     let parent_node = T.treeobj.get_node(parent_node_id);
     if(parent_node.children[parent_node.children.length - 1] === node_id) {
         T.install_rjustify(null, 'redraw_event.jstree', 'once');
@@ -1299,7 +1300,23 @@ function createNodeForTab(ctab, parent_node_id)
     }
 
     return node_id;
-} //createNodeForTab
+} //createNodeForOpenTab
+
+/// Update tree view on a tree node for an open tab.
+/// @param node {Chrome Tab} the tree node for the tab
+/// @param parent_node {Chrome Tab} the parent tree node
+function updateNodeForOpenTab(node, parent_node)
+{
+    addTabNodeActions(node.id);
+
+    // The rjustify is a no-op until the actions are added.  If we just added
+    // the last child, we haven't necessarily redrawn, so do so. (#200)
+    if(parent_node.children[parent_node.children.length - 1] === node.id) {
+        T.install_rjustify(null, 'redraw_event.jstree', 'once');
+        T.treeobj.redraw_node(node.id);
+    }
+
+} //updateNodeForOpenTab
 
 /// Create a tree node for a closed tab
 /// @param tab_data_v1      V1 save data for the tab
@@ -1425,7 +1442,7 @@ function createNodeForWindow(cwin, keep)
     if(cwin.tabs) {                      // new windows may have no tabs
         for(let ctab of cwin.tabs) {
             log.info(`   ${ctab.id}: ${ctab.title}`);
-            createNodeForTab(ctab, node_id);    //TODO handle errors
+            createNodeForOpenTab(ctab, node_id);    //TODO handle errors
         }
     }
 
@@ -2557,7 +2574,8 @@ var onTabCreated = (function(){     // search key: function onTabCreated()
         return true;    // It's handled!
     } //handle_tabfern_action()
 
-    function tab_on_created_inner(ctab)
+    // The main worker for onTabCreated
+    function on_tab_created_inner(ctab)
     {
         log.info({'Tab created': ctab.id, ctab});
 
@@ -2568,7 +2586,6 @@ var onTabCreated = (function(){     // search key: function onTabCreated()
             return;
         }
 
-        // See if this is a duplicate of an existing tab
         let tab_val = D.tabs.by_tab_id(ctab.id);
 
         // If it's a tab action we triggered, process it.
@@ -2579,42 +2596,16 @@ var onTabCreated = (function(){     // search key: function onTabCreated()
         /// What to do after saving
         let cbk;
 
-        if(tab_val) {
-            // It's a duplicate
-            log.info('   - That tab already exists.');
+        let tab_node_id = M.react_onTabCreated(win_val, ctab);
 
-            // Just put it where it now belongs.
-            let treeidx = M.treeIdxByChromeIdx(win_node_id, ctab.index,
-                    ctab.openerTabId);
-            if(treeidx !== false) { // onTabCreated => the tab should exist
-                T.treeobj.because('chrome', 'move_node',
-                    tab_val.node_id, win_node_id, treeidx);
-            }
-
+        if(tab_val) {   // It already existed, so react_onTabCreated() didn't
+                        // make a new tree node.
             // Design decision: rearranging tabs doesn't trigger a merge check
-
-            // Make sure all the other indices are up to date
-            M.updateTabIndexValues(win_node_id);
-
             saveTree(true, cbk);
 
-        } else {        // Not a duplicate
-            // Figure out where it's going to go.  This is for the benefit
-            // of tab grouping in partly-open windows.
-            let treeidx = M.treeIdxByChromeIdx(win_node_id, ctab.index,
-                            ctab.openerTabId);
-
-            let tab_node_id = createNodeForTab(ctab, win_node_id);
-
-            // Put it in the right place, since createNodeForTab adds at end.
-            if(treeidx !== false) {
-                T.treeobj.because('chrome','move_node',
-                        tab_node_id, win_node_id, treeidx);
-            }
-
-            tab_val = D.tabs.by_tab_id(ctab.id);
-
-            M.updateTabIndexValues(win_node_id);
+        } else {        // Not a duplicate - we just made a new tree node
+            updateNodeForOpenTab(T.treeobj.get_node(tab_node_id),
+                T.treeobj.get_node(win_node_id));
 
             let seq = ASQ();
 
@@ -2626,9 +2617,9 @@ var onTabCreated = (function(){     // search key: function onTabCreated()
             seq.then((done)=>{saveTree(true, done);});
         }
 
-    }; //tab_on_created_inner()
+    }; //on_tab_created_inner()
 
-    return tab_on_created_inner;
+    return on_tab_created_inner;
 })(); //onTabCreated()
 
 function onTabUpdated(tabid, changeinfo, ctab)
@@ -2738,6 +2729,7 @@ function onTabUpdated(tabid, changeinfo, ctab)
     });
 } //onTabUpdated
 
+/// Keep statistics of the sizes of moves we see from Chrome.  DEBUG
 var tab_move_deltas = {};
 
 /// Handle movements of open tabs or groups of tabs within a window.

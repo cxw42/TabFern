@@ -40,13 +40,6 @@ let me = {};
 /// Value returned by vn*() on error.  Both members are falsy.
 me.VN_NONE = {val: null, node_id: ''};
 
-/// Gravity values used when positioning tab nodes in the tree.
-me.GravityTy = Object.freeze({
-    NONE: 'none',
-    LEFT: 'left',
-    RIGHT: 'right',
-});
-
 // Querying the model ////////////////////////////////////////////// {{{1
 
 /// Get a {val, node_id} pair (vn) from one of those (vorny).
@@ -560,7 +553,7 @@ me.vnRezWin = function(isFirstChild=false) {
 /// Does not process Chrome widgets.  Instead, assumes the tab is
 /// closed initially.
 ///
-/// @param {mixed} vornyParent The parent
+/// @param vornyParent {mixed} The parent
 /// @return {Object} {val, node_id} The new item,
 ///                                 or me.VN_NONE on error.
 me.vnRezTab = function(vornyParent) {
@@ -779,20 +772,14 @@ me.getWinOpenChildCount = function getWinOpenChildCount(win_nodey)
 /// @param win_nodey {mixed} The window in question
 /// @param cidx {nonnegative integer} the Chrome ctab.index
 /// @param openerTabId {optional integer} The ctab ID of the opener, if any.
-/// @param gravity {optional GravityTy} The gravity to use in case of gaps.
-///                 - NONE: error if the given cidx is not an open tab
-///                 - LEFT: push tabs to the left side of a gap
-///                 - RIGHT: push tabs to the right side of a gap
 me.treeIdxByChromeIdx = function treeIdxByChromeIdx(win_nodey, cidx,
-                                        openerTabId,
-                                        gravity = me.GravityTy.NONE)
+                                        openerTabId)
 {
     let win_node = T.treeobj.get_node(win_nodey);
     if(!win_node || !Number.isInteger(cidx) || cidx<0 ) return false;
 
     // Window can't be partly open if it's closed
     if(!D.windows.by_node_id(win_node.id, 'isOpen')) return false;
-    let nkids = win_node.children.length;
 
 //        // Put it just after the opener tab ID, if possible
 //        OPENER: if(openerTabId) {
@@ -805,57 +792,25 @@ me.treeIdxByChromeIdx = function treeIdxByChromeIdx(win_nodey, cidx,
 //        }
 
     // Build a node list as if all the open tabs were packed together
-    let orig_tidx = [];
+    let orig_tidxes = [];
     win_node.children.forEach( (kid_node_id, kid_idx)=>{
         if(D.tabs.by_node_id(kid_node_id, 'isOpen')) {
-            orig_tidx.push(kid_idx);
+            orig_tidxes.push(kid_idx);
         }
     });
 
-    log.info({"Mapping in":orig_tidx, "From":cidx, "Gravity":gravity});
+    log.info({"Mapping in":orig_tidx, "From":cidx});
 
-    // Pick the cidx based on that list.  At present, the default gravity
-    // is away from the ends, towards the middle.
+    // Pick the cidx from that list
+    if(cidx >= orig_tidxes.length) {           // New tab off the end
+        return 1 + orig_tidxes[orig_tidxes.length-1];
 
-    if(gravity === me.GravityTy.NONE) {
-        if(cidx in orig_tidx) {
-            return orig_tidx[cidx];
-        } else {
-            return false;
-        }
-    }
+    } else if(cidx>0) {                     // Tab that exists, not the 1st
+        // Group it to the left rather than the right if there's a gap
+        return orig_tidxes[cidx-1]+1;  // i.e., after the previous tab's node
 
-    if(cidx >= orig_tidx.length) {           // New tab off the end
-        if(gravity == me.GravityTy.LEFT) {
-            return 1 + orig_tidx[orig_tidx.length-1]; // After the last open tab
-        } else if(gravity == me.GravityTy.RIGHT) {
-            return win_node.children.length-1;      // The very end
-        } else {
-            log.error("Assuming gravity LEFT");
-            return 1 + orig_tidx[orig_tidx.length-1];
-        }
-
-    } else if(cidx == 0) {                  // New first tab
-        if(gravity == me.GravityTy.RIGHT || gravity == me.GravityTy.NONE) {
-            return orig_tidx[0]; // Before the first open tab
-        } else if(gravity == me.GravityTy.LEFT) {
-            return 0;           // The very beginning
-        } else {
-            log.error("Assuming gravity RIGHT");
-            return orig_tidx[0];
-        }
-
-    } else {                                // Tab that exists, not the 1st
-        // Arbitrary design decision: group it to the left by default
-        if(gravity == me.GravityTy.LEFT || gravity == me.GravityTy.NONE) {
-            return 1 + orig_tidx[cidx-1];    // Just right of an open tab    // XXX WRONG
-        } else if(gravity == me.GravityTy.RIGHT) {
-            return orig_tidx[cidx];          // Just left of an open tab
-        } else {
-            log.error("Assuming gravity LEFT");
-            return 1 + orig_tidx[orig_tidx.length-1];
-        }
-
+    } else {                                // New first tab
+        return orig_tidxes[cidx];
     }
 
 } //treeIdxByChromeIdx()
@@ -874,7 +829,6 @@ me.chromeIdxOfTab = function chromeIdxOfTab(win_nodey, tree_item)
 
     // Window can't be partly open if it's closed
     if(!D.windows.by_node_id(win_node.id, 'isOpen')) return false;
-    let nkids = win_node.children.length;
 
     let tree_idx;
     if(typeof tree_item !== 'string') {
@@ -1144,65 +1098,78 @@ me.eraseWin = function(win_vorny) {
 /// Add a newly-created tab to the tree and to the right place based on its
 /// Chrome index.
 /// @param  win_vorny   The window
-/// @param  tab_vorny   The newly-created tab (from vnRezTab)
 /// @param  ctab        The Chrome tab
-/// @return True on success; false on failure
+/// @return The node ID of the new tab's tree node on success; false on failure
 ///
 /// @todo   refactor to remove duplication of code between this and
 ///         treeIdxByChromeIdx() / react_onTabMoved()
 
-me.react_onTabCreated = function(win_vorny, tab_vorny, ctab) {
-    let tabvn = me.vn_by_vorny(tab_vorny, K.IT_TAB);
-    if(!tabvn) return false;
-
-    let win = me.vn_by_vorny(win_vorny, K.IT_WIN);
-    if(!win) return false;
-    let win_node = T.treeobj.get_node(win.node_id);
+me.react_onTabCreated = function(win_vorny, ctab) {
+    let winvn = me.vn_by_vorny(win_vorny, K.IT_WIN);
+    if(!winvn.node_id) return false;
+    let win_node = T.treeobj.get_node(winvn.node_id);
     if(!win_node) return false;
 
-    let treeidx;    // Where it should go
+    if(!winvn.val.isOpen) return false;
 
-    // Figure out where to put it
+    // --- Figure out where to put it ---
 
-    if(!win.val.isOpen) return false;
-    let nkids = win_node.children.length;
-
-//        // Put it just after the opener tab ID, if possible
-//        OPENER: if(openerTabId) {
-//            let openerVal = D.tabs.by_tab_id(openerTabId);
-//            if(!openerVal) break OPENER;
-//            let tree_idx = win_node.children.indexOf(openerVal.node_id);
-//            if(tree_idx===-1) break OPENER;
-//
-//            return tree_idx+1;
-//        }
+    let treeidx = false;        // Where it should go
 
     // Build a node list as if all the open tabs were packed together
-    let orig_idx = [];
+    let orig_tidxes = [];
     win_node.children.forEach( (kid_node_id, kid_idx)=>{
         if(D.tabs.by_node_id(kid_node_id, 'isOpen')) {
-            orig_idx.push(kid_idx);
+            orig_tidxes.push(kid_idx);
             // TODO break if we've gone far enough?
         }
     });
 
-    log.info({"Mapping in":orig_idx, "Tab created at index":ctab.index});
+    log.info({"Mapping in":orig_tidxes, "Tab created at index":ctab.index});
 
     // Pick the ctab.index from that list
-    if(ctab.index >= orig_idx.length) {         // New tab off the end
-        treeidx = (orig_idx.length === 0 ? 0 :
-            (1 + orig_idx[orig_idx.length-1]));
+    if(ctab.index >= orig_tidxes.length) {         // New tab off the end
+        treeidx = (orig_tidxes.length === 0 ? 0 :
+            (1 + orig_tidxes[orig_tidxes.length-1]));
 
     } else if(ctab.index > 0) {                 // Tab that exists, not the 1st
         // Group it to the left rather than the right if there's a gap
-        treeidx = orig_idx[ctab.index-1]+1;  // i.e., after the previous tab's node
+        treeidx = orig_tidxes[ctab.index-1]+1;  // i.e., after the previous tab's node
 
     } else {                                    // New first tab
-        treeidx = orig_idx[ctab.index];
+        treeidx = orig_tidxes[ctab.index];
     }
 
-    // Add the tab to the tree
-    me.markTabAsOpen(tabvn.val, ctab);
+    if(treeidx === false) {
+        log.error({"Could not find where to put tab": ctab, "in window": winvn});
+        return false;
+    }
+
+    // --- Create the model entry if there isn't one ---
+
+    let tabvn;
+    let tabval = D.tabs.by_tab_id(ctab.id);
+
+    if(tabval) {     // It's a duplicate
+        log.info(`   - tab ${tabvn.node_id} already exists`);
+        tabvn = vn_by_vorny(tabval);
+
+    } else {
+        tabvn = me.vnRezTab(winvn.node_id);
+
+        if(!tabvn.node_id) {
+            log.debug({"<M> Could not create record for ctab":ctab, winvn});
+            me.eraseTab(tabvn);
+            return false;
+        }
+        if(!me.markTabAsOpen(tabvn.val, ctab)) {
+            log.debug({"<M> Could not mark tab as open":ctab, tabvn});
+            me.eraseTab(tabvn);
+            return false;
+        }
+    }
+
+    // --- Update the model ---
 
     // Put it where it goes
     T.treeobj.because('chrome','move_node', tabvn.node_id, win_node, treeidx);
@@ -1210,7 +1177,7 @@ me.react_onTabCreated = function(win_vorny, tab_vorny, ctab) {
     // Update the indices
     me.updateTabIndexValues(win_node);
 
-    return true;
+    return tabvn.node_id;
 }; //react_onTabCreated() }}}2
 
 // onTabMoved {{{2
