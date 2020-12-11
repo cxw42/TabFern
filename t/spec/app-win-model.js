@@ -7,6 +7,7 @@ describe('app/win/model', function() {
     let T;              ///< win/item_tree
     let D;              ///< win/item_details
     let M;              ///< win/model: module under test
+    let log;            ///< loglevel
 
     // Helper routines ///////////////////////////////////////////////// {{{1
 
@@ -43,6 +44,7 @@ describe('app/win/model', function() {
         T = require('win/item_tree');
         D = require('win/item_details');
         M = require('win/model');
+        log = require('loglevel');
 
         this.$div = $('<div />').appendTo('body');
         T.create(this.$div, {
@@ -561,15 +563,15 @@ describe('app/win/model', function() {
                 ['AbcDE', 'e', 2, 1, 'AbcED'],
                 ['AbcED', 'e', 1, 0, 'EAbcD'],
                 ['EAbcD', 'e', 0, 1, 'AEbcD'],
-                ['AEbcD', 'e', 1, 2, 'AbcDE'],
+                ['AEbcD', 'e', 1, 2, 'AbcDE'], //////
 
                 // A sequence of moves around a gap, with a leading gap as well
                 ['xAbcDE', 'e', 2, 1, 'xAbcED'],
                 ['xAbcED', 'e', 1, 0, 'xEAbcD'],
                 ['xEAbcD', 'e', 0, 1, 'xAEbcD'],
-                ['xAEbcD', 'e', 1, 2, 'xAbcDE'],
+                ['xAEbcD', 'e', 1, 2, 'xAbcDE'], //////
 
-                ['AbcdeFG', 'g', 6, 5, 'AbcdeGF'],
+                ['AbcdeFG', 'g', 6, 5, 'AbcdeGF'], //////
             ];
 
             for(const testidx in testcases) {
@@ -599,9 +601,10 @@ describe('app/win/model', function() {
                     expect(tab_vn).toBeTruthy();
 
                     // Do the work
-                    expect(
-                        M.react_onTabMoved(win_vn, tab_vn, fromidx, toidx)
-                    ).toBeTruthy();
+                    const didmove =
+                        M.react_onTabMoved(win_vn, tab_vn, fromidx, toidx);
+                    log.debug({testname:didmove, testidx});  // bring those into scope
+                    expect(didmove).toBeTruthy();
 
                     // Check it
                     expectWindowState(win_vn, expected);

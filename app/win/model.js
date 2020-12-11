@@ -728,7 +728,7 @@ me.updateTabIndexValues = function updateTabIndexValues(win_nodey, as_open = [])
     me.updateOrderedURLHash(win_node.id);
 
     let new_hash = D.windows.by_node_id(win_node.id, 'ordered_url_hash'); //DEBUG
-    log.trace(`win ${win_node.id} hash from ${old_hash} to ${new_hash}`); //DEBUG
+    //log.trace(`win ${win_node.id} hash from ${old_hash} to ${new_hash}`); //DEBUG
 } //updateTabIndexValues
 
 // TODO cache open-child count?
@@ -848,7 +848,7 @@ me.treeIdxByChromeIdx = function treeIdxByChromeIdx(win_nodey, cidx,
     } else {                                // Tab that exists, not the 1st
         // Arbitrary design decision: group it to the left by default
         if(gravity == me.GravityTy.LEFT || gravity == me.GravityTy.NONE) {
-            return 1 + orig_idx[cidx-1];    // Just right of an open tab
+            return 1 + orig_idx[cidx-1];    // Just right of an open tab    // XXX WRONG
         } else if(gravity == me.GravityTy.RIGHT) {
             return orig_idx[cidx];          // Just left of an open tab
         } else {
