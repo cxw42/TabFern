@@ -546,12 +546,30 @@ describe('app/win/model', function() {
             //                      which tab moves, ctab index from,
             //                      ctab index to, expected window state,
             //                      comments (if any)]
+            // This array of testcases describes how tab movement works in
+            // both fully-open and partly-open windows.
             const testcases = [
                 ['AB', 'a', 0, 1, 'BA'],  // "->1" = A moves L to R by 1
                 ['AB', 'b', 1, 0, 'BA'],
+                ['ABC', 'a', 0, 2, 'BCA'],
                 ['ABC', 'b', 1, 0, 'BAC'],
                 ['ABC', 'b', 1, 2, 'ACB'],
-                ['AbCD', 'd', 2, 1, 'AbDC']
+                ['ABC', 'c', 0, 0, 'CAB'],
+                ['AbCD', 'd', 2, 1, 'AbDC'],
+
+                // A sequence of moves around a gap
+                ['AbcDE', 'e', 2, 1, 'AbcED'],
+                ['AbcED', 'e', 1, 0, 'EAbcD'],
+                ['EAbcD', 'e', 0, 1, 'AEbcD'],
+                ['AEbcD', 'e', 1, 2, 'AbcDE'],
+
+                // A sequence of moves around a gap, with a leading gap as well
+                ['xAbcDE', 'e', 2, 1, 'xAbcED'],
+                ['xAbcED', 'e', 1, 0, 'xEAbcD'],
+                ['xEAbcD', 'e', 0, 1, 'xAEbcD'],
+                ['xAEbcD', 'e', 1, 2, 'xAbcDE'],
+
+                ['AbcdeFG', 'g', 6, 5, 'AbcdeGF'],
             ];
 
             for(const thetest of testcases) {
