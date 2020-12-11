@@ -1275,6 +1275,7 @@ me.react_onTabMoved = function(win_vorny, tab_vorny, cidx_from, cidx_to) {
         tidx_to = orig_tidxes[cidx_to] + 1;
     }
 
+    log.debug(`Moving tab ${tabvn.node_id} from tidx ${tidx_from} to tidx ${tidx_to}`);
     T.treeobj.because('chrome','move_node', tabvn.node_id, win_node, tidx_to);
 
     // Update the indices of all the tabs in this window.  This will update
