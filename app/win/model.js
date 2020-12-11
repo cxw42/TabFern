@@ -1222,6 +1222,7 @@ me.react_onTabMoved = function(win_vorny, tab_vorny, cidx_from, cidx_to) {
     // rather than _before_ it.
 
     if(cidx_to == orig_tidxes.length - 1) {     // Must be moving right
+        // TODO check for orig_tidxes.length === 0?
         tidx_to = orig_tidxes[orig_tidxes.length - 1] + 1;
             // +1 => just after the last open tab
 
@@ -1284,6 +1285,7 @@ me.react_onTabAttached = function react_onTabAttached(ctabid, cwinid, cidx) {
 
     // Pick the cidx from that list
     if(cidx >= orig_tidxes.length) {           // New tab off the end
+        // TODO check for orig_tidxes.length === 0?
         treeidx = 1 + orig_tidxes[orig_tidxes.length-1];
 
     } else if(cidx>0) {                     // Tab that exists, not the 1st
