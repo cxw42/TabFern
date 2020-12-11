@@ -284,8 +284,8 @@ describe('app/win/model', function() {
     });
 
     // }}}1
-    // Index mapping /////////////////////////////////////////////////// {{{1
-    describe('index mapping', ()=>{
+    // M.react_*(), and index mapping ////////////////////////////////// {{{1
+    describe('reacting to Chrome events', ()=>{
 
         // Jasmine setup {{{2
 
@@ -652,20 +652,40 @@ describe('app/win/model', function() {
             // [original window state, new tab, new index, final window state]
             let testcases = [
                 ['A', 'b', 1, 'AB'],
+                ['A', 'b', 0, 'BA'],
+                ['xA', 'b', 1, 'xAB'],
+                ['xA', 'b', 0, 'xBA'],
+                ['Ax', 'b', 1, 'ABx'],
+                ['Ax', 'b', 0, 'BAx'],
+                ['xAx', 'b', 1, 'xABx'],
+                ['xAx', 'b', 0, 'xBAx'],
             ];
             for(const thetest of testcases) {
                 let testname = `${thetest[0]} + ${thetest[1]}@${thetest[2]} => ${thetest[3]}`;
                 it(testname, ()=>{
                     // Mock
-                    let win_vn = makeFakeWindow(thetest[0]);
-                    let ctab = makeFakeCtab(win_vn, thetest[2], thetest[1]);
+                    let winvn = makeFakeWindow(thetest[0]);
+                    let ctab = makeFakeCtab(winvn, thetest[2], thetest[1]);
+
+                    // Attach it to a window
+                    let tabvn = M.vnRezTab(winvn);
+                    expect(tabvn.val).toBeTruthy();
+                    expect(M.markTabAsOpen(tabvn, ctab)).toBeTruthy();
+
+                    // Detach it by hand
+                    T.treeobj.because('chrome','move_node', tabvn.node_id, T.holding_node_id);
+                    tabvn.val.win_id = K.NONE;
+                    tabvn.val.index = K.NONE;
+                    M.updateTabIndexValues(winvn.node_id);
 
                     // Do the work
-                    expect(M.react_onTabAttached(win_vn, ctab)).toBe(true);
+                    const ok =
+                        M.react_onTabAttached(ctab.id, winvn.val.win_id, ctab.index);
+                    expect(ok).toBe(true);
 
                     // Check it
-                    expectWindowState(win_vn, thetest[3]);
-                    expect(M.eraseWin(win_vn)).toBeTruthy();
+                    expectWindowState(winvn, thetest[3]);
+                    expect(M.eraseWin(winvn)).toBeTruthy();
                 });
             } //foreach testcase
         }); // }}}2
