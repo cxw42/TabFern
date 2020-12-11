@@ -40,6 +40,13 @@ let me = {};
 /// Value returned by vn*() on error.  Both members are falsy.
 me.VN_NONE = {val: null, node_id: ''};
 
+/// Gravity values used when positioning tab nodes in the tree.
+me.GravityTy = Object.freeze({
+    NONE: 'none',
+    LEFT: 'left',
+    RIGHT: 'right',
+});
+
 // Querying the model ////////////////////////////////////////////// {{{1
 
 /// Get a {val, node_id} pair (vn) from one of those (vorny).
@@ -721,7 +728,7 @@ me.updateTabIndexValues = function updateTabIndexValues(win_nodey, as_open = [])
     me.updateOrderedURLHash(win_node.id);
 
     let new_hash = D.windows.by_node_id(win_node.id, 'ordered_url_hash'); //DEBUG
-    log.trace(`win ${win_node.id} hash from ${old_hash} to ${new_hash}`); //DEBUG
+    //log.trace(`win ${win_node.id} hash from ${old_hash} to ${new_hash}`); //DEBUG
 } //updateTabIndexValues
 
 // TODO cache open-child count?
@@ -771,10 +778,14 @@ me.getWinOpenChildCount = function getWinOpenChildCount(win_nodey)
 /// @pre The window must be open.
 /// @param win_nodey {mixed} The window in question
 /// @param cidx {nonnegative integer} the Chrome ctab.index
-/// @param openerTabId {optional integer} The ctab ID of the opener,
-///                                         if any.
+/// @param openerTabId {optional integer} The ctab ID of the opener, if any.
+/// @param gravity {optional GravityTy} The gravity to use in case of gaps.
+///                 - NONE: error if the given cidx is not an open tab
+///                 - LEFT: push tabs to the left side of a gap
+///                 - RIGHT: push tabs to the right side of a gap
 me.treeIdxByChromeIdx = function treeIdxByChromeIdx(win_nodey, cidx,
-                                        openerTabId)
+                                        openerTabId,
+                                        gravity = me.GravityTy.NONE)
 {
     let win_node = T.treeobj.get_node(win_nodey);
     if(!win_node || !Number.isInteger(cidx) || cidx<0 ) return false;
@@ -794,26 +805,57 @@ me.treeIdxByChromeIdx = function treeIdxByChromeIdx(win_nodey, cidx,
 //        }
 
     // Build a node list as if all the open tabs were packed together
-    let orig_idx = [];
+    let orig_tidx = [];
     win_node.children.forEach( (kid_node_id, kid_idx)=>{
         if(D.tabs.by_node_id(kid_node_id, 'isOpen')) {
-            orig_idx.push(kid_idx);
-            // TODO break if we've gone far enough?
+            orig_tidx.push(kid_idx);
         }
     });
 
-    log.info({"Mapping in":orig_idx,"From":cidx});
+    log.info({"Mapping in":orig_tidx, "From":cidx, "Gravity":gravity});
 
-    // Pick the cidx from that list
-    if(cidx >= orig_idx.length) {           // New tab off the end
-        return 1 + orig_idx[orig_idx.length-1];
+    // Pick the cidx based on that list.  At present, the default gravity
+    // is away from the ends, towards the middle.
 
-    } else if(cidx>0) {                     // Tab that exists, not the 1st
-        // Group it to the left rather than the right if there's a gap
-        return orig_idx[cidx-1]+1;  // i.e., after the previous tab's node
+    if(gravity === me.GravityTy.NONE) {
+        if(cidx in orig_tidx) {
+            return orig_tidx[cidx];
+        } else {
+            return false;
+        }
+    }
 
-    } else {                                // New first tab
-        return orig_idx[cidx];
+    if(cidx >= orig_tidx.length) {           // New tab off the end
+        if(gravity == me.GravityTy.LEFT) {
+            return 1 + orig_tidx[orig_tidx.length-1]; // After the last open tab
+        } else if(gravity == me.GravityTy.RIGHT) {
+            return win_node.children.length-1;      // The very end
+        } else {
+            log.error("Assuming gravity LEFT");
+            return 1 + orig_tidx[orig_tidx.length-1];
+        }
+
+    } else if(cidx == 0) {                  // New first tab
+        if(gravity == me.GravityTy.RIGHT || gravity == me.GravityTy.NONE) {
+            return orig_tidx[0]; // Before the first open tab
+        } else if(gravity == me.GravityTy.LEFT) {
+            return 0;           // The very beginning
+        } else {
+            log.error("Assuming gravity RIGHT");
+            return orig_tidx[0];
+        }
+
+    } else {                                // Tab that exists, not the 1st
+        // Arbitrary design decision: group it to the left by default
+        if(gravity == me.GravityTy.LEFT || gravity == me.GravityTy.NONE) {
+            return 1 + orig_tidx[cidx-1];    // Just right of an open tab    // XXX WRONG
+        } else if(gravity == me.GravityTy.RIGHT) {
+            return orig_tidx[cidx];          // Just left of an open tab
+        } else {
+            log.error("Assuming gravity LEFT");
+            return 1 + orig_tidx[orig_tidx.length-1];
+        }
+
     }
 
 } //treeIdxByChromeIdx()
@@ -1105,6 +1147,10 @@ me.eraseWin = function(win_vorny) {
 /// @param  tab_vorny   The newly-created tab (from vnRezTab)
 /// @param  ctab        The Chrome tab
 /// @return True on success; false on failure
+///
+/// @todo   refactor to remove duplication of code between this and
+///         treeIdxByChromeIdx() / react_onTabMoved()
+
 me.react_onTabCreated = function(win_vorny, tab_vorny, ctab) {
     let tabvn = me.vn_by_vorny(tab_vorny, K.IT_TAB);
     if(!tabvn) return false;
@@ -1117,6 +1163,7 @@ me.react_onTabCreated = function(win_vorny, tab_vorny, ctab) {
     let treeidx;    // Where it should go
 
     // Figure out where to put it
+
     if(!win.val.isOpen) return false;
     let nkids = win_node.children.length;
 
@@ -1139,7 +1186,7 @@ me.react_onTabCreated = function(win_vorny, tab_vorny, ctab) {
         }
     });
 
-    log.info({"Mapping in":orig_idx,"From":ctab.index});
+    log.info({"Mapping in":orig_idx, "Tab created at index":ctab.index});
 
     // Pick the ctab.index from that list
     if(ctab.index >= orig_idx.length) {         // New tab off the end
@@ -1169,12 +1216,19 @@ me.react_onTabCreated = function(win_vorny, tab_vorny, ctab) {
 // onTabMoved {{{2
 
 /// Move a tab in the tree based on its new Chrome index.
+/// This implements the design decisions in spec/app-win-model.js for onTabMoved().
+///
 /// @param  win_vorny   The window the tab is moving in
 /// @param  tab_vorny   The tab that is moving
 /// @param  cidx_from   The Chrome old tabindex
 /// @param  cidx_to     The Chrome new tabindex
 /// @return True on success; false on failure
 me.react_onTabMoved = function(win_vorny, tab_vorny, cidx_from, cidx_to) {
+    if(cidx_from == cidx_to) {
+        log.info("Nothing to do");
+        return true;
+    }
+
     let tabvn = me.vn_by_vorny(tab_vorny, K.IT_TAB);
     if(!tabvn) return false;
 
@@ -1182,49 +1236,46 @@ me.react_onTabMoved = function(win_vorny, tab_vorny, cidx_from, cidx_to) {
     if(!win) return false;
     let win_node = T.treeobj.get_node(win.node_id);
     if(!win_node) return false;
+    let moving_right = (cidx_to>cidx_from);
+    let tidx_from, tidx_to;
 
-    // How far has the _user_ moved the tab?  The vast majority of the time,
-    // Chrome gives us deltas of +1 or -1.  I did a quick-and-dirty test
-    // with a lot of fast motion, attach, and detach (i.e., drag a tab and
-    // wiggle the mouse like crazy) and got this histogram: {1: 22, -1: 29}.
-    // Therefore, special-case those.
-    const desired_delta = cidx_to - cidx_from;
-
-    /// Where the node is going to go
-    let treeidx;
-
-    // TODO RESUME HERE
-    if(desired_delta === -1) {          // Move one left
-        treeidx = win_node.children.indexOf(tabvn.node_id) - 1;
-
-    } else if(desired_delta === 1) {    // Move one right
-        treeidx = win_node.children.indexOf(tabvn.node_id) + 1;
-
-    } else {                            // Move other than +/- 1
-        // XXX OLD
-        const from_idx = me.treeIdxByChromeIdx(win.node_id, cidx_from);
-        const to_idx = me.treeIdxByChromeIdx(win.node_id, cidx_to);
-        if(from_idx === false || to_idx === false) {
-            return false;
+    // Build a node list as if all the open tabs were packed together
+    let orig_tidxes = [];
+    win_node.children.forEach( (kid_node_id, kid_idx)=>{
+        if(D.tabs.by_node_id(kid_node_id, 'isOpen')) {
+            orig_tidxes.push(kid_idx);
         }
-        treeidx = to_idx;
-    }
+    });
 
-    // As far as I can tell, in jstree, indices point between list
-    // elements.  E.g., with n items, index 0 is before the first and
-    // index n is after the last.  However, Chrome tab indices point to
-    // the tabs themselves, 0..(n-1).  Therefore, if we are moving
-    // right, bump the index by 1 so we will be _after_ that item
-    // rather than _before_ it.
-    // See the handling of `pos` values of "before" and "after"
-    // in the definition of move_node() in jstree.js.
-    treeidx += (cidx_to>cidx_from ? 1 : 0);
+    log.info({"Mapping in":orig_tidxes, "Tab moved from index":cidx_from, "To":cidx_to});
 
-    if(treeidx == null) {       // Sanity check
+    // From
+    if(cidx_from >= orig_tidxes.length) {
         return false;
     }
+    tidx_from = orig_tidxes[cidx_from];
 
-    T.treeobj.because('chrome','move_node', tabvn.node_id, win_node, treeidx);
+    // To.  Even though the delta is almost always +/-1 ctab position, that may
+    // be any number of tree positions.
+    //
+    // In jstree, indices point between list elements.  E.g., with n items,
+    // index 0 is before the first and index n is after the last.  However,
+    // Chrome tab indices point to the tabs themselves, 0..(n-1).  Therefore,
+    // when moving right, increase the tree index by 1 to land after an item.
+    // rather than _before_ it.
+
+    if(cidx_to == orig_tidxes.length - 1) {     // Must be moving right
+        tidx_to = orig_tidxes[orig_tidxes.length - 1] + 1;
+            // +1 => just after the last open tab
+
+    } else if(!moving_right) {                  // Moving left
+        tidx_to = orig_tidxes[cidx_to];         //Just before the right-side open tab
+
+    } else {                                    // Moving right, not to the last tab
+        tidx_to = orig_tidxes[cidx_to] + 1;
+    }
+
+    T.treeobj.because('chrome','move_node', tabvn.node_id, win_node, tidx_to);
 
     // Update the indices of all the tabs in this window.  This will update
     // the old tab and the new tab.

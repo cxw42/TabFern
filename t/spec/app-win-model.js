@@ -7,6 +7,7 @@ describe('app/win/model', function() {
     let T;              ///< win/item_tree
     let D;              ///< win/item_details
     let M;              ///< win/model: module under test
+    let log;            ///< loglevel
 
     // Helper routines ///////////////////////////////////////////////// {{{1
 
@@ -43,6 +44,7 @@ describe('app/win/model', function() {
         T = require('win/item_tree');
         D = require('win/item_details');
         M = require('win/model');
+        log = require('loglevel');
 
         this.$div = $('<div />').appendTo('body');
         T.create(this.$div, {
@@ -547,14 +549,15 @@ describe('app/win/model', function() {
             //                      ctab index to, expected window state,
             //                      comments (if any)]
             // This array of testcases describes how tab movement works in
-            // both fully-open and partly-open windows.
+            // both fully-open and partly-open windows.  It represents
+            // the design decisions for this behaviour.
             const testcases = [
                 ['AB', 'a', 0, 1, 'BA'],  // "->1" = A moves L to R by 1
                 ['AB', 'b', 1, 0, 'BA'],
                 ['ABC', 'a', 0, 2, 'BCA'],
                 ['ABC', 'b', 1, 0, 'BAC'],
                 ['ABC', 'b', 1, 2, 'ACB'],
-                ['ABC', 'c', 0, 0, 'CAB'],
+                ['ABC', 'c', 2, 0, 'CAB'],
                 ['AbCD', 'd', 2, 1, 'AbDC'],
 
                 // A sequence of moves around a gap
@@ -569,15 +572,38 @@ describe('app/win/model', function() {
                 ['xEAbcD', 'e', 0, 1, 'xAEbcD'],
                 ['xAEbcD', 'e', 1, 2, 'xAbcDE'],
 
-                ['AbcdeFG', 'g', 6, 5, 'AbcdeGF'],
+                // A sequence of moves around a gap, with a trailing gap as well
+                ['AbcDEx', 'e', 2, 1, 'AbcEDx'],
+                ['AbcEDx', 'e', 1, 0, 'EAbcDx'],
+                ['EAbcDx', 'e', 0, 1, 'AEbcDx'],
+                ['AEbcDx', 'e', 1, 2, 'AbcDEx'],
+
+                // A sequence of moves around a gap; leading and trailing gaps
+                ['xAbcDEx', 'e', 2, 1, 'xAbcEDx'],
+                ['xAbcEDx', 'e', 1, 0, 'xEAbcDx'],
+                ['xEAbcDx', 'e', 0, 1, 'xAEbcDx'],
+                ['xAEbcDx', 'e', 1, 2, 'xAbcDEx'],
+
+                ['AbcdeFG', 'g', 2, 1, 'AbcdeGF'],
+                ['xAbcdeFG', 'g', 2, 1, 'xAbcdeGF'],
+                ['AbcdeFGx', 'g', 2, 1, 'AbcdeGFx'],
+                ['xAbcdeFGx', 'g', 2, 1, 'xAbcdeGFx'],
+
+                // A sequence of moves around two gaps
+                ['AbcDEfgH', 'e', 2, 1, 'AbcEDfgH'],
+                ['AbcEDfgH', 'h', 3, 2, 'AbcEHDfg'],
+                ['AbcEHDfg', 'a', 0, 3, 'bcEHDAfg'],
+                ['bcEHDAfg', 'e', 0, 3, 'bcHDAEfg'],
+
             ];
 
-            for(const thetest of testcases) {
+            for(const testidx in testcases) {
+                const thetest = testcases[testidx];
 
                 // Convenient names for the pieces of the test
                 const [faketabs, moving_tab, fromidx, toidx, expected] = thetest;
                 const comments = thetest[5] || '';
-                const testname = `${faketabs}: ${moving_tab.toUpperCase()}` +
+                const testname = `[${testidx}] ${faketabs}: ${moving_tab.toUpperCase()}` +
                     (fromidx<toidx ? '->' : '<-') + Math.abs(fromidx-toidx) +
                     (comments ? `: ${comments}` : '');
 
@@ -598,9 +624,10 @@ describe('app/win/model', function() {
                     expect(tab_vn).toBeTruthy();
 
                     // Do the work
-                    expect(
-                        M.react_onTabMoved(win_vn, tab_vn, fromidx, toidx)
-                    ).toBeTruthy();
+                    const didmove =
+                        M.react_onTabMoved(win_vn, tab_vn, fromidx, toidx);
+                    log.debug({testname:didmove, testidx});  // bring those into scope
+                    expect(didmove).toBeTruthy();
 
                     // Check it
                     expectWindowState(win_vn, expected);
