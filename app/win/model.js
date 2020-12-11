@@ -1147,6 +1147,10 @@ me.eraseWin = function(win_vorny) {
 /// @param  tab_vorny   The newly-created tab (from vnRezTab)
 /// @param  ctab        The Chrome tab
 /// @return True on success; false on failure
+///
+/// @todo   refactor to remove duplication of code between this and
+///         treeIdxByChromeIdx() / react_onTabMoved()
+
 me.react_onTabCreated = function(win_vorny, tab_vorny, ctab) {
     let tabvn = me.vn_by_vorny(tab_vorny, K.IT_TAB);
     if(!tabvn) return false;
@@ -1159,7 +1163,7 @@ me.react_onTabCreated = function(win_vorny, tab_vorny, ctab) {
     let treeidx;    // Where it should go
 
     // Figure out where to put it
-    // TODO refactor to remove duplication of code between this and treeIdxByChromeIdx
+
     if(!win.val.isOpen) return false;
     let nkids = win_node.children.length;
 
@@ -1182,7 +1186,7 @@ me.react_onTabCreated = function(win_vorny, tab_vorny, ctab) {
         }
     });
 
-    log.info({"Mapping in":orig_idx,"From":ctab.index});
+    log.info({"Mapping in":orig_idx, "Tab created at index":ctab.index});
 
     // Pick the ctab.index from that list
     if(ctab.index >= orig_idx.length) {         // New tab off the end
@@ -1243,7 +1247,7 @@ me.react_onTabMoved = function(win_vorny, tab_vorny, cidx_from, cidx_to) {
         }
     });
 
-    log.info({"Mapping in":orig_tidxes, "From":cidx_from, "To":cidx_to});
+    log.info({"Mapping in":orig_tidxes, "Tab moved from index":cidx_from, "To":cidx_to});
 
     // From
     if(cidx_from >= orig_tidxes.length) {
@@ -1260,16 +1264,14 @@ me.react_onTabMoved = function(win_vorny, tab_vorny, cidx_from, cidx_to) {
     // when moving right, increase the tree index by 1 to land after an item.
     // rather than _before_ it.
 
-    if(cidx_to == 0) {          // Must be moving left, so...
-        tidx_to = orig_tidxes[0]; // ... put it just before the first open tab.
-
-    } else if(cidx_to == orig_tidxes.length - 1) {    // Must be moving right
+    if(cidx_to == orig_tidxes.length - 1) {     // Must be moving right
         tidx_to = orig_tidxes[orig_tidxes.length - 1] + 1;
             // +1 => just after the last open tab
 
-    } else if(!moving_right) {  // Moving left, not to the first tab
-        tidx_to = orig_tidxes[cidx_to];    //Just before the right-side open tab
-    } else {                    // Moving right, not to the last tab
+    } else if(!moving_right) {                  // Moving left
+        tidx_to = orig_tidxes[cidx_to];         //Just before the right-side open tab
+
+    } else {                                    // Moving right, not to the last tab
         tidx_to = orig_tidxes[cidx_to] + 1;
     }
 

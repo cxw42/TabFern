@@ -564,15 +564,37 @@ describe('app/win/model', function() {
                 ['AbcDE', 'e', 2, 1, 'AbcED'],
                 ['AbcED', 'e', 1, 0, 'EAbcD'],
                 ['EAbcD', 'e', 0, 1, 'AEbcD'],
-                ['AEbcD', 'e', 1, 2, 'AbcDE'], //////
+                ['AEbcD', 'e', 1, 2, 'AbcDE'],
 
                 // A sequence of moves around a gap, with a leading gap as well
                 ['xAbcDE', 'e', 2, 1, 'xAbcED'],
                 ['xAbcED', 'e', 1, 0, 'xEAbcD'],
                 ['xEAbcD', 'e', 0, 1, 'xAEbcD'],
-                ['xAEbcD', 'e', 1, 2, 'xAbcDE'], //////
+                ['xAEbcD', 'e', 1, 2, 'xAbcDE'],
 
-                ['AbcdeFG', 'g', 2, 1, 'AbcdeGF'], //////
+                // A sequence of moves around a gap, with a trailing gap as well
+                ['AbcDEx', 'e', 2, 1, 'AbcEDx'],
+                ['AbcEDx', 'e', 1, 0, 'EAbcDx'],
+                ['EAbcDx', 'e', 0, 1, 'AEbcDx'],
+                ['AEbcDx', 'e', 1, 2, 'AbcDEx'],
+
+                // A sequence of moves around a gap; leading and trailing gaps
+                ['xAbcDEx', 'e', 2, 1, 'xAbcEDx'],
+                ['xAbcEDx', 'e', 1, 0, 'xEAbcDx'],
+                ['xEAbcDx', 'e', 0, 1, 'xAEbcDx'],
+                ['xAEbcDx', 'e', 1, 2, 'xAbcDEx'],
+
+                ['AbcdeFG', 'g', 2, 1, 'AbcdeGF'],
+                ['xAbcdeFG', 'g', 2, 1, 'xAbcdeGF'],
+                ['AbcdeFGx', 'g', 2, 1, 'AbcdeGFx'],
+                ['xAbcdeFGx', 'g', 2, 1, 'xAbcdeGFx'],
+
+                // A sequence of moves around two gaps
+                ['AbcDEfgH', 'e', 2, 1, 'AbcEDfgH'],
+                ['AbcEDfgH', 'h', 3, 2, 'AbcEHDfg'],
+                ['AbcEHDfg', 'a', 0, 3, 'bcEHDAfg'],
+                ['bcEHDAfg', 'e', 0, 3, 'bcHDAEfg'],
+
             ];
 
             for(const testidx in testcases) {
