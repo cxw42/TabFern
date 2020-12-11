@@ -2865,6 +2865,15 @@ function onTabDetached(tabid, detachinfo)
 function onTabAttached(tabid, attachinfo)
 {
     log.info({'Tab attached': tabid, attachinfo});
+    /*
+    TODO
+    let retval;
+    retval = M.react_onTabAttached(tabid, attachinfo.newWindowId, attachinfo.newPosition);
+    if(typeof(retval) === 'string') {
+        // report error
+        throw new Error(`Could not attach ${tabid} per ${attachinfo}: ${retval}`);
+    }
+    */
 
     let tab_val = D.tabs.by_tab_id(tabid);
 

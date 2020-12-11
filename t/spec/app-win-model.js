@@ -284,8 +284,8 @@ describe('app/win/model', function() {
     });
 
     // }}}1
-    // Index mapping /////////////////////////////////////////////////// {{{1
-    describe('index mapping', ()=>{
+    // M.react_*(), and index mapping ////////////////////////////////// {{{1
+    describe('reacting to Chrome events', ()=>{
 
         // Jasmine setup {{{2
 
@@ -366,7 +366,7 @@ describe('app/win/model', function() {
             return win_vn;
         } //makeFakeWindow()
 
-        /// Make a fake tab in the model
+        /// Make a fake tab in the model.  Does not connect to a ctab.
         /// @param win_vn   The window
         /// @return tab_vn
         function makeFakeTab(win_vn) {
@@ -377,12 +377,12 @@ describe('app/win/model', function() {
             return vn;
         } //makeFakeTab()
 
-        /// Make a fake ctab
+        /// Make a fake ctab.  Does not add the ctab to anything.
         /// @param win_vn   The window
         /// @param cindex {Numeric}     The index in the cwin
         /// @param raw_title {String}   The new raw_title
         /// @return ctab {Object}
-        function make_fake_ctab(win_vn, cindex, raw_title)
+        function makeFakeCtab(win_vn, cindex, raw_title)
         {
             return {
                 id: next_tab_id++,
@@ -394,7 +394,7 @@ describe('app/win/model', function() {
                 // pinned can be omitted
                 // audible can be omitted
             }
-        } //make_fake_ctab()
+        } //makeFakeCtab()
 
         /// Add a fake tab to a window, as if Chrome had done so.
         /// NOTE: assumes tab isOpen values are correct.
@@ -423,7 +423,7 @@ describe('app/win/model', function() {
             } //endif we need to compute cindex
 
             M.react_onTabCreated(win_vn, tab_vn,
-                make_fake_ctab(win_vn, cindex, raw_title));
+                makeFakeCtab(win_vn, cindex, raw_title));
         } //chromeAddsFakeTab
 
         /// Close a fake window as if in response to a Chrome event.
@@ -536,7 +536,7 @@ describe('app/win/model', function() {
                 it(thetest[0], ()=>{
                     // Mock
                     let win_vn = makeFakeWindow(thetest[1]);
-                    let ctab = make_fake_ctab(win_vn, thetest[2], thetest[3]);
+                    let ctab = makeFakeCtab(win_vn, thetest[2], thetest[3]);
 
                     // Do the work
                     expect(M.react_onTabCreated(win_vn, ctab)).toBeTruthy();
@@ -647,6 +647,59 @@ describe('app/win/model', function() {
         // TODO react_onTabRemoved()
         // TODO react_onTabDetached()
         // TODO react_onTabAttached()
+        describe('onTabAttached',()=>{   // Chrome moves tabs {{{2
+            // Each testcase:
+            // [original window state, new tab, new index, final window state]
+            let testcases = [
+                ['', 'a', 0, 'A'],
+
+                // I had the following test, but I can't think of any way Chrome
+                // would attach to a window with all closed tabs.  The window has
+                // to be open before it can be attached to!
+                //['a', 'b', 0, 'Ba'],    // OK?  Arguably inconsistent with xA+b@0->xBA.
+
+                ['A', 'b', 1, 'AB'],
+                ['A', 'b', 0, 'BA'],
+                ['xA', 'b', 1, 'xAB'],
+                ['xA', 'b', 0, 'xBA'],
+                ['Ax', 'b', 1, 'ABx'],
+                ['Ax', 'b', 0, 'BAx'],
+                ['xAy', 'b', 1, 'xABy'],
+                ['xAy', 'b', 0, 'xBAy'],
+                ['xAyBz', 'c', 0, 'xCAyBz'],
+                ['xAyBz', 'c', 1, 'xACyBz'],
+                ['xAyBz', 'c', 2, 'xAyBCz'],
+            ];
+
+            for(const thetest of testcases) {
+                let testname = `${thetest[0]} + ${thetest[1]}@${thetest[2]} => ${thetest[3]}`;
+                it(testname, ()=>{
+                    // Mock
+                    let winvn = makeFakeWindow(thetest[0]);
+                    let ctab = makeFakeCtab(winvn, thetest[2], thetest[1]);
+
+                    // Attach it to a window
+                    let tabvn = M.vnRezTab(winvn);
+                    expect(tabvn.val).toBeTruthy();
+                    expect(M.markTabAsOpen(tabvn, ctab)).toBeTruthy();
+
+                    // Detach it by hand.  Excerpted from app/win/main_tl:tabOnDetached().
+                    T.treeobj.because('chrome','move_node', tabvn.node_id, T.holding_node_id);
+                    tabvn.val.win_id = K.NONE;
+                    tabvn.val.index = K.NONE;
+                    M.updateTabIndexValues(winvn.node_id);
+
+                    // Do the work
+                    const ok =
+                        M.react_onTabAttached(ctab.id, winvn.val.win_id, ctab.index);
+                    expect(ok).toBe(true);
+
+                    // Check it
+                    expectWindowState(winvn, thetest[3]);
+                    expect(M.eraseWin(winvn)).toBeTruthy();
+                });
+            } //foreach testcase
+        }); // }}}2
 
     }); //index mapping
 
