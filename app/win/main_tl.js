@@ -2865,39 +2865,14 @@ function onTabDetached(tabid, detachinfo)
 function onTabAttached(tabid, attachinfo)
 {
     log.info({'Tab attached': tabid, attachinfo});
-    /*
-    TODO
+
     let retval;
     retval = M.react_onTabAttached(tabid, attachinfo.newWindowId, attachinfo.newPosition);
+
     if(typeof(retval) === 'string') {
         // report error
-        throw new Error(`Could not attach ${tabid} per ${attachinfo}: ${retval}`);
+        throw new Error(`Could not attach ${tabid} per ${JSON.stringify(attachinfo)}: ${retval}`);
     }
-    */
-
-    let tab_val = D.tabs.by_tab_id(tabid);
-
-    if(!tab_val)        // An express failure message - this would be bad
-        throw new Error("Unknown tab to attach???? "+tabid+' '+attachinfo.toString());
-
-    let new_win_val = D.windows.by_win_id(attachinfo.newWindowId);
-    if(!new_win_val)    // ditto
-        throw new Error("Unknown window attaching to???? "+attachinfo.newWindowId+' '+attachinfo.toString());
-
-    let tree_idx = M.treeIdxByChromeIdx(new_win_val.node_id, attachinfo.newPosition);
-    log.info(`Attaching tab ${tabid} at `+
-                `ctabidx ${attachinfo.newPosition} => tree idx ${tree_idx}`);
-    T.treeobj.because('chrome','move_node', tab_val.node_id, new_win_val.node_id,
-            tree_idx);
-
-    // Open after moving because otherwise the window might not have any
-    // children yet.
-    T.treeobj.open_node(new_win_val.node_id);
-
-    tab_val.win_id = attachinfo.newWindowId;
-    tab_val.index = attachinfo.newPosition;
-
-    M.updateTabIndexValues(new_win_val.node_id);
 } //onTabAttached
 
 /// Handle tab replacement, which can occur with preloads.  E.g., #129.
