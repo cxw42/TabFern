@@ -572,7 +572,7 @@ describe('app/win/model', function() {
                 ['xEAbcD', 'e', 0, 1, 'xAEbcD'],
                 ['xAEbcD', 'e', 1, 2, 'xAbcDE'], //////
 
-                ['AbcdeFG', 'g', 6, 5, 'AbcdeGF'], //////
+                ['AbcdeFG', 'g', 2, 1, 'AbcdeGF'], //////
             ];
 
             for(const testidx in testcases) {
