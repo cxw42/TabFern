@@ -366,7 +366,7 @@ describe('app/win/model', function() {
             return win_vn;
         } //makeFakeWindow()
 
-        /// Make a fake tab in the model
+        /// Make a fake tab in the model.  Does not connect to a ctab.
         /// @param win_vn   The window
         /// @return tab_vn
         function makeFakeTab(win_vn) {
@@ -377,12 +377,12 @@ describe('app/win/model', function() {
             return vn;
         } //makeFakeTab()
 
-        /// Make a fake ctab
+        /// Make a fake ctab.  Does not add the ctab to anything.
         /// @param win_vn   The window
         /// @param cindex {Numeric}     The index in the cwin
         /// @param raw_title {String}   The new raw_title
         /// @return ctab {Object}
-        function make_fake_ctab(win_vn, cindex, raw_title)
+        function makeFakeCtab(win_vn, cindex, raw_title)
         {
             return {
                 id: next_tab_id++,
@@ -394,7 +394,7 @@ describe('app/win/model', function() {
                 // pinned can be omitted
                 // audible can be omitted
             }
-        } //make_fake_ctab()
+        } //makeFakeCtab()
 
         /// Add a fake tab to a window, as if Chrome had done so.
         /// NOTE: assumes tab isOpen values are correct.
@@ -423,7 +423,7 @@ describe('app/win/model', function() {
             } //endif we need to compute cindex
 
             M.react_onTabCreated(win_vn, tab_vn,
-                make_fake_ctab(win_vn, cindex, raw_title));
+                makeFakeCtab(win_vn, cindex, raw_title));
         } //chromeAddsFakeTab
 
         /// Close a fake window as if in response to a Chrome event.
@@ -536,7 +536,7 @@ describe('app/win/model', function() {
                 it(thetest[0], ()=>{
                     // Mock
                     let win_vn = makeFakeWindow(thetest[1]);
-                    let ctab = make_fake_ctab(win_vn, thetest[2], thetest[3]);
+                    let ctab = makeFakeCtab(win_vn, thetest[2], thetest[3]);
 
                     // Do the work
                     expect(M.react_onTabCreated(win_vn, ctab)).toBeTruthy();
@@ -647,6 +647,28 @@ describe('app/win/model', function() {
         // TODO react_onTabRemoved()
         // TODO react_onTabDetached()
         // TODO react_onTabAttached()
+        describe('onTabAttached',()=>{   // Chrome moves tabs {{{2
+            // Each testcase:
+            // [original window state, new tab, new index, final window state]
+            let testcases = [
+                ['A', 'b', 1, 'AB'],
+            ];
+            for(const thetest of testcases) {
+                let testname = `${thetest[0]} + ${thetest[1]}@${thetest[2]} => ${thetest[3]}`;
+                it(testname, ()=>{
+                    // Mock
+                    let win_vn = makeFakeWindow(thetest[0]);
+                    let ctab = makeFakeCtab(win_vn, thetest[2], thetest[1]);
+
+                    // Do the work
+                    expect(M.react_onTabAttached(win_vn, ctab)).toBe(true);
+
+                    // Check it
+                    expectWindowState(win_vn, thetest[3]);
+                    expect(M.eraseWin(win_vn)).toBeTruthy();
+                });
+            } //foreach testcase
+        }); // }}}2
 
     }); //index mapping
 
