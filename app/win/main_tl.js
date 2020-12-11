@@ -2455,10 +2455,8 @@ var tabOnCreated = (function(){     // search key: function tabOnCreated()
     function make_merge_check_step(ctab, win_val)
     {
         return function merge_check_inner(check_done) {
-            //DEBUG
             log.debug({[`merge check tab ${ctab.id} win ${ctab.windowId}`]:
                         ctab});
-
 
             let seq = ASQH.NowCCTry((cc)=>{
                 chrome.windows.get(ctab.windowId,{populate:true}, cc);
