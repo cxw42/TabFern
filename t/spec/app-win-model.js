@@ -503,27 +503,33 @@ describe('app/win/model', function() {
         //TODO react_onWinCreated
         //TODO react_onWinRemoved
 
-        describe('onTabCreated',()=>{   // Chrome adds tabs {{{2
+        describe('onTabCreated updates the index when Chrome adds a tab',()=>{   // {{{2
 
             // Each testcase is [description, fake-window tabs, ctab index,
             //                      new-tab raw_title, expected window state]
             const testcases = [
-                ['updates the index when Chrome adds a tab to an empty window',
+                ['to an empty window',
                     '', 0, 'd', 'D'],
-                ['updates the index when Chrome adds a tab before the only tab',
+                ['before the only tab',
                     'A', 0,'d', 'DA'],
-                ['updates the index when Chrome adds a tab after the only tab',
+                ['after the only tab',
                     'A', 1,'d', 'AD'],
-                ['updates the index when Chrome adds a tab at the beginning (all open initially)',
+                ['at the beginning (all open initially)',
                     'ABC', 0, 'd', 'DABC'],
-                ['updates the index when Chrome adds a tab after the first beginning (all open initially)',
+                ['after the first beginning (all open initially)',
                     'ABC', 1, 'd', 'ADBC'],
-                ['updates the index when Chrome adds a tab after the second (all open initially)',
+                ['after the second (all open initially)',
                     'ABC', 2, 'd', 'ABDC'],
-                ['updates the index when Chrome adds a tab at the end (all open initially)',
+                ['at the end (all open initially)',
                     'ABC', 3, 'd', 'ABCD'],
-                ['updates the index when Chrome adds a tab before a trailing closed tab',
+                ['before a trailing closed tab',
                     'Ab', 1, 'd', 'ADb'],
+                ['after a leading closed tab',
+                    'xA', 0, 'b', 'xBA'],
+                ['between a leading (closed, open), before a trailing closed tab',
+                    'xAy', 0, 'b', 'xBAy'],
+                ['after a leading (closed, open), before a trailing closed tab',
+                    'xAy', 1, 'b', 'xABy'],
             ];
 
             for(const thetest of testcases) {
@@ -531,10 +537,9 @@ describe('app/win/model', function() {
                     // Mock
                     let win_vn = makeFakeWindow(thetest[1]);
                     let ctab = make_fake_ctab(win_vn, thetest[2], thetest[3]);
-                    let tab_vn = makeFakeTab(win_vn);
 
                     // Do the work
-                    expect(M.react_onTabCreated(win_vn, tab_vn, ctab)).toBeTruthy();
+                    expect(M.react_onTabCreated(win_vn, ctab)).toBeTruthy();
 
                     // Check it
                     expectWindowState(win_vn, thetest[4]);
@@ -542,6 +547,9 @@ describe('app/win/model', function() {
                 });
             } //foreach testcase
         }); // }}}2
+
+        // TODO add tests with opener tab ID --- put the new tab just after the
+        // opener tab ID, if possible.
 
         describe('onTabMoved',()=>{   // Chrome moves tabs {{{2
             // Each testcase is [fake-window tabs,
