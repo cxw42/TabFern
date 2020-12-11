@@ -549,7 +549,8 @@ describe('app/win/model', function() {
             //                      ctab index to, expected window state,
             //                      comments (if any)]
             // This array of testcases describes how tab movement works in
-            // both fully-open and partly-open windows.
+            // both fully-open and partly-open windows.  It represents
+            // the design decisions for this behaviour.
             const testcases = [
                 ['AB', 'a', 0, 1, 'BA'],  // "->1" = A moves L to R by 1
                 ['AB', 'b', 1, 0, 'BA'],
