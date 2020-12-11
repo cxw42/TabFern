@@ -25,6 +25,12 @@ core
 tags
 *.zip
 foo.*
+*.tdy
+
+# Patch-related
+*.orig
+*.rej
+*.patch
 
 # Output directories
 /public*
