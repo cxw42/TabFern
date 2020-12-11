@@ -2749,40 +2749,23 @@ function onTabMoved(tabid, moveinfo)
     tab_move_deltas[moveinfo.toIndex-moveinfo.fromIndex] =
         (tab_move_deltas[moveinfo.toIndex-moveinfo.fromIndex] || 0) + 1;
 
-    // Get the parent (window)
-    let window_node_id = D.windows.by_win_id(moveinfo.windowId, 'node_id');
-    if(!window_node_id) return;
-
-    // Get the tab's node
-    let tab_node_id = D.tabs.by_tab_id(tabid, 'node_id');
-    if(!tab_node_id) return;
-
-    let from_idx = M.treeIdxByChromeIdx(window_node_id, moveinfo.fromIndex);
-    let to_idx = M.treeIdxByChromeIdx(window_node_id, moveinfo.toIndex);
-    if(from_idx === false || to_idx === false) {
-        log.error(`Bad move indices: from ${from_idx} to ${to_idx}`);
+    // Get the parent window
+    let winval = D.windows.by_win_id(moveinfo.windowId);
+    if(!winval) {
+        log.warn('onTabMoved: No window found for parent' +
+                    `window ID ${moveinfo.windowId} - bailing`);
         return;
     }
 
-    // Move the tree node
-    log.info(`Moving tab from ${from_idx} to ${to_idx}`);
+    // Get the tab's node
+    let tabval = D.tabs.by_tab_id(tabid);
+    if(!tabval) {
+        log.warn('onTabMoved: No tab found for ' +
+                    `tab ID ${tabid} - bailing`);
+        return;
+    }
 
-    // As far as I can tell, in jstree, indices point between list
-    // elements.  E.g., with n items, index 0 is before the first and
-    // index n is after the last.  However, Chrome tab indices point to
-    // the tabs themselves, 0..(n-1).  Therefore, if we are moving
-    // right, bump the index by 1 so we will be _after_ that item
-    // rather than _before_ it.
-    // See the handling of `pos` values of "before" and "after"
-    // in the definition of move_node() in jstree.js.
-    let jstree_new_index =
-            to_idx+(to_idx>from_idx ? 1 : 0);
-
-    T.treeobj.because('chrome','move_node', tab_node_id, window_node_id, jstree_new_index);
-
-    // Update the indices of all the tabs in this window.  This will update
-    // the old tab and the new tab.
-    M.updateTabIndexValues(window_node_id);
+    M.react_onTabMoved(winval, tabval, moveinfo.fromIndex, moveinfo.toIndex);
 
     saveTree();
 } //onTabMoved
