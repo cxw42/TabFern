@@ -677,14 +677,14 @@ me.del_subtype = function(vorny, ...tys) {
 // The model stores ctab indices, and each tree node has an index under
 // its parent.  These functions map between those indices.
 //
-// Mapping is used in: treeOnSelect(), tabOnCreated(), tabOnMoved(),
-// tabOnAttached(), treeCheckCallback():move_open_tab_in_window(), and
+// Mapping is used in: onTreeSelect(), onTabCreated(), onTabMoved(),
+// onTabAttached(), treeCheckCallback():move_open_tab_in_window(), and
 // treeCheckCallback():open_tab_within_window().
 //
 // Refreshing tree indices is used in: actionOpenRestOfTabs(),
 // actionCloseTabAndSave(), connectChromeWindowToTreeWindowItem(),
-// treeOnSelect(), tabOnCreated():tab_on_created_inner(),
-// tabOnMoved(), tabOnRemoved(), tabOnDetached(), tabOnAttached(),
+// onTreeSelect(), onTabCreated():tab_on_created_inner(),
+// onTabMoved(), onTabRemoved(), onTabDetached(), onTabAttached(),
 // treeCheckCallback():move_open_tab_in_window(), and
 // treeCheckCallback():open_tab_within_window(),
 
