@@ -1207,17 +1207,18 @@ me.react_onTabMoved = function(win_vorny, tab_vorny, cidx_from, cidx_to) {
         if(from_idx === false || to_idx === false) {
             return false;
         }
-
-        // As far as I can tell, in jstree, indices point between list
-        // elements.  E.g., with n items, index 0 is before the first and
-        // index n is after the last.  However, Chrome tab indices point to
-        // the tabs themselves, 0..(n-1).  Therefore, if we are moving
-        // right, bump the index by 1 so we will be _after_ that item
-        // rather than _before_ it.
-        // See the handling of `pos` values of "before" and "after"
-        // in the definition of move_node() in jstree.js.
-        treeidx = to_idx+(to_idx>from_idx ? 1 : 0);
+        treeidx = to_idx;
     }
+
+    // As far as I can tell, in jstree, indices point between list
+    // elements.  E.g., with n items, index 0 is before the first and
+    // index n is after the last.  However, Chrome tab indices point to
+    // the tabs themselves, 0..(n-1).  Therefore, if we are moving
+    // right, bump the index by 1 so we will be _after_ that item
+    // rather than _before_ it.
+    // See the handling of `pos` values of "before" and "after"
+    // in the definition of move_node() in jstree.js.
+    treeidx += (cidx_to>cidx_from ? 1 : 0);
 
     if(treeidx == null) {       // Sanity check
         return false;
