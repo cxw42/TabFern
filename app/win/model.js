@@ -799,7 +799,7 @@ me.treeIdxByChromeIdx = function treeIdxByChromeIdx(win_nodey, cidx,
         }
     });
 
-    log.info({"Mapping in":orig_tidx, "From":cidx});
+    log.info({"Mapping in":orig_tidxes, "From":cidx});
 
     // Pick the cidx from that list
     if(cidx >= orig_tidxes.length) {           // New tab off the end
@@ -1121,11 +1121,10 @@ me.react_onTabCreated = function(win_vorny, ctab) {
     win_node.children.forEach( (kid_node_id, kid_idx)=>{
         if(D.tabs.by_node_id(kid_node_id, 'isOpen')) {
             orig_tidxes.push(kid_idx);
-            // TODO break if we've gone far enough?
         }
     });
 
-    log.info({"Mapping in":orig_tidxes, "Tab created at index":ctab.index});
+    log.info({"Mapping in":orig_tidxes, "Tab created at index": ctab.index});
 
     // Pick the ctab.index from that list
     if(ctab.index >= orig_tidxes.length) {         // New tab off the end
