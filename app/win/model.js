@@ -45,8 +45,8 @@ me.VN_NONE = {val: null, node_id: ''};
 /// Get a {val, node_id} pair (vn) from one of those (vorny).
 /// @param val_or_nodey {mixed} If a string, the node ID of the
 ///                             item; otherwise, the details
-///                             record for the item, or the jstree node
-///                             record for the node.
+///                             record for the item, the jstree node
+///                             record for the node, or a vn for the node.
 /// @param item_type {mixed=} If provided, the type of the item.
 ///             Otherwise, all types will be checked.
 /// @return {Object} {val, node_id}.    `val` is falsy if the
@@ -82,7 +82,7 @@ me.vn_by_vorny = function(val_or_nodey, item_type) {
 
     } else if(typeof val_or_nodey === 'object' && val_or_nodey.val &&
             val_or_nodey.node_id) {                 // We got a vn as input
-        ({val, node_id} = val_or_nodey);
+        ({val, node_id} = val_or_nodey);    // parens reqd.
 
     } else {                                        // Unknown
         return me.VN_NONE;
@@ -821,17 +821,17 @@ me.chromeIdxOfTab = function chromeIdxOfTab(win_nodey, tree_item)
     // Window can't be partly open if it's closed
     if(!D.windows.by_node_id(win_node.id, 'isOpen')) return false;
 
-    let tree_idx;
+    let treeidx;
     if(typeof tree_item !== 'string') {
         if(!Number.isInteger(tree_item)) return false;
-        tree_idx = Number(tree_item);
+        treeidx = Number(tree_item);
     } else {
-        tree_idx = win_node.children.indexOf(tree_item);
-        if(tree_idx === -1) return false;
+        treeidx = win_node.children.indexOf(tree_item);
+        if(treeidx === -1) return false;
     }
 
-    let retval = tree_idx;
-    for(let child_idx=0; child_idx < tree_idx; ++child_idx) {
+    let retval = treeidx;
+    for(let child_idx=0; child_idx < treeidx; ++child_idx) {
         let child_node_id = win_node.children[child_idx];
 
         // Closed tabs don't contribute to the Chrome tab count
@@ -1073,11 +1073,11 @@ me.eraseWin = function(win_vorny) {
 }; //eraseWin()
 
 // }}}1
-// New model functions mapping Chrome <=> tree indices ///////////// {{{1
+// Reacting to Chrome events /////////////////////////////////////// {{{1
 
-// These functions relate to specific actions.  They do not try to
-// establish a universal mapping from one set of indices to another.
-// Instead, they adjust the model as necessary.
+// These functions react to specific events from Chrome.  They do not try to
+// establish a universal mapping between Chrome tab indices and jstree
+// node indices under a parent.  Instead, they adjust the model as necessary.
 // If the Chrome widgets need to be manipulated, they return the
 // necessary information.
 
@@ -1256,7 +1256,62 @@ me.react_onTabMoved = function(win_vorny, tab_vorny, cidx_from, cidx_to) {
 /// @param  cidx        The Chrome tab index where the tab is attaching
 /// @return True on success; a string error message on failure
 me.react_onTabAttached = function react_onTabAttached(ctabid, cwinid, cidx) {
-    return false;
+    const debuginfo = `${ctabid} attaching to ${cwinid} at ${cidx}`;
+
+    let tab_val = D.tabs.by_tab_id(ctabid);
+
+    if(!tab_val)        // An express failure message - this would be bad
+        return ("Unknown tab to attach???? "+debuginfo);
+
+    let win_val = D.windows.by_win_id(cwinid);
+    if(!win_val)    // ditto
+        return ("Unknown window attaching to???? "+debuginfo);
+    if(!win_val.isOpen)
+        return ("Cannot attach to closed window "+debuginfo);
+    let win_node = T.treeobj.get_node(win_val.node_id);
+
+    let treeidx = false;
+
+    // Build a node list as if all the open tabs were packed together
+    let orig_tidxes = [];
+    win_node.children.forEach( (kid_node_id, kid_idx)=>{
+        if(D.tabs.by_node_id(kid_node_id, 'isOpen')) {
+            orig_tidxes.push(kid_idx);
+        }
+    });
+
+    log.info({"Mapping in":orig_tidxes, "attaching at":cidx});
+
+    // Pick the cidx from that list
+    if(cidx >= orig_tidxes.length) {           // New tab off the end
+        treeidx = 1 + orig_tidxes[orig_tidxes.length-1];
+
+    } else if(cidx>0) {                     // Tab that exists, not the 1st
+        // Group it to the left rather than the right if there's a gap
+        treeidx = orig_tidxes[cidx-1]+1;  // i.e., after the previous tab's node
+
+    } else {                                // New first tab
+        treeidx = orig_tidxes[cidx];
+    }
+
+    if(treeidx === false)
+        return ("Could not find where to put tab: " + debuginfo);
+
+    log.info(`Attaching tab ${ctabid} at `+
+                `ctabidx ${cidx} => tree idx ${treeidx}`);
+    T.treeobj.because('chrome','move_node', tab_val.node_id, win_val.node_id,
+            treeidx);
+
+    // Open after moving because otherwise the window might not have any
+    // children yet.
+    T.treeobj.open_node(win_val.node_id);
+
+    tab_val.win_id = cwinid;
+    tab_val.index = cidx;
+
+    me.updateTabIndexValues(win_val.node_id);
+
+    return true;
 }
 
 // }}}2
