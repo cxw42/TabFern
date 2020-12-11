@@ -554,7 +554,7 @@ describe('app/win/model', function() {
                 ['ABC', 'a', 0, 2, 'BCA'],
                 ['ABC', 'b', 1, 0, 'BAC'],
                 ['ABC', 'b', 1, 2, 'ACB'],
-                ['ABC', 'c', 0, 0, 'CAB'],
+                ['ABC', 'c', 2, 0, 'CAB'],
                 ['AbCD', 'd', 2, 1, 'AbDC'],
 
                 // A sequence of moves around a gap
@@ -572,12 +572,13 @@ describe('app/win/model', function() {
                 ['AbcdeFG', 'g', 6, 5, 'AbcdeGF'],
             ];
 
-            for(const thetest of testcases) {
+            for(const testidx in testcases) {
+                const thetest = testcases[testidx];
 
                 // Convenient names for the pieces of the test
                 const [faketabs, moving_tab, fromidx, toidx, expected] = thetest;
                 const comments = thetest[5] || '';
-                const testname = `${faketabs}: ${moving_tab.toUpperCase()}` +
+                const testname = `[${testidx}] ${faketabs}: ${moving_tab.toUpperCase()}` +
                     (fromidx<toidx ? '->' : '<-') + Math.abs(fromidx-toidx) +
                     (comments ? `: ${comments}` : '');
 
