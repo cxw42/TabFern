@@ -250,6 +250,8 @@ let me = {
         },
     },
 
+    sourceMaps: 'inline',   // Chrome doesn't load external ones
+
     overrides: {
         production: {       // Always generate source maps, even in production
             sourceMaps: true,
