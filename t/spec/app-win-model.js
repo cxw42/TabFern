@@ -651,15 +651,26 @@ describe('app/win/model', function() {
             // Each testcase:
             // [original window state, new tab, new index, final window state]
             let testcases = [
+                ['', 'a', 0, 'A'],
+
+                // I had the following test, but I can't think of any way Chrome
+                // would attach to a window with all closed tabs.  The window has
+                // to be open before it can be attached to!
+                //['a', 'b', 0, 'Ba'],    // OK?  Arguably inconsistent with xA+b@0->xBA.
+
                 ['A', 'b', 1, 'AB'],
                 ['A', 'b', 0, 'BA'],
                 ['xA', 'b', 1, 'xAB'],
                 ['xA', 'b', 0, 'xBA'],
                 ['Ax', 'b', 1, 'ABx'],
                 ['Ax', 'b', 0, 'BAx'],
-                ['xAx', 'b', 1, 'xABx'],
-                ['xAx', 'b', 0, 'xBAx'],
+                ['xAy', 'b', 1, 'xABy'],
+                ['xAy', 'b', 0, 'xBAy'],
+                ['xAyBz', 'c', 0, 'xCAyBz'],
+                ['xAyBz', 'c', 1, 'xACyBz'],
+                ['xAyBz', 'c', 2, 'xAyBCz'],
             ];
+
             for(const thetest of testcases) {
                 let testname = `${thetest[0]} + ${thetest[1]}@${thetest[2]} => ${thetest[3]}`;
                 it(testname, ()=>{
@@ -672,7 +683,7 @@ describe('app/win/model', function() {
                     expect(tabvn.val).toBeTruthy();
                     expect(M.markTabAsOpen(tabvn, ctab)).toBeTruthy();
 
-                    // Detach it by hand
+                    // Detach it by hand.  Excerpted from app/win/main_tl:tabOnDetached().
                     T.treeobj.because('chrome','move_node', tabvn.node_id, T.holding_node_id);
                     tabvn.val.win_id = K.NONE;
                     tabvn.val.index = K.NONE;
