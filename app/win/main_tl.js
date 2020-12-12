@@ -2861,6 +2861,19 @@ function hamReloadTree()
     window.location.reload(true);
 } //hamReloadTree()
 
+
+// Record that the user has seen the "what's new" for this version
+function userHasSeenSettings()
+{
+    if(ShowWhatIsNew) {
+        ShowWhatIsNew = false;
+
+        let to_save = {};
+        to_save[K.LASTVER_KEY] = TABFERN_VERSION;
+        chrome.storage.local.set(to_save, ignore_chrome_error);
+    }
+}
+
 /// Open the Settings window.  If ShowWhatIsNew, also updates the K.LASTVER_KEY
 /// information used by checkWhatIsNew().
 function hamSettings()
@@ -2875,14 +2888,7 @@ function hamSettings()
         log.error('Could not get settings URL');
     }
 
-    // Record that the user has seen the "what's new" for this version
-    if(ShowWhatIsNew) {
-        ShowWhatIsNew = false;
-
-        let to_save = {};
-        to_save[K.LASTVER_KEY] = TABFERN_VERSION;
-        chrome.storage.local.set(to_save, ignore_chrome_error);
-    }
+    userHasSeenSettings();
 } //hamSettings()
 
 function hamBackup()
@@ -2996,6 +3002,8 @@ function hamRunJasmineTests()
     } else {
         log.error('Could not get Jasmine-test URL');
     }
+
+    userHasSeenSettings();  // #233
 } // hamRunJasmineTests
 
 function hamSortOpenToTop()
