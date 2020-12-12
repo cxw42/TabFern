@@ -4,6 +4,7 @@
 // nodes, and top borders on items, are kept in the tree.
 //
 // Copyright (c) 2017 Chris White, Jasmine Hegman.
+// Copyright (c) 2018--2020 Chris White
 
 // Boilerplate and require()s {{{1
 (function (root, factory) {
@@ -33,12 +34,13 @@
     /// The module we are creating
     let module = {};
 
+    // Design decisions for both module.tabs and module.windows:
+    // - No fields named `parent` so I can distinguish jstree node
+    //   records from multidex values.
+    // - No fields named `id` --- those exist in ctab and cwin records
+    // - All types of records have `raw_title` and `isOpen` fields.
+
     /// Map between open-tab IDs and node IDs.
-    /// Design decisions:
-    /// - No fields named `parent` so I can distinguish jstree node
-    ///     records from multidex values.
-    /// - No fields named `id` --- those exist in ctab and cwin records
-    /// - All types of records have `raw_title` and `isOpen` fields.
     module.tabs = multidex(
         K.IT_TAB, //type
         [ //keys
@@ -68,8 +70,7 @@
         ]);
 
     /// Map between open-window IDs and node IDs.
-    /// Design decision: no fields named "parent" so I can distinguish
-    /// jstree node records from multidex values.
+    /// Design decisions: see above
     module.windows = multidex(
         K.IT_WIN,  //type
         [ //keys
