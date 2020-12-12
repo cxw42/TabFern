@@ -34,6 +34,30 @@ describe('app/win/model', function() {
         return vn;
     } //makeTab
 
+    /// findTabInWindow: get a tab in a window created by makeFakeWindow()
+    /// @param win_vorny        The window
+    /// @param tab_raw_title    The raw_title of the tab sought.  It may be
+    ///                         upper or lower case.
+    /// @return the vn of the tab, or falsy on error.
+    function findTabInWindow(win_vorny, tab_raw_title) {
+        let winvn = M.vn_by_vorny(win_vorny);
+        if(!winvn.node_id) return false;
+
+        let tab_node_ids = T.treeobj.get_node(winvn.node_id).children;
+        let retval = false;
+        let needle = tab_raw_title.toLowerCase();
+
+        for(const tab_node_id of tab_node_ids) {
+            let tab_val = D.tabs.by_node_id(tab_node_id);
+            if(needle === tab_val.raw_title) {
+                retval = M.vn_by_vorny(tab_val);
+                break;
+            }
+        }
+        expect(retval).toBeTruthy();
+        return retval;
+    }
+
     // }}}1
     // Setup /////////////////////////////////////////////////////////// {{{1
 
@@ -618,18 +642,7 @@ describe('app/win/model', function() {
                 it(testname, ()=>{
                     // Mock
                     let win_vn = makeFakeWindow(faketabs);
-
-                    // Get the tab we are going to move
-                    let tab_node_ids = T.treeobj.get_node(win_vn.node_id).children;
-                    let tab_vn;
-                    for(const tab_node_id of tab_node_ids) {
-                        let tab_node = T.treeobj.get_node(tab_node_id);
-                        if(moving_tab.toLowerCase() === tab_node.text.toLowerCase()) {
-                            tab_vn = M.vn_by_vorny(tab_node_id);
-                            break;
-                        }
-                    }
-                    expect(tab_vn).toBeTruthy();
+                    let tab_vn = findTabInWindow(win_vn, moving_tab);
 
                     // Do the work
                     const didmove =
@@ -645,9 +658,38 @@ describe('app/win/model', function() {
         }); // }}}2
 
         // TODO react_onTabRemoved()
-        // TODO react_onTabDetached()
-        // TODO react_onTabAttached()
-        describe('onTabAttached',()=>{   // Chrome moves tabs {{{2
+
+        describe('onTabDetached',()=>{   // {{{2
+            // Each testcase:
+            // [original window state, tab that detaches,
+            //  (final window state, or '' if the window is closed)]
+            let testcases = [
+                ['A', 'a', ''],
+                ['AB', 'b', 'A'],
+            ];
+
+            for(const thetest of testcases) {
+                let testname = `${thetest[0]} - ${thetest[1]} => ${thetest[2] || '(window closed)'}`;
+                it(testname, ()=>{
+                    // Mock
+                    let winvn = makeFakeWindow(thetest[0]);
+                    let tabvn = findTabInWindow(winvn, thetest[1]);
+
+                    // Do the work
+                    const ok =
+                        M.react_onTabDetached(tabvn.val.tab_id, winvn.val.win_id);
+                    expect(ok).toBe(true);
+
+                    // Check it
+                    expectWindowState(winvn, thetest[2]);
+                    if(thetest[2] !== '') {
+                        expect(M.eraseWin(winvn)).toBeTruthy();
+                    }
+                });
+            } //foreach testcase
+        }); // }}}2
+
+        describe('onTabAttached',()=>{   // {{{2
             // Each testcase:
             // [original window state, new tab, new index, final window state]
             let testcases = [

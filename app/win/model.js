@@ -665,10 +665,11 @@ me.del_subtype = function(vorny, ...tys) {
 //    }; //change()
 
 // }}}1
-// Mapping model indices /////////////////////////////////////////// {{{1
+// Managing model indices ////////////////////////////////////////// {{{1
 
 // The model stores ctab indices, and each tree node has an index under
-// its parent.  These functions map between those indices.
+// its parent.  These functions mange those indices.
+// NOTE: me.react_*() also have some index-management code.
 //
 // Mapping is used in: onTreeSelect(), onTabCreated(), onTabMoved(),
 // onTabAttached(), treeCheckCallback():move_open_tab_in_window(), and
@@ -765,49 +766,13 @@ me.getWinOpenChildCount = function getWinOpenChildCount(win_nodey)
     return retval;
 } //getWinOpenChildCount()
 
-/// Convert a Chrome tab index to an index in the tree for a window,
-/// even if the window is partly open.
-/// Used when tabs are created, attached, or moved.
-/// @pre The window must be open.
-/// @param win_nodey {mixed} The window in question
-/// @param cidx {nonnegative integer} the Chrome ctab.index
-/// @param openerTabId {optional integer} The ctab ID of the opener, if any.
-/// @todo Use the opener's tab ID
-me.treeIdxByChromeIdx = function treeIdxByChromeIdx(win_nodey, cidx,
-                                        openerTabId)
-{
-    let win_node = T.treeobj.get_node(win_nodey);
-    if(!win_node || !Number.isInteger(cidx) || cidx<0 ) return false;
-
-    // Window can't be partly open if it's closed
-    if(!D.windows.by_node_id(win_node.id, 'isOpen')) return false;
-
-    // Build a node list as if all the open tabs were packed together
-    let orig_tidxes = [];
-    win_node.children.forEach( (kid_node_id, kid_idx)=>{
-        if(D.tabs.by_node_id(kid_node_id, 'isOpen')) {
-            orig_tidxes.push(kid_idx);
-        }
-    });
-
-    log.info({"Mapping in":orig_tidxes, "From":cidx});
-
-    // Pick the cidx from that list
-    if(cidx >= orig_tidxes.length) {           // New tab off the end
-        return 1 + orig_tidxes[orig_tidxes.length-1];
-
-    } else if(cidx>0) {                     // Tab that exists, not the 1st
-        // Group it to the left rather than the right if there's a gap
-        return orig_tidxes[cidx-1]+1;  // i.e., after the previous tab's node
-
-    } else {                                // New first tab
-        return orig_tidxes[cidx];
-    }
-
-} //treeIdxByChromeIdx()
-
 /// Convert a tree index to a Chrome tab index in a window,
 /// even if the window is partly open.
+///
+/// @note there is no single reverse mapping from Chrome tab index to
+/// tree index.  This is because the specifics of that mapping vary
+/// depending on the reason you need to map chrome->tree indices.
+///
 /// @pre The window must be open.
 /// @param win_nodey {mixed} The window in question
 /// @param tree_item {mixed} The child node or index whose ctab index we want.
@@ -1245,7 +1210,19 @@ me.react_onTabMoved = function(win_vorny, tab_vorny, cidx_from, cidx_to) {
 }; //react_onTabMoved() }}}2
 
 // TODO react_onTabRemoved()
-// TODO react_onTabDetached()
+
+// onTabDetached() {{{2
+
+/// Detach a tab from a window in the tree.
+/// This implements the design decisions in spec/app-win-model.js for onTabDetached().
+///
+/// @param  ctabid      The tab's Chrome tab ID
+/// @param  cwinid      The Chrome window ID of the window the tab is detaching from
+/// @return True on success; a string error message on failure
+me.react_onTabDetached = function react_onTabDetached(ctabid, cwinid) {
+    return "not yet implemented";
+}
+// }}}2
 
 // onTabAttached() {{{2
 
