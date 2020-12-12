@@ -2774,49 +2774,12 @@ function onTabRemoved(tabid, removeinfo)
         // TODO also mark this as non-recovered, maybe?
     }
 
-    let window_node_id = D.windows.by_win_id(removeinfo.windowId, 'node_id');
-    if(!window_node_id) {
-        log.debug({'Bailing - no window_node_id for ctab':tabid,removeinfo});
+    const errmsg = M.react_onTabRemoved(tabid, removeinfo.windowId);
+
+    if(typeof(errmsg) === 'string') {
+        log.warn(`Could not remove ${tabid} per ${JSON.stringify(removeinfo)}: ${errmsg}`);
         return;
     }
-
-    {   // Keep the locals here out of the scope of the closure below.
-        // Get the parent (window)
-        let window_node = T.treeobj.get_node(window_node_id);
-        if(!window_node) {
-            log.debug({'Bailing - no window_node for ctab':tabid,removeinfo});
-            return;
-        }
-
-        // Get the node
-        let tab_val = D.tabs.by_tab_id(tabid);
-
-        // See if it's a tab we have already marked as removed.  If so,
-        // whichever code marked it is responsible, and we're off the hook.
-        if(!tab_val || tab_val.tab_id === K.NONE) {
-            log.debug({"Bailing, but it's probably OK - no tab_val for ctab":tabid, tab_val, removeinfo});
-            return;
-        }
-
-        // Get the tab's node
-        if(!tab_val.node_id) {
-            log.debug({'Bailing - no tab_val.node_id for ctab':tabid,removeinfo});
-            return;
-        }
-
-        let tab_node = T.treeobj.get_node(tab_val.node_id);
-        if(!tab_node) {
-            log.debug({'Bailing - no tab_node for ctab':tabid,removeinfo});
-            return;
-        }
-
-        log.debug({'Removing value and entry for ctab':tabid,tab_node, tab_val,removeinfo});
-        M.eraseTab(tab_node, 'chrome');
-    }
-
-
-    // Refresh the tab.index values for the remaining tabs
-    M.updateTabIndexValues(window_node_id);
 
     saveTree();
 } //onTabRemoved
@@ -3561,6 +3524,8 @@ var treeCheckCallback = (function treeCheck()
             });
 
             // Now that it's disconnected, close the actual tab.
+            // We don't have to move the node in jstree --- jstree handles
+            // that itself through dnd.
             // TODO update per #79 - need to try to remove the tab first,
             // then see what happens.
             seq.try((done)=>{
