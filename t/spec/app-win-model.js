@@ -782,7 +782,7 @@ describe('app/win/model', function() {
 
                     // Do the work
                     const ok =
-                        M.react_onTabReplaced(tabvn.val.tab_id, newctabid);
+                        M.react_onTabReplaced(newctabid, tabvn.val.tab_id);
                     expect(ok).toBe(true);
 
                     // Check it

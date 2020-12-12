@@ -2847,12 +2847,10 @@ function onTabDetached(tabid, detachinfo)
 
     T.treeobj.clear_flags();  //just to be on the safe side
 
-    let retval;
-    retval = M.react_onTabDetached(tabid, detachinfo.oldWindowId);
+    let errmsg = M.react_onTabDetached(tabid, detachinfo.oldWindowId);
 
-    if(typeof(retval) === 'string') {
-        // report error
-        throw new Error(`Could not detach ${tabid} per ${JSON.stringify(detachinfo)}: ${retval}`);
+    if(typeof(errmsg) === 'string') {
+        throw new Error(`Could not detach ${tabid} per ${JSON.stringify(detachinfo)}: ${errmsg}`);
     }
 } //onTabDetached
 
@@ -2861,31 +2859,27 @@ function onTabAttached(tabid, attachinfo)
 {
     log.info({'Tab attached': tabid, attachinfo});
 
-    let retval;
-    retval = M.react_onTabAttached(tabid, attachinfo.newWindowId, attachinfo.newPosition);
+    let errmsg = M.react_onTabAttached(tabid, attachinfo.newWindowId, attachinfo.newPosition);
 
-    if(typeof(retval) === 'string') {
-        // report error
-        throw new Error(`Could not attach ${tabid} per ${JSON.stringify(attachinfo)}: ${retval}`);
+    if(typeof(errmsg) === 'string') {
+        throw new Error(`Could not attach ${tabid} per ${JSON.stringify(attachinfo)}: ${errmsg}`);
     }
 } //onTabAttached
 
 /// Handle tab replacement, which can occur with preloads.  E.g., #129.
 function onTabReplaced(addedTabId, removedTabId)
 {
-    log.info('Tab being replaced: added ' + addedTabId + '; removed ' +
-                removedTabId);
-    let tab_val = D.tabs.by_tab_id(removedTabId);
-    if(!tab_val) {
-        log.warn('onReplaced: No tab found for removed' +
-                    `tab ID ${removedTabId} - bailing`);
-        return;
-    }
+    log.info(`Tab being replaced: ${removedTabId} -> ${addedTabId}`);
 
-    D.tabs.change_key(tab_val, 'tab_id', addedTabId);
-    log.info({
-        [`Tab replacement ${removedTabId}->${addedTabId}: new value`]:tab_val
-    });
+    let errmsg = M.react_onTabReplaced(addedTabID, removedTabId);
+
+    if(typeof(errmsg) === 'string') {
+        log.warn(`Could not replace ${removedTabId} with ${addedTabId}: ${errmsg}`);
+    } else {
+        log.debug({
+            [`Tab replacement ${removedTabId}->${addedTabId}: new value`]:tab_val
+        });
+    }
 } //onTabReplaced
 
 ////////////////////////////////////////////////////////////////////////// }}}1
