@@ -393,11 +393,11 @@ me.refresh_icon = function(vorny) {
     return true;
 }; //refresh_icon()
 
-/// Refresh a node after changes have been made.
-/// @param vorny {mixed}    The item
-/// @param what {optional Object}   If an object, truthy keys
-///     icon, tooltip, label cause that to be refreshed.
-///     If not provided, or not an object, all three will be refreshed.
+/// Refresh a tree node after changes have been made.
+/// @param vorny {mixed}            The item
+/// @param what {optional Object}
+///     - If an object: truthy keys icon, tooltip, label cause that to be refreshed.
+///     - If not provided, or not an object, all three will be refreshed.
 /// @return {Boolean}   False on unknown item; true otherwise.
 me.refresh = function(vorny, what) {
     let {val, node_id} = me.vn_by_vorny(vorny);
@@ -1147,6 +1147,104 @@ me.react_onTabCreated = function(win_vorny, ctab) {
 
     return tabvn.node_id;
 }; //react_onTabCreated() }}}2
+
+// onTabUpdated {{{2
+
+/// Update a tab in the tree
+///
+/// @param  ctabid      The tab's Chrome tab ID
+/// @param  changeinfo  List of changes
+/// @param  newctab     The ctab record provided by Chrome, theoretically updated.
+/// @return ===true on success; a string error message on failure
+me.react_onTabUpdated = function(ctabid, changeinfo, newctab) {
+    return "Not yet implemented";
+
+    let dirty = false;
+    let should_refresh_label = false;
+    let should_refresh_tooltip = false;
+    let should_refresh_icon = false;
+
+    let tab_node_val = D.tabs.by_tab_id(tabid);
+    if(!tab_node_val) return;
+    let tab_node_id = tab_node_val.node_id;
+
+    let node = T.treeobj.get_node(tab_node_id);
+    tab_node_val.isOpen = true;     //lest there be any doubt
+
+    log.debug({"   Details for updated ctab":tabid,tab_node_val,node});
+
+    // Caution: changeinfo doesn't always have all the changed information.
+    // Therefore, we check changeinfo and ctab.
+
+    // TODO refactor the following into a separate routine that can be
+    // used to update closed or open tabs' tree items.  Maybe move it
+    // to model.js as well.  This will reduce code duplication, e.g., in
+    // actionURLSubstitute.
+
+    // URL
+    let new_raw_url = changeinfo.url || newctab.url || newctab.pendingUrl || 'about:blank';
+    if(new_raw_url !== tab_node_val.raw_url) {
+        dirty = true;
+        should_refresh_tooltip = true;
+            // TODO check the config - it may not be necessary to update
+            // the tooltip since the URL might be in the tooltip
+        tab_node_val.raw_url = new_raw_url;
+        M.updateOrderedURLHash(node.parent);
+            // When the URL changes, the hash changes, too.
+    }
+
+    // pinned
+    let new_pinned = null;
+
+    if('pinned' in changeinfo) {
+        new_pinned = changeinfo.pinned;
+    } else if('pinned' in newctab) {
+        new_pinned = newctab.pinned;
+    }
+
+    if( (new_pinned !== null) && (tab_node_val.isPinned !== new_pinned) ) {
+        dirty = true;
+        should_refresh_label = true;
+        tab_node_val.isPinned = new_pinned;
+    }
+
+    // audible
+    let new_audible = null;
+
+    if('audible' in changeinfo) {
+        new_audible = changeinfo.audible;
+    } else if('audible' in newctab) {
+        new_audible = newctab.audible;
+    }
+
+    if( (new_audible !== null) && (tab_node_val.isAudible !== new_audible) ) {
+        dirty = true;
+        should_refresh_label = true;
+        tab_node_val.isAudible = new_audible;
+    }
+
+    // title
+    let new_raw_title = changeinfo.title || newctab.title || _T('labelBlankTabTitle');
+    if(new_raw_title !== tab_node_val.raw_title) {
+        dirty = true;
+        should_refresh_label = true;
+        should_refresh_tooltip = true;
+
+        tab_node_val.raw_title = new_raw_title;
+    }
+
+    // favicon
+    let new_raw_favicon_url = changeinfo.favIconUrl || newctab.favIconUrl || null;
+    if(new_raw_favicon_url !== tab_node_val.raw_favicon_url) {
+        dirty = true;
+        should_refresh_icon = true;
+        tab_node_val.raw_favicon_url = new_raw_favicon_url;
+    }
+
+    // Update the model
+    M.refresh(tab_node_val, { icon: should_refresh_icon,
+            label: should_refresh_label, tooltip: should_refresh_tooltip });
+}; //react_onTabUpdated() }}}2
 
 // onTabMoved {{{2
 

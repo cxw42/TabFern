@@ -577,6 +577,67 @@ describe('app/win/model', function() {
         // TODO add tests with opener tab ID --- put the new tab just after the
         // opener tab ID, if possible.
 
+        describe('onTabUpdated',()=>{   // {{{2
+            // Maps from fields that change to the resulting fields in tabval
+            // that should change.  This does not provide an exhaustive test,
+            // but is better than nothing.
+
+            const fields_to_test = {
+                changeinfo: {
+                    url: 'raw_url',
+                    pinned: 'isPinned',
+                    audible: 'isAudible',
+                    title: 'raw_title',
+                    favIconUrl: 'raw_favicon_url',
+                },
+                newctab: {
+                    url: 'raw_url',
+                    pendingUrl: 'raw_url',
+                    pinned: 'isPinned',
+                    audible: 'isAudible',
+                    title: 'raw_title',
+                    favIconUrl: 'raw_favicon_url',
+                },
+            };
+
+            // Mock
+            let winvn, tabvn;
+
+            beforeEach(()=>{
+                winvn = makeFakeWindow('A');
+                tabvn = findTabInWindow(winvn, 'a');
+            });
+            afterEach(()=>{
+                expect(M.eraseWin(winvn)).toBeTruthy();
+            });
+
+            for(const structname in fields_to_test) {
+                const fields = fields_to_test[structname];
+
+                for(const fieldname in fields) {
+                    const valfieldname = fields[fieldname];
+                    it(`modifies val.${valfieldname} based on ${structname}.${fieldname}`, ()=>{
+                        const oldval = tabvn.val[valfieldname];
+                        const newval = (fieldname === 'title') ? 'b' : "not the same as " + JSON.stringify(oldval);
+                            // Shamelessly abuse weak typing :)
+
+                        // Do the work
+                        let obj = {changeinfo: {}, newctab: {}};
+                        obj[structname][fieldname] = newval;
+
+                        const ok =
+                            M.react_onTabUpdated(tabvn.val.tab_id, obj.changeinfo, obj.newctab);
+                        expect(ok).toBe(true);
+
+                        // Check it
+                        expectWindowState(winvn, (fieldname === 'title') ? 'B': 'A');
+                        expect(tabvn.val[valfieldname]).toBe(newval);
+                        // TODO also check the tree node
+                    });
+                } //foreach fieldname
+            } //foreach structname
+
+        }); // }}}2
         describe('onTabMoved',()=>{   // Chrome moves tabs {{{2
             // Each testcase is [fake-window tabs,
             //                      which tab moves, ctab index from,
@@ -650,7 +711,7 @@ describe('app/win/model', function() {
                     const didmove =
                         M.react_onTabMoved(win_vn.val.win_id, tab_vn.val.tab_id, fromidx, toidx);
                     log.debug({testname:didmove, testidx});  // bring those into scope
-                    expect(didmove).toBeTruthy();
+                    expect(didmove).toBe(true);
 
                     // Check it
                     expectWindowState(win_vn, expected);
