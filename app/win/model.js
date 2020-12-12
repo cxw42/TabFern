@@ -1148,13 +1148,28 @@ me.react_onTabCreated = function(win_vorny, ctab) {
 
 // onTabUpdated {{{2
 
+// Grab a field from one of an array of objects
+function grabfirst(fieldname, ...objs)
+{
+    let retval = null;
+    let obj = objs.find((elem) => fieldname in elem);
+    if(obj) {
+        retval = obj[fieldname];
+    }
+    return retval;
+}
+
 /// Update a tab in the tree
 ///
 /// @param  ctabid      The tab's Chrome tab ID
 /// @param  changeinfo  List of changes
 /// @param  newctab     The ctab record provided by Chrome, theoretically updated.
-/// @return ===true on success; a string error message on failure
+/// @return
+///     - on success, an object with the key 'dirty' indicating whether
+///       any changes were made.
+///     - on failure, a string error message
 me.react_onTabUpdated = function(ctabid, changeinfo, newctab) {
+    let dirty = false;
     let should_refresh_label = false;
     let should_refresh_tooltip = false;
     let should_refresh_icon = false;
@@ -1177,8 +1192,9 @@ me.react_onTabUpdated = function(ctabid, changeinfo, newctab) {
     // actionURLSubstitute.
 
     // URL
-    let new_raw_url = changeinfo.url || newctab.url || newctab.pendingUrl || 'about:blank';
+    let new_raw_url = grabfirst('url', changeinfo, newctab) || newctab.pendingUrl || 'about:blank';
     if(new_raw_url !== tabvn.val.raw_url) {
+        dirty = true;
         should_refresh_tooltip = true;
             // TODO check the config - it may not be necessary to update
             // the tooltip since the URL might be in the tooltip
@@ -1188,36 +1204,32 @@ me.react_onTabUpdated = function(ctabid, changeinfo, newctab) {
     }
 
     // pinned
-    let new_pinned = null;
-
-    if('pinned' in changeinfo) {
-        new_pinned = changeinfo.pinned;
-    } else if('pinned' in newctab) {
-        new_pinned = newctab.pinned;
-    }
+    let new_pinned = grabfirst('pinned', changeinfo, newctab);
 
     if( (new_pinned !== null) && (tabvn.val.isPinned !== new_pinned) ) {
+        dirty = true;
         should_refresh_label = true;
         tabvn.val.isPinned = new_pinned;
     }
 
     // audible
-    let new_audible = null;
-
-    if('audible' in changeinfo) {
-        new_audible = changeinfo.audible;
-    } else if('audible' in newctab) {
-        new_audible = newctab.audible;
-    }
+    let new_audible = grabfirst('audible', changeinfo, newctab);
 
     if( (new_audible !== null) && (tabvn.val.isAudible !== new_audible) ) {
+        dirty = true;
         should_refresh_label = true;
         tabvn.val.isAudible = new_audible;
     }
 
     // title
-    let new_raw_title = changeinfo.title || newctab.title || tabvn.val.raw_title || _T('labelBlankTabTitle');
-    if(new_raw_title !== tabvn.val.raw_title) {
+    let new_raw_title = grabfirst('title', changeinfo, newctab) || tabvn.val.raw_title || _T('labelBlankTabTitle');
+        // NOTE: I think the `tabvn.val.raw_title` is only hit during testing,
+        // since Chrome fills in newctab.title but the tests don't.  I am
+        // leaving this in for simplicity of the tests and since it doesn't
+        // actually affect the outcome if indeed Chrome provides newctab.title.
+
+    if(new_raw_title !== null && new_raw_title !== tabvn.val.raw_title) {
+        dirty = true;
         should_refresh_label = true;
         should_refresh_tooltip = true;
 
@@ -1225,8 +1237,9 @@ me.react_onTabUpdated = function(ctabid, changeinfo, newctab) {
     }
 
     // favicon
-    let new_raw_favicon_url = changeinfo.favIconUrl || newctab.favIconUrl || null;
-    if(new_raw_favicon_url !== tabvn.val.raw_favicon_url) {
+    let new_raw_favicon_url = grabfirst('favIconUrl', changeinfo, newctab);
+    if(new_raw_favicon_url !== null && new_raw_favicon_url !== tabvn.val.raw_favicon_url) {
+        dirty = true;
         should_refresh_icon = true;
         tabvn.val.raw_favicon_url = new_raw_favicon_url;
     }
@@ -1235,7 +1248,7 @@ me.react_onTabUpdated = function(ctabid, changeinfo, newctab) {
     me.refresh(tabvn, { icon: should_refresh_icon,
             label: should_refresh_label, tooltip: should_refresh_tooltip });
 
-    return true;
+    return {dirty};
 }; //react_onTabUpdated() }}}2
 
 // onTabMoved {{{2
