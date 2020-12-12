@@ -2741,23 +2741,12 @@ function onTabMoved(tabid, moveinfo)
     tab_move_deltas[moveinfo.toIndex-moveinfo.fromIndex] =
         (tab_move_deltas[moveinfo.toIndex-moveinfo.fromIndex] || 0) + 1;
 
-    // Get the parent window
-    let winval = D.windows.by_win_id(moveinfo.windowId);
-    if(!winval) {
-        log.warn('onTabMoved: No window found for parent' +
-                    `window ID ${moveinfo.windowId} - bailing`);
+    const errmsg = M.react_onTabMoved(moveinfo.windowId, tabid, moveinfo.fromIndex, moveinfo.toIndex);
+
+    if(typeof(errmsg) === 'string') {
+        log.warn(`Could not move tab ${tabid} per ${JSON.stringify(moveinfo)}: ${errmsg}`);
         return;
     }
-
-    // Get the tab's node
-    let tabval = D.tabs.by_tab_id(tabid);
-    if(!tabval) {
-        log.warn('onTabMoved: No tab found for ' +
-                    `tab ID ${tabid} - bailing`);
-        return;
-    }
-
-    M.react_onTabMoved(winval, tabval, moveinfo.fromIndex, moveinfo.toIndex);
 
     saveTree();
 } //onTabMoved
@@ -2847,7 +2836,7 @@ function onTabDetached(tabid, detachinfo)
 
     T.treeobj.clear_flags();  //just to be on the safe side
 
-    let errmsg = M.react_onTabDetached(tabid, detachinfo.oldWindowId);
+    const errmsg = M.react_onTabDetached(tabid, detachinfo.oldWindowId);
 
     if(typeof(errmsg) === 'string') {
         throw new Error(`Could not detach ${tabid} per ${JSON.stringify(detachinfo)}: ${errmsg}`);
@@ -2859,7 +2848,7 @@ function onTabAttached(tabid, attachinfo)
 {
     log.info({'Tab attached': tabid, attachinfo});
 
-    let errmsg = M.react_onTabAttached(tabid, attachinfo.newWindowId, attachinfo.newPosition);
+    const errmsg = M.react_onTabAttached(tabid, attachinfo.newWindowId, attachinfo.newPosition);
 
     if(typeof(errmsg) === 'string') {
         throw new Error(`Could not attach ${tabid} per ${JSON.stringify(attachinfo)}: ${errmsg}`);
@@ -2871,10 +2860,11 @@ function onTabReplaced(addedTabId, removedTabId)
 {
     log.info(`Tab being replaced: ${removedTabId} -> ${addedTabId}`);
 
-    let errmsg = M.react_onTabReplaced(addedTabID, removedTabId);
+    const errmsg = M.react_onTabReplaced(addedTabID, removedTabId);
 
     if(typeof(errmsg) === 'string') {
         log.warn(`Could not replace ${removedTabId} with ${addedTabId}: ${errmsg}`);
+        return;
     } else {
         log.debug({
             [`Tab replacement ${removedTabId}->${addedTabId}: new value`]:tab_val
@@ -3039,12 +3029,12 @@ function hamRestoreFromBackup()
             let parsed = JSON.parse(text);
             ok = loadSavedWindowsFromData(parsed);
             if(!ok) {
-                let errmsg = _T('errCouldNotLoadFile', filename, e);
+                const errmsg = _T('errCouldNotLoadFile', filename, e);
                 log.warn({[errmsg]:e});
                 window.alert(errmsg);
             }
         } catch(e) {
-            let errmsg = _T('errCouldNotParseFile');
+            const errmsg = _T('errCouldNotParseFile');
             log.warn({[errmsg + ' (exception thrown)']:e});
             window.alert(errmsg);
         }
@@ -3061,7 +3051,7 @@ function hamRestoreFromBackup()
         let importer = new Modules.importer(document, '.tabfern');
         importer.getFileAsString(processFile);
     } catch(e) {
-        let errmsg = _T('errCouldNotRunImporter', e);
+        const errmsg = _T('errCouldNotRunImporter', e);
         log.warn({[errmsg]:e});
         window.alert(errmsg);
     }
