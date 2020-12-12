@@ -709,6 +709,7 @@ describe('app/win/model', function() {
                     // Mock
                     let winvn = makeFakeWindow(thetest[0]);
                     let tabvn = findTabInWindow(winvn, thetest[1]);
+                    const tab_node_id = tabvn.node_id;
 
                     // Do the work
                     const ok =
@@ -718,6 +719,9 @@ describe('app/win/model', function() {
                     // Check it
                     expect(tabvn.val.win_id).toBe(K.NONE);
                     expect(tabvn.val.index).toBe(K.NONE);
+                    const tab_node = T.treeobj.get_node(tab_node_id);
+                    expect(tab_node).toBeTruthy();
+                    expect(tab_node.parent).toBe(T.holding_node_id);
                     expectWindowState(winvn, thetest[2]);
                     expect(M.eraseWin(winvn)).toBeTruthy();
                 });
@@ -758,6 +762,7 @@ describe('app/win/model', function() {
                     // Attach it to a window
                     let tabvn = M.vnRezTab(winvn);
                     expect(tabvn.val).toBeTruthy();
+                    const tab_node_id = tabvn.node_id;
                     expect(M.markTabAsOpen(tabvn, ctab)).toBeTruthy();
 
                     // Detach it by hand.  Excerpted from app/win/main_tl:tabOnDetached().
@@ -774,7 +779,13 @@ describe('app/win/model', function() {
                     // Check it
                     expect(tabvn.val.win_id).toBe(winvn.val.win_id);
                     expect(tabvn.val.index).toBe(ctab.index);
+
+                    const tab_node = T.treeobj.get_node(tab_node_id);
+                    expect(tab_node).toBeTruthy();
+                    expect(tab_node.parent).not.toBe(T.holding_node_id);
+
                     expectWindowState(winvn, thetest[3]);
+
                     expect(M.eraseWin(winvn)).toBeTruthy();
                 });
             } //foreach testcase

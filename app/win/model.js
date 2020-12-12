@@ -728,13 +728,13 @@ me.updateTabIndexValues = function updateTabIndexValues(win_nodey, as_open = [])
         }
     }
 
-    let old_hash = D.windows.by_node_id(win_node.id, 'ordered_url_hash'); //DEBUG
+    //let old_hash = D.windows.by_node_id(win_node.id, 'ordered_url_hash'); //DEBUG
 
     // TODO do we need this, or can we use a dirty flag to avoid
     // recomputing?
     me.updateOrderedURLHash(win_node.id);
 
-    let new_hash = D.windows.by_node_id(win_node.id, 'ordered_url_hash'); //DEBUG
+    //let new_hash = D.windows.by_node_id(win_node.id, 'ordered_url_hash'); //DEBUG
     //log.trace(`win ${win_node.id} hash from ${old_hash} to ${new_hash}`); //DEBUG
 } //updateTabIndexValues
 
@@ -1126,12 +1126,12 @@ me.react_onTabCreated = function(win_vorny, ctab) {
         tabvn = me.vnRezTab(winvn.node_id);
 
         if(!tabvn.node_id) {
-            log.debug({"<M> Could not create record for ctab":ctab, winvn});
+            log.debug({"Could not create record for ctab":ctab, winvn});
             me.eraseTab(tabvn);
             return false;
         }
         if(!me.markTabAsOpen(tabvn.val, ctab)) {
-            log.debug({"<M> Could not mark tab as open":ctab, tabvn});
+            log.debug({"Could not mark tab as open":ctab, tabvn});
             me.eraseTab(tabvn);
             return false;
         }
@@ -1232,7 +1232,32 @@ me.react_onTabMoved = function(cwinid, ctabid, cidx_from, cidx_to) {
 /// @param  cwinid      The Chrome window ID of the window the tab is being removed from
 /// @return True on success; a string error message on failure
 me.react_onTabRemoved = function react_onTabRemoved(ctabid, cwinid) {
-    return "not yet implemented";
+    let winvn = me.vn_by_cid(cwinid, K.IT_WIN);
+    if(!winvn.val) return `Window ${cwinid} not found`;
+
+    let tabvn = me.vn_by_cid(ctabid, K.IT_TAB);
+
+    // See if it's a tab we have already marked as removed.  If so,
+    // whichever code marked it is responsible, and we're off the hook.
+    if(!tabvn.val || tabvn.val.tab_id === K.NONE) {
+        log.debug({"Bailing, but it's probably OK - no tab val for ctab":ctabid, tabvn, cwinid});
+        return true;
+    }
+
+    // ...but if we have not marked it as removed and a node is missing,
+    // something has gone wrong.
+    if(!tabvn.node_id) {
+        return `Bailing - no node_id for ctab ${ctabid} in window ${cwinid} (${JSON.serialize(tabvn)}`;
+    }
+
+    // Remove the tab
+    log.debug({'Removing value and entry for ctab':ctabid, tabvn, cwinid});
+    me.eraseTab(tabvn, 'chrome');
+
+    // Refresh the tab.index values for the remaining tabs
+    me.updateTabIndexValues(winvn.node_id);
+
+    return true;
 } // }}}2
 
 // onTabDetached() {{{2
