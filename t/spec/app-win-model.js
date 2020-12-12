@@ -657,28 +657,53 @@ describe('app/win/model', function() {
             } //foreach testcase
         }); // }}}2
 
-        // TODO react_onTabRemoved()
+        /// Testcases for onTabRemoved and onTabDetached.  They are the same
+        /// because those functions have the same effect on the window
+        /// the tab is in.  Each testcase is:
+        /// [original window state, tab removed, final window state]
+        const testcasesForRemoveOrDetach = [
+            ['A', 'a', ''],
+            ['AB', 'b', 'A'],
+            ['AB', 'a', 'B'],
+            ['xAB', 'a', 'xB'],
+            ['ABx', 'a', 'Bx'],
+            ['xAB', 'b', 'xA'],
+            ['ABx', 'b', 'Ax'],
+            ['xABy', 'a', 'xBy'],
+            ['wABx', 'a', 'wBx'],
+            ['xABy', 'b', 'xAy'],
+            ['wABx', 'b', 'wAx'],
+            ['aBcDe', 'b', 'acDe'],
+            ['aBcDe', 'd', 'aBce'],
+        ];
+
+        describe('onTabRemoved',()=>{   // {{{2
+
+            for(const thetest of testcasesForRemoveOrDetach) {
+                let testname = `${thetest[0]} - ${thetest[1]} => ${thetest[2] || '(no tabs)'}`;
+                it(testname, ()=>{
+                    // Mock
+                    let winvn = makeFakeWindow(thetest[0]);
+                    let tabvn = findTabInWindow(winvn, thetest[1]);
+                    const tab_node_id = tabvn.node_id;
+
+                    // Do the work
+                    const ok =
+                        M.react_onTabRemoved(tabvn.val.tab_id, winvn.val.win_id);
+                    expect(ok).toBe(true);
+
+                    // Check it
+                    expect(D.tabs.by_node_id(tab_node_id)).toBeFalsy();
+                    expect(T.treeobj.get_node(tab_node_id)).toBeFalsy();
+                    expectWindowState(winvn, thetest[2]);
+
+                    expect(M.eraseWin(winvn)).toBeTruthy();
+                });
+            } //foreach testcase
+        }); // }}}2
 
         describe('onTabDetached',()=>{   // {{{2
-            // Each testcase:
-            // [original window state, tab that detaches, final window state]
-            let testcases = [
-                ['A', 'a', ''],
-                ['AB', 'b', 'A'],
-                ['AB', 'a', 'B'],
-                ['xAB', 'a', 'xB'],
-                ['ABx', 'a', 'Bx'],
-                ['xAB', 'b', 'xA'],
-                ['ABx', 'b', 'Ax'],
-                ['xABy', 'a', 'xBy'],
-                ['wABx', 'a', 'wBx'],
-                ['xABy', 'b', 'xAy'],
-                ['wABx', 'b', 'wAx'],
-                ['aBcDe', 'b', 'acDe'],
-                ['aBcDe', 'd', 'aBce'],
-            ];
-
-            for(const thetest of testcases) {
+            for(const thetest of testcasesForRemoveOrDetach) {
                 let testname = `${thetest[0]} - ${thetest[1]} => ${thetest[2] || '(no tabs)'}`;
                 it(testname, ()=>{
                     // Mock

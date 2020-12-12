@@ -1223,7 +1223,17 @@ me.react_onTabMoved = function(cwinid, ctabid, cidx_from, cidx_to) {
 
 }; //react_onTabMoved() }}}2
 
-// TODO react_onTabRemoved()
+// onTabRemoved() {{{2
+
+/// Remove a tab from a window in the tree.
+/// This implements the design decisions in spec/app-win-model.js for onTabRemoved().
+///
+/// @param  ctabid      The tab's Chrome tab ID
+/// @param  cwinid      The Chrome window ID of the window the tab is being removed from
+/// @return True on success; a string error message on failure
+me.react_onTabRemoved = function react_onTabRemoved(ctabid, cwinid) {
+    return "not yet implemented";
+} // }}}2
 
 // onTabDetached() {{{2
 

@@ -2814,12 +2814,9 @@ function onTabRemoved(tabid, removeinfo)
         M.eraseTab(tab_node, 'chrome');
     }
 
-    log.debug({'Updating tab index values after removing ctab':tabid,window_node_id,removeinfo});
 
     // Refresh the tab.index values for the remaining tabs
     M.updateTabIndexValues(window_node_id);
-
-    log.debug({'Tab index values updated after removing ctab':tabid,window_node_id,removeinfo});
 
     saveTree();
 } //onTabRemoved
