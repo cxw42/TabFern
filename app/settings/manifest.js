@@ -484,16 +484,11 @@ order within each category.`
 setting_definitions.push(
         {
             "tab": future_i18n("What's new?"),
-            "group": `Version 0.2.2${brplain('2020-xx-xx')}`,
+            "group": `Version 0.3.0${brplain('2020-xx-xx')}`,
             'group_html':true,
             "type": "description",
             "text": (
-`<ul>
-<li>Fixed a regression in the settings: it is now possible to set the
-window action-button order again.  ${issue(208)}</li>
-<li>When running a development version of TF, the commit hash will be
-listed in the title bar.  This will make it easier to reference the
-commit in bug reports.  ${issue(210)}</li>` +
+`<ul>` +
 (!S.ISSUE35 ? '' :
 `<li class="gold-star">Opening one tab at a time!  Yes, the wait is over!  ${issue(35)}
 <ul>
@@ -507,7 +502,18 @@ commit in bug reports.  ${issue(210)}</li>` +
 <p>Please note that if Chrome crashes while you have only some tabs open, the
 recovered window will show up in TabFern as a separate, unsaved window
 (related to ${issue(41, true)}).</p>
-</li></ul>`) +
+</li></ul>
+`) +
+`
+<li>New option to use Chrome or DuckDuckGo as a favicon source.  ${issue(196)}</li>
+<li>Show in the tree favicons of pages created by other Chrome extensions.  ${issue(202)}</li>
+<li>Fixed a regression in the settings: it is now possible to set the
+    window action-button order again.  ${issue(208)}</li>
+<li>When running a development version of TF, the commit hash will be
+    listed in the title bar.  This will make it easier to reference the
+    commit in bug reports.  ${issue(210)}</li>
+<li>Fix broken image links in README.md.  Thanks, @bluikko!  ${issue(224)}</li>
+` +
 '</ul>'
             ),
 
