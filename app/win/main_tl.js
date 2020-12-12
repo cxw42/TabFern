@@ -2622,97 +2622,19 @@ var onTabCreated = (function(){     // search key: function onTabCreated()
     return on_tab_created_inner;
 })(); //onTabCreated()
 
-function onTabUpdated(tabid, changeinfo, ctab)
+function onTabUpdated(ctabid, changeinfo, ctab)
 {
-    log.info({'Tab updated': tabid, 'Index': ctab.index, changeinfo, ctab});
+    log.info({'Tab updated': ctabid, 'Index': ctab.index, changeinfo, ctab});
 
-    let dirty = false;
-    let should_refresh_label = false;
-    let should_refresh_tooltip = false;
-    let should_refresh_icon = false;
+    const errmsg = M.react_onTabUpdated(ctabid, changeinfo, ctab);
 
-    let tab_node_val = D.tabs.by_tab_id(tabid);
-    if(!tab_node_val) return;
-    let tab_node_id = tab_node_val.node_id;
-
-    let node = T.treeobj.get_node(tab_node_id);
-    tab_node_val.isOpen = true;     //lest there be any doubt
-
-    log.debug({"   Details for updated ctab":tabid,tab_node_val,node});
-
-    // Caution: changeinfo doesn't always have all the changed information.
-    // Therefore, we check changeinfo and ctab.
-
-    // TODO refactor the following into a separate routine that can be
-    // used to update closed or open tabs' tree items.  Maybe move it
-    // to model.js as well.  This will reduce code duplication, e.g., in
-    // actionURLSubstitute.
-
-    // URL
-    let new_raw_url = changeinfo.url || ctab.url || ctab.pendingUrl || 'about:blank';
-    if(new_raw_url !== tab_node_val.raw_url) {
-        dirty = true;
-        should_refresh_tooltip = true;
-            // TODO check the config - it may not be necessary to update
-            // the tooltip since the URL might be in the tooltip
-        tab_node_val.raw_url = new_raw_url;
-        M.updateOrderedURLHash(node.parent);
-            // When the URL changes, the hash changes, too.
+    if(typeof(errmsg) === 'string') {
+        log.warn(`Could not update ${ctabid} per ${JSON.stringify(changeinfo)} / ${JSON.stringify(ctab)}: ${errmsg}`);
+        return;
     }
 
-    // pinned
-    let new_pinned = null;
-
-    if('pinned' in changeinfo) {
-        new_pinned = changeinfo.pinned;
-    } else if('pinned' in ctab) {
-        new_pinned = ctab.pinned;
-    }
-
-    if( (new_pinned !== null) && (tab_node_val.isPinned !== new_pinned) ) {
-        dirty = true;
-        should_refresh_label = true;
-        tab_node_val.isPinned = new_pinned;
-    }
-
-    // audible
-    let new_audible = null;
-
-    if('audible' in changeinfo) {
-        new_audible = changeinfo.audible;
-    } else if('audible' in ctab) {
-        new_audible = ctab.audible;
-    }
-
-    if( (new_audible !== null) && (tab_node_val.isAudible !== new_audible) ) {
-        dirty = true;
-        should_refresh_label = true;
-        tab_node_val.isAudible = new_audible;
-    }
-
-    // title
-    let new_raw_title = changeinfo.title || ctab.title || _T('labelBlankTabTitle');
-    if(new_raw_title !== tab_node_val.raw_title) {
-        dirty = true;
-        should_refresh_label = true;
-        should_refresh_tooltip = true;
-
-        tab_node_val.raw_title = new_raw_title;
-    }
-
-    // favicon
-    let new_raw_favicon_url = changeinfo.favIconUrl || ctab.favIconUrl || null;
-    if(new_raw_favicon_url !== tab_node_val.raw_favicon_url) {
-        dirty = true;
-        should_refresh_icon = true;
-        tab_node_val.raw_favicon_url = new_raw_favicon_url;
-    }
-
-    // Update the model
-    M.refresh(tab_node_val, { icon: should_refresh_icon,
-            label: should_refresh_label, tooltip: should_refresh_tooltip });
-
-    if(dirty) {
+    if(errmsg.dirty) {  // react_onTabUpdated returns {dirty} on success.
+                        // TODO clean this up - #232
         saveTree();
     }
 
