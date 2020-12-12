@@ -375,7 +375,7 @@ describe('app/win/model', function() {
                     M.markTabAsOpen(tab_vn.val,
                         {   // Fake ctab
                             id: next_tab_id++,
-                            windowId: win_vn.val.id,
+                            windowId: win_vn.val.win_id,
                             index: tab_index++,
                             url: 'about:blank',
                             title: tab_vn.val.raw_title,
