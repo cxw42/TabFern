@@ -37,6 +37,7 @@
     /// Design decisions:
     /// - No fields named `parent` so I can distinguish jstree node
     ///     records from multidex values.
+    /// - No fields named `id` --- those exist in ctab and cwin records
     /// - All types of records have `raw_title` and `isOpen` fields.
     module.tabs = multidex(
         K.IT_TAB, //type

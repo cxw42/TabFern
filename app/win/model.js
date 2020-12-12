@@ -1313,12 +1313,17 @@ me.react_onTabAttached = function react_onTabAttached(ctabid, cwinid, cidx) {
 /// Replace a tab in the tree based on its new Chrome tab ID
 /// This implements the design decisions in spec/app-win-model.js for onTabReplaced().
 ///
-/// @param  ctabid      The tab's Chrome tab ID
-/// @param  cwinid      The Chrome window ID of the window the tab is attaching to
-/// @param  cidx        The Chrome tab index where the tab is attaching
+/// @param  oldid       The Chrome tab ID of the old tab
+/// @param  newid       The Chrome tab ID of the new tab
 /// @return True on success; a string error message on failure
-me.react_onTabReplaced = function react_onTabReplaced(ctabid, cwinid, cidx) {
-    return "not yet implemented";
+me.react_onTabReplaced = function react_onTabReplaced(oldid, newid) {
+    let tab_val = D.tabs.by_tab_id(oldid);
+    if(!tab_val) {
+        return `onReplaced: No tab found for removed tab ID ${oldid}`;
+    }
+
+    D.tabs.change_key(tab_val, 'tab_id', newid);
+    return true;
 } // }}}2
 
 // }}}1
