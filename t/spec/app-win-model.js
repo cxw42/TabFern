@@ -625,9 +625,11 @@ describe('app/win/model', function() {
                         let obj = {changeinfo: {}, newctab: {}};
                         obj[structname][fieldname] = newval;
 
-                        const ok =
+                        const retval =
                             M.react_onTabUpdated(tabvn.val.tab_id, obj.changeinfo, obj.newctab);
-                        expect(ok).toBe(true);
+                        expect(typeof retval).toBe('object');
+                        expect(retval).toBeTruthy();
+                        expect('dirty' in retval).toBeTruthy();
 
                         // Check it
                         expectWindowState(winvn, (fieldname === 'title') ? 'B': 'A');
