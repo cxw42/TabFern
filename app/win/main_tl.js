@@ -2624,12 +2624,12 @@ var onTabCreated = (function(){     // search key: function onTabCreated()
 
 function onTabUpdated(tabid, changeinfo, ctab)
 {
+    log.info({'Tab updated': tabid, 'Index': ctab.index, changeinfo, ctab});
+
     let dirty = false;
     let should_refresh_label = false;
     let should_refresh_tooltip = false;
     let should_refresh_icon = false;
-
-    log.info({'Tab updated': tabid, 'Index': ctab.index, changeinfo, ctab});
 
     let tab_node_val = D.tabs.by_tab_id(tabid);
     if(!tab_node_val) return;
