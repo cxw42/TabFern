@@ -2836,29 +2836,24 @@ function onTabRemoved(tabid, removeinfo)
 } //onTabRemoved
 
 /// When tabs detach, move them to the holding pen.
+/// If the detached tab is the last open tab in a window, Chrome will
+/// fire onWinRemoved.  Therefore, this function does not have to touch
+/// the window.
 function onTabDetached(tabid, detachinfo)
 {
-    // Don't save here?  Do we get a WindowCreated if the tab is not
-    // attached to another window?
+    // Don't save here --- we get a WindowCreated if the tab is dragged into
+    // its own new window rather than into an existing window
     log.info({'Tab detached': tabid, detachinfo});
 
     T.treeobj.clear_flags();  //just to be on the safe side
 
-    let tab_val = D.tabs.by_tab_id(tabid);
+    let retval;
+    retval = M.react_onTabDetached(tabid, detachinfo.oldWindowId);
 
-    if(!tab_val)    // An express failure message - this would be bad
-        throw new Error("Unknown tab to detach???? "+tabid+' '+detachinfo.toString());
-
-    let old_win_val = D.windows.by_win_id(detachinfo.oldWindowId);
-    if(!old_win_val)    // ditto
-        throw new Error("Unknown window detaching from???? "+detachinfo.oldWindowId+' '+detachinfo.toString());
-
-    T.treeobj.because('chrome','move_node', tab_val.node_id, T.holding_node_id);
-    tab_val.win_id = K.NONE;
-    tab_val.index = K.NONE;
-
-    M.updateTabIndexValues(old_win_val.node_id);
-
+    if(typeof(retval) === 'string') {
+        // report error
+        throw new Error(`Could not detach ${tabid} per ${JSON.stringify(detachinfo)}: ${retval}`);
+    }
 } //onTabDetached
 
 /// When tabs attach, move them out of the holding pen.
