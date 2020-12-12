@@ -2851,7 +2851,7 @@ function onTabDetached(tabid, detachinfo)
 
     let old_win_val = D.windows.by_win_id(detachinfo.oldWindowId);
     if(!old_win_val)    // ditto
-        throw new Error("Unknown window detaching from???? "+attachinfo.newWindowId+' '+attachinfo.toString());
+        throw new Error("Unknown window detaching from???? "+detachinfo.oldWindowId+' '+detachinfo.toString());
 
     T.treeobj.because('chrome','move_node', tab_val.node_id, T.holding_node_id);
     tab_val.win_id = K.NONE;
