@@ -216,7 +216,7 @@ describe('app/win/model', function() {
                 expect($node.hasClass('tfs-open')).toBe(true);
                 expect(this.tab_val.tab_id).toBe(ctab.id);
                 expect(this.tab_val.isOpen).toBe(true);
-                expect($node.find('a').first().text()).toMatch(/^Jasmine\b/);
+                expect($node.find('a').first().text()).toMatch(/^Tests\b/);
 
                 let parent_val = D.windows.by_win_id(ctab.windowId);
                 expect(parent_val).toBeTruthy();
@@ -249,7 +249,7 @@ describe('app/win/model', function() {
             since('index should be gone').expect(this.tab_val.index).toBe(K.NONE);
             since('tab should be gone').expect(this.tab_val.tab).toBeFalsy();
 
-            expect($node.find('a').first().text()).toMatch(/^Jasmine\b/);
+            expect($node.find('a').first().text()).toMatch(/^Tests\b/);
         });
 
         it('can mark a window as closed',()=>{
@@ -313,6 +313,7 @@ describe('app/win/model', function() {
 
         // Jasmine setup {{{2
 
+        /*
         beforeAll(()=>{     // Register a custom matcher to test truth value
             jasmine.addMatchers({
                 toBeEqv: function(util, customEqualityTesters) {
@@ -334,6 +335,7 @@ describe('app/win/model', function() {
                 } //toBeEqv
             }); //addMatchers call
         }); //beforeAll call
+        */
 
         // }}}2
         // Helper functions {{{2
