@@ -646,7 +646,7 @@ describe('app/win/model', function() {
 
                     // Do the work
                     const didmove =
-                        M.react_onTabMoved(win_vn, tab_vn, fromidx, toidx);
+                        M.react_onTabMoved(win_vn.val.win_id, tab_vn.val.tab_id, fromidx, toidx);
                     log.debug({testname:didmove, testidx});  // bring those into scope
                     expect(didmove).toBeTruthy();
 

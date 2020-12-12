@@ -43,16 +43,14 @@ me.VN_NONE = {val: null, node_id: ''};
 // Querying the model ////////////////////////////////////////////// {{{1
 
 /// Get a {val, node_id} pair (vn) from one of those (vorny).
-/// @param val_or_nodey {mixed} If a string, the node ID of the
-///                             item; otherwise, the details
-///                             record for the item, the jstree node
-///                             record for the node, or a vn for the node.
-/// @param item_type {mixed=} If provided, the type of the item.
-///             Otherwise, all types will be checked.
-/// @return {Object} {val, node_id}.    `val` is falsy if the
-///                                     given vorny was not found.
-///         If #item_type was specified and the given item wasn't
-///         of that type, also returns falsy.
+/// @param val_or_nodey {mixed}
+///     If a string, the node ID of the item; otherwise, the details record for
+///     the item, the jstree node record for the node, or a vn for the node.
+/// @param item_type {optional mixed} If provided, the type of the item.
+///     Otherwise, all types will be checked.
+/// @return {Object} {val, node_id}.
+///     `val` is falsy if the given vorny was not found, or if #item_type was
+///     specified and the given item wasn't of that type.
 me.vn_by_vorny = function(val_or_nodey, item_type) {
     if(!val_or_nodey) return me.VN_NONE;
 
@@ -84,8 +82,11 @@ me.vn_by_vorny = function(val_or_nodey, item_type) {
             val_or_nodey.node_id) {                 // We got a vn as input
         ({val, node_id} = val_or_nodey);    // parens reqd.
 
-    } else {                                        // Unknown
-        return me.VN_NONE;
+    } else {                                        // Unknown --- try nodey
+        const node = T.treeobj.get_node(val_or_nodey);
+        if(!node) return me.VN_NONE;
+        node_id = node.id;
+        val = D.val_by_node_id(node_id);
     }
 
     if(item_type && (val.ty !== item_type)) {
@@ -93,6 +94,18 @@ me.vn_by_vorny = function(val_or_nodey, item_type) {
     }
     return {val, node_id};
 }; //vn_by_vorny()
+
+/// Get a {val, node_id} pair (vn) from its Chrome ID
+/// @param cid {integer}        The Chrome ID of the item
+/// @param item_type {mixed}    The type of the item.
+/// @return {Object} {val, node_id}.
+///     `val` is falsy if the given vorny was not found, or if #item_type was
+///     specified and the given item wasn't of that type.
+me.vn_by_cid = function vn_by_cid(cid, item_type) {
+    if(!item_type) return me.VN_NONE;
+    let val = D.val_by_cid(cid, item_type);
+    return me.vn_by_vorny(val);
+}
 
 /// Determine whether a model has given subtype(s).
 /// @param vorny {mixed} The item
@@ -1140,23 +1153,24 @@ me.react_onTabCreated = function(win_vorny, ctab) {
 /// Move a tab in the tree based on its new Chrome index.
 /// This implements the design decisions in spec/app-win-model.js for onTabMoved().
 ///
-/// @param  win_vorny   The window the tab is moving in
-/// @param  tab_vorny   The tab that is moving
+/// @param  cwinid      The window the tab is moving in
+/// @param  ctabid      The tab that is moving
 /// @param  cidx_from   The Chrome old tabindex, >=0
 /// @param  cidx_to     The Chrome new tabindex, >=0
-/// @return True on success; false on failure
-me.react_onTabMoved = function(win_vorny, tab_vorny, cidx_from, cidx_to) {
+/// @return ===true on success; a string error message on failure
+me.react_onTabMoved = function(cwinid, ctabid, cidx_from, cidx_to) {
     if(cidx_from == cidx_to) {
         log.info("Nothing to do");
         return true;
     }
 
-    let tabvn = me.vn_by_vorny(tab_vorny, K.IT_TAB);
-    if(!tabvn) return false;
+    let winvn = me.vn_by_cid(cwinid, K.IT_WIN);
+    if(!winvn.val) return `Window ${cwinid} not found`;
 
-    let win = me.vn_by_vorny(win_vorny, K.IT_WIN);
-    if(!win) return false;
-    let win_node = T.treeobj.get_node(win.node_id);
+    let tabvn = me.vn_by_cid(ctabid, K.IT_TAB);
+    if(!tabvn.val) return `Tab ${ctabid} not found`;
+
+    let win_node = T.treeobj.get_node(winvn.node_id);
     if(!win_node) return false;
     let moving_right = (cidx_to>cidx_from);
     let tidx_from, tidx_to;
@@ -1203,7 +1217,7 @@ me.react_onTabMoved = function(win_vorny, tab_vorny, cidx_from, cidx_to) {
 
     // Update the indices of all the tabs in this window.  This will update
     // the old tab and the new tab.
-    me.updateTabIndexValues(win.node_id);
+    me.updateTabIndexValues(winvn.node_id);
 
     return true;
 

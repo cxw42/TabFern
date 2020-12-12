@@ -34,6 +34,8 @@
     /// The module we are creating
     let module = {};
 
+    // == Data structures ====================================================
+
     // Design decisions for both module.tabs and module.windows:
     // - No fields named `parent` so I can distinguish jstree node
     //   records from multidex values.
@@ -95,6 +97,8 @@
                             // something done by the browser.
         ]);
 
+    // == Functions ==========================================================
+
     /// Find a node's value in the model, regardless of type.
     /// @param node_id {string} The node ID.  This has to be a string, because
     ///                         this module does not depend on item_tree.
@@ -113,7 +117,33 @@
         if(val) return val;
 
         return false;   //not found
-    } //val_by_node_id
+    }; //val_by_node_id
+
+    /// Find a tab in the model by its Chrome idx
+    module.val_by_ctabid = function val_by_ctabid(ctabid)
+    {
+        return module.tabs.by_tab_id(ctabid);
+    };
+
+    /// Find a window in the model by its Chrome idx
+    module.val_by_cwinid = function val_by_cwinid(cwinid)
+    {
+        return module.windows.by_win_id(cwinid);
+    };
+
+    /// The above functions, indexed by ty
+    const finder_functions = {
+        [K.IT_TAB]: module.val_by_ctabid,
+        [K.IT_WIN]: module.val_by_cwinid,
+    };
+
+    /// Find an item in the model by its Chrome ID, indirected by type.
+    module.val_by_cid = function val_by_cid(cid, ty)
+    {
+        const finder = finder_functions[ty];
+        if(!finder) return false;
+        return finder(cid);
+    };
 
     return module;
 }));
