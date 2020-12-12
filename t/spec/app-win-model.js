@@ -661,15 +661,25 @@ describe('app/win/model', function() {
 
         describe('onTabDetached',()=>{   // {{{2
             // Each testcase:
-            // [original window state, tab that detaches,
-            //  (final window state, or '' if the window is closed)]
+            // [original window state, tab that detaches, final window state]
             let testcases = [
                 ['A', 'a', ''],
                 ['AB', 'b', 'A'],
+                ['AB', 'a', 'B'],
+                ['xAB', 'a', 'xB'],
+                ['ABx', 'a', 'Bx'],
+                ['xAB', 'b', 'xA'],
+                ['ABx', 'b', 'Ax'],
+                ['xABy', 'a', 'xBy'],
+                ['wABx', 'a', 'wBx'],
+                ['xABy', 'b', 'xAy'],
+                ['wABx', 'b', 'wAx'],
+                ['aBcDe', 'b', 'acDe'],
+                ['aBcDe', 'd', 'aBce'],
             ];
 
             for(const thetest of testcases) {
-                let testname = `${thetest[0]} - ${thetest[1]} => ${thetest[2] || '(window closed)'}`;
+                let testname = `${thetest[0]} - ${thetest[1]} => ${thetest[2] || '(no tabs)'}`;
                 it(testname, ()=>{
                     // Mock
                     let winvn = makeFakeWindow(thetest[0]);
@@ -681,10 +691,10 @@ describe('app/win/model', function() {
                     expect(ok).toBe(true);
 
                     // Check it
+                    expect(tabvn.val.win_id).toBe(K.NONE);
+                    expect(tabvn.val.index).toBe(K.NONE);
                     expectWindowState(winvn, thetest[2]);
-                    if(thetest[2] !== '') {
-                        expect(M.eraseWin(winvn)).toBeTruthy();
-                    }
+                    expect(M.eraseWin(winvn)).toBeTruthy();
                 });
             } //foreach testcase
         }); // }}}2
@@ -737,6 +747,8 @@ describe('app/win/model', function() {
                     expect(ok).toBe(true);
 
                     // Check it
+                    expect(tabvn.val.win_id).toBe(winvn.val.win_id);
+                    expect(tabvn.val.index).toBe(ctab.index);
                     expectWindowState(winvn, thetest[3]);
                     expect(M.eraseWin(winvn)).toBeTruthy();
                 });

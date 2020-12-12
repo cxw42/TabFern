@@ -1220,7 +1220,20 @@ me.react_onTabMoved = function(win_vorny, tab_vorny, cidx_from, cidx_to) {
 /// @param  cwinid      The Chrome window ID of the window the tab is detaching from
 /// @return True on success; a string error message on failure
 me.react_onTabDetached = function react_onTabDetached(ctabid, cwinid) {
-    return "not yet implemented";
+    let tab_val = D.tabs.by_tab_id(ctabid);
+    if(!tab_val)    // An express failure message - this would be bad
+        return `Unknown tab to detach???? tab ${ctabid} from window ${cwinid}`;
+
+    let old_win_val = D.windows.by_win_id(cwinid);
+    if(!old_win_val)    // ditto
+        return `Unknown win to detach from???? tab ${ctabid} from window ${cwinid}`;
+
+    T.treeobj.because('chrome','move_node', tab_val.node_id, T.holding_node_id);
+    tab_val.win_id = K.NONE;
+    tab_val.index = K.NONE;
+
+    me.updateTabIndexValues(old_win_val.node_id);
+    return true;
 }
 // }}}2
 
