@@ -702,6 +702,36 @@ describe('app/win/model', function() {
                     expect(M.eraseWin(winvn)).toBeTruthy();
                 });
             } //foreach testcase
+
+            // Additional test for onTabRemoved: check that it properly
+            // ignores already-deleted tabs.
+            it('ignores already-deleted tabs', ()=>{
+                // Mock
+                let winvn = makeFakeWindow('ABC');
+                let tabvn = findTabInWindow(winvn, 'b');
+                const tab_node_id = tabvn.node_id;
+                const ctabid = tabvn.val.tab_id;
+
+                // Disconnect the tab.  This is copied from
+                // main_tl:move_open_tab_in_window().
+                D.tabs.change_key(tabvn.val, 'tab_id', K.NONE);
+                tabvn.tab = undefined;
+                tabvn.win_id = K.NONE;
+                tabvn.index = K.NONE;
+                tabvn.isOpen = false;
+
+                // Do the work
+                const ok =
+                    M.react_onTabRemoved(ctabid, winvn.val.win_id);
+                expect(ok).toBe(true);
+
+                // Check it
+                expect(D.tabs.by_tab_id(ctabid)).toBeFalsy();
+                expect(T.treeobj.get_node(tab_node_id)).toBeTruthy();
+                expectWindowState(winvn, 'ABC');    // because we haven't actually moved it
+
+                expect(M.eraseWin(winvn)).toBeTruthy();
+            });
         }); // }}}2
 
         describe('onTabDetached',()=>{   // {{{2
