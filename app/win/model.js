@@ -1142,8 +1142,8 @@ me.react_onTabCreated = function(win_vorny, ctab) {
 ///
 /// @param  win_vorny   The window the tab is moving in
 /// @param  tab_vorny   The tab that is moving
-/// @param  cidx_from   The Chrome old tabindex
-/// @param  cidx_to     The Chrome new tabindex
+/// @param  cidx_from   The Chrome old tabindex, >=0
+/// @param  cidx_to     The Chrome new tabindex, >=0
 /// @return True on success; false on failure
 me.react_onTabMoved = function(win_vorny, tab_vorny, cidx_from, cidx_to) {
     if(cidx_from == cidx_to) {
@@ -1172,7 +1172,7 @@ me.react_onTabMoved = function(win_vorny, tab_vorny, cidx_from, cidx_to) {
     log.info({"Mapping in":orig_tidxes, "Tab moved from index":cidx_from, "To":cidx_to});
 
     // From
-    if(cidx_from >= orig_tidxes.length) {
+    if(orig_tidxes.length === 0 || cidx_from >= orig_tidxes.length) {
         return false;
     }
     tidx_from = orig_tidxes[cidx_from];
@@ -1187,7 +1187,7 @@ me.react_onTabMoved = function(win_vorny, tab_vorny, cidx_from, cidx_to) {
     // rather than _before_ it.
 
     if(cidx_to == orig_tidxes.length - 1) {     // Must be moving right
-        // TODO check for orig_tidxes.length === 0?
+        // We already checked for orig_tidxes.length === 0 above so don't need to recheck
         tidx_to = orig_tidxes[orig_tidxes.length - 1] + 1;
             // +1 => just after the last open tab
 
@@ -1275,8 +1275,8 @@ me.react_onTabAttached = function react_onTabAttached(ctabid, cwinid, cidx) {
 
     // Pick the cidx from that list
     if(cidx >= orig_tidxes.length) {           // New tab off the end
-        // TODO check for orig_tidxes.length === 0?
-        treeidx = 1 + orig_tidxes[orig_tidxes.length-1];
+        treeidx = (orig_tidxes.length === 0 ? 0 :
+            (1 + orig_tidxes[orig_tidxes.length-1]));
 
     } else if(cidx>0) {                     // Tab that exists, not the 1st
         // Group it to the left rather than the right if there's a gap

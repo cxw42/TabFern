@@ -2848,7 +2848,7 @@ function onTabDetached(tabid, detachinfo)
     T.treeobj.clear_flags();  //just to be on the safe side
 
     let retval;
-    retval = M.react_onTabDetached(tabid, detachinfo.oldWindowID);
+    retval = M.react_onTabDetached(tabid, detachinfo.oldWindowId);
 
     if(typeof(retval) === 'string') {
         // report error
