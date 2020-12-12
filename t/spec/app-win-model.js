@@ -755,9 +755,49 @@ describe('app/win/model', function() {
             } //foreach testcase
         }); // }}}2
 
-    }); //index mapping
+        describe('onTabReplaced',()=>{   // {{{2
+            // Each testcase:
+            // [window state, tab that is being replaced]
+            let testcases = [
+                ['A', 'a'],
+                ['AB', 'b'],
+                ['xAB', 'a'],
+                ['xAB', 'b'],
+                ['ABx', 'a'],
+                ['ABx', 'b'],
+                ['xABy', 'a'],
+                ['xABy', 'b'],
+                ['aBcDe', 'b'],
+                ['aBcDe', 'd'],
+            ];
 
-    // }}}1
+            for(const thetest of testcases) {
+                let testname = `${thetest[0]}: replace ${thetest[1]}`;
+                it(testname, ()=>{
+                    // Mock
+                    let winvn = makeFakeWindow(thetest[0]);
+                    let tabvn = findTabInWindow(winvn, thetest[1]);
+                    const oldidx = tabvn.val.index;
+                    const newctabid = 31337;
+
+                    // Do the work
+                    const ok =
+                        M.react_onTabReplaced(tabvn.val.tab_id, newctabid);
+                    expect(ok).toBe(true);
+
+                    // Check it
+                    expect(tabvn.val.win_id).toBe(winvn.val.win_id);
+                    expect(tabvn.val.tab_id).toBe(newctabid);
+                    expect(tabvn.val.index).toBe(oldidx);
+                    expectWindowState(winvn, thetest[0]);
+
+                    expect(M.eraseWin(winvn)).toBeTruthy();
+                });
+            } //foreach testcase
+        }); // }}}2
+
+    }); //reacting to Chrome events }}}1
+
     // Teardown //////////////////////////////////////////////////////// {{{1
     afterAll(()=>{
         this.$div.remove();
