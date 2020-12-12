@@ -1308,6 +1308,19 @@ me.react_onTabAttached = function react_onTabAttached(ctabid, cwinid, cidx) {
 
 // }}}2
 
+// onTabReplaced() {{{2
+
+/// Replace a tab in the tree based on its new Chrome tab ID
+/// This implements the design decisions in spec/app-win-model.js for onTabReplaced().
+///
+/// @param  ctabid      The tab's Chrome tab ID
+/// @param  cwinid      The Chrome window ID of the window the tab is attaching to
+/// @param  cidx        The Chrome tab index where the tab is attaching
+/// @return True on success; a string error message on failure
+me.react_onTabReplaced = function react_onTabReplaced(ctabid, cwinid, cidx) {
+    return "not yet implemented";
+} // }}}2
+
 // }}}1
 
 module.exports = me;
