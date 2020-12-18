@@ -126,6 +126,10 @@ function loadSettingsFromObject(obj) {
             continue;   // not an error
         }
 
+        if(key === S.SETTINGS_LOADED_OK) {  // Not a real setting
+            continue;
+        }
+
         // Get the value
         let val;
         try {
