@@ -502,7 +502,7 @@ setting_definitions.push(
 <p>Please note that if Chrome crashes while you have only some tabs open, the
 recovered window will show up in TabFern as a separate, unsaved window
 (related to ${issue(41, true)}).</p>
-</li></ul>
+</li>
 `) +
 `
 <li>New option to use Chrome or DuckDuckGo as a favicon source.  ${issue(196)}</li>
@@ -513,6 +513,7 @@ recovered window will show up in TabFern as a separate, unsaved window
     listed in the title bar.  This will make it easier to reference the
     commit in bug reports.  ${issue(210)}</li>
 <li>Fix broken image links in README.md.  Thanks, @bluikko!  ${issue(224)}</li>
+<li>Misc: ${issue(233,true)}</li>
 ` +
 '</ul>'
             ),
