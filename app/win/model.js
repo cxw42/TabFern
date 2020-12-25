@@ -1175,7 +1175,11 @@ me.react_onTabUpdated = function(ctabid, changeinfo, newctab) {
     let should_refresh_icon = false;
 
     let tabvn = me.vn_by_cid(ctabid, K.IT_TAB);
-    if(!tabvn.val) return `Tab ${ctabid} not found`;
+    if(!tabvn.val) {
+        // We've probably already closed this tab, so drop this change (#237).
+        log.info(`Ignoring tabUpdated event for unknown tab ${ctabid}`);
+        return {dirty: false};
+    }
 
     let node = T.treeobj.get_node(tabvn.node_id);
     if(!node) return `No node for ID ${tabvn.node_id} (${JSON.stringify(tabvn)})`;
