@@ -514,7 +514,7 @@ recovered window will show up in TabFern as a separate, unsaved window
     listed in the title bar.  This will make it easier to reference the
     commit in bug reports.  ${issue(210)}</li>
 <li>Fix broken image links in README.md.  Thanks, @bluikko!  ${issue(224)}</li>
-<li>Misc: ${issue([233, 236, 237], true)}</li>
+<li>Misc: ${issue([233, 236, 237], true)}; parts of ${issue(240, true)}.</li>
 ` +
 '</ul>'
             ),

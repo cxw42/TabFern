@@ -4004,6 +4004,11 @@ function preLoadInit()
     //Custom skinny-scrollbar color
     CSSC: if(S.getBool(S.SKINNY_SCROLLBARS) && document.styleSheets) {
         let color = S.getString(S.S_SCROLLBAR_COLOR);
+        if(!color) {
+            log.info("No custom color for skinny scrollbars");
+            break CSSC;
+        }
+
         color = Modules.tinycolor(color);
         if(!color.isValid()) {
             log.error({'Invalid custom color for skinny scrollbars':
@@ -4021,10 +4026,10 @@ function preLoadInit()
             // override works and we don't have to remove the existing rule.
             // Note: color.toRgbString() for formatting consistency.
         }
-    }
+    } //CSSC
 
     let url = chrome.runtime.getURL(
-                `/assets/jstree-3.3.4/themes/${S.getThemeName()}/style.css`);
+                `/assets/jstree/themes/${S.getThemeName()}/style.css`);
     let before = document.getElementById('last-stylesheet');
     loadCSS(document, url, before);
 
