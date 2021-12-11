@@ -134,3 +134,20 @@ A good example is [this commit](https://github.com/cxw42/TabFern/commit/3ac0f274
      `type: checkbox` or `type: text`).  See [here](https://github.com/altryne/extensionizr/blob/a6ca3352b1d8b97fa4961209fd050ed7f8bd6e53/ext/src/options_custom/README.md)
      for more documentation of the available options.
    - Edit the values appropriately.
+
+## Notes about dependencies
+
+The following dev dependencies are listed in `package.json` but **not used**
+directly by TF itself.  They are listed to increase the minimum required
+version satisfying an indirect dependency.  If you add such a dependency to
+`package.json`, please also add it here.
+
+- acorn
+- archiver
+- fstream
+- lodash
+- minimist
+- mixin-deep
+- path-parse
+- set-value
+- tar
