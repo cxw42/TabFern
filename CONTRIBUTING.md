@@ -28,7 +28,9 @@ base if at all possible.  Thank you for your understanding!
      found [Think Like a Git](http://think-like-a-git.net/) very helpful.
      Remember that whatever you do on your local copy won't mess up anyone
      else, so you can relax :) .
-1. Install [node.js](https://nodejs.org/).  It comes with `npm`.
+1. Install [node.js](https://nodejs.org/) v10+.
+1. Install [npm](https://docs.npmjs.com/cli/v6) v6+.  It comes with node.js on
+   some systems and is a separate package on others.
 1. At a command line, `npm install -g npx`.
 1. Fork this repo and clone your fork to your local machine.
    * **Update 2021-12-11** The default branch is called `main` (not `master`).
