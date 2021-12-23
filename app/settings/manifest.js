@@ -427,8 +427,8 @@ setting_definitions.push(
 `TabFern is by Chris White (<a href="https://devwrench.wordpress.com">blog</a>,
 <a href="https://github.com/cxw42/">GitHub</a>).  I greatly appreciate
 the following contributors!  If I have accidentally missed you, please let
-me know so I can correct the omission.  All names below are in asciibetical
-order within each category.`
+me know so I can correct the omission.  All names below are in case-insensitive
+alphabetical order within each category.`
         },
 
         {
@@ -485,13 +485,13 @@ order within each category.`
 setting_definitions.push(
         {
             "tab": future_i18n("What's new?"),
-            "group": `Version 0.2.2${brplain('2021-xx-xx')}`,
+            "group": `Version 0.2.2${brplain('2021-12-22')}`,
             'group_html':true,
             "type": "description",
             "text": (
 `<h1>Please back up!</h1>
 <p>The next version of TabFern will introduce tab-at-a-time ${issue(35)}.
-Please back up now just in case of bugs (${ham} ${gt} Backup now)!
+Please back up now (${ham} ${gt} Backup now) just in case of unexpected bugs!
 Remember, TabFern carries <b>no warranty</b>.
 </p>
 <ul>
@@ -519,7 +519,7 @@ recovered window will show up in TabFern as a separate, unsaved window
 `<li>Icons of other extensions should now appear in the TF window.  ${issue(202)}</li>
 <li>Other fixes: ${issue(196,true)}, ${issue(224,true)} (thanks to bluikko),
     ${issue(233,true)}, ${issue(236,true)}, ${issue(237,true)}</li>
-<li>Known issues; ${issue(276,true)}</li>
+<li>Known issues: ${issue(276,true)}</li>
 </ul>`
             ),
 
