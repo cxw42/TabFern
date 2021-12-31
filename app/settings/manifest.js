@@ -427,8 +427,8 @@ setting_definitions.push(
 `TabFern is by Chris White (<a href="https://devwrench.wordpress.com">blog</a>,
 <a href="https://github.com/cxw42/">GitHub</a>).  I greatly appreciate
 the following contributors!  If I have accidentally missed you, please let
-me know so I can correct the omission.  All names below are in asciibetical
-order within each category.`
+me know so I can correct the omission.  All names below are in case-insensitive
+alphabetical order within each category.`
         },
 
         {
@@ -485,7 +485,7 @@ order within each category.`
 setting_definitions.push(
         {
             "tab": future_i18n("What's new?"),
-            "group": `Version 0.3.0${brplain('2020-xx-xx')}`,
+            "group": `Version 0.3.0${brplain('2022-xx-xx')}`,
             'group_html':true,
             "type": "description",
             "text": (
@@ -505,18 +505,32 @@ recovered window will show up in TabFern as a separate, unsaved window
 (related to ${issue(41, true)}).</p>
 </li>
 `) +
-`
-<li>New option to use Chrome or DuckDuckGo as a favicon source.  ${issue(196)}</li>
-<li>Show in the tree favicons of pages created by other Chrome extensions.  ${issue(202)}</li>
-<li>Fixed a regression in the settings: it is now possible to set the
-    window action-button order again.  ${issue(208)}</li>
-<li>When running a development version of TF, the commit hash will be
-    listed in the title bar.  This will make it easier to reference the
-    commit in bug reports.  ${issue(210)}</li>
-<li>Fix broken image links in README.md.  Thanks, @bluikko!  ${issue(224)}</li>
-<li>Misc: ${issue([233, 236, 237], true)}; parts of ${issue(240, true)}.</li>
-` +
 '</ul>'
+            ),
+
+        },
+        {
+            "tab": future_i18n("What's new?"),
+            "group": `Version 0.2.2${brplain('2021-12-22')}`,
+            'group_html':true,
+            "type": "description",
+            "text": (
+`<h4>Please back up!</h4>
+<p>The next version of TabFern will introduce tab-at-a-time ${issue(35)}.
+Please back up now (${ham} ${gt} Backup now) just in case of unexpected bugs!
+Remember, TabFern carries <b>no warranty</b>.
+</p>
+<ul>
+<li>Fixed a regression in the settings: it is now possible to set the
+window action-button order again.  ${issue(208)}</li>
+<li>When running a development version of TF, the commit hash will be
+listed in the title bar.  This will make it easier to reference the
+commit in bug reports.  ${issue(210)}</li>
+<li>Icons of other extensions should now appear in the TF window.  ${issue(202)}</li>
+<li>Other fixes: ${issue(196,true)}, ${issue(224,true)} (thanks to bluikko),
+    ${issue(233,true)}, ${issue(236,true)}, ${issue(237,true)}</li>
+<li>Known issues: ${issue(276,true)}</li>
+</ul>`
             ),
 
         },

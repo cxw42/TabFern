@@ -12,13 +12,12 @@ CC-BY-SA 3.0, or any later version, at the option of the person using
 your contribution.  See [LICENSE.md](LICENSE.md) for the license text
 and more details.
 
-**Update 2019-09-30** Please do not use _any_ code or other content from
+Please do not use _any_ code or other content from
 Stack Overflow or any other Stack Exchange Web site.  Explanation follows.
-I hope to be able to remove this request in the near future!
 
-Stack Exchange is currently going through a
-[relicensing process](https://meta.stackexchange.com/q/333615/274096),
-and has not provided information I need about licenses to Stack Exchange-hosted
+In 2019, Stack Exchange (SE) went through a
+[relicensing process](https://meta.stackexchange.com/q/333615/274096).
+SE has not provided information I need about licenses to SE-hosted
 content.  I would like to avoid introducing any ambiguity into the TabFern code
 base if at all possible.  Thank you for your understanding!
 
@@ -29,18 +28,21 @@ base if at all possible.  Thank you for your understanding!
      found [Think Like a Git](http://think-like-a-git.net/) very helpful.
      Remember that whatever you do on your local copy won't mess up anyone
      else, so you can relax :) .
-1. Install [node.js](https://nodejs.org/).  It comes with `npm`.
+1. Install [node.js](https://nodejs.org/) v10+.
+1. Install [npm](https://docs.npmjs.com/cli/v6) v6+.  It comes with node.js on
+   some systems and is a separate package on others.
 1. At a command line, `npm install -g npx`.
 1. Fork this repo and clone your fork to your local machine.
+   * **Update 2021-12-11** The default branch is called `main` (not `master`).
 
 ## Developing
 
 We use a [Brunch](https://brunch.io/docs/getting-started)-based workflow.  See
-below for why.  Developing on the `master` branch involves:
+below for why.  Developing on the `main` branch involves:
 
 1. At a command prompt (`cmd` or `bash`, whichever works), `cd` to the
    directory where your fork is.
-1. Create a new branch (e.g., `git checkout -b mybranch origin/master`)
+1. Create a new branch (e.g., `git checkout -b mybranch origin/main`)
 1. Run `npm install`.  This will download all the other packages TabFern and
    its build process use.
 1. Run `npx brunch w`.  This will build `app/` and the other directories in the
@@ -132,3 +134,20 @@ A good example is [this commit](https://github.com/cxw42/TabFern/commit/3ac0f274
      `type: checkbox` or `type: text`).  See [here](https://github.com/altryne/extensionizr/blob/a6ca3352b1d8b97fa4961209fd050ed7f8bd6e53/ext/src/options_custom/README.md)
      for more documentation of the available options.
    - Edit the values appropriately.
+
+## Notes about dependencies
+
+The following dev dependencies are listed in `package.json` but **not used**
+directly by TF itself.  They are listed to increase the minimum required
+version satisfying an indirect dependency.  If you add such a dependency to
+`package.json`, please also add it here.
+
+- acorn
+- archiver
+- fstream
+- lodash
+- minimist
+- mixin-deep
+- path-parse
+- set-value
+- tar
