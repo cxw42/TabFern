@@ -65,7 +65,7 @@
     "fs-extra": "^7.0.1",
     "fstream": "^1.0.12",
     "lodash.mergewith": "^4.6.2",
-    "minimist": "^1.2.2",
+    "minimist": "^1.2.6",
     "mixin-deep": "^1.3.2",
     "path-parse": "^1.0.7",
     "replacer-brunch": "^1.1.1",
