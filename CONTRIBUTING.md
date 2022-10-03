@@ -64,6 +64,9 @@ below for why.  Developing on the `main` branch involves:
      or `app/bg`, you will probably need to reload the extension.  In Chrome,
      go to `chrome://extensions` and click the circular arrow in TabFern's box.
 
+If you want to make a `.zip`, e.g., to try installing from a different folder,
+say `npm run zip`.  The output will be in `webstore-<VERSION>.zip`.
+
 ### Build notes
 
 - A tweaked version of Brunch builds the plugin into public/.
