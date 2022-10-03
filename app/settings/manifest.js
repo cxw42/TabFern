@@ -505,7 +505,19 @@ recovered window will show up in TabFern as a separate, unsaved window
 (related to ${issue(41, true)}).</p>
 </li>
 `) +
-'</ul>'
+'</ul>' +
+`
+<h4>Help TabFern!</h4>
+<p>I need people to help me develop and test.  Please volunteer or spread the
+word!  That is how TabFern will continue to advance :) .  You can reach me
+on <a href="https://github.com/cxw42/TabFern/discussions">GitHub</a> or
+<a href="https://gitter.im/TabFern/Lobby">gitter</a>.</p>
+
+<h4>Note about Manifest v3</h4>
+<p>The <tt>chrome:extensions</tt> panel may show an error that
+"Manifest version 2 is deprecated, and support will be removed in 2023."
+Don't worry; I plan to have the update done in time.  ${issue(275)}</p>
+`
             ),
 
         },
