@@ -4,6 +4,7 @@
 // nodes, and top borders on items, are kept in the tree.
 //
 // Copyright (c) 2017 Chris White, Jasmine Hegman.
+// Copyright (c) 2018--2020 Chris White
 
 // Boilerplate and require()s {{{1
 (function (root, factory) {
@@ -33,11 +34,15 @@
     /// The module we are creating
     let module = {};
 
+    // == Data structures ====================================================
+
+    // Design decisions for both module.tabs and module.windows:
+    // - No fields named `parent` so I can distinguish jstree node
+    //   records from multidex values.
+    // - No fields named `id` --- those exist in ctab and cwin records
+    // - All types of records have `raw_title` and `isOpen` fields.
+
     /// Map between open-tab IDs and node IDs.
-    /// Design decisions:
-    /// - No fields named `parent` so I can distinguish jstree node
-    ///     records from multidex values.
-    /// - All types of records have `raw_title` and `isOpen` fields.
     module.tabs = multidex(
         K.IT_TAB, //type
         [ //keys
@@ -67,8 +72,7 @@
         ]);
 
     /// Map between open-window IDs and node IDs.
-    /// Design decision: no fields named "parent" so I can distinguish
-    /// jstree node records from multidex values.
+    /// Design decisions: see above
     module.windows = multidex(
         K.IT_WIN,  //type
         [ //keys
@@ -93,6 +97,8 @@
                             // something done by the browser.
         ]);
 
+    // == Functions ==========================================================
+
     /// Find a node's value in the model, regardless of type.
     /// @param node_id {string} The node ID.  This has to be a string, because
     ///                         this module does not depend on item_tree.
@@ -111,7 +117,33 @@
         if(val) return val;
 
         return false;   //not found
-    } //val_by_node_id
+    }; //val_by_node_id
+
+    /// Find a tab in the model by its Chrome idx
+    module.val_by_ctabid = function val_by_ctabid(ctabid)
+    {
+        return module.tabs.by_tab_id(ctabid);
+    };
+
+    /// Find a window in the model by its Chrome idx
+    module.val_by_cwinid = function val_by_cwinid(cwinid)
+    {
+        return module.windows.by_win_id(cwinid);
+    };
+
+    /// The above functions, indexed by ty
+    const finder_functions = {
+        [K.IT_TAB]: module.val_by_ctabid,
+        [K.IT_WIN]: module.val_by_cwinid,
+    };
+
+    /// Find an item in the model by its Chrome ID, indirected by type.
+    module.val_by_cid = function val_by_cid(cid, ty)
+    {
+        const finder = finder_functions[ty];
+        if(!finder) return false;
+        return finder(cid);
+    };
 
     return module;
 }));

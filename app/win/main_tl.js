@@ -188,7 +188,7 @@ function getNewTabNodeID(ctab) {
     let hash;
     try {
         let url = new URL(ctab.url || ctab.pendingUrl);
-            // Since Chrome 79, we get url == "" and pendingUrl != "" in tabOnCreated
+            // Since Chrome 79, we get url == "" and pendingUrl != "" in onTabCreated
         if(!url.hash) return false;
 
         hash = url.hash.slice(1);
@@ -198,7 +198,7 @@ function getNewTabNodeID(ctab) {
             return false;
         }
     } catch(e) {
-        log.info({[`tabOnCreated handle_tabfern_action exception: ${e}`]: ctab});
+        log.info({[`onTabCreated handle_tabfern_action exception: ${e}`]: ctab});
         return false;
     }
 
@@ -518,7 +518,7 @@ function actionURLSubstitute(node_id, node, unused_action_id, unused_action_el)
         if(new_url === tab_val.raw_url) continue;
 
         if(win_val.isOpen) {
-            // Make the change and let tabOnUpdated update the model.
+            // Make the change and let onTabUpdated update the model.
             ASQH.NowCC((cc)=>{      // ASQ for error reporting
                 chrome.tabs.update(tab_val.tab_id, {url: new_url}, cc);
             });
@@ -528,7 +528,7 @@ function actionURLSubstitute(node_id, node, unused_action_id, unused_action_el)
         }
     } // foreach child
 
-    // If the window is closed, update the hash.  Otherwise, tabOnUpdated()
+    // If the window is closed, update the hash.  Otherwise, onTabUpdated()
     // handled it.
     if(!win_val.isOpen) {
         M.updateOrderedURLHash(win_val);
@@ -563,7 +563,7 @@ function actionAsContextMenuCallback(action_function)
 } //actionAsContextMenuCallback
 
 /// chrome.windows.get() callback to flag the current tab in a window.
-/// Helper for actionOpenRestOfTabs(), treeOnSelect() and winOnFocusChanged().
+/// Helper for actionOpenRestOfTabs(), onTreeSelect() and onWinFocusChanged().
 function flagOnlyCurrentTab(cwin)
 {
     let win_node_id = D.windows.by_win_id(cwin.id, 'node_id');
@@ -671,10 +671,10 @@ function actionCloseWindowButDoNotSaveTree_internal(win_node_id, win_node,
     let win = win_val.win;
     let was_open = win_val.isOpen && win;
 
-    // TODO winOnFocusChanged(NONE, true) ?
+    // TODO onWinFocusChanged(NONE, true) ?
 
     win_val.isClosing = true;
-        // Prevents winOnRemoved() from calling us to handle the removal!
+        // Prevents onWinRemoved() from calling us to handle the removal!
     M.remember(win_node_id);
 
     let seq = ASQ();
@@ -844,7 +844,7 @@ function actionDeleteWindow(win_node_id, win_node, unused_action_id,
 
     // Check if it's audible, and if that requires confirmation.
     // The is_internal parameter overrides CONFIRM_DEL_OF_AUDIBLE_TABS
-    // since is_internal indicates, e.g., a response to winOnRemoved.
+    // since is_internal indicates, e.g., a response to onWinRemoved.
     if(!is_internal && S.isCONFIRM_DEL_OF_AUDIBLE_TABS()) {
         for(let child_nodeid of win_node.children) {
             let child_val = D.tabs.by_node_id(child_nodeid);
@@ -1033,7 +1033,7 @@ function actionDeleteTab(node_id, node, unused_action_id, unused_action_el,
     function doDeletion() {
         if(tab_val.tab_id !== K.NONE) {     // Remove open tabs
             chrome.tabs.remove(tab_val.tab_id, ignore_chrome_error);
-            //tabOnRemoved will do the rest
+            //onTabRemoved will do the rest
         } else {                            // Remove closed tabs
             M.eraseTab(tab_val);
 
@@ -1044,7 +1044,7 @@ function actionDeleteTab(node_id, node, unused_action_id, unused_action_el,
 
             saveTree();
                 // Save manually because we don't have a handler for
-                // treeOnDelete.
+                // onTreeDelete.
         }
     } //doDeletion()
 
@@ -1128,7 +1128,7 @@ function actionDeleteTab(node_id, node, unused_action_id, unused_action_el,
 //        }
 
 
-    // If it actually disappears, let tabOnRemoved() handle it.
+    // If it actually disappears, let onTabRemoved() handle it.
 
 //    let seq = ASQH.NowCCTry((cc)=>{
 //        chrome.tabs.remove(tab_val.tab_id, cc)
@@ -1180,7 +1180,7 @@ function actionCloseTabAndSave(tab_node_id, tab_node, unused_action_id, unused_a
 
     let seq = ASQH.NowCC((cc)=>{
         chrome.tabs.remove(tab_id, cc);
-        // Because the tab is already marked as closed, tabOnRemoved()
+        // Because the tab is already marked as closed, onTabRemoved()
         // won't delete its node.
     });
 
@@ -1239,7 +1239,7 @@ function addTabNodeActions(tab_node_id)
             // I tried this approach but it was a bit ugly.  For example, the
             // image was in the right place but the border of the <i /> was offset
             // down a pixel or two.  Also, the class was required for the
-            // "Actually" event check in treeOnSelect.
+            // "Actually" event check in onTreeSelect.
             //html: `<img src="/assets/icons/pencil.png" class=${K.ACTION_BUTTON_WIN_CLASS} />`,
             grouped: true,
             title: _T('ttEditTab'),
@@ -1275,9 +1275,10 @@ function addTabNodeActions(tab_node_id)
 } //addTabNodeActions
 
 /// Create a tree node for an open tab.
+/// @deprecated in favor of M.react_onTabCreated().
 /// @param ctab {Chrome Tab} the tab record
 /// @return The node ID on success, or falsy on failure.
-function createNodeForTab(ctab, parent_node_id)
+function createNodeForOpenTab(ctab, parent_node_id)
 {
     let {node_id, val} = M.vnRezTab(parent_node_id);
     if(!node_id) {
@@ -1291,7 +1292,7 @@ function createNodeForTab(ctab, parent_node_id)
     addTabNodeActions(node_id);
 
     // The rjustify is a no-op until the actions are added.  If we just added
-    // the last child, we haven't necessaryly redrawn, so do so. (#200)
+    // the last child, we haven't necessarily redrawn, so do so. (#200)
     let parent_node = T.treeobj.get_node(parent_node_id);
     if(parent_node.children[parent_node.children.length - 1] === node_id) {
         T.install_rjustify(null, 'redraw_event.jstree', 'once');
@@ -1299,7 +1300,23 @@ function createNodeForTab(ctab, parent_node_id)
     }
 
     return node_id;
-} //createNodeForTab
+} //createNodeForOpenTab
+
+/// Update tree view on a tree node for an open tab.
+/// @param node {Chrome Tab} the tree node for the tab
+/// @param parent_node {Chrome Tab} the parent tree node
+function updateNodeForOpenTab(node, parent_node)
+{
+    addTabNodeActions(node.id);
+
+    // The rjustify is a no-op until the actions are added.  If we just added
+    // the last child, we haven't necessarily redrawn, so do so. (#200)
+    if(parent_node.children[parent_node.children.length - 1] === node.id) {
+        T.install_rjustify(null, 'redraw_event.jstree', 'once');
+        T.treeobj.redraw_node(node.id);
+    }
+
+} //updateNodeForOpenTab
 
 /// Create a tree node for a closed tab
 /// @param tab_data_v1      V1 save data for the tab
@@ -1425,7 +1442,7 @@ function createNodeForWindow(cwin, keep)
     if(cwin.tabs) {                      // new windows may have no tabs
         for(let ctab of cwin.tabs) {
             log.info(`   ${ctab.id}: ${ctab.title}`);
-            createNodeForTab(ctab, node_id);    //TODO handle errors
+            createNodeForOpenTab(ctab, node_id);    //TODO handle errors
         }
     }
 
@@ -1796,7 +1813,7 @@ function DBG_printSaveData()
 ////////////////////////////////////////////////////////////////////////// }}}1
 // jstree callbacks // {{{1
 
-/// ID for a timeout shared by newWinFocusCheckTest() and treeOnSelect()
+/// ID for a timeout shared by newWinFocusCheckTest() and onTreeSelect()
 var awaitSelectTimeoutId = undefined;
 
 /// Process clicks on items in the tree.  Also works for keyboard navigation
@@ -1806,9 +1823,9 @@ var awaitSelectTimeoutId = undefined;
 /// @param options {Object}     Valid fields are:
 ///     - raise_tabfern_after:  if truthy, put the TF popup back on top
 ///                             once the action has been taken.  (#160)
-function treeOnSelect(evt_unused, evt_data, options={})
+function onTreeSelect(evt_unused, evt_data, options={})
 {
-    log.info({'treeOnSelect':evt_data, options});
+    log.info({'onTreeSelect':evt_data, options});
 
     /// What kinds of things can happen as a result of a select event
     let ActionTy = Object.freeze({
@@ -2037,8 +2054,8 @@ function treeOnSelect(evt_unused, evt_data, options={})
             // an error.  Try to open a saved window with a tab
             // for about:addons or about:debugging to trigger an error.
 
-            // Note: In testing, this happens after the winOnCreated,
-            // tabOnCreated, and tabOnActivated events.  I don't know
+            // Note: In testing, this happens after the onWinCreated,
+            // onTabCreated, and onTabActivated events.  I don't know
             // if that's guaranteed, though.
             window_is_being_restored = false;
 
@@ -2105,7 +2122,7 @@ function treeOnSelect(evt_unused, evt_data, options={})
                 pinned: !!tab_val.isPinned,
             },
             function(ctab) {
-                // tabOnCreated connects the node to the ctab.
+                // onTabCreated connects the node to the ctab.
                 M.updateTabIndexValues(win_node, [tab_node.id]);
 
                 // Set the highlights in the tree appropriately
@@ -2152,15 +2169,15 @@ function treeOnSelect(evt_unused, evt_data, options={})
         log.debug({'About to activate': win_id_to_highlight_and_raise});
         chrome.windows.update(win_id_to_highlight_and_raise, {focused:true},
                 ignore_chrome_error);
-            // winOnFocusChanged will set the flag on the newly-focused window
+            // onWinFocusChanged will set the flag on the newly-focused window
     } //endif
 
-} //treeOnSelect
+} //onTreeSelect
 
 ////////////////////////////////////////////////////////////////////////// }}}1
 // Chrome window/tab callbacks // {{{1
 
-function winOnCreated(cwin)
+function onWinCreated(cwin)
 {
     log.info({'Window created': cwin.id,
                 "Restore?": (window_is_being_restored ? "yes" : "no"),
@@ -2172,7 +2189,7 @@ function winOnCreated(cwin)
 
     if(window_is_being_restored) {
         return;     // don't create an extra copy - the chrome.window.create
-    }               // callback in treeOnSelect will handle it.
+    }               // callback in onTreeSelect will handle it.
 
     // Save the window's size
     if(cwin.type === 'normal') {
@@ -2186,10 +2203,10 @@ function winOnCreated(cwin)
 
     createNodeForWindow(cwin, K.WIN_NOKEEP);
     saveTree();     // for now, brute-force save on any change.
-} //winOnCreated
+} //onWinCreated
 
 /// Update the tree when the user closes a browser window
-function winOnRemoved(cwin_id)
+function onWinRemoved(cwin_id)
 {
     if(cwin_id == my_winid) return;  // does this happen?
 
@@ -2244,7 +2261,7 @@ function winOnRemoved(cwin_id)
             // actionDeleteWindow also saves the tree, so we don't need to.
             // true => it's internal, so don't prompt for confirmation.
     }
-} //winOnRemoved
+} //onWinRemoved
 
 /// Update the highlight for the current window.  Note: this does not always
 /// seem to fire when switching to a non-Chrome window.
@@ -2253,11 +2270,11 @@ function winOnRemoved(cwin_id)
 ///
 /// @param win_id {number} the ID of the newly-focused window
 /// @param internal {boolean} if truthy, this was called as a helper, e.g., by
-///                 tabOnActivated or tabOnDeactivated.  Therefore, it has work
+///                 onTabActivated or onTabDeactivated.  Therefore, it has work
 ///                 to do even if the window hasn't changed.
-var winOnFocusChanged;
+var onWinFocusChanged;
 
-/// Initialize winOnFocusChanged.  This is a separate function since it
+/// Initialize onWinFocusChanged.  This is a separate function since it
 /// cannot be called until jQuery has been loaded.
 function initFocusHandler()
 {
@@ -2402,10 +2419,10 @@ function initFocusHandler()
                                 function(){leavingWindow(old_win_id);},
                                 100
                     );
-                    // If treeOnSelect() happens before the timeout,
+                    // If onTreeSelect() happens before the timeout,
                     // the timeout will be cancelled.  Otherwise, the
                     // flags will be cleared.  This should reduce
-                    // flicker in the TabFern window, because treeOnSelect
+                    // flicker in the TabFern window, because onTreeSelect
                     // can do the flag changes instead of this.
                 } else {    // A click somewhere other than the tree
                     unflagAllWindows();
@@ -2420,14 +2437,14 @@ function initFocusHandler()
 
     }; //inner_onFocusChanged
 
-    winOnFocusChanged = inner_onFocusChanged;
+    onWinFocusChanged = inner_onFocusChanged;
 
 } //initFocusHandler
 
 /// Process creation of a tab.  NOTE: in Chrome 60.0.3112.101, we sometimes
 /// get two consecutive tabs.onCreated events for the same tab.  Therefore,
 /// we check for that here.
-var tabOnCreated = (function(){     // search key: function tabOnCreated()
+var onTabCreated = (function(){     // search key: function onTabCreated()
 
     /// Detach nodes for existing windows and tabs from those windows/tabs,
     /// and destroy the parts of the model that used to represent those
@@ -2455,10 +2472,8 @@ var tabOnCreated = (function(){     // search key: function tabOnCreated()
     function make_merge_check_step(ctab, win_val)
     {
         return function merge_check_inner(check_done) {
-            //DEBUG
             log.debug({[`merge check tab ${ctab.id} win ${ctab.windowId}`]:
                         ctab});
-
 
             let seq = ASQH.NowCCTry((cc)=>{
                 chrome.windows.get(ctab.windowId,{populate:true}, cc);
@@ -2485,7 +2500,7 @@ var tabOnCreated = (function(){     // search key: function tabOnCreated()
 
                     // Open the saved window and connect it with the new tabs.
                     // ** Make sure to do this synchronously. **
-                    // We get multiple tabOnCreated messages, and more than one
+                    // We get multiple onTabCreated messages, and more than one
                     // could reach this point.
 
                     // The window we are going to pull from
@@ -2548,7 +2563,7 @@ var tabOnCreated = (function(){     // search key: function tabOnCreated()
         // Change the ctab's URL to the actual URL.
         let seq = ASQ();
         chrome.tabs.update(ctab.id, {url: tab_val.raw_url}, ASQH.CCgo(seq));
-            // tabOnUpdated will change the tree based on the update,
+            // onTabUpdated will change the tree based on the update,
             // and will call saveTree().
 
         // Design decision: Since this change was a result of action by
@@ -2559,7 +2574,8 @@ var tabOnCreated = (function(){     // search key: function tabOnCreated()
         return true;    // It's handled!
     } //handle_tabfern_action()
 
-    function tab_on_created_inner(ctab)
+    // The main worker for onTabCreated
+    function on_tab_created_inner(ctab)
     {
         log.info({'Tab created': ctab.id, ctab});
 
@@ -2570,7 +2586,6 @@ var tabOnCreated = (function(){     // search key: function tabOnCreated()
             return;
         }
 
-        // See if this is a duplicate of an existing tab
         let tab_val = D.tabs.by_tab_id(ctab.id);
 
         // If it's a tab action we triggered, process it.
@@ -2581,42 +2596,16 @@ var tabOnCreated = (function(){     // search key: function tabOnCreated()
         /// What to do after saving
         let cbk;
 
-        if(tab_val) {
-            // It's a duplicate
-            log.info('   - That tab already exists.');
+        let tab_node_id = M.react_onTabCreated(win_val, ctab);
 
-            // Just put it where it now belongs.
-            let treeidx = M.treeIdxByChromeIdx(win_node_id, ctab.index,
-                    ctab.openerTabId);
-            if(treeidx !== false) { // tabOnCreated => the tab should exist
-                T.treeobj.because('chrome', 'move_node',
-                    tab_val.node_id, win_node_id, treeidx);
-            }
-
+        if(tab_val) {   // It already existed, so react_onTabCreated() didn't
+                        // make a new tree node.
             // Design decision: rearranging tabs doesn't trigger a merge check
-
-            // Make sure all the other indices are up to date
-            M.updateTabIndexValues(win_node_id);
-
             saveTree(true, cbk);
 
-        } else {        // Not a duplicate
-            // Figure out where it's going to go.  This is for the benefit
-            // of tab grouping in partly-open windows.
-            let treeidx = M.treeIdxByChromeIdx(win_node_id, ctab.index,
-                            ctab.openerTabId);
-
-            let tab_node_id = createNodeForTab(ctab, win_node_id);
-
-            // Put it in the right place, since createNodeForTab adds at end.
-            if(treeidx !== false) {
-                T.treeobj.because('chrome','move_node',
-                        tab_node_id, win_node_id, treeidx);
-            }
-
-            tab_val = D.tabs.by_tab_id(ctab.id);
-
-            M.updateTabIndexValues(win_node_id);
+        } else {        // Not a duplicate - we just made a new tree node
+            updateNodeForOpenTab(T.treeobj.get_node(tab_node_id),
+                T.treeobj.get_node(win_node_id));
 
             let seq = ASQ();
 
@@ -2628,102 +2617,24 @@ var tabOnCreated = (function(){     // search key: function tabOnCreated()
             seq.then((done)=>{saveTree(true, done);});
         }
 
-    }; //tab_on_created_inner()
+    }; //on_tab_created_inner()
 
-    return tab_on_created_inner;
-})(); //tabOnCreated()
+    return on_tab_created_inner;
+})(); //onTabCreated()
 
-function tabOnUpdated(tabid, changeinfo, ctab)
+function onTabUpdated(ctabid, changeinfo, ctab)
 {
-    let dirty = false;
-    let should_refresh_label = false;
-    let should_refresh_tooltip = false;
-    let should_refresh_icon = false;
+    log.info({'Tab updated': ctabid, 'Index': ctab.index, changeinfo, ctab});
 
-    log.info({'Tab updated': tabid, 'Index': ctab.index, changeinfo, ctab});
+    const errmsg = M.react_onTabUpdated(ctabid, changeinfo, ctab);
 
-    let tab_node_val = D.tabs.by_tab_id(tabid);
-    if(!tab_node_val) return;
-    let tab_node_id = tab_node_val.node_id;
-
-    let node = T.treeobj.get_node(tab_node_id);
-    tab_node_val.isOpen = true;     //lest there be any doubt
-
-    log.debug({"   Details for updated ctab":tabid,tab_node_val,node});
-
-    // Caution: changeinfo doesn't always have all the changed information.
-    // Therefore, we check changeinfo and ctab.
-
-    // TODO refactor the following into a separate routine that can be
-    // used to update closed or open tabs' tree items.  Maybe move it
-    // to model.js as well.  This will reduce code duplication, e.g., in
-    // actionURLSubstitute.
-
-    // URL
-    let new_raw_url = changeinfo.url || ctab.url || ctab.pendingUrl || 'about:blank';
-    if(new_raw_url !== tab_node_val.raw_url) {
-        dirty = true;
-        should_refresh_tooltip = true;
-            // TODO check the config - it may not be necessary to update
-            // the tooltip since the URL might be in the tooltip
-        tab_node_val.raw_url = new_raw_url;
-        M.updateOrderedURLHash(node.parent);
-            // When the URL changes, the hash changes, too.
+    if(typeof(errmsg) === 'string') {
+        log.warn(`Could not update ${ctabid} per ${JSON.stringify(changeinfo)} / ${JSON.stringify(ctab)}: ${errmsg}`);
+        return;
     }
 
-    // pinned
-    let new_pinned = null;
-
-    if('pinned' in changeinfo) {
-        new_pinned = changeinfo.pinned;
-    } else if('pinned' in ctab) {
-        new_pinned = ctab.pinned;
-    }
-
-    if( (new_pinned !== null) && (tab_node_val.isPinned !== new_pinned) ) {
-        dirty = true;
-        should_refresh_label = true;
-        tab_node_val.isPinned = new_pinned;
-    }
-
-    // audible
-    let new_audible = null;
-
-    if('audible' in changeinfo) {
-        new_audible = changeinfo.audible;
-    } else if('audible' in ctab) {
-        new_audible = ctab.audible;
-    }
-
-    if( (new_audible !== null) && (tab_node_val.isAudible !== new_audible) ) {
-        dirty = true;
-        should_refresh_label = true;
-        tab_node_val.isAudible = new_audible;
-    }
-
-    // title
-    let new_raw_title = changeinfo.title || ctab.title || _T('labelBlankTabTitle');
-    if(new_raw_title !== tab_node_val.raw_title) {
-        dirty = true;
-        should_refresh_label = true;
-        should_refresh_tooltip = true;
-
-        tab_node_val.raw_title = new_raw_title;
-    }
-
-    // favicon
-    let new_raw_favicon_url = changeinfo.favIconUrl || ctab.favIconUrl || null;
-    if(new_raw_favicon_url !== tab_node_val.raw_favicon_url) {
-        dirty = true;
-        should_refresh_icon = true;
-        tab_node_val.raw_favicon_url = new_raw_favicon_url;
-    }
-
-    // Update the model
-    M.refresh(tab_node_val, { icon: should_refresh_icon,
-            label: should_refresh_label, tooltip: should_refresh_tooltip });
-
-    if(dirty) {
+    if(errmsg.dirty) {  // react_onTabUpdated returns {dirty} on success.
+                        // TODO clean this up - #232
         saveTree();
     }
 
@@ -2734,16 +2645,17 @@ function tabOnUpdated(tabid, changeinfo, ctab)
     chrome.windows.getLastFocused(function(win){
         if(!isLastError()) {
             if(ctab.windowId === win.id) {
-                winOnFocusChanged(win.id, true);
+                onWinFocusChanged(win.id, true);
             }
         }
     });
-} //tabOnUpdated
+} //onTabUpdated
 
+/// Keep statistics of the sizes of moves we see from Chrome.  DEBUG
 var tab_move_deltas = {};
 
 /// Handle movements of open tabs or groups of tabs within a window.
-function tabOnMoved(tabid, moveinfo)
+function onTabMoved(tabid, moveinfo)
 {
     log.info({'Tab moved': tabid, 'toIndex': moveinfo.toIndex, moveinfo});
 
@@ -2751,190 +2663,96 @@ function tabOnMoved(tabid, moveinfo)
     tab_move_deltas[moveinfo.toIndex-moveinfo.fromIndex] =
         (tab_move_deltas[moveinfo.toIndex-moveinfo.fromIndex] || 0) + 1;
 
-    // Get the parent (window)
-    let window_node_id = D.windows.by_win_id(moveinfo.windowId, 'node_id');
-    if(!window_node_id) return;
+    const errmsg = M.react_onTabMoved(moveinfo.windowId, tabid, moveinfo.fromIndex, moveinfo.toIndex);
 
-    // Get the tab's node
-    let tab_node_id = D.tabs.by_tab_id(tabid, 'node_id');
-    if(!tab_node_id) return;
-
-    let from_idx = M.treeIdxByChromeIdx(window_node_id, moveinfo.fromIndex);
-    let to_idx = M.treeIdxByChromeIdx(window_node_id, moveinfo.toIndex);
-    if(from_idx === false || to_idx === false) {
-        log.error(`Bad move indices: from ${from_idx} to ${to_idx}`);
+    if(typeof(errmsg) === 'string') {
+        log.warn(`Could not move tab ${tabid} per ${JSON.stringify(moveinfo)}: ${errmsg}`);
         return;
     }
 
-    // Move the tree node
-    log.info(`Moving tab from ${from_idx} to ${to_idx}`);
-
-    // As far as I can tell, in jstree, indices point between list
-    // elements.  E.g., with n items, index 0 is before the first and
-    // index n is after the last.  However, Chrome tab indices point to
-    // the tabs themselves, 0..(n-1).  Therefore, if we are moving
-    // right, bump the index by 1 so we will be _after_ that item
-    // rather than _before_ it.
-    // See the handling of `pos` values of "before" and "after"
-    // in the definition of move_node() in jstree.js.
-    let jstree_new_index =
-            to_idx+(to_idx>from_idx ? 1 : 0);
-
-    T.treeobj.because('chrome','move_node', tab_node_id, window_node_id, jstree_new_index);
-
-    // Update the indices of all the tabs in this window.  This will update
-    // the old tab and the new tab.
-    M.updateTabIndexValues(window_node_id);
-
     saveTree();
-} //tabOnMoved
+} //onTabMoved
 
-function tabOnActivated(activeinfo)
+function onTabActivated(activeinfo)
 {
     log.info({'Tab activated': activeinfo.tabId, activeinfo});
 
-    winOnFocusChanged(activeinfo.windowId, true);
-        // winOnFocusChanged handles the tab flagging
+    onWinFocusChanged(activeinfo.windowId, true);
+        // onWinFocusChanged handles the tab flagging
 
     // No need to save --- we don't save which tab is active.
-} //tabOnActivated
+} //onTabActivated
 
 /// Delete a tab's information when the user closes it.
-function tabOnRemoved(tabid, removeinfo)
+function onTabRemoved(tabid, removeinfo)
 {
     log.info({'Tab removed': tabid, removeinfo});
 
     // If the window is closing, do not remove the tab records.
-    // The cleanup will be handled by winOnRemoved().
+    // The cleanup will be handled by onWinRemoved().
     if(removeinfo.isWindowClosing) {
         log.debug({'Window is closing, so nothing to do for ctab':tabid,removeinfo});
         return;
         // TODO also mark this as non-recovered, maybe?
     }
 
-    let window_node_id = D.windows.by_win_id(removeinfo.windowId, 'node_id');
-    if(!window_node_id) {
-        log.debug({'Bailing - no window_node_id for ctab':tabid,removeinfo});
+    const errmsg = M.react_onTabRemoved(tabid, removeinfo.windowId);
+
+    if(typeof(errmsg) === 'string') {
+        log.warn(`Could not remove ${tabid} per ${JSON.stringify(removeinfo)}: ${errmsg}`);
         return;
     }
 
-    {   // Keep the locals here out of the scope of the closure below.
-        // Get the parent (window)
-        let window_node = T.treeobj.get_node(window_node_id);
-        if(!window_node) {
-            log.debug({'Bailing - no window_node for ctab':tabid,removeinfo});
-            return;
-        }
-
-        // Get the node
-        let tab_val = D.tabs.by_tab_id(tabid);
-
-        // See if it's a tab we have already marked as removed.  If so,
-        // whichever code marked it is responsible, and we're off the hook.
-        if(!tab_val || tab_val.tab_id === K.NONE) {
-            log.debug({"Bailing, but it's probably OK - no tab_val for ctab":tabid, tab_val, removeinfo});
-            return;
-        }
-
-        // Get the tab's node
-        if(!tab_val.node_id) {
-            log.debug({'Bailing - no tab_val.node_id for ctab':tabid,removeinfo});
-            return;
-        }
-
-        let tab_node = T.treeobj.get_node(tab_val.node_id);
-        if(!tab_node) {
-            log.debug({'Bailing - no tab_node for ctab':tabid,removeinfo});
-            return;
-        }
-
-        log.debug({'Removing value and entry for ctab':tabid,tab_node, tab_val,removeinfo});
-        M.eraseTab(tab_node, 'chrome');
-    }
-
-    log.debug({'Updating tab index values after removing ctab':tabid,window_node_id,removeinfo});
-
-    // Refresh the tab.index values for the remaining tabs
-    M.updateTabIndexValues(window_node_id);
-
-    log.debug({'Tab index values updated after removing ctab':tabid,window_node_id,removeinfo});
-
     saveTree();
-} //tabOnRemoved
+} //onTabRemoved
 
 /// When tabs detach, move them to the holding pen.
-function tabOnDetached(tabid, detachinfo)
+/// If the detached tab is the last open tab in a window, Chrome will
+/// fire onWinRemoved.  Therefore, this function does not have to touch
+/// the window.
+function onTabDetached(tabid, detachinfo)
 {
-    // Don't save here?  Do we get a WindowCreated if the tab is not
-    // attached to another window?
+    // Don't save here --- we get a WindowCreated if the tab is dragged into
+    // its own new window rather than into an existing window
     log.info({'Tab detached': tabid, detachinfo});
 
     T.treeobj.clear_flags();  //just to be on the safe side
 
-    let tab_val = D.tabs.by_tab_id(tabid);
+    const errmsg = M.react_onTabDetached(tabid, detachinfo.oldWindowId);
 
-    if(!tab_val)    // An express failure message - this would be bad
-        throw new Error("Unknown tab to detach???? "+tabid+' '+detachinfo.toString());
-
-    let old_win_val = D.windows.by_win_id(detachinfo.oldWindowId);
-    if(!old_win_val)    // ditto
-        throw new Error("Unknown window detaching from???? "+attachinfo.newWindowId+' '+attachinfo.toString());
-
-    T.treeobj.because('chrome','move_node', tab_val.node_id, T.holding_node_id);
-    tab_val.win_id = K.NONE;
-    tab_val.index = K.NONE;
-
-    M.updateTabIndexValues(old_win_val.node_id);
-
-} //tabOnDetached
+    if(typeof(errmsg) === 'string') {
+        throw new Error(`Could not detach ${tabid} per ${JSON.stringify(detachinfo)}: ${errmsg}`);
+    }
+} //onTabDetached
 
 /// When tabs attach, move them out of the holding pen.
-function tabOnAttached(tabid, attachinfo)
+function onTabAttached(tabid, attachinfo)
 {
     log.info({'Tab attached': tabid, attachinfo});
 
-    let tab_val = D.tabs.by_tab_id(tabid);
+    const errmsg = M.react_onTabAttached(tabid, attachinfo.newWindowId, attachinfo.newPosition);
 
-    if(!tab_val)        // An express failure message - this would be bad
-        throw new Error("Unknown tab to attach???? "+tabid+' '+attachinfo.toString());
-
-    let new_win_val = D.windows.by_win_id(attachinfo.newWindowId);
-    if(!new_win_val)    // ditto
-        throw new Error("Unknown window attaching to???? "+attachinfo.newWindowId+' '+attachinfo.toString());
-
-    let tree_idx = M.treeIdxByChromeIdx(new_win_val.node_id, attachinfo.newPosition);
-    log.info(`Attaching tab ${tabid} at `+
-                `ctabidx ${attachinfo.newPosition} => tree idx ${tree_idx}`);
-    T.treeobj.because('chrome','move_node', tab_val.node_id, new_win_val.node_id,
-            tree_idx);
-
-    // Open after moving because otherwise the window might not have any
-    // children yet.
-    T.treeobj.open_node(new_win_val.node_id);
-
-    tab_val.win_id = attachinfo.newWindowId;
-    tab_val.index = attachinfo.newPosition;
-
-    M.updateTabIndexValues(new_win_val.node_id);
-} //tabOnAttached
+    if(typeof(errmsg) === 'string') {
+        throw new Error(`Could not attach ${tabid} per ${JSON.stringify(attachinfo)}: ${errmsg}`);
+    }
+} //onTabAttached
 
 /// Handle tab replacement, which can occur with preloads.  E.g., #129.
-function tabOnReplaced(addedTabId, removedTabId)
+function onTabReplaced(addedTabId, removedTabId)
 {
-    log.info('Tab being replaced: added ' + addedTabId + '; removed ' +
-                removedTabId);
-    let tab_val = D.tabs.by_tab_id(removedTabId);
-    if(!tab_val) {
-        log.warn('onReplaced: No tab found for removed' +
-                    `tab ID ${removedTabId} - bailing`);
-        return;
-    }
+    log.info(`Tab being replaced: ${removedTabId} -> ${addedTabId}`);
 
-    D.tabs.change_key(tab_val, 'tab_id', addedTabId);
-    log.info({
-        [`Tab replacement ${removedTabId}->${addedTabId}: new value`]:tab_val
-    });
-} //tabOnReplaced
+    const errmsg = M.react_onTabReplaced(addedTabID, removedTabId);
+
+    if(typeof(errmsg) === 'string') {
+        log.warn(`Could not replace ${removedTabId} with ${addedTabId}: ${errmsg}`);
+        return;
+    } else {
+        log.debug({
+            [`Tab replacement ${removedTabId}->${addedTabId}: new value`]:tab_val
+        });
+    }
+} //onTabReplaced
 
 ////////////////////////////////////////////////////////////////////////// }}}1
 // DOM event handlers // {{{1
@@ -3043,6 +2861,19 @@ function hamReloadTree()
     window.location.reload(true);
 } //hamReloadTree()
 
+
+// Record that the user has seen the "what's new" for this version
+function userHasSeenSettings()
+{
+    if(ShowWhatIsNew) {
+        ShowWhatIsNew = false;
+
+        let to_save = {};
+        to_save[K.LASTVER_KEY] = TABFERN_VERSION;
+        chrome.storage.local.set(to_save, ignore_chrome_error);
+    }
+}
+
 /// Open the Settings window.  If ShowWhatIsNew, also updates the K.LASTVER_KEY
 /// information used by checkWhatIsNew().
 function hamSettings()
@@ -3057,14 +2888,7 @@ function hamSettings()
         log.error('Could not get settings URL');
     }
 
-    // Record that the user has seen the "what's new" for this version
-    if(ShowWhatIsNew) {
-        ShowWhatIsNew = false;
-
-        let to_save = {};
-        to_save[K.LASTVER_KEY] = TABFERN_VERSION;
-        chrome.storage.local.set(to_save, ignore_chrome_error);
-    }
+    userHasSeenSettings();
 } //hamSettings()
 
 function hamBackup()
@@ -3093,12 +2917,12 @@ function hamRestoreFromBackup()
             let parsed = JSON.parse(text);
             ok = loadSavedWindowsFromData(parsed);
             if(!ok) {
-                let errmsg = _T('errCouldNotLoadFile', filename, e);
+                const errmsg = _T('errCouldNotLoadFile', filename, e);
                 log.warn({[errmsg]:e});
                 window.alert(errmsg);
             }
         } catch(e) {
-            let errmsg = _T('errCouldNotParseFile');
+            const errmsg = _T('errCouldNotParseFile');
             log.warn({[errmsg + ' (exception thrown)']:e});
             window.alert(errmsg);
         }
@@ -3115,7 +2939,7 @@ function hamRestoreFromBackup()
         let importer = new Modules.importer(document, '.tabfern');
         importer.getFileAsString(processFile);
     } catch(e) {
-        let errmsg = _T('errCouldNotRunImporter', e);
+        const errmsg = _T('errCouldNotRunImporter', e);
         log.warn({[errmsg]:e});
         window.alert(errmsg);
     }
@@ -3178,6 +3002,8 @@ function hamRunJasmineTests()
     } else {
         log.error('Could not get Jasmine-test URL');
     }
+
+    userHasSeenSettings();  // #233
 } // hamRunJasmineTests
 
 function hamSortOpenToTop()
@@ -3572,7 +3398,7 @@ var treeCheckCallback = (function treeCheck()
             // Move an open tab from one open window to another (or the same).
 
             if(parent_val.win_id === K.NONE) return;
-            // Chrome fires a tabOnMoved after we do this (if it works),
+            // Chrome fires a onTabMoved after we do this (if it works),
             // so we don't have to update the tree here.
             // As above, delay to be on the safe side.
             ASQ().then((done)=>{
@@ -3615,7 +3441,7 @@ var treeCheckCallback = (function treeCheck()
             let seq = ASQ();
             let tab_id = val.tab_id;
 
-            // Disconnect the tab first, so tabOnRemoved() doesn't
+            // Disconnect the tab first, so onTabRemoved() doesn't
             // delete it after the chrome.tabs.remove() call.
             seq.val(()=>{
                 D.tabs.change_key(val, 'tab_id', K.NONE);
@@ -3628,11 +3454,13 @@ var treeCheckCallback = (function treeCheck()
             });
 
             // Now that it's disconnected, close the actual tab.
+            // We don't have to move the node in jstree --- jstree handles
+            // that itself through dnd.
             // TODO update per #79 - need to try to remove the tab first,
             // then see what happens.
             seq.try((done)=>{
                 chrome.tabs.remove(tab_id, ASQH.CC(done));
-                // if tab_id was the last tab in old_parent, winOnRemoved
+                // if tab_id was the last tab in old_parent, onWinRemoved
                 // will delete the tree node.  Therefore, we do not have
                 // to do so.
             });
@@ -3674,7 +3502,7 @@ var treeCheckCallback = (function treeCheck()
             M.updateTabIndexValues(data.old_parent);
 
             moving_val.being_opened = true;
-                // so tabOnCreated doesn't duplicate it
+                // so onTabCreated doesn't duplicate it
 
             let ctab_idx = M.chromeIdxOfTab(dest_win_node_id, moving_val.index);
             L.log.info(`Opening tab ${moving_val.tab_id} at `+
@@ -3683,7 +3511,7 @@ var treeCheckCallback = (function treeCheck()
             let newtab_info = {
                 windowId: dest_win_val.win_id,
                 url: NEW_TAB_URL + '#' + moving_val.node_id,
-                    // pass the node ID to the tabOnUpdated callback
+                    // pass the node ID to the onTabUpdated callback
                 index: ctab_idx,
                 pinned: !!moving_val.isPinned,
             }
@@ -3691,7 +3519,7 @@ var treeCheckCallback = (function treeCheck()
             L.log.info({'Moving tab':newtab_info});
             chrome.tabs.create(newtab_info, ASQH.CC(done));
         });
-        // The Chrome tab and the item will be linked in tabOnCreated, so we're done.
+        // The Chrome tab and the item will be linked in onTabCreated, so we're done.
 
     } //open_tab_within_window
 
@@ -4109,7 +3937,7 @@ function messageListener(request, sender, sendResponse)
             // at least sometimes.  Related to #71.
             .val(()=>{
                 T.treeobj.flag_node(tab_val.node_id);
-                //winOnFocusChanged(tab_val.win_id, true);
+                //onWinFocusChanged(tab_val.win_id, true);
             })
             .val(()=>{
                 sendResponse({msg: request.msg, response: true, success: true});
@@ -4176,6 +4004,11 @@ function preLoadInit()
     //Custom skinny-scrollbar color
     CSSC: if(S.getBool(S.SKINNY_SCROLLBARS) && document.styleSheets) {
         let color = S.getString(S.S_SCROLLBAR_COLOR);
+        if(!color) {
+            log.info("No custom color for skinny scrollbars");
+            break CSSC;
+        }
+
         color = Modules.tinycolor(color);
         if(!color.isValid()) {
             log.error({'Invalid custom color for skinny scrollbars':
@@ -4193,10 +4026,10 @@ function preLoadInit()
             // override works and we don't have to remove the existing rule.
             // Note: color.toRgbString() for formatting consistency.
         }
-    }
+    } //CSSC
 
     let url = chrome.runtime.getURL(
-                `/assets/jstree-3.3.4/themes/${S.getThemeName()}/style.css`);
+                `/assets/jstree/themes/${S.getThemeName()}/style.css`);
     let before = document.getElementById('last-stylesheet');
     loadCSS(document, url, before);
 
@@ -4437,7 +4270,7 @@ function addOpenWindowsToTree(done, cwins)
     // However, generally the popup will be focused when this runs,
     // and we're not showing the popup in the tree.
     if(focused_win_id) {
-        winOnFocusChanged(focused_win_id, true);
+        onWinFocusChanged(focused_win_id, true);
     }
 
     done();
@@ -4470,7 +4303,7 @@ function addEventListeners(done)
     // window from the tree without changing the scrollbar visibility.
 
     // Set event listeners
-    T.treeobj.element.on('changed.jstree', treeOnSelect);
+    T.treeobj.element.on('changed.jstree', onTreeSelect);
         // TODO why isn't this select_node.jstree?
 
     T.treeobj.element.on('move_node.jstree', K.nextTickRunner(saveTree));
@@ -4481,29 +4314,29 @@ function addEventListeners(done)
     T.treeobj.element.on('mmb_node.jstree', (event, node_id)=>{
         //log.info(`Saw the MMB click on ${node_id}`);
         let node = T.treeobj.get_node(node_id);
-        treeOnSelect(event, {node}, {raise_tabfern_after: true});
+        onTreeSelect(event, {node}, {raise_tabfern_after: true});
             // Design decision: do not pass event as part of event_data (2nd
             // param) because middle-clicks shouldn't trigger action buttons.
     });
 
-    chrome.windows.onCreated.addListener(winOnCreated);
-    chrome.windows.onRemoved.addListener(winOnRemoved);
-    chrome.windows.onFocusChanged.addListener(winOnFocusChanged);
+    chrome.windows.onCreated.addListener(onWinCreated);
+    chrome.windows.onRemoved.addListener(onWinRemoved);
+    chrome.windows.onFocusChanged.addListener(onWinFocusChanged);
 
     // Chrome tabs API, listed in the order given in the API docs at
     // https://developer.chrome.com/extensions/tabs
-    chrome.tabs.onCreated.addListener(tabOnCreated);
-    chrome.tabs.onUpdated.addListener(tabOnUpdated);
-    chrome.tabs.onMoved.addListener(tabOnMoved);
+    chrome.tabs.onCreated.addListener(onTabCreated);
+    chrome.tabs.onUpdated.addListener(onTabUpdated);
+    chrome.tabs.onMoved.addListener(onTabMoved);
     //onSelectionChanged: deprecated
     //onActiveChanged: deprecated
-    chrome.tabs.onActivated.addListener(tabOnActivated);
+    chrome.tabs.onActivated.addListener(onTabActivated);
     //onHighlightChanged: deprecated
     //onHighlighted: not yet implemented
-    chrome.tabs.onDetached.addListener(tabOnDetached);
-    chrome.tabs.onAttached.addListener(tabOnAttached);
-    chrome.tabs.onRemoved.addListener(tabOnRemoved);
-    chrome.tabs.onReplaced.addListener(tabOnReplaced);
+    chrome.tabs.onDetached.addListener(onTabDetached);
+    chrome.tabs.onAttached.addListener(onTabAttached);
+    chrome.tabs.onRemoved.addListener(onTabRemoved);
+    chrome.tabs.onReplaced.addListener(onTabReplaced);
     //onZoomChange: not yet implemented, and we probably won't ever need it.
 
     chrome.runtime.onMessage.addListener(messageListener);

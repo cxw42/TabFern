@@ -1,7 +1,9 @@
 // setting-definitions.js: The TabFern settings, and setting-access functions
 
 // Fixed configuration
-let ISSUE35 = false;  // Set to true to enable #35 functions, false to disable
+let ISSUE35 = true;  // Set to true to enable #35 functions, false to disable
+// TODO remove this flag once #35 is closed and #35 functions are
+// always enabled.
 
 // Names of settings, and their defaults // {{{1
 

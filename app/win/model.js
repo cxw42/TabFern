@@ -12,9 +12,7 @@
 /// - n: a jstree node_id
 /// - ny: anything that can be passed to jstree.get_node() ("nodey" by
 ///   analogy with "truthy" and "falsy."
-/// - vorny: a val or a nodey
-/// TODO? Change vorny to VorVNorNY?  I.e., also accept {val:...} and
-/// {node_id:...}?
+/// - vorny: a val, nodey, or vn
 
 // Boilerplate and require()s {{{1
 "use strict";
@@ -43,16 +41,14 @@ me.VN_NONE = {val: null, node_id: ''};
 // Querying the model ////////////////////////////////////////////// {{{1
 
 /// Get a {val, node_id} pair (vn) from one of those (vorny).
-/// @param val_or_nodey {mixed} If a string, the node ID of the
-///                             item; otherwise, the details
-///                             record for the item, or the jstree node
-///                             record for the node.
-/// @param item_type {mixed=} If provided, the type of the item.
-///             Otherwise, all types will be checked.
-/// @return {Object} {val, node_id}.    `val` is falsy if the
-///                                     given vorny was not found.
-///         If #item_type was specified and the given item wasn't
-///         of that type, also returns falsy.
+/// @param val_or_nodey {mixed}
+///     If a string, the node ID of the item; otherwise, the details record for
+///     the item, the jstree node record for the node, or a vn for the node.
+/// @param item_type {optional mixed} If provided, the type of the item.
+///     Otherwise, all types will be checked.
+/// @return {Object} {val, node_id}.
+///     `val` is falsy if the given vorny was not found, or if #item_type was
+///     specified and the given item wasn't of that type.
 me.vn_by_vorny = function(val_or_nodey, item_type) {
     if(!val_or_nodey) return me.VN_NONE;
 
@@ -82,10 +78,13 @@ me.vn_by_vorny = function(val_or_nodey, item_type) {
 
     } else if(typeof val_or_nodey === 'object' && val_or_nodey.val &&
             val_or_nodey.node_id) {                 // We got a vn as input
-        ({val, node_id} = val_or_nodey);
+        ({val, node_id} = val_or_nodey);    // parens reqd.
 
-    } else {                                        // Unknown
-        return me.VN_NONE;
+    } else {                                        // Unknown --- try nodey
+        const node = T.treeobj.get_node(val_or_nodey);
+        if(!node) return me.VN_NONE;
+        node_id = node.id;
+        val = D.val_by_node_id(node_id);
     }
 
     if(item_type && (val.ty !== item_type)) {
@@ -93,6 +92,18 @@ me.vn_by_vorny = function(val_or_nodey, item_type) {
     }
     return {val, node_id};
 }; //vn_by_vorny()
+
+/// Get a {val, node_id} pair (vn) from its Chrome ID
+/// @param cid {integer}        The Chrome ID of the item
+/// @param item_type {mixed}    The type of the item.
+/// @return {Object} {val, node_id}.
+///     `val` is falsy if the given vorny was not found, or if #item_type was
+///     specified and the given item wasn't of that type.
+me.vn_by_cid = function vn_by_cid(cid, item_type) {
+    if(!item_type) return me.VN_NONE;
+    let val = D.val_by_cid(cid, item_type);
+    return me.vn_by_vorny(val);
+}
 
 /// Determine whether a model has given subtype(s).
 /// @param vorny {mixed} The item
@@ -380,11 +391,11 @@ me.refresh_icon = function(vorny) {
     return true;
 }; //refresh_icon()
 
-/// Refresh a node after changes have been made.
-/// @param vorny {mixed}    The item
-/// @param what {optional Object}   If an object, truthy keys
-///     icon, tooltip, label cause that to be refreshed.
-///     If not provided, or not an object, all three will be refreshed.
+/// Refresh a tree node after changes have been made.
+/// @param vorny {mixed}            The item
+/// @param what {optional Object}
+///     - If an object: truthy keys icon, tooltip, label cause that to be refreshed.
+///     - If not provided, or not an object, all three will be refreshed.
 /// @return {Boolean}   False on unknown item; true otherwise.
 me.refresh = function(vorny, what) {
     let {val, node_id} = me.vn_by_vorny(vorny);
@@ -553,7 +564,7 @@ me.vnRezWin = function(isFirstChild=false) {
 /// Does not process Chrome widgets.  Instead, assumes the tab is
 /// closed initially.
 ///
-/// @param {mixed} vornyParent The parent
+/// @param vornyParent {mixed} The parent
 /// @return {Object} {val, node_id} The new item,
 ///                                 or me.VN_NONE on error.
 me.vnRezTab = function(vornyParent) {
@@ -665,19 +676,20 @@ me.del_subtype = function(vorny, ...tys) {
 //    }; //change()
 
 // }}}1
-// Mapping model indices /////////////////////////////////////////// {{{1
+// Managing model indices ////////////////////////////////////////// {{{1
 
 // The model stores ctab indices, and each tree node has an index under
-// its parent.  These functions map between those indices.
+// its parent.  These functions mange those indices.
+// NOTE: me.react_*() also have some index-management code.
 //
-// Mapping is used in: treeOnSelect(), tabOnCreated(), tabOnMoved(),
-// tabOnAttached(), treeCheckCallback():move_open_tab_in_window(), and
+// Mapping is used in: onTreeSelect(), onTabCreated(), onTabMoved(),
+// onTabAttached(), treeCheckCallback():move_open_tab_in_window(), and
 // treeCheckCallback():open_tab_within_window().
 //
 // Refreshing tree indices is used in: actionOpenRestOfTabs(),
 // actionCloseTabAndSave(), connectChromeWindowToTreeWindowItem(),
-// treeOnSelect(), tabOnCreated():tab_on_created_inner(),
-// tabOnMoved(), tabOnRemoved(), tabOnDetached(), tabOnAttached(),
+// onTreeSelect(), onTabCreated():tab_on_created_inner(),
+// onTabMoved(), onTabRemoved(), onTabDetached(), onTabAttached(),
 // treeCheckCallback():move_open_tab_in_window(), and
 // treeCheckCallback():open_tab_within_window(),
 
@@ -714,14 +726,14 @@ me.updateTabIndexValues = function updateTabIndexValues(win_nodey, as_open = [])
         }
     }
 
-    let old_hash = D.windows.by_node_id(win_node.id, 'ordered_url_hash'); //DEBUG
+    //let old_hash = D.windows.by_node_id(win_node.id, 'ordered_url_hash'); //DEBUG
 
     // TODO do we need this, or can we use a dirty flag to avoid
     // recomputing?
     me.updateOrderedURLHash(win_node.id);
 
-    let new_hash = D.windows.by_node_id(win_node.id, 'ordered_url_hash'); //DEBUG
-    log.trace(`win ${win_node.id} hash from ${old_hash} to ${new_hash}`); //DEBUG
+    //let new_hash = D.windows.by_node_id(win_node.id, 'ordered_url_hash'); //DEBUG
+    //log.trace(`win ${win_node.id} hash from ${old_hash} to ${new_hash}`); //DEBUG
 } //updateTabIndexValues
 
 // TODO cache open-child count?
@@ -765,61 +777,13 @@ me.getWinOpenChildCount = function getWinOpenChildCount(win_nodey)
     return retval;
 } //getWinOpenChildCount()
 
-/// Convert a Chrome tab index to an index in the tree for a window,
-/// even if the window is partly open.
-/// Used when tabs are created, attached, or moved.
-/// @pre The window must be open.
-/// @param win_nodey {mixed} The window in question
-/// @param cidx {nonnegative integer} the Chrome ctab.index
-/// @param openerTabId {optional integer} The ctab ID of the opener,
-///                                         if any.
-me.treeIdxByChromeIdx = function treeIdxByChromeIdx(win_nodey, cidx,
-                                        openerTabId)
-{
-    let win_node = T.treeobj.get_node(win_nodey);
-    if(!win_node || !Number.isInteger(cidx) || cidx<0 ) return false;
-
-    // Window can't be partly open if it's closed
-    if(!D.windows.by_node_id(win_node.id, 'isOpen')) return false;
-    let nkids = win_node.children.length;
-
-//        // Put it just after the opener tab ID, if possible
-//        OPENER: if(openerTabId) {
-//            let openerVal = D.tabs.by_tab_id(openerTabId);
-//            if(!openerVal) break OPENER;
-//            let tree_idx = win_node.children.indexOf(openerVal.node_id);
-//            if(tree_idx===-1) break OPENER;
-//
-//            return tree_idx+1;
-//        }
-
-    // Build a node list as if all the open tabs were packed together
-    let orig_idx = [];
-    win_node.children.forEach( (kid_node_id, kid_idx)=>{
-        if(D.tabs.by_node_id(kid_node_id, 'isOpen')) {
-            orig_idx.push(kid_idx);
-            // TODO break if we've gone far enough?
-        }
-    });
-
-    log.info({"Mapping in":orig_idx,"From":cidx});
-
-    // Pick the cidx from that list
-    if(cidx >= orig_idx.length) {           // New tab off the end
-        return 1 + orig_idx[orig_idx.length-1];
-
-    } else if(cidx>0) {                     // Tab that exists, not the 1st
-        // Group it to the left rather than the right if there's a gap
-        return orig_idx[cidx-1]+1;  // i.e., after the previous tab's node
-
-    } else {                                // New first tab
-        return orig_idx[cidx];
-    }
-
-} //treeIdxByChromeIdx()
-
 /// Convert a tree index to a Chrome tab index in a window,
 /// even if the window is partly open.
+///
+/// @note there is no single reverse mapping from Chrome tab index to
+/// tree index.  This is because the specifics of that mapping vary
+/// depending on the reason you need to map chrome->tree indices.
+///
 /// @pre The window must be open.
 /// @param win_nodey {mixed} The window in question
 /// @param tree_item {mixed} The child node or index whose ctab index we want.
@@ -832,19 +796,18 @@ me.chromeIdxOfTab = function chromeIdxOfTab(win_nodey, tree_item)
 
     // Window can't be partly open if it's closed
     if(!D.windows.by_node_id(win_node.id, 'isOpen')) return false;
-    let nkids = win_node.children.length;
 
-    let tree_idx;
+    let treeidx;
     if(typeof tree_item !== 'string') {
         if(!Number.isInteger(tree_item)) return false;
-        tree_idx = Number(tree_item);
+        treeidx = Number(tree_item);
     } else {
-        tree_idx = win_node.children.indexOf(tree_item);
-        if(tree_idx === -1) return false;
+        treeidx = win_node.children.indexOf(tree_item);
+        if(treeidx === -1) return false;
     }
 
-    let retval = tree_idx;
-    for(let child_idx=0; child_idx < tree_idx; ++child_idx) {
+    let retval = treeidx;
+    for(let child_idx=0; child_idx < treeidx; ++child_idx) {
         let child_node_id = win_node.children[child_idx];
 
         // Closed tabs don't contribute to the Chrome tab count
@@ -1086,11 +1049,11 @@ me.eraseWin = function(win_vorny) {
 }; //eraseWin()
 
 // }}}1
-// New model functions mapping Chrome <=> tree indices ///////////// {{{1
+// Reacting to Chrome events /////////////////////////////////////// {{{1
 
-// These functions relate to specific actions.  They do not try to
-// establish a universal mapping from one set of indices to another.
-// Instead, they adjust the model as necessary.
+// These functions react to specific events from Chrome.  They do not try to
+// establish a universal mapping between Chrome tab indices and jstree
+// node indices under a parent.  Instead, they adjust the model as necessary.
 // If the Chrome widgets need to be manipulated, they return the
 // necessary information.
 
@@ -1102,60 +1065,77 @@ me.eraseWin = function(win_vorny) {
 /// Add a newly-created tab to the tree and to the right place based on its
 /// Chrome index.
 /// @param  win_vorny   The window
-/// @param  tab_vorny   The newly-created tab (from vnRezTab)
 /// @param  ctab        The Chrome tab
-/// @return True on success; false on failure
-me.react_onTabCreated = function(win_vorny, tab_vorny, ctab) {
-    let tabvn = me.vn_by_vorny(tab_vorny, K.IT_TAB);
-    if(!tabvn) return false;
+/// @return The node ID of the new tab's tree node on success; false on failure
+///
+/// @todo   refactor to remove duplication of code between this and
+///         treeIdxByChromeIdx() / react_onTabMoved()
 
-    let win = me.vn_by_vorny(win_vorny, K.IT_WIN);
-    if(!win) return false;
-    let win_node = T.treeobj.get_node(win.node_id);
+me.react_onTabCreated = function(win_vorny, ctab) {
+    let winvn = me.vn_by_vorny(win_vorny, K.IT_WIN);
+    if(!winvn.node_id) return false;
+    let win_node = T.treeobj.get_node(winvn.node_id);
     if(!win_node) return false;
 
-    let treeidx;    // Where it should go
+    if(!winvn.val.isOpen) return false;
 
-    // Figure out where to put it
-    if(!win.val.isOpen) return false;
-    let nkids = win_node.children.length;
+    // --- Figure out where to put it ---
 
-//        // Put it just after the opener tab ID, if possible
-//        OPENER: if(openerTabId) {
-//            let openerVal = D.tabs.by_tab_id(openerTabId);
-//            if(!openerVal) break OPENER;
-//            let tree_idx = win_node.children.indexOf(openerVal.node_id);
-//            if(tree_idx===-1) break OPENER;
-//
-//            return tree_idx+1;
-//        }
+    let treeidx = false;        // Where it should go
 
     // Build a node list as if all the open tabs were packed together
-    let orig_idx = [];
+    let orig_tidxes = [];
     win_node.children.forEach( (kid_node_id, kid_idx)=>{
         if(D.tabs.by_node_id(kid_node_id, 'isOpen')) {
-            orig_idx.push(kid_idx);
-            // TODO break if we've gone far enough?
+            orig_tidxes.push(kid_idx);
         }
     });
 
-    log.info({"Mapping in":orig_idx,"From":ctab.index});
+    log.info({"Mapping in":orig_tidxes, "Tab created at index": ctab.index});
 
     // Pick the ctab.index from that list
-    if(ctab.index >= orig_idx.length) {         // New tab off the end
-        treeidx = (orig_idx.length === 0 ? 0 :
-            (1 + orig_idx[orig_idx.length-1]));
+    if(ctab.index >= orig_tidxes.length) {         // New tab off the end
+        treeidx = (orig_tidxes.length === 0 ? 0 :
+            (1 + orig_tidxes[orig_tidxes.length-1]));
 
     } else if(ctab.index > 0) {                 // Tab that exists, not the 1st
         // Group it to the left rather than the right if there's a gap
-        treeidx = orig_idx[ctab.index-1]+1;  // i.e., after the previous tab's node
+        treeidx = orig_tidxes[ctab.index-1]+1;  // i.e., after the previous tab's node
 
     } else {                                    // New first tab
-        treeidx = orig_idx[ctab.index];
+        treeidx = orig_tidxes[ctab.index];
     }
 
-    // Add the tab to the tree
-    me.markTabAsOpen(tabvn.val, ctab);
+    if(treeidx === false) {
+        log.error({"Could not find where to put tab": ctab, "in window": winvn});
+        return false;
+    }
+
+    // --- Create the model entry if there isn't one ---
+
+    let tabvn;
+    let tabval = D.tabs.by_tab_id(ctab.id);
+
+    if(tabval) {     // It's a duplicate
+        log.info(`   - tab ${tabvn.node_id} already exists`);
+        tabvn = vn_by_vorny(tabval);
+
+    } else {
+        tabvn = me.vnRezTab(winvn.node_id);
+
+        if(!tabvn.node_id) {
+            log.debug({"Could not create record for ctab":ctab, winvn});
+            me.eraseTab(tabvn);
+            return false;
+        }
+        if(!me.markTabAsOpen(tabvn.val, ctab)) {
+            log.debug({"Could not mark tab as open":ctab, tabvn});
+            me.eraseTab(tabvn);
+            return false;
+        }
+    }
+
+    // --- Update the model ---
 
     // Put it where it goes
     T.treeobj.because('chrome','move_node', tabvn.node_id, win_node, treeidx);
@@ -1163,79 +1143,344 @@ me.react_onTabCreated = function(win_vorny, tab_vorny, ctab) {
     // Update the indices
     me.updateTabIndexValues(win_node);
 
-    return true;
+    return tabvn.node_id;
 }; //react_onTabCreated() }}}2
+
+// onTabUpdated {{{2
+
+// Grab a field from one of an array of objects
+function grabfirst(fieldname, ...objs)
+{
+    let retval = null;
+    let obj = objs.find((elem) => fieldname in elem);
+    if(obj) {
+        retval = obj[fieldname];
+    }
+    return retval;
+}
+
+/// Update a tab in the tree
+///
+/// @param  ctabid      The tab's Chrome tab ID
+/// @param  changeinfo  List of changes
+/// @param  newctab     The ctab record provided by Chrome, theoretically updated.
+/// @return
+///     - on success, an object with the key 'dirty' indicating whether
+///       any changes were made.
+///     - on failure, a string error message
+me.react_onTabUpdated = function(ctabid, changeinfo, newctab) {
+    let dirty = false;
+    let should_refresh_label = false;
+    let should_refresh_tooltip = false;
+    let should_refresh_icon = false;
+
+    let tabvn = me.vn_by_cid(ctabid, K.IT_TAB);
+    if(!tabvn.val) {
+        // We've probably already closed this tab, so drop this change (#237).
+        log.info(`Ignoring tabUpdated event for unknown tab ${ctabid}`);
+        return {dirty: false};
+    }
+
+    let node = T.treeobj.get_node(tabvn.node_id);
+    if(!node) return `No node for ID ${tabvn.node_id} (${JSON.stringify(tabvn)})`;
+    tabvn.val.isOpen = true;     //lest there be any doubt
+
+    log.debug({"   Details for updated ctab":ctabid, tabvn, node});
+
+    // Caution: changeinfo doesn't always have all the changed information.
+    // Therefore, we check changeinfo and ctab.
+
+    // TODO refactor the following into a separate routine that can be
+    // used to update closed or open tabs' tree items.  Maybe move it
+    // to model.js as well.  This will reduce code duplication, e.g., in
+    // actionURLSubstitute.
+
+    // URL
+    let new_raw_url = grabfirst('url', changeinfo, newctab) || newctab.pendingUrl || 'about:blank';
+    if(new_raw_url !== tabvn.val.raw_url) {
+        dirty = true;
+        should_refresh_tooltip = true;
+            // TODO check the config - it may not be necessary to update
+            // the tooltip since the URL might be in the tooltip
+        tabvn.val.raw_url = new_raw_url;
+        me.updateOrderedURLHash(node.parent);
+            // When the URL changes, the hash changes, too.
+    }
+
+    // pinned
+    let new_pinned = grabfirst('pinned', changeinfo, newctab);
+
+    if( (new_pinned !== null) && (tabvn.val.isPinned !== new_pinned) ) {
+        dirty = true;
+        should_refresh_label = true;
+        tabvn.val.isPinned = new_pinned;
+    }
+
+    // audible
+    let new_audible = grabfirst('audible', changeinfo, newctab);
+
+    if( (new_audible !== null) && (tabvn.val.isAudible !== new_audible) ) {
+        dirty = true;
+        should_refresh_label = true;
+        tabvn.val.isAudible = new_audible;
+    }
+
+    // title
+    let new_raw_title = grabfirst('title', changeinfo, newctab) || tabvn.val.raw_title || _T('labelBlankTabTitle');
+        // NOTE: I think the `tabvn.val.raw_title` is only hit during testing,
+        // since Chrome fills in newctab.title but the tests don't.  I am
+        // leaving this in for simplicity of the tests and since it doesn't
+        // actually affect the outcome if indeed Chrome provides newctab.title.
+
+    if(new_raw_title !== null && new_raw_title !== tabvn.val.raw_title) {
+        dirty = true;
+        should_refresh_label = true;
+        should_refresh_tooltip = true;
+
+        tabvn.val.raw_title = new_raw_title;
+    }
+
+    // favicon
+    let new_raw_favicon_url = grabfirst('favIconUrl', changeinfo, newctab);
+    if(new_raw_favicon_url !== null && new_raw_favicon_url !== tabvn.val.raw_favicon_url) {
+        dirty = true;
+        should_refresh_icon = true;
+        tabvn.val.raw_favicon_url = new_raw_favicon_url;
+    }
+
+    // Update the model
+    me.refresh(tabvn, { icon: should_refresh_icon,
+            label: should_refresh_label, tooltip: should_refresh_tooltip });
+
+    return {dirty};
+}; //react_onTabUpdated() }}}2
 
 // onTabMoved {{{2
 
 /// Move a tab in the tree based on its new Chrome index.
-/// @param  win_vorny   The window the tab is moving in
-/// @param  tab_vorny   The tab that is moving
-/// @param  cidx_from   The Chrome old tabindex
-/// @param  cidx_to     The Chrome new tabindex
-/// @return True on success; false on failure
-me.react_onTabMoved = function(win_vorny, tab_vorny, cidx_from, cidx_to) {
-    let tabvn = me.vn_by_vorny(tab_vorny, K.IT_TAB);
-    if(!tabvn) return false;
-
-    let win = me.vn_by_vorny(win_vorny, K.IT_WIN);
-    if(!win) return false;
-    let win_node = T.treeobj.get_node(win.node_id);
-    if(!win_node) return false;
-
-    // How far has the _user_ moved the tab?  The vast majority of the time,
-    // Chrome gives us deltas of +1 or -1.  I did a quick-and-dirty test
-    // with a lot of fast motion, attach, and detach (i.e., drag a tab and
-    // wiggle the mouse like crazy) and got this histogram: {1: 22, -1: 29}.
-    // Therefore, special-case those.
-    const desired_delta = cidx_to - cidx_from;
-
-    /// Where the node is going to go
-    let treeidx;
-
-    // TODO RESUME HERE
-    if(desired_delta === -1) {          // Move one left
-        treeidx = win_node.children.indexOf(tabvn.node_id) - 1;
-
-    } else if(desired_delta === 1) {    // Move one right
-        treeidx = win_node.children.indexOf(tabvn.node_id) + 1;
-
-    } else {                            // Move other than +/- 1
-        // XXX OLD
-        const from_idx = me.treeIdxByChromeIdx(win.node_id, cidx_from);
-        const to_idx = me.treeIdxByChromeIdx(win.node_id, cidx_to);
-        if(from_idx === false || to_idx === false) {
-            return false;
-        }
-
-        // As far as I can tell, in jstree, indices point between list
-        // elements.  E.g., with n items, index 0 is before the first and
-        // index n is after the last.  However, Chrome tab indices point to
-        // the tabs themselves, 0..(n-1).  Therefore, if we are moving
-        // right, bump the index by 1 so we will be _after_ that item
-        // rather than _before_ it.
-        // See the handling of `pos` values of "before" and "after"
-        // in the definition of move_node() in jstree.js.
-        treeidx = to_idx+(to_idx>from_idx ? 1 : 0);
+/// This implements the design decisions in spec/app-win-model.js for onTabMoved().
+///
+/// @param  cwinid      The window the tab is moving in
+/// @param  ctabid      The tab that is moving
+/// @param  cidx_from   The Chrome old tabindex, >=0
+/// @param  cidx_to     The Chrome new tabindex, >=0
+/// @return ===true on success; a string error message on failure
+me.react_onTabMoved = function(cwinid, ctabid, cidx_from, cidx_to) {
+    if(cidx_from == cidx_to) {
+        log.info("Nothing to do");
+        return true;
     }
 
-    if(treeidx == null) {       // Sanity check
+    let winvn = me.vn_by_cid(cwinid, K.IT_WIN);
+    if(!winvn.val) return `Window ${cwinid} not found`;
+
+    let tabvn = me.vn_by_cid(ctabid, K.IT_TAB);
+    if(!tabvn.val) return `Tab ${ctabid} not found`;
+
+    let win_node = T.treeobj.get_node(winvn.node_id);
+    if(!win_node) return false;
+    let moving_right = (cidx_to>cidx_from);
+    let tidx_from, tidx_to;
+
+    // Build a node list as if all the open tabs were packed together
+    let orig_tidxes = [];
+    win_node.children.forEach( (kid_node_id, kid_idx)=>{
+        if(D.tabs.by_node_id(kid_node_id, 'isOpen')) {
+            orig_tidxes.push(kid_idx);
+        }
+    });
+
+    log.info({"Mapping in":orig_tidxes, "Tab moved from index":cidx_from, "To":cidx_to});
+
+    // From
+    if(orig_tidxes.length === 0 || cidx_from >= orig_tidxes.length) {
         return false;
     }
+    tidx_from = orig_tidxes[cidx_from];
 
-    T.treeobj.because('chrome','move_node', tabvn.node_id, win_node, treeidx);
+    // To.  Even though the delta is almost always +/-1 ctab position, that may
+    // be any number of tree positions.
+    //
+    // In jstree, indices point between list elements.  E.g., with n items,
+    // index 0 is before the first and index n is after the last.  However,
+    // Chrome tab indices point to the tabs themselves, 0..(n-1).  Therefore,
+    // when moving right, increase the tree index by 1 to land after an item.
+    // rather than _before_ it.
+
+    if(cidx_to == orig_tidxes.length - 1) {     // Must be moving right
+        // We already checked for orig_tidxes.length === 0 above so don't need to recheck
+        tidx_to = orig_tidxes[orig_tidxes.length - 1] + 1;
+            // +1 => just after the last open tab
+
+    } else if(!moving_right) {                  // Moving left
+        tidx_to = orig_tidxes[cidx_to];         //Just before the right-side open tab
+
+    } else {                                    // Moving right, not to the last tab
+        tidx_to = orig_tidxes[cidx_to] + 1;
+    }
+
+    log.debug(`Moving tab ${tabvn.node_id} from tidx ${tidx_from} to tidx ${tidx_to}`);
+    T.treeobj.because('chrome','move_node', tabvn.node_id, win_node, tidx_to);
 
     // Update the indices of all the tabs in this window.  This will update
     // the old tab and the new tab.
-    me.updateTabIndexValues(win.node_id);
+    me.updateTabIndexValues(winvn.node_id);
 
     return true;
 
 }; //react_onTabMoved() }}}2
 
-// TODO react_onTabRemoved()
-// TODO react_onTabDetached()
-// TODO react_onTabAttached()
+// onTabRemoved() {{{2
+
+/// Remove a tab from a window in the tree.
+/// This implements the design decisions in spec/app-win-model.js for onTabRemoved().
+///
+/// @param  ctabid      The tab's Chrome tab ID
+/// @param  cwinid      The Chrome window ID of the window the tab is being removed from
+/// @return True on success; a string error message on failure
+me.react_onTabRemoved = function react_onTabRemoved(ctabid, cwinid) {
+    let winvn = me.vn_by_cid(cwinid, K.IT_WIN);
+    if(!winvn.val) return `Window ${cwinid} not found`;
+
+    let tabvn = me.vn_by_cid(ctabid, K.IT_TAB);
+
+    // See if it's a tab we have already marked as removed.  If so,
+    // whichever code marked it is responsible, and we're off the hook.
+    if(!tabvn.val || tabvn.val.tab_id === K.NONE) {
+        log.debug({"Bailing, but it's probably OK - no tab val for ctab":ctabid, tabvn, cwinid});
+        return true;
+    }
+
+    // ...but if we have not marked it as removed and a node is missing,
+    // something has gone wrong.
+    if(!tabvn.node_id) {
+        return `Bailing - no node_id for ctab ${ctabid} in window ${cwinid} (${JSON.serialize(tabvn)}`;
+    }
+
+    // Remove the tab
+    log.debug({'Removing value and entry for ctab':ctabid, tabvn, cwinid});
+    me.eraseTab(tabvn, 'chrome');
+
+    // Refresh the tab.index values for the remaining tabs
+    me.updateTabIndexValues(winvn.node_id);
+
+    return true;
+} // }}}2
+
+// onTabDetached() {{{2
+
+/// Detach a tab from a window in the tree.
+/// This implements the design decisions in spec/app-win-model.js for onTabDetached().
+///
+/// @param  ctabid      The tab's Chrome tab ID
+/// @param  cwinid      The Chrome window ID of the window the tab is detaching from
+/// @return True on success; a string error message on failure
+me.react_onTabDetached = function react_onTabDetached(ctabid, cwinid) {
+    let tab_val = D.tabs.by_tab_id(ctabid);
+    if(!tab_val)    // An express failure message - this would be bad
+        return `Unknown tab to detach???? tab ${ctabid} from window ${cwinid}`;
+
+    let old_win_val = D.windows.by_win_id(cwinid);
+    if(!old_win_val)    // ditto
+        return `Unknown win to detach from???? tab ${ctabid} from window ${cwinid}`;
+
+    T.treeobj.because('chrome','move_node', tab_val.node_id, T.holding_node_id);
+    tab_val.win_id = K.NONE;
+    tab_val.index = K.NONE;
+
+    me.updateTabIndexValues(old_win_val.node_id);
+    return true;
+}
+// }}}2
+
+// onTabAttached() {{{2
+
+/// Attach a tab in the tree based on its new Chrome window and index.
+/// This implements the design decisions in spec/app-win-model.js for onTabAttached().
+///
+/// @param  ctabid      The tab's Chrome tab ID
+/// @param  cwinid      The Chrome window ID of the window the tab is attaching to
+/// @param  cidx        The Chrome tab index where the tab is attaching
+/// @return True on success; a string error message on failure
+me.react_onTabAttached = function react_onTabAttached(ctabid, cwinid, cidx) {
+    const debuginfo = `${ctabid} attaching to ${cwinid} at ${cidx}`;
+
+    let tab_val = D.tabs.by_tab_id(ctabid);
+
+    if(!tab_val)        // An express failure message - this would be bad
+        return ("Unknown tab to attach???? "+debuginfo);
+
+    let win_val = D.windows.by_win_id(cwinid);
+    if(!win_val)    // ditto
+        return ("Unknown window attaching to???? "+debuginfo);
+    if(!win_val.isOpen)
+        return ("Cannot attach to closed window "+debuginfo);
+    let win_node = T.treeobj.get_node(win_val.node_id);
+
+    let treeidx = false;
+
+    // Build a node list as if all the open tabs were packed together
+    let orig_tidxes = [];
+    win_node.children.forEach( (kid_node_id, kid_idx)=>{
+        if(D.tabs.by_node_id(kid_node_id, 'isOpen')) {
+            orig_tidxes.push(kid_idx);
+        }
+    });
+
+    log.info({"Mapping in":orig_tidxes, "attaching at":cidx});
+
+    // Pick the cidx from that list
+    if(cidx >= orig_tidxes.length) {           // New tab off the end
+        treeidx = (orig_tidxes.length === 0 ? 0 :
+            (1 + orig_tidxes[orig_tidxes.length-1]));
+
+    } else if(cidx>0) {                     // Tab that exists, not the 1st
+        // Group it to the left rather than the right if there's a gap
+        treeidx = orig_tidxes[cidx-1]+1;  // i.e., after the previous tab's node
+
+    } else {                                // New first tab
+        treeidx = orig_tidxes[cidx];
+    }
+
+    if(treeidx === false)
+        return ("Could not find where to put tab: " + debuginfo);
+
+    log.info(`Attaching tab ${ctabid} at `+
+                `ctabidx ${cidx} => tree idx ${treeidx}`);
+    T.treeobj.because('chrome','move_node', tab_val.node_id, win_val.node_id,
+            treeidx);
+
+    // Open after moving because otherwise the window might not have any
+    // children yet.
+    T.treeobj.open_node(win_val.node_id);
+
+    tab_val.win_id = cwinid;
+    tab_val.index = cidx;
+
+    me.updateTabIndexValues(win_val.node_id);
+
+    return true;
+}
+
+// }}}2
+
+// onTabReplaced() {{{2
+
+/// Replace a tab in the tree based on its new Chrome tab ID
+/// This implements the design decisions in spec/app-win-model.js for onTabReplaced().
+///
+/// @param  addedTabId      The new Chrome ID of the tab
+/// @param  removedTabId    The old Chrome ID of the tab
+/// @return True on success; a string error message on failure
+me.react_onTabReplaced = function react_onTabReplaced(addedTabId, removedTabId) {
+    let tab_val = D.tabs.by_tab_id(removedTabId);
+    if(!tab_val) {
+        return `onReplaced: No tab found for removed tab ID ${removedTabId}`;
+    }
+
+    D.tabs.change_key(tab_val, 'tab_id', addedTabId);
+    return true;
+} // }}}2
 
 // }}}1
 

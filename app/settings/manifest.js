@@ -22,7 +22,7 @@ function brplain(text){return `<br/><span class="plain">${text}</span>`;}
 
 function future_i18n(x) { return x; }
 
-let ham = icon('fa fa-bars');   // hamburger-menu icon (three bars)
+let ham = icon('fa fa-bars');
 let gt = icon('fa fa-lg fa-caret-right');
 var editImg = icon('fff-pencil tf-action-button');
 var delImg = icon('fff-cross tf-action-button');
@@ -222,7 +222,7 @@ setting_definitions.push(
             "tab": future_i18n("Appearance"),
             "group": '',
             "type": "description",
-            "text": future_i18n("Refresh the TabFern window to apply changes to these options.  To refresh, click TabFern's title bar and hit F5 or Cmd+R."),
+            "text": future_i18n("Refresh the TabFern window to apply changes to these options.  To refresh, click TabFern's title bar and hit F5."),
         },
         {
             "tab": future_i18n("Appearance"),
@@ -401,7 +401,7 @@ setting_definitions.push(
             "tab": future_i18n("Advanced"),
             "group": '',
             "type": "description",
-            "text": future_i18n("Refresh the TabFern window to apply changes to these options.  To refresh, click TabFern's title bar and hit F5 or Cmd+R."),
+            "text": future_i18n("Refresh the TabFern window to apply changes to these options.  To refresh, click TabFern's title bar and hit F5."),
         },
         {
             "tab": future_i18n("Advanced"),
@@ -474,7 +474,7 @@ alphabetical order within each category.`
             "type": "description",
             "text":
 `<ul>
-<li><a href="https://github.com/bluikko/">bluikko</a></li>
+<li><a href="https://github.com/bluikko">bluikko</a></li>
 <li><a href="https://github.com/devinrhode2/">Devin Rhode</a></li>
 <li><a href="https://github.com/philiprhoades/">Phil Rhoades</a></li>
 </ul>`
@@ -485,22 +485,11 @@ alphabetical order within each category.`
 setting_definitions.push(
         {
             "tab": future_i18n("What's new?"),
-            "group": `Version 0.2.2${brplain('2021-12-22')}`,
+            "group": `Version 0.3.0${brplain('2022-12-09')}`,
             'group_html':true,
             "type": "description",
             "text": (
-`<h1>Please back up!</h1>
-<p>The next version of TabFern will introduce tab-at-a-time ${issue(35)}.
-Please back up now (${ham} ${gt} Backup now) just in case of unexpected bugs!
-Remember, TabFern carries <b>no warranty</b>.
-</p>
-<ul>
-<li>Fixed a regression in the settings: it is now possible to set the
-window action-button order again.  ${issue(208)}</li>
-<li>When running a development version of TF, the commit hash will be
-listed in the title bar.  This will make it easier to reference the
-commit in bug reports.  ${issue(210)}</li>` +
-
+`<ul>` +
 (!S.ISSUE35 ? '' :
 `<li class="gold-star">Opening one tab at a time!  Yes, the wait is over!  ${issue(35)}
 <ul>
@@ -514,9 +503,42 @@ commit in bug reports.  ${issue(210)}</li>` +
 <p>Please note that if Chrome crashes while you have only some tabs open, the
 recovered window will show up in TabFern as a separate, unsaved window
 (related to ${issue(41, true)}).</p>
-</li>`) +
+</li>
+`) +
+'</ul>' +
+`
+<h4>Help TabFern!</h4>
+<p>I need people to help me develop and test.  Please volunteer or spread the
+word!  That is how TabFern will continue to advance :) .  You can reach me
+on <a href="https://github.com/cxw42/TabFern/discussions">GitHub</a> or
+<a href="https://gitter.im/TabFern/Lobby">gitter</a>.</p>
 
-`<li>Icons of other extensions should now appear in the TF window.  ${issue(202)}</li>
+<h4>Note about Manifest v3</h4>
+<p>The <tt>chrome:extensions</tt> panel may show an error that
+"Manifest version 2 is deprecated, and support will be removed in 2023."
+Don't worry; I plan to have the update done in time.  ${issue(275)}</p>
+`
+            ),
+
+        },
+        {
+            "tab": future_i18n("What's new?"),
+            "group": `Version 0.2.2${brplain('2021-12-22')}`,
+            'group_html':true,
+            "type": "description",
+            "text": (
+`<h4>Please back up!</h4>
+<p>The next version of TabFern will introduce tab-at-a-time ${issue(35)}.
+Please back up now (${ham} ${gt} Backup now) just in case of unexpected bugs!
+Remember, TabFern carries <b>no warranty</b>.
+</p>
+<ul>
+<li>Fixed a regression in the settings: it is now possible to set the
+window action-button order again.  ${issue(208)}</li>
+<li>When running a development version of TF, the commit hash will be
+listed in the title bar.  This will make it easier to reference the
+commit in bug reports.  ${issue(210)}</li>
+<li>Icons of other extensions should now appear in the TF window.  ${issue(202)}</li>
 <li>Other fixes: ${issue(196,true)}, ${issue(224,true)} (thanks to bluikko),
     ${issue(233,true)}, ${issue(236,true)}, ${issue(237,true)}</li>
 <li>Known issues: ${issue(276,true)}</li>
@@ -534,7 +556,8 @@ recovered window will show up in TabFern as a separate, unsaved window
 `<li class="gold-star">Special thanks to Hacktoberfest 2019 participants!
     ahonn and Procyon-b contributed code, Makemeloco contributed a translation,
     and sarthakpranesh contributed a new website.</li>` +
-`<li>The TabFern window should no longer appear off-screen (unless you have
+`<li>TabFern will warn before closing a tab that is playing audio.  ${issue(118)}</li>
+<li>The TabFern window should no longer appear off-screen (unless you have
     changed monitors recently).  ${issue(189)}</li>
 <li>Russian translation ${issue(194)}</li>
 <li>Fix for a Chrome change that caused <tt>new_tab.html</tt> tabs to open.
@@ -559,7 +582,7 @@ recovered window will show up in TabFern as a separate, unsaved window
 <a href="https://forum.vivaldi.net/topic/35531/chrome-extension-apis-intermittently-unavailable-on-2-3-1440-61-x86">bug</a>
 that sometimes causes
 TabFern not to load properly.  If this happens, close the TF window and
-click the TF toolbar button to reload, or hit F5 or Cmd+R.  That will probably work!
+click the TF toolbar button to reload, or hit F5.  That will probably work!
 ${issue(171)}</p>
 <ul>
 <li>TabFern now opens in a small window in the upper-left corner of the

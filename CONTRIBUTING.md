@@ -45,6 +45,8 @@ below for why.  Developing on the `main` branch involves:
 1. Create a new branch (e.g., `git checkout -b mybranch origin/main`)
 1. Run `npm install`.  This will download all the other packages TabFern and
    its build process use.
+   * If this hangs, try the solution by [xiata](https://github.com/xiata)
+     [here](https://github.com/npm/cli/issues/1673#issue-678698649).
 1. Run `npx brunch w`.  This will build `app/` and the other directories in the
    branch into `public/`.  It will also leave `brunch` running.  (To build but
    not leave `brunch` running, say `npx brunch b`.)
@@ -61,6 +63,9 @@ below for why.  Developing on the `main` branch involves:
    - If you change anything in `manifest.json`, `var/`, `brunch-config.js`,
      or `app/bg`, you will probably need to reload the extension.  In Chrome,
      go to `chrome://extensions` and click the circular arrow in TabFern's box.
+
+If you want to make a `.zip`, e.g., to try installing from a different folder,
+say `npm run zip`.  The output will be in `webstore-<VERSION>.zip`.
 
 ### Build notes
 

@@ -302,7 +302,7 @@
   }
   , "errCouldNotCreateWindow": {
     "message": "I couldn't create the window: $ERR$"
-    ,"description":"Error message from treeOnSelect()"
+    ,"description":"Error message from onTreeSelect()"
     ,"placeholders":{
       "err": {
         "content": "$1"

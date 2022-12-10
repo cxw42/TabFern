@@ -277,7 +277,7 @@
   }
   , "errCouldNotCreateWindow": {
     "message": "Не удалось создать окно: $ERR$"
-    ,"description":"Error message from treeOnSelect()"
+    ,"description":"Error message from onTreeSelect()"
     ,"placeholders":{
       "err": {
         "content": "$1"

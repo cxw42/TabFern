@@ -368,7 +368,8 @@ div.jstree-wholerow-hovered > .tf-action-group {
 /* }}}1 */
 /* --- Tweak up jstree -------------------------------------------- {{{1 -- */
 
-/* shrink large favicons to fit, if necessary */
+/* Shrink large favicons to fit, if necessary.  TF's jstree is customized
+ * to add .jstree-url-icon to tab icons that actually have URLs. */
 .jstree-children .jstree-children .jstree-anchor .jstree-icon.jstree-url-icon {
     /* Two jstree-children: don't touch the top-level nodes, only second-level
      * and lower. */
