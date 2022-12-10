@@ -73,7 +73,7 @@
     "sass-brunch": "^2.10.8",
     "seedrandom": "^2.4.3",
     "set-value": "^2.0.1",
-    "tar": "^2.2.2",
+    "tar": "^4.4.18",
     "uglify-es-brunch": "^1.0.5"
   }
 }
