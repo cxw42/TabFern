@@ -13,7 +13,7 @@ console.log('TabFern common.js loading');
 // { msg: <one of the below constants> [, anything else] }
 // For responses, response:true is also included.
 
-const MSG_GET_VIEW_WIN_ID = 'getViewWindowID';
+const MSG_GET_VIEW_WIN_ID = 'getViewWindowId';
 const MSG_EDIT_TAB_NOTE = 'editTabNote';
 
 ////////////////////////////////////////////////////////////////////////// }}}1
