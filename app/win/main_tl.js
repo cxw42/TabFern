@@ -2742,15 +2742,11 @@ function onTabReplaced(addedTabId, removedTabId)
 {
     log.info(`Tab being replaced: ${removedTabId} -> ${addedTabId}`);
 
-    const errmsg = M.react_onTabReplaced(addedTabID, removedTabId);
+    const errmsg = M.react_onTabReplaced(addedTabId, removedTabId);
 
     if(typeof(errmsg) === 'string') {
         log.warn(`Could not replace ${removedTabId} with ${addedTabId}: ${errmsg}`);
         return;
-    } else {
-        log.debug({
-            [`Tab replacement ${removedTabId}->${addedTabId}: new value`]:tab_val
-        });
     }
 } //onTabReplaced
 
