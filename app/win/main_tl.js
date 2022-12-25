@@ -2745,8 +2745,7 @@ function onTabReplaced(addedTabId, removedTabId)
     const errmsg = M.react_onTabReplaced(addedTabId, removedTabId);
 
     if(typeof(errmsg) === 'string') {
-        log.warn(`Could not replace ${removedTabId} with ${addedTabId}: ${errmsg}`);
-        return;
+        throw new Error(`Could not replace ${removedTabId} with ${addedTabId}: ${errmsg}`);
     }
 } //onTabReplaced
 
