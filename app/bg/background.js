@@ -18,7 +18,7 @@ const S = require('common/setting-definitions');    // in app/
 
 /// The module exports, for use in command-line debugging
 let me = {
-    viewWindowID: undefined,    // the chrome.windows ID of our view
+    viewWindowId: undefined,    // the chrome.windows ID of our view
     loadView: undefined,
 };
 
@@ -46,8 +46,8 @@ me.loadView = function loadView()
             // However, Firefox does support windows.update with focused.
         },
         function(win) {
-            me.viewWindowID = win.id;
-            console.log('TabFern new View ID: ' + me.viewWindowID.toString());
+            me.viewWindowId = win.id;
+            console.log('TabFern new View ID: ' + me.viewWindowId.toString());
             chrome.windows.update(win.id, {focused:true}, ignore_chrome_error);
         });
 } //loadView()
@@ -63,8 +63,8 @@ function moveTabFernViewToWindow(reference_cwin)
     function clip(x, lo, hi) { if(hi<lo) hi=lo; return Math.min(hi, Math.max(lo, x)); }
 
     if(!isLastError()) {
-        if(!me.viewWindowID) return;
-        chrome.windows.get(me.viewWindowID, function(view_cwin) {
+        if(!me.viewWindowId) return;
+        chrome.windows.get(me.viewWindowId, function(view_cwin) {
             // TODO handle Chrome error
             let updates = {left: reference_cwin.left+16,
                             top: reference_cwin.top+16,
@@ -75,7 +75,7 @@ function moveTabFernViewToWindow(reference_cwin)
             updates.width = clip(view_cwin.width, 200, reference_cwin.width-32);
             updates.height = clip(view_cwin.height, 100, reference_cwin.height-32);
 
-            chrome.windows.update(me.viewWindowID, updates
+            chrome.windows.update(me.viewWindowId, updates
                 // TODO handle Chrome error
                 );
         });
@@ -88,19 +88,19 @@ function moveTabFernViewToWindow(reference_cwin)
 // When the icon is clicked in Chrome
 let onClickedListener = function(tab) {
 
-    // If viewWindowID is undefined then there isn't a popup currently open.
-    if (typeof me.viewWindowID === "undefined") {        // Open the popup
+    // If viewWindowId is undefined then there isn't a popup currently open.
+    if (typeof me.viewWindowId === "undefined") {        // Open the popup
         me.loadView();
     } else {                                // There's currently a popup open
      // Bring it to the front so the user can see it
-        chrome.windows.update(me.viewWindowID, { "focused": true });
+        chrome.windows.update(me.viewWindowId, { "focused": true });
     }
 
     // Set a timer to bring the window to the front on another click
     // that follows fairly shortly.
     if(tab) {
         let clickListener = function(tab) {
-            if(me.viewWindowID && tab.windowId) {
+            if(me.viewWindowId && tab.windowId) {
                 chrome.windows.get(tab.windowId, moveTabFernViewToWindow);
             }
         };
@@ -130,9 +130,9 @@ chrome.commands.onCommand.addListener(onCommandListener);
 // When a window is closed
 chrome.windows.onRemoved.addListener(function(windowId) {
   // If the window getting closed is the popup we created
-  if (windowId === me.viewWindowID) {
-    // Set viewWindowID to undefined so we know the popup is not open
-    me.viewWindowID = undefined;
+  if (windowId === me.viewWindowId) {
+    // Set viewWindowId to undefined so we know the popup is not open
+    me.viewWindowId = undefined;
     console.log('Popup window was closed');
   }
 });
@@ -182,8 +182,8 @@ function messageListener(request, sender, sendResponse)
     }
 
     if(request.msg === MSG_GET_VIEW_WIN_ID && !request.response) {
-        console.log('Responding with window ID ' + me.viewWindowID.toString());
-        sendResponse({msg: request.msg, response: true, id: me.viewWindowID});
+        console.log('Responding with window ID ' + me.viewWindowId.toString());
+        sendResponse({msg: request.msg, response: true, id: me.viewWindowId});
     }
 } //messageListener
 

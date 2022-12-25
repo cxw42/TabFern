@@ -140,6 +140,12 @@ A good example is [this commit](https://github.com/cxw42/TabFern/commit/3ac0f274
      for more documentation of the available options.
    - Edit the values appropriately.
 
+### Miscellaneous
+
+- If you add a name ending with `id` (in any case), and it's not all
+  upper-case, please spell it `Id` rather than `ID` or `id`.  That will help
+  avoid bugs like #304.  Thanks!
+
 ## Notes about dependencies
 
 The following dev dependencies are listed in `package.json` but **not used**

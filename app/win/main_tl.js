@@ -183,7 +183,7 @@ function escapeRegExp(string) {
 
 /// Get the node ID from a NEW_TAB_URL.  Returns falsy on failure, or the ID
 /// on success.
-function getNewTabNodeID(ctab) {
+function getNewTabNodeId(ctab) {
     if(!ctab || !(ctab.url || ctab.pendingUrl)) return false;
     let hash;
     try {
@@ -203,7 +203,7 @@ function getNewTabNodeID(ctab) {
     }
 
     return hash;
-} //getNewTabNodeID
+} //getNewTabNodeId
 
 ////////////////////////////////////////////////////////////////////////// }}}1
 // General record helpers // {{{1
@@ -2541,7 +2541,7 @@ var onTabCreated = (function(){     // search key: function onTabCreated()
     /// @return {Boolean} true if we handled the action, false otherwise
     function handle_tabfern_action(tab_val, ctab)
     {
-        let tab_node_id = getNewTabNodeID(ctab);
+        let tab_node_id = getNewTabNodeId(ctab);
         if(!tab_node_id) return false;      // Not a NEW_TAB_URL
 
         // See if the hash is a node ID for a tab.
@@ -2742,15 +2742,10 @@ function onTabReplaced(addedTabId, removedTabId)
 {
     log.info(`Tab being replaced: ${removedTabId} -> ${addedTabId}`);
 
-    const errmsg = M.react_onTabReplaced(addedTabID, removedTabId);
+    const errmsg = M.react_onTabReplaced(addedTabId, removedTabId);
 
     if(typeof(errmsg) === 'string') {
-        log.warn(`Could not replace ${removedTabId} with ${addedTabId}: ${errmsg}`);
-        return;
-    } else {
-        log.debug({
-            [`Tab replacement ${removedTabId}->${addedTabId}: new value`]:tab_val
-        });
+        throw new Error(`Could not replace ${removedTabId} with ${addedTabId}: ${errmsg}`);
     }
 } //onTabReplaced
 
