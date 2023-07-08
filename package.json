@@ -70,7 +70,7 @@
     "path-parse": "^1.0.7",
     "replacer-brunch": "^1.1.1",
     "replacestream": "^4.0.3",
-    "sass-brunch": "^2.10.8",
+    "sass-brunch": "^3.0.1",
     "seedrandom": "^2.4.3",
     "set-value": "^2.0.1",
     "tar": "^2.2.2",
