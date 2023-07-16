@@ -485,6 +485,17 @@ alphabetical order within each category.`
 setting_definitions.push(
         {
             "tab": future_i18n("What's new?"),
+            "group": `Version 0.3.2${brplain('2023-XX-XX')}`,
+            'group_html':true,
+            "type": "description",
+            "text": (
+`<ul>
+</ul>
+`
+            ),
+        },
+        {
+            "tab": future_i18n("What's new?"),
             "group": `Version 0.3.1${brplain('2022-12-25')}`,
             'group_html':true,
             "type": "description",
