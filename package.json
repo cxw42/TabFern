@@ -71,7 +71,7 @@
     "brunch": "github:cxw42/brunch#1527",
     "fs-extra": "^7.0.1",
     "fstream": "^1.0.12",
-    "jasmine": "^4.0.1",
+    "jasmine": "^3.10.0",
     "lodash.mergewith": "^4.6.2",
     "minimist": "^1.2.8",
     "mixin-deep": "^1.3.2",
