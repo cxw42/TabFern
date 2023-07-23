@@ -162,7 +162,7 @@ vote at ${issue(125,true)}.
 
 ]; //setting_definitions
 
-if(S.ISSUE35) setting_definitions.push(
+setting_definitions.push(
         {
             'tab': future_i18n('Behaviour'),
             'group': future_i18n('Partly-open windows'),
@@ -308,7 +308,7 @@ bar (it will start with "file://")</li>
         },
 );
 
-if(S.ISSUE35) setting_definitions.push(
+setting_definitions.push(
         {
             'tab': future_i18n('Appearance'),
             'group': future_i18n('Action-button order for windows'),
@@ -514,9 +514,8 @@ setting_definitions.push(
             'group_html':true,
             "type": "description",
             "text": (
-`<ul>` +
-(!S.ISSUE35 ? '' :
-`<li class="gold-star">Opening one tab at a time!  Yes, the wait is over!  ${issue(35)}
+`<ul>
+<li class="gold-star">Opening one tab at a time!  Yes, the wait is over!  ${issue(35)}
 <ul>
 <li>Click on a tab in a closed window to open only that tab.</li>
 <li>Click the "close and save" icon (${icon('fff-picture-delete')})
@@ -528,8 +527,7 @@ setting_definitions.push(
 <p>Please note that if Chrome crashes while you have only some tabs open, the
 recovered window will show up in TabFern as a separate, unsaved window
 (related to ${issue(41, true)}).</p>
-</li>
-`) +
+</li>` +
 '</ul>' +
 `
 <h4>Help TabFern!</h4>
