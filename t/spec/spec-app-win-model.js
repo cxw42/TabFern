@@ -1,4 +1,4 @@
-// spec/app-win-model.js: Test app/win/model.js.
+// spec/spec-app-win-model.js: Test app/win/model.js.
 // Note: specs must be run in order
 
 describe('app/win/model', function() {

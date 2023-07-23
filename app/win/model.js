@@ -1258,7 +1258,7 @@ me.react_onTabUpdated = function(ctabid, changeinfo, newctab) {
 // onTabMoved {{{2
 
 /// Move a tab in the tree based on its new Chrome index.
-/// This implements the design decisions in spec/app-win-model.js for onTabMoved().
+/// This implements the design decisions in spec/spec-app-win-model.js for onTabMoved().
 ///
 /// @param  cwinid      The window the tab is moving in
 /// @param  ctabid      The tab that is moving
@@ -1333,7 +1333,7 @@ me.react_onTabMoved = function(cwinid, ctabid, cidx_from, cidx_to) {
 // onTabRemoved() {{{2
 
 /// Remove a tab from a window in the tree.
-/// This implements the design decisions in spec/app-win-model.js for onTabRemoved().
+/// This implements the design decisions in spec/spec-app-win-model.js for onTabRemoved().
 ///
 /// @param  ctabid      The tab's Chrome tab ID
 /// @param  cwinid      The Chrome window ID of the window the tab is being removed from
@@ -1370,7 +1370,7 @@ me.react_onTabRemoved = function react_onTabRemoved(ctabid, cwinid) {
 // onTabDetached() {{{2
 
 /// Detach a tab from a window in the tree.
-/// This implements the design decisions in spec/app-win-model.js for onTabDetached().
+/// This implements the design decisions in spec/spec-app-win-model.js for onTabDetached().
 ///
 /// @param  ctabid      The tab's Chrome tab ID
 /// @param  cwinid      The Chrome window ID of the window the tab is detaching from
@@ -1396,7 +1396,7 @@ me.react_onTabDetached = function react_onTabDetached(ctabid, cwinid) {
 // onTabAttached() {{{2
 
 /// Attach a tab in the tree based on its new Chrome window and index.
-/// This implements the design decisions in spec/app-win-model.js for onTabAttached().
+/// This implements the design decisions in spec/spec-app-win-model.js for onTabAttached().
 ///
 /// @param  ctabid      The tab's Chrome tab ID
 /// @param  cwinid      The Chrome window ID of the window the tab is attaching to
@@ -1467,7 +1467,7 @@ me.react_onTabAttached = function react_onTabAttached(ctabid, cwinid, cidx) {
 // onTabReplaced() {{{2
 
 /// Replace a tab in the tree based on its new Chrome tab ID
-/// This implements the design decisions in spec/app-win-model.js for onTabReplaced().
+/// This implements the design decisions in spec/spec-app-win-model.js for onTabReplaced().
 ///
 /// @param  addedTabId      The new Chrome ID of the tab
 /// @param  removedTabId    The old Chrome ID of the tab
