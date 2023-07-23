@@ -157,7 +157,6 @@ function local_init()
     ASQ = Modules.ASQ;
     ASQH = Modules.ASQH;
     S = Modules.S;
-    console.log(`Issue #35 support: ${S.ISSUE35 ? 'enabled' : 'disabled'}`);
 } //init()
 
 /// Copy properties named #property_names from #source to #dest.
@@ -894,7 +893,6 @@ function actionDeleteWindow(win_node_id, win_node, unused_action_id,
 /// @param win_node {object} the window's node
 function actionOpenRestOfTabs(win_node_id, win_node, unused_action_id, unused_action_el)
 {
-    if(!S.ISSUE35) return;
     if(!win_node_id || !win_node) return;
     let win_val = D.windows.by_node_id(win_node_id);
     if(!win_val) return;
@@ -1158,7 +1156,6 @@ function actionDeleteTab(node_id, node, unused_action_id, unused_action_el,
 /// Close the tab and save
 function actionCloseTabAndSave(tab_node_id, tab_node, unused_action_id, unused_action_el)
 {
-    if(!S.ISSUE35) return;
     let tab_val = D.tabs.by_node_id(tab_node_id);
     if(!tab_val || tab_val.tab_id === K.NONE) return;   //already closed => nop
     let window_node_id = tab_node.parent;
@@ -1215,17 +1212,17 @@ function addTabNodeActions(tab_node_id)
     // Add the buttons in the layout chosen by the user (#152).
     let order = S.getString(S.S_WIN_ACTION_ORDER);
     if(order === 'ced') {
-        if(S.ISSUE35) addTabCloseAction(tab_node_id);
+        addTabCloseAction(tab_node_id);
         addTabEditAction(tab_node_id);
         addTabDeleteAction(tab_node_id);
     } else if(order === 'ecd') {
         addTabEditAction(tab_node_id);
-        if(S.ISSUE35) addTabCloseAction(tab_node_id);
+        addTabCloseAction(tab_node_id);
         addTabDeleteAction(tab_node_id);
     } else if(order === 'edc') {
         addTabEditAction(tab_node_id);
         addTabDeleteAction(tab_node_id);
-        if(S.ISSUE35) addTabCloseAction(tab_node_id);
+        addTabCloseAction(tab_node_id);
     } else {
         //don't add any buttons, but don't crash.
         log.error(`Unknown tab-button order ${order}`);
@@ -1957,7 +1954,7 @@ function onTreeSelect(evt_unused, evt_data, options={})
     if(win_val.isOpen) {
         if(is_win) {    // clicked on an open window
 
-            if( S.ISSUE35 && M.isWinPartlyOpen(win_node) &&
+            if( M.isWinPartlyOpen(win_node) &&
                 (S.getString(S.S_OPEN_REST_ON_CLICK) === S.OROC_DO)
             ) {
                 action = ActionTy.open_rest;
@@ -1966,7 +1963,7 @@ function onTreeSelect(evt_unused, evt_data, options={})
             }
 
         } else {        // clicked on a tab in an open window
-            action = (tab_val.isOpen || !S.ISSUE35) ?  ActionTy.activate_tab
+            action = tab_val.isOpen ? ActionTy.activate_tab
                                     : ActionTy.open_tab_in_win;
         }
     } else {    // window is closed
@@ -2006,7 +2003,7 @@ function onTreeSelect(evt_unused, evt_data, options={})
     } else if(action === ActionTy.activate_win) {
         win_id_to_highlight_and_raise = node_val.win_id;
 
-    } else if(S.ISSUE35 && action === ActionTy.open_rest) {
+    } else if(action === ActionTy.open_rest) {
         win_id_to_highlight_and_raise = win_val.win_id;
         actionOpenRestOfTabs(win_node.id, win_node, null, null);
 
@@ -2020,7 +2017,7 @@ function onTreeSelect(evt_unused, evt_data, options={})
         let urls=[];
         let tab_node_ids;
 
-        if(!S.ISSUE35 || action === ActionTy.open_win) {    // Open all tabs
+        if(action === ActionTy.open_win) {    // Open all tabs
             for(let child_id of win_node.children) {
                 let child_val = D.tabs.by_node_id(child_id);
                 urls.push(child_val.raw_url);
@@ -2103,7 +2100,7 @@ function onTreeSelect(evt_unused, evt_data, options={})
             return;
         }
 
-    } else if(S.ISSUE35 && action === ActionTy.open_tab_in_win) {
+    } else if(action === ActionTy.open_tab_in_win) {
         // add tab to existing win
 
         // Figure out where to put it
@@ -3184,7 +3181,7 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
             },
         };
 
-        if(S.ISSUE35 && val.isOpen) {
+        if(val.isOpen) {
             tabItems.closeItem = {
                     label: 'Close and remember',
                     icon: 'fff-picture-delete',
@@ -3240,7 +3237,7 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
                 };
         }
 
-        if( S.ISSUE35 && M.isWinPartlyOpen(node) &&
+        if( M.isWinPartlyOpen(node) &&
             (S.getString(S.S_OPEN_REST_ON_CLICK) === S.OROC_DO_NOT)
         ) {
             winItems.openAllItem = {
