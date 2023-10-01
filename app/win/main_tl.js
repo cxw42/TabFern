@@ -632,6 +632,12 @@ function actionForgetWindow(node_id, node, unused_action_id, unused_action_el)
     let win_val = D.windows.by_node_id(node_id);
     if(!win_val) return;
 
+    // Refuse to forget a partly-open window since doing so silently
+    // removes the memory of closed tabs in that window.
+    if(M.isWinPartlyOpen(win_val)) {
+        return;
+    }
+
     M.mark_win_as_unsaved(win_val);
 
     if(win_val.isOpen) {    // should always be true, but just in case...
@@ -3142,7 +3148,9 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
             };
 
         // Forget/Remember
-        if( val.isOpen && (val.keep === K.WIN_KEEP) ) {
+        if( val.isOpen && (val.keep === K.WIN_KEEP) &&
+            !M.isWinPartlyOpen(node.id)
+        ) {
             winItems.forgetItem = {
                 label: _T('menuForget'),
                 title: _T('menuttForget'),
@@ -3150,7 +3158,9 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
                 action:
                     function(){actionForgetWindow(node.id, node, null, null);}
             };
-        } else if( val.isOpen && (val.keep === K.WIN_NOKEEP) ) {
+        }
+
+        if( val.isOpen && (val.keep === K.WIN_NOKEEP) ) {
             winItems.rememberItem = {
                 label: _T('menuRemember'),
                 title: _T('menuttRemember'),
