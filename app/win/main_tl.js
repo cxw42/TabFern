@@ -130,7 +130,7 @@ let next_init_step = function(where) {
         // at https://stackoverflow.com/a/8840703/2877364 .
         // I used (1) instead of (0) since I saw it not work once with (0).
 
-}; //next_init_step
+}; //next_init_step()
 
 /// Tell me if I forgot to update LAST_INIT_STEP
 let check_init_step_count = function() {
@@ -139,7 +139,7 @@ let check_init_step_count = function() {
         log.warn(msg);
         window.alert(msg);
     }
-}; //check_init_step_count
+}; //check_init_step_count()
 
 /// Init those of our globals that don't require any data to be loaded.
 /// Call after Modules has been populated.
@@ -157,7 +157,7 @@ function local_init()
     ASQ = Modules.ASQ;
     ASQH = Modules.ASQH;
     S = Modules.S;
-} //init()
+} //local_init()
 
 /// Copy properties named #property_names from #source to #dest.
 /// If #modifier is provided, it is applied to each property value before assigning.
@@ -172,13 +172,13 @@ function copyTruthyProperties(dest, source, property_names, modifier)
         if(source[key]) dest[key] = modifier(source[key]);
     }
     return dest;
-} //copyTruthyProperties
+} //copyTruthyProperties()
 
 /// Escape text for use in a regex.  By Mozilla Contributors (CC-BY-SA 2.5+), from
 /// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions
 function escapeRegExp(string) {
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
-} //escapeRegExp
+} //escapeRegExp()
 
 /// Get the node ID from a NEW_TAB_URL.  Returns falsy on failure, or the ID
 /// on success.
@@ -202,7 +202,7 @@ function getNewTabNodeId(ctab) {
     }
 
     return hash;
-} //getNewTabNodeId
+} //getNewTabNodeId()
 
 ////////////////////////////////////////////////////////////////////////// }}}1
 // General record helpers // {{{1
@@ -225,7 +225,7 @@ function getWindowGeometry(win)
         , 'winState': 'normal'
             // assume normal since we don't implement the full Page Visibility API
     };
-} //getWindowGeometry
+} //getWindowGeometry()
 
 /// Get the geometry of a window, as an object, from a Chrome window record.
 /// See comments in getWindowGeometry().
@@ -239,7 +239,7 @@ function getCWinGeometry(cwin)
         , 'height': cwin.height || 600
         , 'winState': cwin.state || 'normal'
     };
-} //getWindowGeometry
+} //getCWinGeometry()
 
 /// Clear flags on all windows; leave tabs alone.
 function unflagAllWindows() {
@@ -535,7 +535,7 @@ function actionURLSubstitute(node_id, node, unused_action_id, unused_action_el)
 
     // Since the user touched the window, save the changes.
     actionRememberWindow(node_id, node);
-} //actionURLSubstitute
+} //actionURLSubstitute()
 
 ////////////////////////////////////////////////////////////////////////// }}}1
 // jstree helpers {{{1
@@ -545,7 +545,7 @@ function collapseTreeNode(nodey) {
     T.treeobj.close_node(nodey);
     T.install_rjustify(null, 'redraw_event.jstree', 'once');
     T.treeobj.redraw_node(nodey);    // to be safe
-} //collapseTreeNode
+} //collapseTreeNode()
 
 // }}}1
 // jstree-action callbacks (handle user clicks on the tree icons) // {{{1
@@ -559,7 +559,7 @@ function actionAsContextMenuCallback(action_function)
         let node = T.treeobj.get_node(data.reference);
         action_function(node.id, node, null, data.element);
     };
-} //actionAsContextMenuCallback
+} //actionAsContextMenuCallback()
 
 /// chrome.windows.get() callback to flag the current tab in a window.
 /// Helper for actionOpenRestOfTabs(), onTreeSelect() and onWinFocusChanged().
@@ -590,7 +590,7 @@ function flagOnlyCurrentTabCC(cwin)
     } else {
         log.info({"Couldn't flag": lastBrowserErrorMessageString()});
     }
-} //flagOnlyCurrentTabCC
+} //flagOnlyCurrentTabCC()
 
 // == Window actions ===================================================== {{{2
 
@@ -635,7 +635,6 @@ function actionForgetWindow(node_id, node, unused_action_id, unused_action_el)
     M.mark_win_as_unsaved(win_val);
 
     if(win_val.isOpen) {    // should always be true, but just in case...
-        //T.treeobj.set_type(node, K.NT_WIN_EPHEMERAL);
         M.del_subtype(node_id, K.NST_SAVED);
         M.add_subtype(node_id, K.NST_OPEN);
     }
@@ -652,7 +651,7 @@ function actionRememberWindow(node_id, node, unused_action_id, unused_action_el)
     M.remember(node_id);    // No-op if node_id isn't a window
 
     saveTree();
-} //actionForgetWindow()
+} //actionRememberWindow()
 
 /// Close a window, but don't delete its tree nodes.  Used for saving windows.
 /// ** The caller must call saveTree() ---
@@ -707,7 +706,7 @@ function actionCloseWindowButDoNotSaveTree_internal(win_node_id, win_node,
 
     // don't call saveTree --- that's the caller's responsibility
     return seq;
-} //actionCloseWindowButDoNotSaveTree_internal
+} //actionCloseWindowButDoNotSaveTree_internal()
 
 /// Close the window and save
 function actionCloseWindowAndSave(win_node_id, win_node, unused_action_id, unused_action_el)
@@ -770,7 +769,7 @@ function actionCloseWindowAndSave(win_node_id, win_node, unused_action_id, unuse
 
     } //endif confirmation required
 
-} //actionCloseWindowAndSave
+} //actionCloseWindowAndSave()
 
 /// Delete a window's entry in the tree.
 /// @param win_node_id {string} the ID of the node to delete
@@ -886,7 +885,7 @@ function actionDeleteWindow(win_node_id, win_node, unused_action_id,
         }); //end post-dialog processing
 
     } //endif confirmation required
-} //actionDeleteWindow
+} //actionDeleteWindow()
 
 /// Open the rest of the tabs in a partly-open window.
 /// @param win_node_id {string} the ID of the window's node
@@ -931,7 +930,7 @@ function actionOpenRestOfTabs(win_node_id, win_node, unused_action_id, unused_ac
         already_flagged_window = true;
         chrome.windows.get(win_val.win_id, {populate:true}, flagOnlyCurrentTabCC);
     });
-} //actionOpenRestOfTabs
+} //actionOpenRestOfTabs()
 
 // }}}2
 // == Tab actions ======================================================== {{{2
@@ -946,7 +945,7 @@ function actionMoveWinToTop(node_id, node, unused_action_id, unused_action_el)
     if(!node) return;
     T.treeobj.move_node(node, T.root_node(), 1);
         // 1 => after the holding pen
-} //actionMoveWinToTop
+} //actionMoveWinToTop()
 
 /// Toggle the top border on a node.  This is a hack until I can add
 /// dividers.
@@ -968,7 +967,7 @@ function actionToggleTabTopBorder(node_id, node, unused_action_id, unused_action
         // wants to keep the window the tab is in.
 
     saveTree();
-} //actionToggleTabTopBorder
+} //actionToggleTabTopBorder()
 
 /// Edit a node's bullet.  ** Synchronous **.
 /// @param node_id {string} The ID of a node representing a tab.
@@ -1006,7 +1005,7 @@ function actionEditTabBullet(node_id, node, unused_action_id, unused_action_el)
         // wants to keep the window the note is in.
 
     saveTree();
-} //actionEditTabBullet
+} //actionEditTabBullet()
 
 /// Delete a tab's entry in the tree.
 /// @param node_id {string} the ID of the node to delete
@@ -1110,48 +1109,7 @@ function actionDeleteTab(node_id, node, unused_action_id, unused_action_el,
 
     } //endif confirmation required
 
-    // TODO? implement if necessary.  At the moment, it doesn't appear
-    // that I need this.
-//        // We had a click --- hover the node that is now under the mouse.
-//        // That is the node that was the next-sibling node before.
-//        // This fixes a bug in which clicking the delete button removes the row,
-//        // and the row that had been below moves up, but the wholerow hover and the
-//        // action buttons don't appear for that row.
-//        //
-//        // TODO update this when adding full hierarchy (#34).
-//
-//        let next_node = T.treeobj.get_next_dom(node, true);
-//        if(evt && evt.type === 'click' && next_node) {
-//            T.treeobj.hover_node(next_node);
-//        }
-
-
-    // If it actually disappears, let onTabRemoved() handle it.
-
-//    let seq = ASQH.NowCCTry((cc)=>{
-//        chrome.tabs.remove(tab_val.tab_id, cc)
-//    });
-//
-//    seq.try((done, maybe_err)=>{
-//        if(ASQH.is_asq_try_err(maybe_err)) { return done(); }
-//            // If the tab-removal failed, just bail.
-//
-//        // Check if the tab still exists.  If it had a beforeunload and
-//        // the user hit "Stay", it will still be there.
-//        // Even if there is a beforeunload popup, it appears that
-//        // chrome.runtime.lastError does not show any error.  Therefore,
-//        // we cannot rely on the error state to tell us whether the tab
-//        // is actually closed.
-//        chrome.tabs.get(tab_val.tab_id, ASQH.CC(done));
-//            // We hope this will fail; if so, the tab is gone.
-//
-//        seq.val( (info_or_err) => {
-//            if(!ASQH.is_asq_try_err(maybe_err)) return;
-//                // If the tab is still there, don't remove it from the tree
-//        });
-//    });
-
-} //actionDeleteTab
+} //actionDeleteTab()
 
 /// Close the tab and save
 function actionCloseTabAndSave(tab_node_id, tab_node, unused_action_id, unused_action_el)
@@ -1160,17 +1118,6 @@ function actionCloseTabAndSave(tab_node_id, tab_node, unused_action_id, unused_a
     if(!tab_val || tab_val.tab_id === K.NONE) return;   //already closed => nop
     let window_node_id = tab_node.parent;
     M.remember(window_node_id);
-
-//    // If closing the last tab, collapse if requested.  Collapse before saving
-//    // so the UI is more responsive.
-//    let should_collapse = false;
-//    if(S.getBool(S.COLLAPSE_ON_PARTIAL_WIN_CLOSE)) {
-//        should_collapse =
-//            M.isWinPartlyOpen(window_node_id) &&
-//            (M.getWinOpenChildCount(window_node_id) === 1);
-//                // Still 1 here, because the chrome.tabs.remove hasn't
-//                // happened yet.
-//    }
 
     let tab_id = tab_val.tab_id;    // since markTabAsClosed clears it
     M.markTabAsClosed(tab_val);
@@ -1181,19 +1128,13 @@ function actionCloseTabAndSave(tab_node_id, tab_node, unused_action_id, unused_a
         // won't delete its node.
     });
 
-//    if(should_collapse) {
-//        seq.val(()=>{
-//            collapseTreeNode(window_node_id);
-//        });
-//    }
-
     seq.val(()=>{
         // Refresh the tab.index values for the remaining tabs
         M.updateTabIndexValues(window_node_id);
         saveTree();
     });
 
-} //actionCloseTabAndSave
+} //actionCloseTabAndSave()
 
 // }}}2
 ////////////////////////////////////////////////////////////////////////// }}}1
@@ -1269,7 +1210,7 @@ function addTabNodeActions(tab_node_id)
         });
     } //addTabDeleteAction()
 
-} //addTabNodeActions
+} //addTabNodeActions()
 
 /// Create a tree node for an open tab.
 /// @deprecated in favor of M.react_onTabCreated().
@@ -1297,7 +1238,7 @@ function createNodeForOpenTab(ctab, parent_node_id)
     }
 
     return node_id;
-} //createNodeForOpenTab
+} //createNodeForOpenTab()
 
 /// Update tree view on a tree node for an open tab.
 /// @param node {Chrome Tab} the tree node for the tab
@@ -1313,7 +1254,7 @@ function updateNodeForOpenTab(node, parent_node)
         T.treeobj.redraw_node(node.id);
     }
 
-} //updateNodeForOpenTab
+} //updateNodeForOpenTab()
 
 /// Create a tree node for a closed tab
 /// @param tab_data_v1      V1 save data for the tab
@@ -1340,7 +1281,7 @@ function createNodeForClosedTabV1(tab_data_v1, parent_node_id)
     addTabNodeActions(tab_node_id);
 
     return tab_node_id;
-} //createNodeForClosedTabV1
+} //createNodeForClosedTabV1()
 
 // = = = Windows = = = = = = = = = = = = = = = = =
 
@@ -1409,7 +1350,7 @@ function addWindowNodeActions(win_node_id)
         });
     } //addWinDeleteAction()
 
-} //addWindowNodeActions
+} //addWindowNodeActions()
 
 /// Create a tree node for open Chrome window #cwin.
 /// @returns the tree-node ID, or falsy on error.
@@ -1444,7 +1385,7 @@ function createNodeForWindow(cwin, keep)
     }
 
     return node_id;
-} //createNodeForWindow
+} //createNodeForWindow()
 
 /// Create a tree node for a closed window
 /// @param win_data_v1      V1 save data for the window
@@ -1506,7 +1447,7 @@ function createNodeForClosedWindowV1(win_data_v1)
         // Now that all the tabs are in, hash the window.
 
     return node_id;
-} //createNodeForClosedWindowV1
+} //createNodeForClosedWindowV1()
 
 // = = = Combo = = = = = = = = = = = = = = = = = =
 
@@ -1748,8 +1689,8 @@ var loadSavedWindowsFromData = (function(){
             succeeded = true;
         }
         return (succeeded ? loader_retval : false);
-    } //loadSavedWindowsFromData_inner
-})(); //loadSavedWindowsFromData
+    } //loadSavedWindowsFromData_inner()
+})(); //loadSavedWindowsFromData()
 
 /// Load the saved windows from local storage - used as part of initialization.
 /// @param {function} next_action If provided, will be called when loading
@@ -1791,7 +1732,7 @@ function loadSavedWindowsIntoTree(next_action) {
         if(typeof next_action !== 'function') return;
         next_action();
     }); //storage.local.get
-} //loadSavedWindowsIntoTree
+} //loadSavedWindowsIntoTree()
 
 // Debug helper, so uses console.log() directly.
 function DBG_printSaveData()
@@ -1851,9 +1792,6 @@ function onTreeSelect(evt_unused, evt_data, options={})
     // TODO figure out why this doesn't work: T.treeobj.deselect_node(node, true);
     T.treeobj.deselect_all(true);
         // Clear the selection.  True => no event due to this change.
-
-    //log.info('Clearing flags treeonselect');
-    //T.treeobj.clear_flags(true);
 
     // --- Check for button clicks ------------------------------------
     // Now that the selection is clear, see if this actually should have been
@@ -2078,10 +2016,6 @@ function onTreeSelect(evt_unused, evt_data, options={})
             already_flagged_window = true;
             flagOnlyCurrentTab(cwin);
 
-            //win_id_to_highlight_and_raise = cwin.id;
-                // TODO FIXME - this is ineffective here.
-                // May be related to #138
-
             if(options.raise_tabfern_after) {
                 chrome.windows.update(my_winid, {focused:true},
                         ignore_chrome_error);
@@ -2169,7 +2103,7 @@ function onTreeSelect(evt_unused, evt_data, options={})
             // onWinFocusChanged will set the flag on the newly-focused window
     } //endif
 
-} //onTreeSelect
+} //onTreeSelect()
 
 ////////////////////////////////////////////////////////////////////////// }}}1
 // Chrome window/tab callbacks // {{{1
@@ -2200,7 +2134,7 @@ function onWinCreated(cwin)
 
     createNodeForWindow(cwin, K.WIN_NOKEEP);
     saveTree();     // for now, brute-force save on any change.
-} //onWinCreated
+} //onWinCreated()
 
 /// Update the tree when the user closes a browser window
 function onWinRemoved(cwin_id)
@@ -2243,12 +2177,13 @@ function onWinRemoved(cwin_id)
         if(node_val.win && !node_val.isClosing) {
             actionCloseWindowButDoNotSaveTree_internal(node_id, node,
                     null, null);
-            // Since it was saved, leave it saved.  You can only get rid
-            // of saved sessions by X-ing them expressly (actionDeleteWindow).
-            // if(node_val.win) because a window closed via actionCloseWindowButDoNotSaveTree_internal
-            // or actionDeleteWindow will have a falsy node_val.win, so we
-            // don't need to call those functions again.
-            // aCWBDNST_internal() never prompts for confirmation.
+            // Since it was saved, leave it saved.  You can only get rid of
+            // saved sessions by X-ing them expressly (actionDeleteWindow).
+            // if(node_val.win) because a window closed via
+            // actionCloseWindowButDoNotSaveTree_internal or actionDeleteWindow
+            // will have a falsy node_val.win, so we don't need to call those
+            // functions again.  aCWBDNST_internal() never prompts for
+            // confirmation.
         }
         saveTree();     // TODO figure out if we need this.
     } else {
@@ -2258,7 +2193,7 @@ function onWinRemoved(cwin_id)
             // actionDeleteWindow also saves the tree, so we don't need to.
             // true => it's internal, so don't prompt for confirmation.
     }
-} //onWinRemoved
+} //onWinRemoved()
 
 /// Update the highlight for the current window.  Note: this does not always
 /// seem to fire when switching to a non-Chrome window.
@@ -2436,7 +2371,7 @@ function initFocusHandler()
 
     onWinFocusChanged = inner_onFocusChanged;
 
-} //initFocusHandler
+} //initFocusHandler()
 
 /// Process creation of a tab.  NOTE: in Chrome 60.0.3112.101, we sometimes
 /// get two consecutive tabs.onCreated events for the same tab.  Therefore,
@@ -2646,7 +2581,7 @@ function onTabUpdated(ctabid, changeinfo, ctab)
             }
         }
     });
-} //onTabUpdated
+} //onTabUpdated()
 
 /// Keep statistics of the sizes of moves we see from Chrome.  DEBUG
 var tab_move_deltas = {};
@@ -2668,7 +2603,7 @@ function onTabMoved(tabid, moveinfo)
     }
 
     saveTree();
-} //onTabMoved
+} //onTabMoved()
 
 function onTabActivated(activeinfo)
 {
@@ -2678,7 +2613,7 @@ function onTabActivated(activeinfo)
         // onWinFocusChanged handles the tab flagging
 
     // No need to save --- we don't save which tab is active.
-} //onTabActivated
+} //onTabActivated()
 
 /// Delete a tab's information when the user closes it.
 function onTabRemoved(tabid, removeinfo)
@@ -2701,7 +2636,7 @@ function onTabRemoved(tabid, removeinfo)
     }
 
     saveTree();
-} //onTabRemoved
+} //onTabRemoved()
 
 /// When tabs detach, move them to the holding pen.
 /// If the detached tab is the last open tab in a window, Chrome will
@@ -2720,7 +2655,7 @@ function onTabDetached(tabid, detachinfo)
     if(typeof(errmsg) === 'string') {
         throw new Error(`Could not detach ${tabid} per ${JSON.stringify(detachinfo)}: ${errmsg}`);
     }
-} //onTabDetached
+} //onTabDetached()
 
 /// When tabs attach, move them out of the holding pen.
 function onTabAttached(tabid, attachinfo)
@@ -2732,7 +2667,7 @@ function onTabAttached(tabid, attachinfo)
     if(typeof(errmsg) === 'string') {
         throw new Error(`Could not attach ${tabid} per ${JSON.stringify(attachinfo)}: ${errmsg}`);
     }
-} //onTabAttached
+} //onTabAttached()
 
 /// Handle tab replacement, which can occur with preloads.  E.g., #129.
 function onTabReplaced(addedTabId, removedTabId)
@@ -2744,7 +2679,7 @@ function onTabReplaced(addedTabId, removedTabId)
     if(typeof(errmsg) === 'string') {
         throw new Error(`Could not replace ${removedTabId} with ${addedTabId}: ${errmsg}`);
     }
-} //onTabReplaced
+} //onTabReplaced()
 
 ////////////////////////////////////////////////////////////////////////// }}}1
 // DOM event handlers // {{{1
@@ -2808,7 +2743,6 @@ function eventOnResize(evt)
         // the user's last-set size is not saved.
         resize_save_timer_id = window.setTimeout(
                 ()=>{
-                    // log.debug('Resize-save function running');
                     if(!ObjectCompare(size_data, last_saved_size)) {
                         saveViewSize(size_data);
                     }
@@ -2864,7 +2798,7 @@ function userHasSeenSettings()
         to_save[K.LASTVER_KEY] = TABFERN_VERSION;
         chrome.storage.local.set(to_save, ignore_chrome_error);
     }
-}
+} //userHasSeenSettings()
 
 /// Open the Settings window.  If ShowWhatIsNew, also updates the K.LASTVER_KEY
 /// information used by checkWhatIsNew().
@@ -2995,7 +2929,7 @@ function hamRunJasmineTests()
         log.error('Could not get Jasmine-test URL');
     }
 
-    userHasSeenSettings();  // #233
+    userHasSeenSettings();  // Ergonomics (#233)
 } // hamRunJasmineTests
 
 function hamSortOpenToTop()
@@ -3008,22 +2942,20 @@ function hamSortOpenToTop()
             // https://stackoverflow.com/a/3442125/2877364 by
             // https://stackoverflow.com/users/415290/todd
     }
-}
-/**
- * You can call proxyfunc with the items or just return them, so we just
- * return them.
- *
- * Note: Only use String, non-Integer, non-Symbol keys in the returned items.
- * That way the context menu will be in the same order as the order of the keys
- * in the items.  See https://stackoverflow.com/a/32149345/2877364 and
- * http://www.ecma-international.org/ecma-262/6.0/#sec-ordinary-object-internal-methods-and-internal-slots-ownpropertykeys
- * for details.
- *
- * @param node
- * @returns {actionItemId: {label: string, action: function}, ...}, or
- *          false for no menu.
- */
+} //hamSortOpenToTop()
 
+// You can call proxyfunc with the items or just return them, so we just
+// return them.
+//
+// Note: Only use String, non-Integer, non-Symbol keys in the returned items.
+// That way the context menu will be in the same order as the order of the keys
+// in the items.  See https://stackoverflow.com/a/32149345/2877364 and
+// http://www.ecma-international.org/ecma-262/6.0/#sec-ordinary-object-internal-methods-and-internal-slots-ownpropertykeys
+// for details.
+//
+// @param node
+// @returns {actionItemId: {label: string, action: function}, ...}, or
+//          false for no menu.
 function getHamburgerMenuItems(node, _unused_proxyfunc, e)
 {
     let items = {};
@@ -3929,7 +3861,6 @@ function messageListener(request, sender, sendResponse)
             // at least sometimes.  Related to #71.
             .val(()=>{
                 T.treeobj.flag_node(tab_val.node_id);
-                //onWinFocusChanged(tab_val.win_id, true);
             })
             .val(()=>{
                 sendResponse({msg: request.msg, response: true, success: true});
