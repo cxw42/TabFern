@@ -490,6 +490,8 @@ setting_definitions.push(
             "type": "description",
             "text": (
 `<ul>
+<li>The prompt for confirmation when closing audible tabs now applies to
+    individual tabs ${issue(306)}.</li>
 <li>Bugfixes ${issue(322)}</li>
 </ul>
 `

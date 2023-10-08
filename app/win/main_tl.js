@@ -1123,22 +1123,46 @@ function actionCloseTabAndSave(tab_node_id, tab_node, unused_action_id, unused_a
     let tab_val = D.tabs.by_node_id(tab_node_id);
     if(!tab_val || tab_val.tab_id === K.NONE) return;   //already closed => nop
     let window_node_id = tab_node.parent;
-    M.remember(window_node_id);
 
-    let tab_id = tab_val.tab_id;    // since markTabAsClosed clears it
-    M.markTabAsClosed(tab_val);
+    function doCloseAndSave() {
+        M.remember(window_node_id);
 
-    let seq = ASQH.NowCC((cc)=>{
-        chrome.tabs.remove(tab_id, cc);
-        // Because the tab is already marked as closed, onTabRemoved()
-        // won't delete its node.
-    });
+        let tab_id = tab_val.tab_id;    // since markTabAsClosed clears it
+        M.markTabAsClosed(tab_val);
 
-    seq.val(()=>{
-        // Refresh the tab.index values for the remaining tabs
-        M.updateTabIndexValues(window_node_id);
-        saveTree();
-    });
+        let seq = ASQH.NowCC((cc)=>{
+            chrome.tabs.remove(tab_id, cc);
+            // Because the tab is already marked as closed, onTabRemoved()
+            // won't delete its node.
+        });
+
+        seq.val(()=>{
+            // Refresh the tab.index values for the remaining tabs
+            M.updateTabIndexValues(window_node_id);
+            saveTree();
+        });
+    }
+
+    let need_confirmation_audible = (
+        (tab_val.isAudible && S.isCONFIRM_DEL_OF_AUDIBLE_TABS())
+    );
+
+    if(!need_confirmation_audible) {
+        doCloseAndSave();
+    } else {
+        showConfirmationModalDialog(
+            _T('dlgpCloseAudibleTab', M.get_html_label(tab_val)),
+            !need_confirmation_audible,
+                // "Don't show again" is hidden if it was just about audio
+        )
+
+        // Processing after the dialog closes
+        .val((result)=>{
+            if(result && result.reason === 'yes') {
+                doCloseAndSave();
+            }
+        })
+    }
 
 } //actionCloseTabAndSave()
 

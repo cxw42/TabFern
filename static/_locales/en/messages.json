@@ -84,6 +84,16 @@
       }
     }
   }
+  , "dlgpCloseAudibleTab": {
+    "message": "Close tab \"$TITLE$\"?  It is currently playing music."
+    ,"description":"Prompt for whether the user wants to delete a tab that is playing music (audible)."
+    ,"placeholders":{
+      "title": {
+        "content": "$1"
+        ,"example": "(this is the title of the tab that will be closed)"
+      }
+    }
+  }
   , "dlgpCloseAudibleWindow": {
     "message": "Close window \"$TITLE$\"?  It is currently playing music."
     ,"description":"Prompt for whether the user wants to delete a window that is playing music (audible)."
