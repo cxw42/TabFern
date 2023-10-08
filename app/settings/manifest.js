@@ -490,7 +490,7 @@ setting_definitions.push(
             "type": "description",
             "text": (
 `<ul>
-<li>Bugfixes ${issue(302)}</li>
+<li>Bugfixes ${issue(322)}</li>
 </ul>
 `
             ),
