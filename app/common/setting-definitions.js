@@ -25,6 +25,15 @@ let _VAL = { __proto__: null };
 /// The default validator for bool values
 let _vbool = (v)=>{ return ((typeof v === 'boolean')?v:undefined)};
 
+/// The default validator for integer values
+let _vint = (v)=>{
+    const num = Number(v);
+    if(isNaN(num) || (Math.trunc(num) != num)) {
+        return undefined;
+    }
+    return num;
+};
+
 // Booleans {{{2
 _NAM.CFG_POPUP_ON_STARTUP = 'open-popup-on-chrome-startup';
 _DEF[_NAM.CFG_POPUP_ON_STARTUP] = true;
@@ -238,6 +247,32 @@ function getBoolSetting(setting_name, default_value = undefined)
     }
 } //getBoolSetting
 
+/// Get an integer setting from the settings page.
+/// @param setting_name     A value in CFG_NAMES
+/// @param default_value    Optional default.  If unspecified or
+///                         undefined, the default from CFG_DEFAULTS
+///                         is used.
+function getIntSetting(setting_name, default_value = undefined)
+{
+    if(typeof default_value === 'undefined' && setting_name in CFG_DEFAULTS) {
+        default_value = CFG_DEFAULTS[setting_name];
+    }
+
+    let locStorageValue = localStorage.getItem(SETTING_PREFIX + setting_name);
+
+    if ( locStorageValue === null ) {   // nonexistent key
+        return default_value;
+    } else {
+        const str = String(locStorageValue);
+        const val = _vint(str);
+        if (typeof val === 'undefined') {
+            return default_value;
+        } else {
+            return val;
+        }
+    }
+} //getIntSetting
+
 /// Find out whether the given setting from the settings page exists.
 /// @param setting_name     A value in CFG_NAMES
 function haveSetting(setting_name)
@@ -302,6 +337,7 @@ let me = {
     getRaw: getRawSetting,
     getString: getStringSetting,
     getBool: getBoolSetting,
+    getInt: getIntSetting,
     have: haveSetting,
     set: setSetting,
     setIfNonexistent: setSettingIfNonexistent,
