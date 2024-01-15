@@ -174,6 +174,12 @@ _VAL[_NAM.CFGS_FAVICON_SOURCE] = (v)=>{
     return (( v === FAVICON_SITE || v === FAVICON_CHROME || v === FAVICON_DDG ) ? v : undefined);
 };
 
+// #316.  How often to autosave.  Empty or <= 0 == don't autosave
+_NAM.CFGS_AUTOREMEMBER_MINUTES = 'autoremember-timer-minutes';
+_DEF[_NAM.CFGS_AUTOREMEMBER_MINUTES] = '';
+_VAL[_NAM.CFGS_AUTOREMEMBER_MINUTES] = _vint;
+
+
 // }}}2
 
 /// The default values for the configuration settings.

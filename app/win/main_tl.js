@@ -4301,6 +4301,14 @@ function addEventListeners(done)
     done();
 } //addEventListeners
 
+function startAutoRememberTimerIfRequested(done) {
+    const minutes = S.getInt(S.S_AUTOREMEMBER_MINUTES, 0);
+    if(minutes > 0) {
+        // TODO RESUME HERE --- start timer
+    }
+    done();
+} // startAutoRememberTimerIfRequested()
+
 /// The last function to be called after all other initialization has
 /// completed successfully.
 function initTreeFinal(done)
@@ -4439,9 +4447,9 @@ function main()
     })
     .then(addOpenWindowsToTree)
     .then(addEventListeners)
-    .then(initTreeFinal)
+    .then(initTreeFinal)        // This needs to be the last real init step
 
-    .val(check_init_step_count)
+    .val(check_init_step_count) // This is a sanity check after initTreeFinal
 
     // Stop the spinner, if it started
     .val(()=>{
@@ -4449,6 +4457,8 @@ function main()
         spinner = null;
         //clearTimeout(spin_timer);
     })
+
+    .then(startAutoRememberTimerIfRequested)
 
     .or((err)=>{
         $(K.INIT_MSG_SEL).text(
