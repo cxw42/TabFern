@@ -43,7 +43,7 @@
     "buffer": "^5.7.1",
     "font-awesome": "github:FortAwesome/font-awesome#4.x",
     "install": "^0.12.2",
-    "jquery": "^3.7.0",
+    "jquery": "^3.7.1",
     "keypress.js": "^2.1.5",
     "loglevel": "^1.8.1",
     "path-browserify": "^1.0.1",
