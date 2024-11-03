@@ -216,6 +216,15 @@ setting_definitions.push(
             "type": "checkbox",
             "label": future_i18n('Prompt for confirmation before closing or deleting a tab that is currently playing audio (<i class="fa fa-music"></i>)'),
         },
+        {
+            "tab": future_i18n("Behaviour"),
+            "group": future_i18n("Autoremember"),
+            "name": S.S_AUTOREMEMBER_MINUTES,
+            "type": "text",
+            "label": future_i18n('If this is an integer <tt>I</tt> &gt;= 0, automatically '
+                + 'remember all open windows/tabs every <tt>I</tt> minutes.  Refresh the '
+                + 'TabFern window to apply changes to this option.'),
+        },
 
         // Appearance
         {
