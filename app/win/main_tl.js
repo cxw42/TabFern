@@ -47,7 +47,6 @@ var ASQH;   ///< Shorthand for asq-helpers
 var L;      ///< Holder --- L.log === log.  This gives closures access to the
             ///< current log instance.
 var S;      ///< Setting definitions
-var Esc;    ///< HTML escaper
 
 ////////////////////////////////////////////////////////////////////////// }}}1
 // Globals // {{{1
@@ -57,9 +56,6 @@ const NEW_TAB_URL = chrome.runtime.getURL('/win/new_tab.html');
 
 // - Operation state -
 var my_winid;                   ///< window ID of this popup window
-
-/// Window ID of the currently-focused window, as best we understand it.
-var currently_focused_winid = null;
 
 /// HACK to avoid creating extra tree items.
 /// TODO? change this to an object with win node ID's as keys.  Use one of the
@@ -149,7 +145,6 @@ function local_init()
     L.log = log = Modules.loglevel;
     log.setDefaultLevel(log.levels.WARN);
 
-    Esc = Modules.justhtmlescape;
     K = Modules.K;
     D = Modules.D;
     T = Modules.T;
