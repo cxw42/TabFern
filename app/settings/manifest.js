@@ -498,7 +498,13 @@ setting_definitions.push(
             'group_html':true,
             "type": "description",
             "text": (
-`<ul>
+`<h4>TF needs developers!</h4>
+<p>As you've noticed, my time to work on TabFern is limited 😅 .
+If you are a JavaScript developer, could you contribute some code?  I'm happy
+to help you get started!  If you aren't a JS dev, but know someone who is,
+could you please pass the word?  Much appreciated!
+</p>
+<ul>
 <li>TabFern can now automatically mark windows as remembered on a timer.
     Set the timer you want in ${settings} Behaviour ${gt} Autoremember
     ${issue(316)}.</li>
