@@ -216,6 +216,15 @@ setting_definitions.push(
             "type": "checkbox",
             "label": future_i18n('Prompt for confirmation before closing or deleting a tab that is currently playing audio (<i class="fa fa-music"></i>)'),
         },
+        {
+            "tab": future_i18n("Behaviour"),
+            "group": future_i18n("Autoremember"),
+            "name": S.S_AUTOREMEMBER_MINUTES,
+            "type": "text",
+            "label": future_i18n('If this is an integer <tt>I</tt> &gt;= 0, automatically '
+                + 'remember all open windows/tabs every <tt>I</tt> minutes.  Refresh the '
+                + 'TabFern window to apply changes to this option.'),
+        },
 
         // Appearance
         {
@@ -507,6 +516,9 @@ could you please pass the word?  Much appreciated!
 <ul>
 <li>The prompt for confirmation when closing audible tabs now applies to
     individual tabs ${issue(306)}.</li>
+<li>TabFern can now automatically mark windows as remembered on a timer.
+    Set the timer you want in ${settings} Behaviour ${gt} Autoremember
+    ${issue(316)}.</li>
 <li>Bugfixes ${issue([322,335])}</li>
 <li>Refactoring ${issue(334)}</li>
 </ul>
