@@ -4301,6 +4301,50 @@ function addEventListeners(done)
     done();
 } //addEventListeners
 
+// Mark all windows as remembered
+function rememberAll()
+{
+    var modified = false;
+    L.log.info('Marking all windows as remembered')
+    try {
+        const root = T.treeobj.get_node($.jstree.root);
+        root.children.forEach( (kid_node_id, kid_idx)=>{
+            const val = D.windows.by_node_id(kid_node_id);
+            if(val && (val.keep !== K.WIN_KEEP)) {
+                modified = true;
+                M.remember(kid_node_id);
+            }
+        });
+
+    } catch(e) {
+        log.warn({'Failure when trying to auto-remember windows': e})
+        // But don't throw the error since we still want to save the tree.
+    }
+
+    if(modified) {
+        saveTree();
+    }
+} //rememberAll
+
+// Timer handler to call rememberAll() and set the next timer.
+function autoRememberAll(minutes, only_start_timer = false)
+{
+    if(!only_start_timer) {
+        rememberAll();
+    }
+
+    L.log.info(`Starting autoremember timer for ${minutes} minute(s)`);
+    window.setTimeout(()=>{autoRememberAll(minutes)}, minutes*60*1000);
+} // autoRememberAll
+
+function startAutoRememberTimerIfRequested(done) {
+    const minutes = S.getInt(S.S_AUTOREMEMBER_MINUTES, 0);
+    if(minutes > 0) {
+        autoRememberAll(minutes, true);  // true => just start the timer
+    }
+    done();
+} // startAutoRememberTimerIfRequested()
+
 /// The last function to be called after all other initialization has
 /// completed successfully.
 function initTreeFinal(done)
@@ -4410,6 +4454,8 @@ function main()
     };
     //let spin_timer = window.setTimeout(spin_starter, 1000);
 
+    // --- Init steps ---
+
     s.then(determine_devel_mode)
     .then(basicInit)
 
@@ -4439,9 +4485,11 @@ function main()
     })
     .then(addOpenWindowsToTree)
     .then(addEventListeners)
-    .then(initTreeFinal)
+    .then(initTreeFinal)        // This needs to be the last real init step
 
-    .val(check_init_step_count)
+    .val(check_init_step_count) // This is a sanity check after initTreeFinal
+
+    // --- Post-init steps ---
 
     // Stop the spinner, if it started
     .val(()=>{
@@ -4449,6 +4497,11 @@ function main()
         spinner = null;
         //clearTimeout(spin_timer);
     })
+
+    // Start the autoremember timer now that all the state is consistent
+    .then(startAutoRememberTimerIfRequested)
+
+    // --- Error handling ---
 
     .or((err)=>{
         $(K.INIT_MSG_SEL).text(
