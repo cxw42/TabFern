@@ -238,7 +238,6 @@ function getCWinGeometry(cwin)
 
 /// Clear flags on all windows; leave tabs alone.
 function unflagAllWindows() {
-    //log.trace('unflagAllWindows');
     T.treeobj.clear_flags_by_multitype([K.IT_WIN, K.NST_OPEN],
             undefined,  // any parent
             true        // true => don't need an event
@@ -255,8 +254,6 @@ function unflagAllWindows() {
 /// checkbox.  Otherwise, hide the box.
 /// @return An ASQ instance that will run once the dialog closes
 function showConfirmationModalDialog(message_html, show_dnsa = true) {
-    //log.info('Setting up dialog seq');
-
     let dlg;                    ///< The rmodal instance
     let retval = ASQ();         ///< caller's processing after dlg closes
     let cleanup = ASQ();        ///< our internal cleanup after dlg closes
@@ -297,11 +294,9 @@ function showConfirmationModalDialog(message_html, show_dnsa = true) {
 
             afterOpen: function() {
                 $('#confirm-dialog .btn-primary').focus();
-                //console.log('opened');
             },
 
             afterClose: function() {
-                //console.log('closed');
                 cleanup_cbk(null);  // Run the cleanup
                 let data = { reason: dlg.reason };
                 if(show_dnsa) { data.notAgain = dlg.notAgain; }
@@ -332,8 +327,6 @@ function showConfirmationModalDialog(message_html, show_dnsa = true) {
 
     // Add the keyboard listener
     $(document).on('keydown.TFrmodal', function(ev) {
-        //log.info({'keydown during dlg':ev});
-
         let key = (ev && typeof ev.key === 'string') ?
                     ev.key.toLowerCase(): null;
 
@@ -352,10 +345,7 @@ function showConfirmationModalDialog(message_html, show_dnsa = true) {
 
     // Cleanup code
     cleanup.val(()=>{
-        //log.info('Tearing down dialog seq');
-
         try {
-            //document.removeEventListener('keydown', kbd_listener, false);
             $(document).off('keydown.TFrmodal');
             if(show_dnsa && notAgain) {
                 notAgain.off('change.TFrmodal');
@@ -646,9 +636,6 @@ function actionForgetWindow(node_id, node, unused_action_id, unused_action_el)
 /// Mark a window as K.KEEP but don't close it
 function actionRememberWindow(node_id, node, unused_action_id, unused_action_el)
 {
-    //let win_val = D.windows.by_node_id(node_id);
-    //if(!win_val) return;
-
     M.remember(node_id);    // No-op if node_id isn't a window
 
     saveTree();
@@ -748,7 +735,6 @@ function actionCloseWindowAndSave(win_node_id, win_node, unused_action_id, unuse
 
         // Processing after the dialog closes
         .val((result)=>{
-            //log.info({'Dialog closed; reason':result});
             if(!result) return;     // no-op if we didn't get an answer
 
             /* //////// Not yet - #177
@@ -867,7 +853,6 @@ function actionDeleteWindow(win_node_id, win_node, unused_action_id,
 
         // Processing after the dialog closes
         .val((result)=>{
-            //log.info({'Dialog closed; reason':result});
             if(!result) return;     // no-op if we didn't get an answer
 
             // Handle "don't ask again", but cancel is always nop.
@@ -876,7 +861,6 @@ function actionDeleteWindow(win_node_id, win_node, unused_action_id,
                 let conf_key = (win_val.keep === K.WIN_KEEP) ?
                     S.CONFIRM_DEL_OF_SAVED :
                     S.CONFIRM_DEL_OF_UNSAVED;
-                //log.info({"Don't ask again":conf_key});
                 S.set(conf_key, false);
             }
 
@@ -990,7 +974,6 @@ function actionEditTabBullet(node_id, node, unused_action_id, unused_action_el)
 
     // Put the actions in the right place.  TODO move this to model?
     T.treeobj.element.one('redraw_event.jstree', function(evt, evt_data){
-        //log.info({redraw_event:arguments});
         if(evt_data && typeof evt_data === 'object' && evt_data.obj) {
             T.rjustify_node_actions(evt_data.obj);
         }
@@ -1463,7 +1446,6 @@ function createNodeForClosedWindowV1(win_data_v1)
 
     if(win_data_v1.tabs) {
         for(let tab_data_v1 of win_data_v1.tabs) {
-            //log.info('   ' + tab_data_v1.text);
             createNodeForClosedTabV1(tab_data_v1, node_id);
         }
     }
@@ -1803,7 +1785,6 @@ function onTreeSelect(evt_unused, evt_data, options={})
         open_win_and_tab: 'open_win_and_tab',   // win is closed; open one tab
     });
 
-    //log.info(evt_data.node);
     if(typeof evt_data.node === 'undefined') return;
 
     // Cancel a timer waiting for selection, if any.
@@ -1959,7 +1940,6 @@ function onTreeSelect(evt_unused, evt_data, options={})
             }, ignore_chrome_error);
         }
 
-        //log.info('flagging treeonselect' + node.id);
         T.treeobj.flag_node(tab_node);
         win_id_to_highlight_and_raise = tab_val.win_id;
 
@@ -2139,7 +2119,6 @@ function onWinCreated(cwin)
                 "Restore?": (window_is_being_restored ? "yes" : "no"),
                 cwin
             });
-    //log.info('clearing flags winoncreated');
 
     T.treeobj.clear_flags();
 
@@ -2258,7 +2237,6 @@ function initFocusHandler()
         function onmousemove(evt) {
             x_blurred = evt.clientX;
             y_blurred = evt.clientY;
-            //log.info({x_blurred,y_blurred});
         }
 
         /// Focus event handler.  Empirically, this happens after the
@@ -2295,7 +2273,6 @@ function initFocusHandler()
         });
 
         $(window).blur(function(evt){
-            //log.debug({onblur:evt});
             $(window).on('mousemove.tabfern', onmousemove);
                 // Track pointer position while the window is blurred so we
                 // can take a reasonable guess, in the onFocusChanged handler,
@@ -2452,7 +2429,6 @@ var onTabCreated = (function(){     // search key: function onTabCreated()
                         [`merge ${cwin.id} Found merge target in tree for`]: cwin,
                         merge_to_win
                     });
-                    //actionDeleteWindow(win_node_id, T.treeobj.get_node(win_node_id),null,null);
                     log.debug(`merge ${ctab.windowId}==${cwin.id}: start`);
 
                     // Open the saved window and connect it with the new tabs.
@@ -2745,8 +2721,6 @@ function saveViewSize(size_data)
 /// @invariant last_saved_size.winState === 'normal'
 function eventOnResize(evt)
 {
-    // log.debug({"TF window resized": evt});
-
     chrome.windows.get(my_winid, (cwin)=>{
         // Clear any previous timer we may have had running
         if(resize_save_timer_id) {
@@ -2783,8 +2757,6 @@ function eventOnResize(evt)
 function timedMoveDetector()
 {
   chrome.windows.get(my_winid, (cwin)=>{
-    // log.debug('Move detector running');
-
     // Update only if window is normal.  If the state or size changed, we will
     // have caught it in eventOnResize.
     if (cwin.state == 'normal') {
@@ -3268,7 +3240,6 @@ function dndIsDraggable(nodes, evt_unused)
     if(L.log.getLevel() <= L.log.levels.TRACE) {
         console.group('is draggable?');
         console.log(nodes);
-        //console.log($.jstree.reference(evt.target));
         console.groupEnd();
     }
 
@@ -3495,7 +3466,6 @@ var treeCheckCallback = (function treeCheck()
             console.group('check callback for ' + operation);
             console.log(node);
             console.log(new_parent);
-            //console.log(node_position);
             if(more) console.log(more);
             if(!more || !more.dnd) {
                 console.group('Not drag and drop');
@@ -3968,7 +3938,6 @@ function preLoadInit()
             break CSSC;
         }
 
-        //log.info({'Custom scrollbar color': color.toString()});
         let ss = document.styleSheets[document.styleSheets.length-1];
         for(let state of ['', ':hover', ':active']) {
             let newrule = 'html.skinny-scrollbar::-webkit-scrollbar-thumb' +
@@ -4105,7 +4074,6 @@ function createMainTreeIfWinIdReceived_catch(done, win_id_msg_or_error)
     // inner_resize event.
     // TODO? move this into item_tree?
     $(window).on('inner_resize', function(evt, wid) {
-        //log.info({inner_resize:evt, wid});
         T.rjustify_action_group_at(wid);
     });
 
@@ -4242,11 +4210,8 @@ function addEventListeners(done)
 
     T.treeobj.element.on('redraw.jstree', function(evt, evt_data) {
         if(!evt_data.nodes) {
-            //log.info({'redraw -> rjustify all at':T.last_r_edge});
             T.rjustify_action_group_at();   // TODO do we need this?
         } else {
-            //log.info({'redraw -> rjustify':evt_data.nodes,
-            //            'redge':T.last_r_edge});
             $(evt_data.nodes).each(T.rjustify_node_actions);
         }
     });
@@ -4264,7 +4229,6 @@ function addEventListeners(done)
         // should take care of this.
 
     T.treeobj.element.on('mmb_node.jstree', (event, node_id)=>{
-        //log.info(`Saw the MMB click on ${node_id}`);
         let node = T.treeobj.get_node(node_id);
         onTreeSelect(event, {node}, {raise_tabfern_after: true});
             // Design decision: do not pass event as part of event_data (2nd
@@ -4403,7 +4367,6 @@ function main()
     let spin_starter = function() {
         if(spinner) spinner.spin($('#tabfern-container')[0]);
     };
-    //let spin_timer = window.setTimeout(spin_starter, 1000);
 
     s.then(determine_devel_mode)
     .then(basicInit)
@@ -4442,7 +4405,6 @@ function main()
     .val(()=>{
         spinner.stop();
         spinner = null;
-        //clearTimeout(spin_timer);
     })
 
     .or((err)=>{
