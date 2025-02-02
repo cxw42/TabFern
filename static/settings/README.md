@@ -2,7 +2,7 @@
 *Create fancy, chrome-look-alike settings for your Chrome or Safari extension in minutes!*
 
 ### Howto
-Welcome to Fancy Settings! Are you ready for tabs, groups, search, good style?  
+Welcome to Fancy Settings! Are you ready for tabs, groups, search, good style?
 Let's get started, it only takes a few minutes...
 
 Settings can be of different types: text input, checkbox, slider, etc. Some "settings" are not actual settings but provide functionality that is relevant to the options page: description (which is simply a block of text), button.
@@ -19,7 +19,8 @@ Settings are defined in the manifest.js file as JavaScript objects. Each setting
 }
 ```
 
-"name" is used as a part of the key when storing the setting's value in localStorage. 
+"name" is used as a part of the key when storing the setting's value in
+`chrome.storage.local`.
 If it's missing, nothing will be saved.
 
 ###Additionally, all types of settings are configured with their own custom parameters:
@@ -56,7 +57,7 @@ Button ("type": "button")
 
  max (number) maximal value of the slider
 
- min (number) minimal value of the slider 
+ min (number) minimal value of the slider
 
  step (number) steps between two values
 
@@ -110,5 +111,5 @@ The "displayed text" field is optional and is displayed to the user when you don
 ```
 
 ### License
-Fancy Settings is licensed under the **LGPL 2.1**.  
+Fancy Settings is licensed under the **LGPL 2.1**.
 For details see *LICENSE.txt*

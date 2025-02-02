@@ -31,9 +31,9 @@
 
     Store.prototype.get = function (name) {
         name = "store." + this.name + "." + name;
-        if (localStorage.getItem(name) === null) { return undefined; }
+        if (await chrome.storage.local.get(name) === null) { return undefined; }
         try {
-            return JSON.parse(localStorage.getItem(name));
+            return JSON.parse(await chrome.storage.local.get(name));
         } catch (e) {
             return null;
         }
@@ -53,14 +53,14 @@
                 }
             }
 
-            localStorage.setItem("store." + this.name + "." + name, value);
+            await chrome.storage.local.set("store." + this.name + "." + name, value);
         }
 
         return this;
     };
 
     Store.prototype.remove = function (name) {
-        localStorage.removeItem("store." + this.name + "." + name);
+        await chrome.storage.local.remove("store." + this.name + "." + name);
         return this;
     };
 
@@ -69,9 +69,10 @@
             i;
 
         name = "store." + this.name + ".";
-        for (i = (localStorage.length - 1); i >= 0; i--) {
-            if (localStorage.key(i).substring(0, name.length) === name) {
-                localStorage.removeItem(localStorage.key(i));
+        var keys = await chrome.storage.local.getKeys();
+        for (i = (keys.length - 1); i >= 0; i--) {
+            if (keys[i].substring(0, name.length) === name) {
+                await chrome.storage.local.remove(keys[i]);
             }
         }
 
@@ -87,9 +88,10 @@
 
         values = {};
         name = "store." + this.name + ".";
-        for (i = (localStorage.length - 1); i >= 0; i--) {
-            if (localStorage.key(i).substring(0, name.length) === name) {
-                key = localStorage.key(i).substring(name.length);
+        var keys = await chrome.storage.local.getKeys();
+        for (i = (keys.length - 1); i >= 0; i--) {
+            if (keys[i].substring(0, name.length) === name) {
+                key = keys[i].substring(name.length);
                 value = this.get(key);
                 if (value !== undefined) { values[key] = value; }
             }
