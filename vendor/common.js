@@ -113,7 +113,7 @@ function asyncAppendScriptToHead(document, url, callback, type = 'text/javascrip
 
 /// Invoke a callback only when the document is loaded.  Does not pass any
 /// parameters to the callback.
-function callbackOnLoad(document, window, callback)
+function callbackOnLoad(callback)
 {
     if(document.readyState !== 'complete') {
         // Thanks to https://stackoverflow.com/a/28093606/2877364 by

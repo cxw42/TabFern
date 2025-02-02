@@ -79,6 +79,6 @@ function initMain()
 // MAIN //
 
 log.setDefaultLevel(log.levels.WARN);
-callbackOnLoad(document, window, initMain);
+callbackOnLoad(initMain);
 
 // vi: set ts=4 sts=4 sw=4 et ai fo-=o fo-=r: //
