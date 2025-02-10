@@ -26,33 +26,36 @@ const MSG_EDIT_TAB_NOTE = 'editTabNote';
 
 BROWSER_TYPE=null;  // unknown
 
-(function(win){
+const isLastError = (function getIsLastError() {
     let isLastError_chrome =
         ()=>{return (typeof(chrome.runtime.lastError) !== 'undefined');};
     let isLastError_firefox =
         ()=>{return (chrome.runtime.lastError !== null);};
 
+    let result;
     if(typeof browser !== 'undefined' && browser.runtime &&
                                             browser.runtime.getBrowserInfo) {
         browser.runtime.getBrowserInfo().then(
             (info)=>{   // fullfillment
                 if(info.name === 'Firefox') {
-                    win.isLastError = isLastError_firefox;
+                    result = isLastError_firefox;
                     BROWSER_TYPE = 'ff';
                 } else {
-                    win.isLastError = isLastError_chrome;
+                    result = isLastError_chrome;
                 }
             },
 
             ()=>{   //rejection --- assume Chrome by default
-                win.isLastError = isLastError_chrome;
+                result = isLastError_chrome;
             }
         );
     } else {    // Chrome
         BROWSER_TYPE = 'chrome';
-        win.isLastError = isLastError_chrome;
+        result = isLastError_chrome;
     }
-})(window);
+
+    return result;
+})();
 
 /// Return a string representation of an error message.
 /// @param err {Any}: The error object/message to process.
@@ -110,7 +113,7 @@ function asyncAppendScriptToHead(document, url, callback, type = 'text/javascrip
 
 /// Invoke a callback only when the document is loaded.  Does not pass any
 /// parameters to the callback.
-function callbackOnLoad(callback)
+function callbackOnLoad(document, window, callback)
 {
     if(document.readyState !== 'complete') {
         // Thanks to https://stackoverflow.com/a/28093606/2877364 by

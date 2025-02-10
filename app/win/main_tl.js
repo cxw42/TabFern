@@ -4360,7 +4360,7 @@ function main()
     // Run the main init steps once the page has loaded
     let s = ASQ();
     let go = s.errfcb();    // To kick off s.
-    callbackOnLoad(go.bind(go, null));  // null => success
+    callbackOnLoad(document, window, go.bind(go, null));  // null => success
 
     // Start a spinner if loading takes more than 1 s
     let spinner = new Modules.spin.Spinner();
