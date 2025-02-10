@@ -14,7 +14,13 @@ if(false) { // Vendor files - listed here only so they'll be bundled
     require('process/browser');
 }
 
-const S = require('common/setting-accessors');    // in app/
+// Keep this in sync with mv3-converter.js
+// TODO move this to setting-definitions
+// Key in chrome.storage.local.  Not in setting-definitions.js because
+// that file uses localStorage, which this script cannot.
+const OPEN_POPUP_SETTING_KEY = 'open_popup_on_chrome_startup';
+
+const S = require('common/setting-definitions');    // in app/
 
 /// The module exports, for use in command-line debugging
 let me = {
@@ -106,18 +112,18 @@ let onClickedListener = function(tab) {
         };
 
         let removeClickListener = function() {
-            chrome.browserAction.onClicked.removeListener(clickListener);
+            chrome.action.onClicked.removeListener(clickListener);
         };
 
         setTimeout(removeClickListener, 1337);
             // Do not change this constant or the Unix daemon will dog
             // your footsteps until the `time_t`s roll over.
-        chrome.browserAction.onClicked.addListener(clickListener);
+        chrome.action.onClicked.addListener(clickListener);
     }
 
 } //onClickedListener()
 
-chrome.browserAction.onClicked.addListener(onClickedListener);
+chrome.action.onClicked.addListener(onClickedListener);
 
 let onCommandListener = function(cmd) {
     console.log("Received command " + cmd);
@@ -161,8 +167,9 @@ function editNoteOnClick(info, tab)
 
 chrome.contextMenus.create({
     id: 'editNote', title: _T('menuAddEditNoteThisTab'),
-    contexts: ['browser_action'], onclick: editNoteOnClick
+    contexts: ['browser_action'],
 });
+chrome.contextMenus.onClicked.addListener(editNoteOnClick);
 
 //////////////////////////////////////////////////////////////////////////
 // Messages //
@@ -185,33 +192,74 @@ function messageListener(request, sender, sendResponse)
         console.log('Responding with window ID ' + me.viewWindowId.toString());
         sendResponse({msg: request.msg, response: true, id: me.viewWindowId});
     }
+
+    if(request.msg === MSG_REPORT_POPUP_SETTING && !request.response) {
+        console.log('Responding');
+        sendResponse({msg: request.msg, response: true});
+
+        openMainWindowIfNecessary(request.shouldOpenPopup);
+    }
+
 } //messageListener
 
 chrome.runtime.onMessage.addListener(messageListener);
+
+async function openMainWindowIfNecessary(shouldOpen)
+{
+    // See if it's time to open the main window
+    const hadPopupValue = await chrome.storage.local.get(OPEN_POPUP_SETTING_KEY);
+    await chrome.storage.local.set({[OPEN_POPUP_SETTING_KEY]: shouldOpen});
+
+    if(shouldOpen && !hadPopupValue) {
+        console.log('Triggering open of main window')
+        openMainWindow();
+    }
+}
 
 //////////////////////////////////////////////////////////////////////////
 // MAIN //
 
 // Create the main window when Chrome starts
-if(true) {
-    callbackOnLoad(
-        function() {
-            console.log('TabFern: background window loaded');
-            if(S.getBool(S.POPUP_ON_STARTUP)) {
-                console.log('Opening popup window');
-                setTimeout(me.loadView, 500);
-            }
-        }
-    );
-}
-
-// Set the defaults for the options.  The settings boilerplate from
-// extensionizr does not appear to have this facility.
-for(let opt in S.defaults) {
-    if(!opt.startsWith('_')) {
-        S.setIfNonexistentOrInvalid(opt, S.defaults[opt]);
+async function openMainWindow()
+{
+    console.log('TabFern: background window loaded');
+    const settingValue = await chrome.storage.local.get(OPEN_POPUP_SETTING_KEY);
+    if(settingValue && settingValue[OPEN_POPUP_SETTING_KEY]) {
+        console.log('Opening popup window');
+        setTimeout(me.loadView, 500);
     }
-}
+} //openMainWindow
+
+// Modified from
+// <https://developer.chrome.com/docs/extensions/reference/api/offscreen#maintain_the_lifecycle_of_an_offscreen_document>
+async function setupOffscreenDocument(path)
+{
+    // Check all windows controlled by the service worker to see if one
+    // of them is the offscreen document with the given path
+    const offscreenUrl = chrome.runtime.getURL(path);
+    const existingContexts = await chrome.runtime.getContexts({
+        contextTypes: ['OFFSCREEN_DOCUMENT'],
+        documentUrls: [offscreenUrl]
+    });
+
+    if (existingContexts.length > 0) {
+        return;
+    }
+
+    // create offscreen document
+    await chrome.offscreen.createDocument({
+        url: path,
+        reasons: [chrome.offscreen.Reason.LOCAL_STORAGE],
+        justification: 'Copy localStorage values this script needs into chrome.storage.local',
+    });
+} //setupOffscreenDocument()
+
+// Open the main window.  This won't do anything if this is the first time we
+// are loading after updating to MV3.
+openMainWindow();
+
+// TODO don't do this if we are already on MV3.
+setupOffscreenDocument('mv3-converter/mv3-converter.html');
 
 console.log('TabFern: done running background.js');
 

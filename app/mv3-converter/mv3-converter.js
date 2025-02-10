@@ -1,0 +1,38 @@
+// app/mv3-converter/mv3-converter.js - convert mv2->mv3
+
+if(false) { // Vendor files - listed here only so they'll be bundled
+    require('process/browser');
+    require('vendor/common');
+}
+
+const S = require('common/setting-definitions');
+
+console.log("Setting option defaults");
+
+// Set the defaults for the options.  The settings boilerplate from
+// extensionizr does not appear to have this facility.
+for(let opt in S.defaults) {
+    S.setIfNonexistent(opt, S.defaults[opt]);
+}
+
+function reportSettings()
+{
+    const shouldOpenPopup = S.getBool(S.POPUP_ON_STARTUP);
+    chrome.runtime.sendMessage(
+        {msg: MSG_REPORT_POPUP_SETTING, shouldOpenPopup},
+        // This callback is only for debugging --- all the action happens in
+        // src/view/tree.js, the receiver.
+        function(resp){
+            if(isLastError()) {
+                console.error({["Couldn't send popup-setting report"]:
+                    lastBrowserErrorMessageString()});
+            } else {
+                console.log({["response to popup-setting report"]: resp});
+            }
+        }
+    );
+} //reportSettings()
+
+reportSettings();
+
+console.log("Goodbye from mv3-converter.js");
