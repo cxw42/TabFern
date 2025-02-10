@@ -106,18 +106,18 @@ let onClickedListener = function(tab) {
         };
 
         let removeClickListener = function() {
-            chrome.browserAction.onClicked.removeListener(clickListener);
+            chrome.action.onClicked.removeListener(clickListener);
         };
 
         setTimeout(removeClickListener, 1337);
             // Do not change this constant or the Unix daemon will dog
             // your footsteps until the `time_t`s roll over.
-        chrome.browserAction.onClicked.addListener(clickListener);
+        chrome.action.onClicked.addListener(clickListener);
     }
 
 } //onClickedListener()
 
-chrome.browserAction.onClicked.addListener(onClickedListener);
+chrome.action.onClicked.addListener(onClickedListener);
 
 let onCommandListener = function(cmd) {
     console.log("Received command " + cmd);
@@ -161,8 +161,9 @@ function editNoteOnClick(info, tab)
 
 chrome.contextMenus.create({
     id: 'editNote', title: _T('menuAddEditNoteThisTab'),
-    contexts: ['browser_action'], onclick: editNoteOnClick
+    contexts: ['browser_action'],
 });
+chrome.contextMenus.onClicked.addListener(editNoteOnClick);
 
 //////////////////////////////////////////////////////////////////////////
 // Messages //
@@ -192,23 +193,19 @@ chrome.runtime.onMessage.addListener(messageListener);
 //////////////////////////////////////////////////////////////////////////
 // MAIN //
 
-// Create the main window when Chrome starts
-if(true) {
-    callbackOnLoad(
-        function() {
-            console.log('TabFern: background window loaded');
-            if(S.getBool(S.POPUP_ON_STARTUP)) {
-                console.log('Opening popup window');
-                setTimeout(me.loadView, 500);
-            }
-        }
-    );
-}
-
 // Set the defaults for the options.  The settings boilerplate from
 // extensionizr does not appear to have this facility.
 for(let opt in S.defaults) {
     S.setIfNonexistent(opt, S.defaults[opt]);
+}
+
+// Create the main window when Chrome starts
+if(true) {
+    console.log('TabFern: background window loaded');
+    if(S.getBool(S.POPUP_ON_STARTUP)) {
+        console.log('Opening popup window');
+        setTimeout(me.loadView, 500);
+    }
 }
 
 console.log('TabFern: done running background.js');
