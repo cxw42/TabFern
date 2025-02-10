@@ -193,12 +193,6 @@ chrome.runtime.onMessage.addListener(messageListener);
 //////////////////////////////////////////////////////////////////////////
 // MAIN //
 
-// Set the defaults for the options.  The settings boilerplate from
-// extensionizr does not appear to have this facility.
-for(let opt in S.defaults) {
-    S.setIfNonexistent(opt, S.defaults[opt]);
-}
-
 // Create the main window when Chrome starts
 if(true) {
     console.log('TabFern: background window loaded');
