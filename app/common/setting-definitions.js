@@ -181,7 +181,7 @@ const SETTING_PREFIX = 'store.settings.';
 /// @param setting_name     A value in CFG_NAMES
 function getRawSetting(setting_name)
 {
-    return await chrome.storage.local.get(SETTING_PREFIX + setting_name);
+    return localStorage.getItem(SETTING_PREFIX + setting_name);
 } //getSetting
 
 /// Get the string value of a setting, if it is a string.
@@ -195,7 +195,7 @@ function getStringSetting(setting_name, default_value = undefined)
         default_value = CFG_DEFAULTS[setting_name];
     }
 
-    let locStorageValue = await chrome.storage.local.get(SETTING_PREFIX + setting_name);
+    let locStorageValue = localStorage.getItem(SETTING_PREFIX + setting_name);
 
     if ( locStorageValue !== null ) {   // key exists
         // Get the value, which is stored as JSON
@@ -222,7 +222,7 @@ function getBoolSetting(setting_name, default_value = undefined)
         default_value = CFG_DEFAULTS[setting_name];
     }
 
-    let locStorageValue = await chrome.storage.local.get(SETTING_PREFIX + setting_name);
+    let locStorageValue = localStorage.getItem(SETTING_PREFIX + setting_name);
 
     if ( locStorageValue === null ) {   // nonexistent key
         return default_value;
@@ -243,7 +243,7 @@ function getBoolSetting(setting_name, default_value = undefined)
 function haveSetting(setting_name)
 {
     if(!setting_name) return false;
-    return (SETTING_PREFIX + setting_name) in chrome.storage.local;
+    return (SETTING_PREFIX + setting_name) in localStorage;
 } //haveSetting()
 
 /// Set a setting (wow!).
@@ -253,7 +253,7 @@ function haveSetting(setting_name)
 function setSetting(setting_name, setting_value)
 {
     // TODO handle exceptions in some reasonable way.
-    await chrome.storage.local.set(
+    localStorage.setItem(
         SETTING_PREFIX + setting_name,
         JSON.stringify(setting_value)
     );  // JSON stringify so we can store more than just strings.
