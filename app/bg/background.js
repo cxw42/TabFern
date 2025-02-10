@@ -14,6 +14,9 @@ if(false) { // Vendor files - listed here only so they'll be bundled
     require('process/browser');
 }
 
+// Keep this in sync with mv3-converter.js
+const OPEN_POPUP_SETTING_KEY = 'open_popup_on_chrome_startup';
+
 const S = require('common/setting-definitions');    // in app/
 
 /// The module exports, for use in command-line debugging
@@ -186,30 +189,36 @@ function messageListener(request, sender, sendResponse)
         console.log('Responding with window ID ' + me.viewWindowId.toString());
         sendResponse({msg: request.msg, response: true, id: me.viewWindowId});
     }
+
+    if(request.msg === MSG_REPORT_POPUP_SETTING && !request.response) {
+        console.log('Responding');
+        sendResponse({msg: request.msg, response: true});
+    }
+
 } //messageListener
 
 chrome.runtime.onMessage.addListener(messageListener);
 
+// TODO await chrome.storage.local.set({[OPEN_POPUP_SETTING_KEY]: shouldOpenPopup});
+
 //////////////////////////////////////////////////////////////////////////
 // MAIN //
 
-/*
 // Create the main window when Chrome starts
-if(true) {
+async function openMainWindow()
+{
     console.log('TabFern: background window loaded');
-    if(S.getBool(S.POPUP_ON_STARTUP)) {
+    const settingValue = await chrome.storage.local.get(OPEN_POPUP_SETTING_KEY);
+    if(settingValue && settingValue[OPEN_POPUP_SETTING_KEY]) {
         console.log('Opening popup window');
         setTimeout(me.loadView, 500);
     }
-}
-*/
+} //openMainWindow
 
 // Modified from
 // <https://developer.chrome.com/docs/extensions/reference/api/offscreen#maintain_the_lifecycle_of_an_offscreen_document>
-
-let creating; // A global promise to avoid concurrency issues
-
-async function setupOffscreenDocument(path) {
+async function setupOffscreenDocument(path)
+{
     // Check all windows controlled by the service worker to see if one
     // of them is the offscreen document with the given path
     const offscreenUrl = chrome.runtime.getURL(path);
@@ -223,17 +232,11 @@ async function setupOffscreenDocument(path) {
     }
 
     // create offscreen document
-    if (creating) {
-        await creating;
-    } else {
-        creating = chrome.offscreen.createDocument({
-            url: path,
-            reasons: ['CLIPBOARD'],
-            justification: 'reason for needing the document',
-        });
-        await creating;
-        creating = null;
-    }
+    await chrome.offscreen.createDocument({
+        url: path,
+        reasons: [chrome.offscreen.Reason.LOCAL_STORAGE],
+        justification: 'Copy localStorage values this script needs into chrome.storage.local',
+    });
 } //setupOffscreenDocument()
 
 setupOffscreenDocument('mv3-converter/mv3-converter.html');

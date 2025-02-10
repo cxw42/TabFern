@@ -15,6 +15,7 @@ console.log('TabFern common.js loading');
 
 const MSG_GET_VIEW_WIN_ID = 'getViewWindowId';
 const MSG_EDIT_TAB_NOTE = 'editTabNote';
+const MSG_REPORT_POPUP_SETTING = 'reportPopupSetting';
 
 ////////////////////////////////////////////////////////////////////////// }}}1
 // Cross-browser error handling, and browser tests // {{{1
