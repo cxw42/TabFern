@@ -27,10 +27,11 @@
     "default_title": "TabFern"
   },
   "permissions": [
-    "tabs",
+    "contextMenus",
+    "offscreen",
     "storage",
-    "unlimitedStorage",
-    "contextMenus"
+    "tabs",
+    "unlimitedStorage"
   ],
   "optional_host_permissions": [
     "file://*/*"

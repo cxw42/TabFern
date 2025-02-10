@@ -193,6 +193,7 @@ chrome.runtime.onMessage.addListener(messageListener);
 //////////////////////////////////////////////////////////////////////////
 // MAIN //
 
+/*
 // Create the main window when Chrome starts
 if(true) {
     console.log('TabFern: background window loaded');
@@ -201,6 +202,41 @@ if(true) {
         setTimeout(me.loadView, 500);
     }
 }
+*/
+
+// Modified from
+// <https://developer.chrome.com/docs/extensions/reference/api/offscreen#maintain_the_lifecycle_of_an_offscreen_document>
+
+let creating; // A global promise to avoid concurrency issues
+
+async function setupOffscreenDocument(path) {
+    // Check all windows controlled by the service worker to see if one
+    // of them is the offscreen document with the given path
+    const offscreenUrl = chrome.runtime.getURL(path);
+    const existingContexts = await chrome.runtime.getContexts({
+        contextTypes: ['OFFSCREEN_DOCUMENT'],
+        documentUrls: [offscreenUrl]
+    });
+
+    if (existingContexts.length > 0) {
+        return;
+    }
+
+    // create offscreen document
+    if (creating) {
+        await creating;
+    } else {
+        creating = chrome.offscreen.createDocument({
+            url: path,
+            reasons: ['CLIPBOARD'],
+            justification: 'reason for needing the document',
+        });
+        await creating;
+        creating = null;
+    }
+} //setupOffscreenDocument()
+
+setupOffscreenDocument('mv3-converter/mv3-converter.html');
 
 console.log('TabFern: done running background.js');
 

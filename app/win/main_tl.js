@@ -48,12 +48,6 @@ var L;      ///< Holder --- L.log === log.  This gives closures access to the
             ///< current log instance.
 var S;      ///< Setting definitions
 
-// Set the defaults for the options.  The settings boilerplate from
-// extensionizr does not appear to have this facility.
-for(let opt in Modules.S.defaults) {
-    Modules.S.setIfNonexistent(opt, Modules.S.defaults[opt]);
-}
-
 ////////////////////////////////////////////////////////////////////////// }}}1
 // Globals // {{{1
 
