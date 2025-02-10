@@ -14,7 +14,8 @@ if(false) { // Vendor files - listed here only so they'll be bundled
     require('process/browser');
 }
 
-// Keep this in sync with mv3-converter.js
+// Key in chrome.storage.local.  Not in setting-definitions.js because
+// that file uses localStorage, which this script cannot.
 const OPEN_POPUP_SETTING_KEY = 'open_popup_on_chrome_startup';
 
 const S = require('common/setting-definitions');    // in app/
@@ -193,13 +194,25 @@ function messageListener(request, sender, sendResponse)
     if(request.msg === MSG_REPORT_POPUP_SETTING && !request.response) {
         console.log('Responding');
         sendResponse({msg: request.msg, response: true});
+
+        openMainWindowIfNecessary(request.shouldOpenPopup);
     }
 
 } //messageListener
 
 chrome.runtime.onMessage.addListener(messageListener);
 
-// TODO await chrome.storage.local.set({[OPEN_POPUP_SETTING_KEY]: shouldOpenPopup});
+async function openMainWindowIfNecessary(shouldOpen)
+{
+    // See if it's time to open the main window
+    const hadPopupValue = await chrome.storage.local.get(OPEN_POPUP_SETTING_KEY);
+    await chrome.storage.local.set({[OPEN_POPUP_SETTING_KEY]: shouldOpen});
+
+    if(shouldOpen && !hadPopupValue) {
+        console.log('Triggering open of main window')
+        openMainWindow();
+    }
+}
 
 //////////////////////////////////////////////////////////////////////////
 // MAIN //
@@ -239,6 +252,11 @@ async function setupOffscreenDocument(path)
     });
 } //setupOffscreenDocument()
 
+// Open the main window.  This won't work if this is the first time we are
+// loading after updating to MV3.
+openMainWindow();
+
+// TODO don't do this if we are already on MV3.
 setupOffscreenDocument('mv3-converter/mv3-converter.html');
 
 console.log('TabFern: done running background.js');

@@ -5,9 +5,6 @@ if(false) { // Vendor files - listed here only so they'll be bundled
     require('vendor/common');
 }
 
-// Keep this in sync with background.js
-const OPEN_POPUP_SETTING_KEY = 'open_popup_on_chrome_startup';
-
 const S = require('common/setting-definitions');
 
 console.log("Setting option defaults");
@@ -22,7 +19,7 @@ function reportSettings()
 {
     const shouldOpenPopup = S.getBool(S.POPUP_ON_STARTUP);
     chrome.runtime.sendMessage(
-        {msg: MSG_REPORT_POPUP_SETTING, value:shouldOpenPopup},
+        {msg: MSG_REPORT_POPUP_SETTING, shouldOpenPopup},
         // This callback is only for debugging --- all the action happens in
         // src/view/tree.js, the receiver.
         function(resp){
