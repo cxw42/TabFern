@@ -209,7 +209,7 @@ if(true) {
 // extensionizr does not appear to have this facility.
 for(let opt in S.defaults) {
     if(!opt.startsWith('_')) {
-        S.setIfNonexistent(opt, S.defaults[opt]);
+        S.setIfNonexistentOrInvalid(opt, S.defaults[opt]);
     }
 }
 

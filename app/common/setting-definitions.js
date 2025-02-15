@@ -167,7 +167,7 @@ _VAL[_NAM.CFGS_FAVICON_SOURCE] = (v)=>{
 
 // }}}2
 
-/// The default values for the configuration settings.
+// The exportable format of the above objects
 const CFG_NAMES = Object.seal(_NAM);
 const CFG_DEFAULTS = Object.seal(_DEF);
 const CFG_VALIDATORS = Object.seal(_VAL);
