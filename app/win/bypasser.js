@@ -7,7 +7,7 @@ const $ = require('jquery');
 require('lib/jstree');
 const log_orig = require('loglevel');
 const signals = require('signals');
-const S = require('common/setting-definitions');    // in app/
+const S = require('common/setting-accessors');    // in app/
 
 function loginfo(...args) { log_orig.info('TabFern bypasser.js: ', ...args); };
     // for some reason, log.info.bind(log, ...) would capture the log level

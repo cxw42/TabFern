@@ -4,7 +4,7 @@
 // Note: the tabs and groups are created in the order they
 // first appear in the manifest.
 
-const S = require('common/setting-definitions');    // in app/
+const S = require('common/setting-accessors');    // in app/
 
 // Shortcuts for frequently-used items
 function icon(cls) { return `<i class="${cls}"></i>`; }

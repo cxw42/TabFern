@@ -1,4 +1,4 @@
-// setting-definitions.js: The TabFern settings, and setting-access functions
+// setting-definitions.js: The TabFern settings
 
 // Names of settings, and their defaults // {{{1
 
@@ -173,108 +173,6 @@ const CFG_DEFAULTS = Object.seal(_DEF);
 const CFG_VALIDATORS = Object.seal(_VAL);
 
 ////////////////////////////////////////////////////////////////////////// }}}1
-// Setting-related functions // {{{1
-
-const SETTING_PREFIX = 'store.settings.';
-
-/// Get the raw value of a setting.  Returns null if the key doesn't exist.
-/// @param setting_name     A value in CFG_NAMES
-function getRawSetting(setting_name)
-{
-    return localStorage.getItem(SETTING_PREFIX + setting_name);
-} //getSetting
-
-/// Get the string value of a setting, if it is a string.
-/// @param setting_name     A value in CFG_NAMES
-/// @param default_value    Optional default.  If unspecified or
-///                         undefined, the default from CFG_DEFAULTS
-///                         is used.
-function getStringSetting(setting_name, default_value = undefined)
-{
-    if(typeof default_value === 'undefined' && setting_name in CFG_DEFAULTS) {
-        default_value = CFG_DEFAULTS[setting_name];
-    }
-
-    let locStorageValue = localStorage.getItem(SETTING_PREFIX + setting_name);
-
-    if ( locStorageValue !== null ) {   // key exists
-        // Get the value, which is stored as JSON
-        try {
-            let val = JSON.parse(locStorageValue);
-            if(typeof val === 'string') return val;
-        } catch(e) {
-            // do nothing
-        }
-    }
-
-    // If we get here, we didn't have a value, or didn't have a string.
-    return String(default_value);
-} //getStringSetting
-
-/// Get a boolean setting from the settings page, which uses HTML5 localStorage.
-/// @param setting_name     A value in CFG_NAMES
-/// @param default_value    Optional default.  If unspecified or
-///                         undefined, the default from CFG_DEFAULTS
-///                         is used.
-function getBoolSetting(setting_name, default_value = undefined)
-{
-    if(typeof default_value === 'undefined' && setting_name in CFG_DEFAULTS) {
-        default_value = CFG_DEFAULTS[setting_name];
-    }
-
-    let locStorageValue = localStorage.getItem(SETTING_PREFIX + setting_name);
-
-    if ( locStorageValue === null ) {   // nonexistent key
-        return default_value;
-    } else {    // Get the value, which is stored as JSON
-        let str = String(locStorageValue).toLowerCase();
-        if ( str === "false" ) {
-            return false;
-        } else if ( str === "true" ) {
-            return true;
-        } else {
-            return default_value;
-        }
-    }
-} //getBoolSetting
-
-/// Find out whether the given setting from the settings page exists.
-/// @param setting_name     A value in CFG_NAMES
-function haveSetting(setting_name)
-{
-    if(!setting_name) return false;
-    return (SETTING_PREFIX + setting_name) in localStorage;
-} //haveSetting()
-
-/// Set a setting (wow!).
-/// @param setting_name {String} A value in CFG_NAMES
-/// @param setting_value {mixed} The value, which must be
-/// JSON.stringify()able.
-function setSetting(setting_name, setting_value)
-{
-    // TODO handle exceptions in some reasonable way.
-    localStorage.setItem(
-        SETTING_PREFIX + setting_name,
-        JSON.stringify(setting_value)
-    );  // JSON stringify so we can store more than just strings.
-} //setSetting
-
-/// Set a setting only if it's not already there.  Parameters are as
-/// setSetting().
-function setSettingIfNonexistent(setting_name, setting_value)
-{
-    if(!haveSetting(setting_name)) setSetting(setting_name, setting_value);
-}
-
-/// Custom getter for the current theme name.  This enforces known themes.
-function getThemeName()
-{
-    let theme = getStringSetting(CFG_NAMES.CFGS_THEME_NAME);
-    if( theme === 'default' || theme === 'default-dark') return theme;
-    else return CFG_DEFAULTS[CFGS_THEME_NAME];
-} //getThemeName
-
-////////////////////////////////////////////////////////////////////////// }}}1
 // Exports // {{{1
 
 /// The object we will export
@@ -294,35 +192,9 @@ let me = {
     FAVICON_SITE,
     FAVICON_CHROME,
     FAVICON_DDG,
-
-    // special accessors
-    isOROC: ()=>(getStringSetting(CFG_NAMES.CFG_OPEN_REST_ON_CLICK) === CFG_OROC_DO),
-
-    // functions
-    getRaw: getRawSetting,
-    getString: getStringSetting,
-    getBool: getBoolSetting,
-    have: haveSetting,
-    set: setSetting,
-    setIfNonexistent: setSettingIfNonexistent,
-    getThemeName,
 };
-
-// Each of the names is a property directly on the export object,
-// with /^CFG/ removed for convenience.
-for(let name in CFG_NAMES) {
-    me[name.replace(/^CFG_/,'').replace(/^CFG/,'')] = CFG_NAMES[name];
-        // CFG_FOO -> FOO; CFGS_FOO -> S_FOO
-
-    // Shorthand for bools: CFG_FOO -> isFOO()
-    if(name.match(/^CFG_/)) {
-        me['is' + name.replace(/^CFG_/,'')] = function() {
-            return getBoolSetting(me.names[name]);
-        }
-    }
-}
 
 module.exports = me;
 
 ////////////////////////////////////////////////////////////////////////// }}}1
-// vi: set fo-=o fdm=marker fdl=0: //
+// vi: set fo-=o fdm=marker fdl=1: //

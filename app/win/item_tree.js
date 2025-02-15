@@ -6,7 +6,7 @@
 const $ = require('jquery');
 const log = require('loglevel');
 const K = require('./const');
-const S = require('common/setting-definitions');    // in app/
+const S = require('common/setting-accessors');    // in app/
 
 require('lib/jstree');
 require('lib/jstree-actions');
