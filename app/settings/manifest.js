@@ -501,7 +501,7 @@ Please <b>back up your tabs</b>, and make sure you are running Chrome 88+.</p>
 <ul>
 <li>The prompt for confirmation when closing audible tabs now applies to
     individual tabs ${issue(306)}.</li>
-<li>Bugfixes ${issue(322)}</li>
+<li>Bugfixes ${issue([322,335])}</li>
 <li>Refactoring ${issue(334)}</li>
 </ul>
 `
