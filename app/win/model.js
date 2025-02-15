@@ -20,7 +20,7 @@
 const $ = require('jquery');
 require('lib/jstree');
 const log = require('loglevel');
-const S = require('common/setting-definitions');    // in app/
+const S = require('common/setting-accessors');    // in app/
 const K = require('./const');
 const D = require('./item_details');
 const T = require('./item_tree');
