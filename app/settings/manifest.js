@@ -172,8 +172,8 @@ setting_definitions.push(
                         what should happen when you click the
                         name of the window?`,
             'options': [
-                {value: S.OROC_DO, text: 'Open all the remaining closed tabs'},
-                {value: S.OROC_DO_NOT, text: 'Just bring the window to the front' +
+                {value: S.TRUE_S, text: 'Open all the remaining closed tabs'},
+                {value: S.FALSE_S, text: 'Just bring the window to the front' +
                     ' (you can open the remaining tabs from the right-click menu)'},
             ],
         }

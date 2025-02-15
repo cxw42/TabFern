@@ -147,10 +147,8 @@ let me = {
     validators: SD.validators,
 
     // special values settings can take on (forwarded from setting-definitions)
-    OROC_DO: SD.OROC_DO,
-    OROC_DO_NOT: SD.OROC_DO_NOT,
-    TRUE: SD.TRUE,
-    FALSE: SD.FALSE,
+    TRUE_S: SD.TRUE_S,
+    FALSE_S: SD.FALSE_S,
 
     // FAVICON_SOURCE values (forwarded from setting-definitions)
     FAVICON_SITE: SD.FAVICON_SITE,
@@ -158,7 +156,7 @@ let me = {
     FAVICON_DDG: SD.FAVICON_DDG,
 
     // special accessors
-    isOROC: ()=>(getStringSetting(SD.names.OPEN_REST_ON_CLICK) === SD.OROC_DO),
+    isOROC: ()=>(getStringSetting(SD.names.CFGS_OPEN_REST_ON_CLICK) === SD.TRUE_S),
 
     // functions
     getRaw: getRawSetting,
