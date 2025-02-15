@@ -126,7 +126,7 @@ let me = {
     FAVICON_DDG: SD.FAVICON_DDG,
 
     // special accessors
-    isOROC: ()=>(getStringSetting(SD.names.CFG_OPEN_REST_ON_CLICK) === CFG_OROC_DO),
+    isOROC: ()=>(getStringSetting(SD.names.OPEN_REST_ON_CLICK) === SD.OROC_DO),
 
     // functions
     getRaw: getRawSetting,
