@@ -5,6 +5,8 @@ console.log('TabFern: running ' + __filename);
 if(false) { // Vendor files - listed here only so they'll be bundled
     require('vendor/validation');
     require('vendor/common');
+    require('asynquence');
+    require('asynquence-contrib');
 
     // The following require() seems to fix the 'cannot find module "process"
     // from "/"' error mentioned at
@@ -14,13 +16,8 @@ if(false) { // Vendor files - listed here only so they'll be bundled
     require('process/browser');
 }
 
-// Keep this in sync with mv3-converter.js
-// TODO move this to setting-definitions
-// Key in chrome.storage.local.  Not in setting-definitions.js because
-// that file uses localStorage, which this script cannot.
-const OPEN_POPUP_SETTING_KEY = 'open_popup_on_chrome_startup';
-
-const S = require('common/setting-definitions');    // in app/
+let ASQH = require('lib/asq-helpers');
+const SD = require('common/setting-definitions');
 
 /// The module exports, for use in command-line debugging
 let me = {
@@ -207,10 +204,10 @@ chrome.runtime.onMessage.addListener(messageListener);
 async function openMainWindowIfNecessary(shouldOpen)
 {
     // See if it's time to open the main window
-    const hadPopupValue = await chrome.storage.local.get(OPEN_POPUP_SETTING_KEY);
-    await chrome.storage.local.set({[OPEN_POPUP_SETTING_KEY]: shouldOpen});
+    const hadPopupValue = await chrome.storage.local.get(SD.names.CFG_POPUP_ON_STARTUP);
+    await chrome.storage.local.set({[SD.names.CFG_POPUP_ON_STARTUP]: shouldOpen});
 
-    if(shouldOpen && !hadPopupValue) {
+    if(shouldOpen && !hadPopupValue[SD.names.CFG_POPUP_ON_STARTUP]) {
         console.log('Triggering open of main window')
         openMainWindow();
     }
@@ -219,15 +216,21 @@ async function openMainWindowIfNecessary(shouldOpen)
 //////////////////////////////////////////////////////////////////////////
 // MAIN //
 
-// Create the main window when Chrome starts
-async function openMainWindow()
+// Create the main window when Chrome starts.
+function openMainWindow()
 {
-    console.log('TabFern: background window loaded');
-    const settingValue = await chrome.storage.local.get(OPEN_POPUP_SETTING_KEY);
-    if(settingValue && settingValue[OPEN_POPUP_SETTING_KEY]) {
-        console.log('Opening popup window');
-        setTimeout(me.loadView, 500);
-    }
+    console.log('TabFern: checking whether to main window');
+
+    // Promises are not available until Chrome 95+, and I'm only requiring
+    // Chrome 88.  Therefore, use the callback style.
+
+    ASQH.NowCC((cbk)=>{ chrome.storage.local.get(SD.names.CFG_POPUP_ON_STARTUP, cbk); })
+    .then((done, value) => {
+        if(value && value[SD.names.CFG_POPUP_ON_STARTUP]) {
+            console.log('Opening popup window');
+            setTimeout(me.loadView, 500);
+        }
+    });
 } //openMainWindow
 
 // Modified from
