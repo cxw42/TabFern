@@ -497,7 +497,13 @@ setting_definitions.push(
 This is required by Google for compatibility with newer Chrome versions.
 Please <b>back up your tabs</b>, and make sure you are running Chrome 88+.</p>
 
-<p>Changes in this release:</p>
+<h4>TF needs developers!</h4>
+<p>As you may have noticed, my time to work on TabFern is limited \u{1f605}.
+If you are a JavaScript developer, could you contribute some code?  I'm happy
+to help you get started!  If you aren't a JS dev, but know someone who is,
+could you please pass the word?  Much appreciated!
+</p>
+<h4>Changes in this release</h4>
 <ul>
 <li>The prompt for confirmation when closing audible tabs now applies to
     individual tabs ${issue(306)}.</li>
