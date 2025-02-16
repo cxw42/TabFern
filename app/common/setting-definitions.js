@@ -110,8 +110,10 @@ _VAL[_NAM.SETTINGS_LOADED_OK] = ()=>{return undefined;}
 
 // }}}2
 // Strings and limited-choice controls such as radio buttons and dropdowns. {{{2
-const CFG_TRUE = 'affirmative';
-const CFG_FALSE = 'negative';
+
+// Representations of booleans as strings
+const CFG_TRUE_S = "yep";
+const CFG_FALSE_S = "nope";
 
 _NAM.CFGS_BACKGROUND = 'window-background';
 _DEF[_NAM.CFGS_BACKGROUND] = '';
@@ -140,11 +142,9 @@ _VAL[_NAM.CFGS_SCROLLBAR_COLOR] = (v)=>{
 // for a partially-open window.  This is string, not bool, because the
 // fancy-settings radio-button control provides a string value, not a Boolean.
 _NAM.CFGS_OPEN_REST_ON_CLICK = 'open-rest-on-win-click';
-const CFG_OROC_DO = "yep";
-const CFG_OROC_DO_NOT = "nope";
-_DEF[_NAM.CFGS_OPEN_REST_ON_CLICK] = CFG_OROC_DO_NOT;
+_DEF[_NAM.CFGS_OPEN_REST_ON_CLICK] = CFG_FALSE_S;
 _VAL[_NAM.CFGS_OPEN_REST_ON_CLICK] = (v)=>{
-    return (( v === CFG_OROC_DO || v === CFG_OROC_DO_NOT ) ? v : undefined);
+    return (( v === CFG_TRUE_S || v === CFG_FALSE_S ) ? v : undefined);
 };
 
 // #152.  Which order of action buttons to use for tabs.
@@ -167,7 +167,7 @@ _VAL[_NAM.CFGS_FAVICON_SOURCE] = (v)=>{
 
 // }}}2
 
-/// The default values for the configuration settings.
+// The exportable format of the above objects
 const CFG_NAMES = Object.seal(_NAM);
 const CFG_DEFAULTS = Object.seal(_DEF);
 const CFG_VALIDATORS = Object.seal(_VAL);
@@ -183,10 +183,8 @@ let me = {
     validators: CFG_VALIDATORS,
 
     // special values settings can take on
-    OROC_DO: CFG_OROC_DO,
-    OROC_DO_NOT: CFG_OROC_DO_NOT,
-    TRUE: CFG_TRUE,
-    FALSE: CFG_FALSE,
+    TRUE_S: CFG_TRUE_S,
+    FALSE_S: CFG_FALSE_S,
 
     // FAVICON_SOURCE values
     FAVICON_SITE,

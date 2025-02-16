@@ -172,8 +172,8 @@ setting_definitions.push(
                         what should happen when you click the
                         name of the window?`,
             'options': [
-                {value: S.OROC_DO, text: 'Open all the remaining closed tabs'},
-                {value: S.OROC_DO_NOT, text: 'Just bring the window to the front' +
+                {value: S.TRUE_S, text: 'Open all the remaining closed tabs'},
+                {value: S.FALSE_S, text: 'Just bring the window to the front' +
                     ' (you can open the remaining tabs from the right-click menu)'},
             ],
         }
@@ -485,14 +485,24 @@ alphabetical order within each category.`
 setting_definitions.push(
         {
             "tab": future_i18n("What's new?"),
-            "group": `Version 0.3.2${brplain('2023-XX-XX')}`,
+            "group": `Version 0.3.2${brplain('2025-XX-XX')}`,
             'group_html':true,
             "type": "description",
             "text": (
-`<ul>
+`
+<h2>Important update coming!</h2>
+<p>The next release of TabFern will update to
+<a href="https://developer.chrome.com/docs/extensions/develop/migrate/what-is-mv3"
+    target="_blank">Manifest V3</a>.
+This is required by Google for compatibility with newer Chrome versions.
+Please <b>back up your tabs</b>, and make sure you are running Chrome 88+.</p>
+
+<p>Changes in this release:</p>
+<ul>
 <li>The prompt for confirmation when closing audible tabs now applies to
     individual tabs ${issue(306)}.</li>
-<li>Bugfixes ${issue(322)}</li>
+<li>Bugfixes ${issue([322,335])}</li>
+<li>Refactoring ${issue(334)}</li>
 </ul>
 `
             ),

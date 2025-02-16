@@ -208,7 +208,9 @@ if(true) {
 // Set the defaults for the options.  The settings boilerplate from
 // extensionizr does not appear to have this facility.
 for(let opt in S.defaults) {
-    S.setIfNonexistent(opt, S.defaults[opt]);
+    if(!opt.startsWith('_')) {
+        S.setIfNonexistentOrInvalid(opt, S.defaults[opt]);
+    }
 }
 
 console.log('TabFern: done running background.js');

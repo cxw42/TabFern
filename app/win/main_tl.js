@@ -1898,9 +1898,7 @@ function onTreeSelect(evt_unused, evt_data, options={})
     if(win_val.isOpen) {
         if(is_win) {    // clicked on an open window
 
-            if( M.isWinPartlyOpen(win_node) &&
-                (S.getString(S.S_OPEN_REST_ON_CLICK) === S.OROC_DO)
-            ) {
+            if(M.isWinPartlyOpen(win_node) && S.isOROC()) {
                 action = ActionTy.open_rest;
             } else {
                 action = ActionTy.activate_win;
@@ -3170,9 +3168,7 @@ function getMainContextMenuItems(node, _unused_proxyfunc, e)
                 };
         }
 
-        if( M.isWinPartlyOpen(node) &&
-            (S.getString(S.S_OPEN_REST_ON_CLICK) === S.OROC_DO_NOT)
-        ) {
+        if(M.isWinPartlyOpen(node) && !S.isOROC()) {
             winItems.openAllItem = {
                 label: 'Open all tabs',
                 icon: 'fff-application-cascade',

@@ -5,6 +5,7 @@ const SD = require('common/setting-definitions')
 
 // Setting-related functions // {{{1
 
+// Defined by fancy-settings
 const SETTING_PREFIX = 'store.settings.';
 
 /// Get the raw value of a setting.  Returns null if the key doesn't exist.
@@ -89,12 +90,43 @@ function setSetting(setting_name, setting_value)
     );  // JSON stringify so we can store more than just strings.
 } //setSetting
 
-/// Set a setting only if it's not already there.  Parameters are as
-/// setSetting().
-function setSettingIfNonexistent(setting_name, setting_value)
+/// Set a setting only if:
+/// - it's not already there, or
+/// - it is there, but its value fails validation.
+/// Parameters are as setSetting().
+function setSettingIfNonexistentOrInvalid(setting_name, setting_value)
 {
-    if(!haveSetting(setting_name)) setSetting(setting_name, setting_value);
-}
+    let shouldSet = false;
+    let value;
+
+    // Is the value missing?
+    if(!haveSetting(setting_name)) {
+        shouldSet = true;
+    }
+
+    // Is the value malformed?
+    if(!shouldSet) {
+        const value_json = getRawSetting(setting_name);
+
+        try {
+            value = JSON.parse(value_json);
+        } catch(e) {
+            shouldSet = true;
+        }
+    }
+
+    // Does the value pass validation?
+    if(!shouldSet) {
+        if(typeof SD.validators[setting_name](value) === 'undefined') {
+            shouldSet = true;
+        }
+    }
+
+    // Set if we need to
+    if(shouldSet) {
+        setSetting(setting_name, setting_value);
+    }
+} //setSettingIfNonexistentOrInvalid
 
 /// Custom getter for the current theme name.  This enforces known themes.
 function getThemeName()
@@ -115,10 +147,8 @@ let me = {
     validators: SD.validators,
 
     // special values settings can take on (forwarded from setting-definitions)
-    OROC_DO: SD.OROC_DO,
-    OROC_DO_NOT: SD.OROC_DO_NOT,
-    TRUE: SD.TRUE,
-    FALSE: SD.FALSE,
+    TRUE_S: SD.TRUE_S,
+    FALSE_S: SD.FALSE_S,
 
     // FAVICON_SOURCE values (forwarded from setting-definitions)
     FAVICON_SITE: SD.FAVICON_SITE,
@@ -126,7 +156,7 @@ let me = {
     FAVICON_DDG: SD.FAVICON_DDG,
 
     // special accessors
-    isOROC: ()=>(getStringSetting(SD.names.OPEN_REST_ON_CLICK) === SD.OROC_DO),
+    isOROC: ()=>(getStringSetting(SD.names.CFGS_OPEN_REST_ON_CLICK) === SD.TRUE_S),
 
     // functions
     getRaw: getRawSetting,
@@ -134,7 +164,7 @@ let me = {
     getBool: getBoolSetting,
     have: haveSetting,
     set: setSetting,
-    setIfNonexistent: setSettingIfNonexistent,
+    setIfNonexistentOrInvalid: setSettingIfNonexistentOrInvalid,
     getThemeName,
 };
 
