@@ -25,6 +25,21 @@ let _VAL = { __proto__: null };
 /// The default validator for bool values
 let _vbool = (v)=>{ return ((typeof v === 'boolean')?v:undefined)};
 
+/// The default validator for integer values.  Accepts both integers
+/// and string representations of integers (e.g., in an <input>).
+let _vint = (v)=>{
+    if(Number.isInteger(v)) {   // real int
+        return v;
+    }
+
+    v = parseInt(v, 10);
+    if(Number.isInteger(v)) {   // stringified int
+        return v;
+    }
+
+    return undefined;
+};
+
 // Booleans {{{2
 _NAM.CFG_POPUP_ON_STARTUP = 'open-popup-on-chrome-startup';
 _DEF[_NAM.CFG_POPUP_ON_STARTUP] = true;
@@ -190,6 +205,10 @@ let me = {
     FAVICON_SITE,
     FAVICON_CHROME,
     FAVICON_DDG,
+
+    // The default validators
+    validate_bool: _vbool,
+    validate_int: _vint,
 };
 
 module.exports = me;
