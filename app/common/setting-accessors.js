@@ -128,6 +128,11 @@ function setSettingIfNonexistentOrInvalid(setting_name, setting_value)
     }
 } //setSettingIfNonexistentOrInvalid
 
+/// Remove a setting
+function removeSetting(setting_name) {
+    localStorage.removeItem(SETTING_PREFIX + setting_name);
+} //removeSetting
+
 /// Custom getter for the current theme name.  This enforces known themes.
 function getThemeName()
 {
@@ -165,6 +170,7 @@ let me = {
     have: haveSetting,
     set: setSetting,
     setIfNonexistentOrInvalid: setSettingIfNonexistentOrInvalid,
+    remove: removeSetting,
     getThemeName,
 };
 
