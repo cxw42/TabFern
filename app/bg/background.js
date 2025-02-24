@@ -19,41 +19,54 @@ if(false) { // Vendor files - listed here only so they'll be bundled
 let ASQH = require('lib/asq-helpers');
 const SD = require('common/setting-definitions');
 
-/// The module exports, for use in command-line debugging
-let me = {
-    viewWindowId: undefined,    // the chrome.windows ID of our view
-    loadView: undefined,
-};
+const ContextMenu = require('./context-menu');
 
-module.exports = me;
+module.exports = {};
 
-const EDIT_NOTE_ID = 'editNote';
+const VIEW_WIN_ID_KEY = '_view_window_id';  // chrome.storage.session
+
+let me = {}; // XXX
+
+ContextMenu();
 
 //////////////////////////////////////////////////////////////////////////
 // Helpers //
 
 // Open the view
-me.loadView = function loadView()
+function loadView()
 {
-    console.log("TabFern: Opening view");
-    chrome.windows.create(
-        { 'url': chrome.runtime.getURL('win/container.html'),
-          'type': 'popup',
-          'left': 10,
-          'top': 10,
-          'width': 200,
-          'height': 200,
-          //'focused': true
-            // Note: `focused` is not supported on Firefox, but
-            // focused=true is usually the effect.
-            // https://bugzilla.mozilla.org/show_bug.cgi?id=1253129
-            // However, Firefox does support windows.update with focused.
-        },
-        function(win) {
-            me.viewWindowId = win.id;
-            console.log('TabFern new View ID: ' + me.viewWindowId.toString());
-            chrome.windows.update(win.id, {focused:true}, ignore_chrome_error);
+    ASQH.NowCC((cbk) => {
+        console.log("TabFern: Opening view");
+        chrome.windows.create(
+            { 'url': chrome.runtime.getURL('win/container.html'),
+              'type': 'popup',
+              'left': 10,
+              'top': 10,
+              'width': 200,
+              'height': 200,
+              //'focused': true
+                // Note: `focused` is not supported on Firefox, but
+                // focused=true is usually the effect.
+                // https://bugzilla.mozilla.org/show_bug.cgi?id=1253129
+                // However, Firefox does support windows.update with focused.
+            },
+            cbk
+        );
+    })
+    .then((done, win) => {
+        let winId = win.id;
+        console.log('TabFern new View ID: ' + winId.toString());
+        chrome.storage.session.set({[VIEW_WIN_ID_KEY]: winId}, ()=>{
+            if(isLastError()) {
+                done.fail(chrome.runtime.lastError);
+            } else {
+                done(winId);
+            }
         });
+    })
+    .val((winId)=> {
+        chrome.windows.update(winId, {focused:true}, ignore_chrome_error);
+    });
 } //loadView()
 
 //////////////////////////////////////////////////////////////////////////
@@ -68,8 +81,13 @@ function moveTabFernViewToWindow(reference_cwin)
 
     if(!isLastError()) {
         if(!me.viewWindowId) return;
-        chrome.windows.get(me.viewWindowId, function(view_cwin) {
-            // TODO handle Chrome error
+        ASQH.NowCC((cbk)=>{
+            chrome.storage.session.get(VIEW_WIN_ID_KEY, cbk);
+        })
+        .then((done, result)=>{
+            chrome.windows.get(result[VIEW_WIN_ID_KEY], ASQH.CC(done));
+        })
+        .then((done, view_cwin)=>{
             let updates = {left: reference_cwin.left+16,
                             top: reference_cwin.top+16,
                             state: 'normal',    // not minimized or maximized
@@ -79,10 +97,10 @@ function moveTabFernViewToWindow(reference_cwin)
             updates.width = clip(view_cwin.width, 200, reference_cwin.width-32);
             updates.height = clip(view_cwin.height, 100, reference_cwin.height-32);
 
-            chrome.windows.update(me.viewWindowId, updates
-                // TODO handle Chrome error
-                );
-        });
+            chrome.windows.update(me.viewWindowId, updates, ASQH.CC(done));
+        })
+        // TODO handle Chrome error?
+        ;
     }
 } //moveTabFernViewToWindow()
 
@@ -94,7 +112,7 @@ let onClickedListener = function(tab) {
 
     // If viewWindowId is undefined then there isn't a popup currently open.
     if (typeof me.viewWindowId === "undefined") {        // Open the popup
-        me.loadView();
+        loadView();
     } else {                                // There's currently a popup open
      // Bring it to the front so the user can see it
         chrome.windows.update(me.viewWindowId, { "focused": true });
@@ -140,53 +158,6 @@ chrome.windows.onRemoved.addListener(function(windowId) {
     console.log('Popup window was closed');
   }
 });
-
-//////////////////////////////////////////////////////////////////////////
-// Action button context-menu items //
-
-function editNoteOnClick(info, tab)
-{
-    console.log({editNoteOnClick:info, tab});
-    if(!tab.id) return;
-    console.log(`Sending editNote for ${tab.id}`);
-    chrome.runtime.sendMessage({msg:MSG_EDIT_TAB_NOTE, tab_id: tab.id},
-        // This callback is only for debugging --- all the action happens in
-        // src/view/tree.js, the receiver.
-        function(resp){
-            if(isLastError()) {
-                console.log('Couldn\'t send edit-note to ' + tab.id + ': ' +
-                    lastBrowserErrorMessageString());
-            } else {
-                console.log({[`response to edit-note for ${tab.id}`]: resp});
-            }
-        }
-    );
-} //editNoteOnClick
-
-async function createContextMenuItem()
-{
-    // Remove it if it already existed
-    try {
-        await chrome.contextMenus.remove(EDIT_NOTE_ID, cbk);
-    } catch(e) {
-        // Ignore errors
-    }
-
-    try {
-        await chrome.contextMenus.create({
-            id: EDIT_NOTE_ID,
-            title: _T('menuAddEditNoteThisTab'),
-            contexts: ['page'],
-            visible: true
-        });
-    } catch(e) {
-        console.warn(`Could not create context-menu item: ${e}`);
-    }
-
-    await chrome.contextMenus.onClicked.addListener(editNoteOnClick);
-} //createContextMenuItem
-
-createContextMenuItem();
 
 //////////////////////////////////////////////////////////////////////////
 // Messages //
@@ -248,7 +219,7 @@ function openMainWindow()
     .then((done, value) => {
         if(value && value[SD.names.CFG_POPUP_ON_STARTUP]) {
             console.log('Opening popup window');
-            setTimeout(me.loadView, 500);
+            setTimeout(loadView, 500);
         }
     });
 } //openMainWindow
