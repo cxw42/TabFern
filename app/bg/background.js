@@ -19,55 +19,12 @@ if(false) { // Vendor files - listed here only so they'll be bundled
 let ASQH = require('lib/asq-helpers');
 const SD = require('common/setting-definitions');
 
-const ContextMenu = require('./context-menu');
+const SetupContextMenu = require('bg/context-menu');
+const OpenMainWindowIfNecessary = require('bg/open-main-window');
 
 module.exports = {};
 
-const VIEW_WIN_ID_KEY = '_view_window_id';  // chrome.storage.session
-
 let me = {}; // XXX
-
-ContextMenu();
-
-//////////////////////////////////////////////////////////////////////////
-// Helpers //
-
-// Open the view
-function loadView()
-{
-    ASQH.NowCC((cbk) => {
-        console.log("TabFern: Opening view");
-        chrome.windows.create(
-            { 'url': chrome.runtime.getURL('win/container.html'),
-              'type': 'popup',
-              'left': 10,
-              'top': 10,
-              'width': 200,
-              'height': 200,
-              //'focused': true
-                // Note: `focused` is not supported on Firefox, but
-                // focused=true is usually the effect.
-                // https://bugzilla.mozilla.org/show_bug.cgi?id=1253129
-                // However, Firefox does support windows.update with focused.
-            },
-            cbk
-        );
-    })
-    .then((done, win) => {
-        let winId = win.id;
-        console.log('TabFern new View ID: ' + winId.toString());
-        chrome.storage.session.set({[VIEW_WIN_ID_KEY]: winId}, ()=>{
-            if(isLastError()) {
-                done.fail(chrome.runtime.lastError);
-            } else {
-                done(winId);
-            }
-        });
-    })
-    .val((winId)=> {
-        chrome.windows.update(winId, {focused:true}, ignore_chrome_error);
-    });
-} //loadView()
 
 //////////////////////////////////////////////////////////////////////////
 // Action button //
@@ -83,10 +40,10 @@ function moveTabFernViewToWindow(reference_cwin)
         return; // TODO
         if(!me.viewWindowId) return;
         ASQH.NowCC((cbk)=>{
-            chrome.storage.session.get(VIEW_WIN_ID_KEY, cbk);
+            chrome.storage.session.get(SD.names.VIEW_WIN_ID_KEY, cbk);
         })
         .then((done, result)=>{
-            chrome.windows.get(result[VIEW_WIN_ID_KEY], ASQH.CC(done));
+            chrome.windows.get(result[SD.names.VIEW_WIN_ID_KEY], ASQH.CC(done));
         })
         .then((done, view_cwin)=>{
             let updates = {left: reference_cwin.left+16,
@@ -154,14 +111,14 @@ chrome.commands.onCommand.addListener(onCommandListener);
 // When a window is closed
 chrome.windows.onRemoved.addListener(function(windowId) {
     ASQH.NowCC((cbk)=>{
-        chrome.storage.session.get(VIEW_WIN_ID_KEY, cbk);
+        chrome.storage.session.get(SD.names.VIEW_WIN_ID_KEY, cbk);
     })
     .then((done, result)=>{
         // If the window getting closed is the popup we created
-        if (windowId === result[VIEW_WIN_ID_KEY]) {
+        if (windowId === result[SD.names.VIEW_WIN_ID_KEY]) {
             // Set viewWindowId to undefined so we know the popup is not open
             console.log('Popup window was closed');
-            chrome.storage.session.remove(VIEW_WIN_ID_KEY, ASQH.CC(done));
+            chrome.storage.session.remove(SD.names.VIEW_WIN_ID_KEY, ASQH.CC(done));
         }
     })
     ;
@@ -186,10 +143,10 @@ function messageListener(request, sender, sendResponse)
 
     if(request.msg === MSG_GET_VIEW_WIN_ID && !request.response) {
         ASQH.NowCC((cbk)=>{
-            chrome.storage.session.get(VIEW_WIN_ID_KEY, cbk);
+            chrome.storage.session.get(SD.names.VIEW_WIN_ID_KEY, cbk);
         })
         .then((done, result)=>{
-            const winId = result[VIEW_WIN_ID_KEY];
+            const winId = result[SD.names.VIEW_WIN_ID_KEY];
             console.log('Responding with window ID ' + winId.toString());
             // If the window getting closed is the popup we created
             sendResponse({msg: request.msg, response: true, id: winId});
@@ -199,79 +156,16 @@ function messageListener(request, sender, sendResponse)
         return true;    // tell Chrome we'll be responding asynchronously
     }
 
-    if(request.msg === MSG_REPORT_POPUP_SETTING && !request.response) {
-        console.log('Responding');
-        sendResponse({msg: request.msg, response: true});
-
-        openMainWindowIfNecessary(request.shouldOpenPopup);
-    }
 
 } //messageListener
 
 chrome.runtime.onMessage.addListener(messageListener);
 
-async function openMainWindowIfNecessary(shouldOpen)
-{
-    // See if it's time to open the main window
-    const hadPopupValue = await chrome.storage.local.get(SD.names.CFG_POPUP_ON_STARTUP);
-    await chrome.storage.local.set({[SD.names.CFG_POPUP_ON_STARTUP]: shouldOpen});
+chrome.runtime.onInstalled.addListener((details)=>{
+    SetupContextMenu();
+});
 
-    if(shouldOpen && !hadPopupValue[SD.names.CFG_POPUP_ON_STARTUP]) {
-        console.log('Triggering open of main window')
-        openMainWindow();
-    }
-}
-
-//////////////////////////////////////////////////////////////////////////
-// MAIN //
-
-// Create the main window when Chrome starts.
-function openMainWindow()
-{
-    console.log('TabFern: checking whether to main window');
-
-    // Promises are not available until Chrome 95+, and I'm only requiring
-    // Chrome 88.  Therefore, use the callback style.
-
-    ASQH.NowCC((cbk)=>{ chrome.storage.local.get(SD.names.CFG_POPUP_ON_STARTUP, cbk); })
-    .then((done, value) => {
-        if(value && value[SD.names.CFG_POPUP_ON_STARTUP]) {
-            console.log('Opening popup window');
-            setTimeout(loadView, 500);
-        }
-    });
-} //openMainWindow
-
-// Modified from
-// <https://developer.chrome.com/docs/extensions/reference/api/offscreen#maintain_the_lifecycle_of_an_offscreen_document>
-async function setupOffscreenDocument(path)
-{
-    // Check all windows controlled by the service worker to see if one
-    // of them is the offscreen document with the given path
-    const offscreenUrl = chrome.runtime.getURL(path);
-    const existingContexts = await chrome.runtime.getContexts({
-        contextTypes: ['OFFSCREEN_DOCUMENT'],
-        documentUrls: [offscreenUrl]
-    });
-
-    if (existingContexts.length > 0) {
-        return;
-    }
-
-    // create offscreen document
-    await chrome.offscreen.createDocument({
-        url: path,
-        reasons: [chrome.offscreen.Reason.LOCAL_STORAGE],
-        justification: 'Copy localStorage values this script needs into chrome.storage.local',
-    });
-} //setupOffscreenDocument()
-
-// Open the main window.  This won't do anything if this is the first time we
-// are loading after updating to MV3.
-openMainWindow();
-
-// TODO don't do this if we are already on MV3.
-setupOffscreenDocument('mv3-converter/mv3-converter.html');
+OpenMainWindowIfNecessary();
 
 console.log('TabFern: done running background.js');
 
