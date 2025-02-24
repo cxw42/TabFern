@@ -80,6 +80,7 @@ function moveTabFernViewToWindow(reference_cwin)
     function clip(x, lo, hi) { if(hi<lo) hi=lo; return Math.min(hi, Math.max(lo, x)); }
 
     if(!isLastError()) {
+        return; // TODO
         if(!me.viewWindowId) return;
         ASQH.NowCC((cbk)=>{
             chrome.storage.session.get(VIEW_WIN_ID_KEY, cbk);
@@ -110,6 +111,7 @@ function moveTabFernViewToWindow(reference_cwin)
 // When the icon is clicked in Chrome
 let onClickedListener = function(tab) {
 
+    return; // TODO
     // If viewWindowId is undefined then there isn't a popup currently open.
     if (typeof me.viewWindowId === "undefined") {        // Open the popup
         loadView();
@@ -151,12 +153,18 @@ chrome.commands.onCommand.addListener(onCommandListener);
 
 // When a window is closed
 chrome.windows.onRemoved.addListener(function(windowId) {
-  // If the window getting closed is the popup we created
-  if (windowId === me.viewWindowId) {
-    // Set viewWindowId to undefined so we know the popup is not open
-    me.viewWindowId = undefined;
-    console.log('Popup window was closed');
-  }
+    ASQH.NowCC((cbk)=>{
+        chrome.storage.session.get(VIEW_WIN_ID_KEY, cbk);
+    })
+    .then((done, result)=>{
+        // If the window getting closed is the popup we created
+        if (windowId === result[VIEW_WIN_ID_KEY]) {
+            // Set viewWindowId to undefined so we know the popup is not open
+            console.log('Popup window was closed');
+            chrome.storage.session.remove(VIEW_WIN_ID_KEY, ASQH.CC(done));
+        }
+    })
+    ;
 });
 
 //////////////////////////////////////////////////////////////////////////
@@ -177,8 +185,18 @@ function messageListener(request, sender, sendResponse)
     }
 
     if(request.msg === MSG_GET_VIEW_WIN_ID && !request.response) {
-        console.log('Responding with window ID ' + me.viewWindowId.toString());
-        sendResponse({msg: request.msg, response: true, id: me.viewWindowId});
+        ASQH.NowCC((cbk)=>{
+            chrome.storage.session.get(VIEW_WIN_ID_KEY, cbk);
+        })
+        .then((done, result)=>{
+            const winId = result[VIEW_WIN_ID_KEY];
+            console.log('Responding with window ID ' + winId.toString());
+            // If the window getting closed is the popup we created
+            sendResponse({msg: request.msg, response: true, id: winId});
+        })
+        ;
+
+        return true;    // tell Chrome we'll be responding asynchronously
     }
 
     if(request.msg === MSG_REPORT_POPUP_SETTING && !request.response) {
