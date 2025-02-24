@@ -27,6 +27,7 @@ let me = {
 
 module.exports = me;
 
+const EDIT_NOTE_ID = 'editNote';
 
 //////////////////////////////////////////////////////////////////////////
 // Helpers //
@@ -162,11 +163,30 @@ function editNoteOnClick(info, tab)
     );
 } //editNoteOnClick
 
-chrome.contextMenus.create({
-    id: 'editNote', title: _T('menuAddEditNoteThisTab'),
-    contexts: ['browser_action'],
-});
-chrome.contextMenus.onClicked.addListener(editNoteOnClick);
+async function createContextMenuItem()
+{
+    // Remove it if it already existed
+    try {
+        await chrome.contextMenus.remove(EDIT_NOTE_ID, cbk);
+    } catch(e) {
+        // Ignore errors
+    }
+
+    try {
+        await chrome.contextMenus.create({
+            id: EDIT_NOTE_ID,
+            title: _T('menuAddEditNoteThisTab'),
+            contexts: ['page'],
+            visible: true
+        });
+    } catch(e) {
+        console.warn(`Could not create context-menu item: ${e}`);
+    }
+
+    await chrome.contextMenus.onClicked.addListener(editNoteOnClick);
+} //createContextMenuItem
+
+createContextMenuItem();
 
 //////////////////////////////////////////////////////////////////////////
 // Messages //
