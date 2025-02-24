@@ -152,7 +152,14 @@ var _T;
 if(chrome && chrome.i18n && chrome.i18n.getMessage) {
     _T = chrome.i18n.getMessage;
 } else {    // #171 HACK
-    console.warn("Using #171 hack");
+
+    // Warn unless calling code told us to expect this.
+    console.log({window});
+    const expect_no_i18n = (typeof 'window' !== undefined) && window && window._TF_NO_I18N;
+    if(!expect_no_i18n) {
+        console.warn("Using #171 hack");
+    }
+
     // The following line is substituted at build time with the messages
     // from _locales/en/messages.json.  See details in brunch-config.js.
     // The "0;" is so it will not confuse the autoindent.
