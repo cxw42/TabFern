@@ -20,7 +20,7 @@ let ASQH = require('lib/asq-helpers');
 const SD = require('common/setting-definitions');
 
 const SetupContextMenu = require('bg/context-menu');
-const OpenMainWindowIfNecessary = require('bg/open-main-window');
+const MainWindow = require('bg/open-main-window');
 
 module.exports = {};
 
@@ -108,22 +108,6 @@ let onCommandListener = function(cmd) {
 } //onCommandListener()
 chrome.commands.onCommand.addListener(onCommandListener);
 
-// When a window is closed
-chrome.windows.onRemoved.addListener(function(windowId) {
-    ASQH.NowCC((cbk)=>{
-        chrome.storage.session.get(SD.names.VIEW_WIN_ID_KEY, cbk);
-    })
-    .then((done, result)=>{
-        // If the window getting closed is the popup we created
-        if (windowId === result[SD.names.VIEW_WIN_ID_KEY]) {
-            // Set viewWindowId to undefined so we know the popup is not open
-            console.log('Popup window was closed');
-            chrome.storage.session.remove(SD.names.VIEW_WIN_ID_KEY, ASQH.CC(done));
-        }
-    })
-    ;
-});
-
 //////////////////////////////////////////////////////////////////////////
 // Messages //
 
@@ -165,7 +149,7 @@ chrome.runtime.onInstalled.addListener((details)=>{
     SetupContextMenu();
 });
 
-OpenMainWindowIfNecessary();
+MainWindow.handleStartup();
 
 console.log('TabFern: done running background.js');
 
