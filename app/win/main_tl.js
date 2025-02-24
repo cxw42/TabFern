@@ -4302,7 +4302,14 @@ function shutdownTree()
     // background.console.log('popup closing');
 
     if(did_init_complete) {
-        saveTree(false);    // false => don't save visible, non-saved windows
+        try {
+            saveTree(false);    // false => don't save visible, non-saved windows
+        } catch(e) {
+            console.warn(`Could not save tree: ${e}`);
+            // Nothing else we can do here --- we're on the way out.
+            // This catches, e.g., "extension context invalidated" errors
+            // on extension reload.
+        }
     }
 } //shutdownTree()
 
