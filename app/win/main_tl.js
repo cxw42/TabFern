@@ -4272,16 +4272,29 @@ function initTreeFinal(done)
 // ---------------------------------------------- }}}2
 // Shutdown routines // {{{2
 
-/// Save the tree on window.unload
-function shutdownTree()
+/// Save the tree when TF becomes hidden.  Use this as a `visibilitychange`
+/// listener.
+function saveTreeOnHide()
 {   // This appears to be called reliably.  This will also remove any open,
     // unsaved windows from the save data so they won't be reported as crashed
     // once #23 is implemented.
 
-    if(did_init_complete) {
-        saveTree(false);    // false => don't save visible, non-saved windows
+    if(!document.hidden) {
+        // Not hiding --- nothing to do
+        return;
     }
-} //shutdownTree()
+
+    if(did_init_complete) {
+        try {
+            saveTree(false);    // false => don't save visible, non-saved windows
+        } catch(e) {
+            console.info(`Could not save tree: ${e}`);
+            // Nothing else we can do here --- we're on the way out.
+            // This catches, e.g., "extension context invalidated" errors
+            // on extension reload.
+        }
+    }
+} //saveTreeOnHide()
 
 // ---------------------------------------------- }}}2
 // Error reporting // {{{2
@@ -4325,7 +4338,7 @@ function main()
     preLoadInit();
 
     // Main events
-    window.addEventListener('unload', shutdownTree, { 'once': true });
+    document.addEventListener('visibilitychange', saveTreeOnHide);
     window.addEventListener('resize', eventOnResize);
         // This doesn't detect window movement without a resize, which is why
         // we have timedMoveDetector above.
