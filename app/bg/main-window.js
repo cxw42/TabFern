@@ -56,7 +56,7 @@ function raiseOrLoadView()
     .then((done, tabs) => {
         for(const tab of tabs) {
             if(tab.url === WIN_URL) {
-                done(tab.windowId);
+                chrome.windows.update(tab.windowId, {focused: true}, ignore_chrome_error);
                 return;
             }
         }
@@ -64,10 +64,7 @@ function raiseOrLoadView()
         // Not already open --- let loadView do the work.
         loadView();
     })
-    .then((done, winId) => {
-        // Already open --- raise it
-        chrome.windows.update(winId, {focused: true}, ignore_chrome_error);
-    });
+    ;
 } //raiseOrLoadView()
 
 /// Move the TabFern window to #reference_ctab.  This helps if the
@@ -91,14 +88,11 @@ function bringToTab(reference_ctab)
     .then((done, tabs) => {
         for(const tab of tabs) {
             if(tab.url === WIN_URL) {
-                done(tab.windowId);
+                chrome.windows.get(tab.windowId, ASQH.CC(done));
                 return;
             }
         }
         // Else not open --- nothing to do.
-    })
-    .then((done, tf_win_id) => {
-        chrome.windows.get(tf_win_id, ASQH.CC(done));
     })
     .then((done, view_cwin)=>{
         tf_cwin = view_cwin;

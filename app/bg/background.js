@@ -39,8 +39,7 @@ let onClickedListener = function(tab) {
     MainWindow.raiseOrLoadView();
 
     if(!tab || !tab.windowId) {
-        // Not sure how this could happen, but if it does, there's nothing
-        // more that we can do.
+        // Came from onCommand --- nothing else to do
         return;
     }
 
