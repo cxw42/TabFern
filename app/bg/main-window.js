@@ -1,4 +1,4 @@
-// app/bg/open-main-window.js: service-worker code to open the main window
+// app/bg/main-window.js: service-worker code to open the main window
 // CC-BY-SA 3.0
 //
 // NOTE: Promises are not available until Chrome 95+, and I'm only requiring
@@ -13,13 +13,16 @@ let ASQH = require('lib/asq-helpers');
 
 const SD = require('common/setting-definitions');
 
+const WIN_URL = chrome.runtime.getURL('win/container.html');
+const OFFSCREEN_DOC_URL = chrome.runtime.getURL('mv3-converter/mv3-converter.html');
+
 // Actually open the view, i.e., the main TF window
-let loadView = function loadView()
+function loadView()
 {
     ASQH.NowCC((cbk) => {
         console.log("TabFern: Opening view");
         chrome.windows.create(
-            { 'url': chrome.runtime.getURL('win/container.html'),
+            { 'url': WIN_URL,
               'type': 'popup',
               'left': 10,
               'top': 10,
@@ -34,43 +37,71 @@ let loadView = function loadView()
             cbk
         );
     })
-    .then((done, win) => {
-        let winId = win.id;
-        console.log('TabFern new View ID: ' + winId.toString());
-        chrome.storage.session.set({[SD.names.VIEW_WIN_ID_KEY]: winId}, ()=>{
-            if(isLastError()) {
-                done.fail(chrome.runtime.lastError);
-            } else {
-                done(winId);
-            }
-        });
+    .or((err)=>{
+        console.error(`Could not open TF window: ${err}`);
     })
     .val((winId)=> {
         chrome.windows.update(winId, {focused:true}, ignore_chrome_error);
     });
 } //loadView()
 
+// Focus the view if it's open, or else load the view.
+function raiseOrLoadView()
+{
+    ASQH.NowCC((cbk) => {
+        console.log("TabFern: Raising or opening view");
+        chrome.tabs.query({windowType: "popup"}, cbk)
+    })
+    .then((done, tabs) => {
+        for(const tab of tabs) {
+            if(tab.url === WIN_URL) {
+                done(tab.windowId);
+                return;
+            }
+        }
+
+        // Not already open --- let loadView do the work.
+        loadView();
+    })
+    .then((done, winId) => {
+        // Already open --- raise it
+        chrome.windows.update(winId, {focused: true}, ignore_chrome_error);
+    });
+} //raiseOrLoadView()
+
 // Set up an offscreen document.  Modified from
 // <https://developer.chrome.com/docs/extensions/reference/api/offscreen#maintain_the_lifecycle_of_an_offscreen_document>
-async function setupOffscreenDocument(path)
+function setupOffscreenDocument(offscreenUrl)
 {
     // Check all windows controlled by the service worker to see if one
     // of them is the offscreen document with the given path
-    const offscreenUrl = chrome.runtime.getURL(path);
-    const existingContexts = await chrome.runtime.getContexts({
-        contextTypes: ['OFFSCREEN_DOCUMENT'],
-        documentUrls: [offscreenUrl]
-    });
-
-    if (existingContexts.length > 0) {
-        return;
-    }
-
-    // create offscreen document
-    await chrome.offscreen.createDocument({
-        url: path,
-        reasons: [chrome.offscreen.Reason.LOCAL_STORAGE],
-        justification: 'Copy localStorage values this script needs into chrome.storage.local',
+    ASQH.NowCC((cbk)=>{
+        chrome.runtime.getContexts(
+            {
+                contextTypes: ['OFFSCREEN_DOCUMENT'],
+                documentUrls: [offscreenUrl]
+            },
+            cbk
+        );
+    })
+    .then((done, existingContexts)=>{
+        if (existingContexts.length == 0) {
+            // Need to create a document
+            done();
+        }
+    })
+    .then((done)=>{
+        chrome.offscreen.createDocument(
+            {
+                url: path,
+                reasons: [chrome.offscreen.Reason.LOCAL_STORAGE],
+                justification: 'Copy localStorage values this script needs into chrome.storage.local',
+            },
+            ASQH.CC(done)
+        );
+    })
+    .or((err)=>{
+        console.error(`Could not set up offscreen document: ${err}`);
     });
 } //setupOffscreenDocument()
 
@@ -102,29 +133,10 @@ function createOffscreenDocumentMessageListener(done)
     }
 } //createOffscreenDocumentMessageListener()
 
-// Remove the stored view window ID when that window is closed.
-function handleWindowRemoved(windowId)
-{
-    ASQH.NowCC((cbk)=>{
-        chrome.storage.session.get(SD.names.VIEW_WIN_ID_KEY, cbk);
-    })
-    .then((done, result)=>{
-        // If the window getting closed is the popup we created
-        if (windowId === result[SD.names.VIEW_WIN_ID_KEY]) {
-            // Record that the window is now closed
-            console.log('Popup window was closed');
-            chrome.storage.session.remove(SD.names.VIEW_WIN_ID_KEY, ASQH.CC(done));
-        }
-    })
-    ;
-} //handleWindowRemoved()
-
 // Create the main window when Chrome starts.
 function handleStartup()
 {
     console.log('TabFern: checking whether to open main window');
-
-    chrome.windows.onRemoved.addListener(handleWindowRemoved);
 
     ASQH.NowCC((cbk)=>{
         chrome.storage.local.get(SD.names.CFG_POPUP_ON_STARTUP, cbk);
@@ -140,7 +152,7 @@ function handleStartup()
             chrome.runtime.onMessage.addListener(
                 createOffscreenDocumentMessageListener(done)
             );
-            setupOffscreenDocument('mv3-converter/mv3-converter.html');
+            setupOffscreenDocument(OFFSCREEN_DOC_URL);
 
         } else if(value && value[SD.names.CFG_POPUP_ON_STARTUP]) {
             done();

@@ -20,7 +20,7 @@ let ASQH = require('lib/asq-helpers');
 const SD = require('common/setting-definitions');
 
 const SetupContextMenu = require('bg/context-menu');
-const MainWindow = require('bg/open-main-window');
+const MainWindow = require('bg/main-window');
 
 module.exports = {};
 

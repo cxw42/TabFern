@@ -40,10 +40,6 @@ let _vint = (v)=>{
     return undefined;
 };
 
-// Internal-use keys {{{2
-_NAM.VIEW_WIN_ID_KEY = '_view_window_id';  // in chrome.storage.session
-
-// }}}2
 // Booleans {{{2
 _NAM.CFG_POPUP_ON_STARTUP = 'open-popup-on-chrome-startup';
 _DEF[_NAM.CFG_POPUP_ON_STARTUP] = true;
