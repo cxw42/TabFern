@@ -43,7 +43,7 @@
   ],
   "commands": {
     "reveal-view": {
-      "description": "Open the TabFern window"
+      "description": "__MSG_wsKeyboardShortcut__"
     }
   }
 }
