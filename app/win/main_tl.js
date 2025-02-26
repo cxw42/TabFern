@@ -4277,8 +4277,8 @@ function initTreeFinal(done)
 // ---------------------------------------------- }}}2
 // Shutdown routines // {{{2
 
-/// Save the tree on window.unload
-function shutdownTree()
+/// Save the tree if TF is hidden
+function saveTreeOnHide()
 {   // This appears to be called reliably.  This will also remove any open,
     // unsaved windows from the save data so they won't be reported as crashed
     // once #23 is implemented.
@@ -4288,6 +4288,11 @@ function shutdownTree()
     // // by https://stackoverflow.com/users/449477/pauan
     // let background = chrome.extension.getBackgroundPage();
     // background.console.log('popup closing');
+
+    if(!document.hidden) {
+        // Not hiding --- nothing to do
+        return;
+    }
 
     if(did_init_complete) {
         try {
@@ -4299,7 +4304,7 @@ function shutdownTree()
             // on extension reload.
         }
     }
-} //shutdownTree()
+} //saveTreeOnHide()
 
 // ---------------------------------------------- }}}2
 // Error reporting // {{{2
@@ -4343,7 +4348,7 @@ function main()
     preLoadInit();
 
     // Main events
-    window.addEventListener('unload', shutdownTree, { 'once': true });
+    document.addEventListener('visibilitychange', saveTreeOnHide);
     window.addEventListener('resize', eventOnResize);
         // This doesn't detect window movement without a resize, which is why
         // we have timedMoveDetector above.
