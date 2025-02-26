@@ -22,10 +22,6 @@ const SD = require('common/setting-definitions');
 const SetupContextMenu = require('bg/context-menu');
 const MainWindow = require('bg/main-window');
 
-module.exports = {};
-
-let me = {}; // XXX
-
 //////////////////////////////////////////////////////////////////////////
 // Action button //
 
@@ -74,9 +70,12 @@ chrome.commands.onCommand.addListener(onCommandReceived);
 
 chrome.runtime.onInstalled.addListener((details)=>{
     SetupContextMenu();
+    MainWindow.handleStartup();
 });
 
-MainWindow.handleStartup();
+chrome.runtime.onStartup.addListener(()=>{
+    MainWindow.handleStartup();
+});
 
 console.log('TabFern: done running background.js');
 
