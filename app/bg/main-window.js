@@ -121,7 +121,7 @@ function bringToTab(reference_ctab)
 function setupOffscreenDocument(offscreenUrl)
 {
     // Check all windows controlled by the service worker to see if one
-    // of them is the offscreen document with the given path
+    // of them is the offscreen document with the given URL
     ASQH.NowCC((cbk)=>{
         chrome.runtime.getContexts(
             {
@@ -140,7 +140,7 @@ function setupOffscreenDocument(offscreenUrl)
     .then((done)=>{
         chrome.offscreen.createDocument(
             {
-                url: path,
+                url: offscreenUrl,
                 reasons: [chrome.offscreen.Reason.LOCAL_STORAGE],
                 justification: 'Copy localStorage values this script needs into chrome.storage.local',
             },

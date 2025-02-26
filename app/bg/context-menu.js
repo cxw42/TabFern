@@ -50,8 +50,8 @@ function createContextMenuItem()
             ASQH.CC(done)
         );
     })
-    .then((done)=>{
-        chrome.contextMenus.onClicked.addListener(editNoteOnClick, ASQH.CC(done));
+    .val(()=>{
+        chrome.contextMenus.onClicked.addListener(editNoteOnClick);
     })
     .or((err)=>{
         // Just log --- nothing else we can do here
