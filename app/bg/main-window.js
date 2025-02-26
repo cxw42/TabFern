@@ -70,6 +70,58 @@ function raiseOrLoadView()
     });
 } //raiseOrLoadView()
 
+/// Move the TabFern window to #reference_ctab.  This helps if the
+/// TabFern window winds up off-screen.
+/// This is called as a chrome.action.onClicked callback.
+function bringToTab(reference_ctab)
+{
+    function clip(x, lo, hi) { if(hi<lo) hi=lo; return Math.min(hi, Math.max(lo, x)); }
+
+    if(isLastError()) {
+        console.info(chrome.runtime.lastError);
+        return;
+    }
+
+    let tf_cwin;
+
+    // Find the TF window
+    ASQH.NowCC((cbk) => {
+        chrome.tabs.query({windowType: "popup"}, cbk)
+    })
+    .then((done, tabs) => {
+        for(const tab of tabs) {
+            if(tab.url === WIN_URL) {
+                done(tab.windowId);
+                return;
+            }
+        }
+        // Else not open --- nothing to do.
+    })
+    .then((done, tf_win_id) => {
+        chrome.windows.get(tf_win_id, ASQH.CC(done));
+    })
+    .then((done, view_cwin)=>{
+        tf_cwin = view_cwin;
+
+        // Now get the reference tab
+        chrome.windows.get(reference_ctab.windowId, ASQH.CC(done));
+    })
+    .then((done, reference_cwin)=>{
+        let updates = {left: reference_cwin.left+16,
+                        top: reference_cwin.top+16,
+                        state: 'normal',    // not minimized or maximized
+        };
+
+        // Don't let it be too large or too small
+        updates.width = clip(tf_cwin.width, 200, reference_cwin.width-32);
+        updates.height = clip(tf_cwin.height, 100, reference_cwin.height-32);
+
+        chrome.windows.update(tf_cwin.id, updates, ASQH.CC(done));
+    })
+    // TODO handle Chrome error?
+    ;
+} //bringToTab()
+
 // Set up an offscreen document.  Modified from
 // <https://developer.chrome.com/docs/extensions/reference/api/offscreen#maintain_the_lifecycle_of_an_offscreen_document>
 function setupOffscreenDocument(offscreenUrl)
@@ -174,4 +226,5 @@ function handleStartup()
 module.exports = {
     handleStartup,
     raiseOrLoadView,
+    bringToTab,
 }

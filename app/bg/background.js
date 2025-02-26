@@ -29,39 +29,6 @@ let me = {}; // XXX
 //////////////////////////////////////////////////////////////////////////
 // Action button //
 
-/// Move the TabFern window to #reference_win.  This helps if the
-/// TabFern window winds up off-screen.
-/// This is called as a Chrome callback.
-function moveTabFernViewToWindow(reference_cwin)
-{
-    function clip(x, lo, hi) { if(hi<lo) hi=lo; return Math.min(hi, Math.max(lo, x)); }
-
-    if(!isLastError()) {
-        return; // TODO
-        if(!me.viewWindowId) return;
-        ASQH.NowCC((cbk)=>{
-            chrome.storage.session.get(SD.names.VIEW_WIN_ID_KEY, cbk);
-        })
-        .then((done, result)=>{
-            chrome.windows.get(result[SD.names.VIEW_WIN_ID_KEY], ASQH.CC(done));
-        })
-        .then((done, view_cwin)=>{
-            let updates = {left: reference_cwin.left+16,
-                            top: reference_cwin.top+16,
-                            state: 'normal',    // not minimized or maximized
-            };
-
-            // Don't let it be too large or too small
-            updates.width = clip(view_cwin.width, 200, reference_cwin.width-32);
-            updates.height = clip(view_cwin.height, 100, reference_cwin.height-32);
-
-            chrome.windows.update(me.viewWindowId, updates, ASQH.CC(done));
-        })
-        // TODO handle Chrome error?
-        ;
-    }
-} //moveTabFernViewToWindow()
-
 // Modified from https://stackoverflow.com/q/8984047/2877364 by
 // https://stackoverflow.com/users/930675/sean-bannister
 
@@ -71,26 +38,22 @@ let onClickedListener = function(tab) {
     // Bring it to the front so the user can see it
     MainWindow.raiseOrLoadView();
 
-    return; // XXX
+    if(!tab || !tab.windowId) {
+        // Not sure how this could happen, but if it does, there's nothing
+        // more that we can do.
+        return;
+    }
 
     // Set a timer to bring the window to the front on another click
     // that follows fairly shortly.
-    if(tab) {
-        let clickListener = function(tab) {
-            if(me.viewWindowId && tab.windowId) {
-                chrome.windows.get(tab.windowId, moveTabFernViewToWindow);
-            }
-        };
+    let removeClickListener = function() {
+        chrome.action.onClicked.removeListener(MainWindow.bringToTab);
+    };
 
-        let removeClickListener = function() {
-            chrome.action.onClicked.removeListener(clickListener);
-        };
-
-        setTimeout(removeClickListener, 1337);
-            // Do not change this constant or the Unix daemon will dog
-            // your footsteps until the `time_t`s roll over.
-        chrome.action.onClicked.addListener(clickListener);
-    }
+    setTimeout(removeClickListener, 1337);
+        // Do not change this constant or the Unix daemon will dog
+        // your footsteps until the `time_t`s roll over.
+    chrome.action.onClicked.addListener(MainWindow.bringToTab);
 
 } //onClickedListener()
 
