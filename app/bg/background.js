@@ -33,7 +33,7 @@ let me = {}; // XXX
 // https://stackoverflow.com/users/930675/sean-bannister
 
 // When the icon is clicked in Chrome
-let onClickedListener = function(tab) {
+function onActionClicked(tab) {
 
     // Bring it to the front so the user can see it
     MainWindow.raiseOrLoadView();
@@ -54,17 +54,20 @@ let onClickedListener = function(tab) {
         // your footsteps until the `time_t`s roll over.
     chrome.action.onClicked.addListener(MainWindow.bringToTab);
 
-} //onClickedListener()
+} //onActionClicked()
 
-chrome.action.onClicked.addListener(onClickedListener);
+// This fires for both clicks on the extension's icon and presses of
+// any keyboard shortcut assigned to "Activate the extension".
+chrome.action.onClicked.addListener(onActionClicked);
 
-let onCommandListener = function(cmd) {
+function onCommandReceived(cmd) {
     console.log("Received command " + cmd);
     if(cmd == 'reveal-view') {
-        onClickedListener(null);    // null => no tab, so no summon
+        onActionClicked(null);  // null => no tab, so no summon
     }
-} //onCommandListener()
-chrome.commands.onCommand.addListener(onCommandListener);
+} //onCommandReceived()
+
+chrome.commands.onCommand.addListener(onCommandReceived);
 
 //////////////////////////////////////////////////////////////////////////
 // Main //
