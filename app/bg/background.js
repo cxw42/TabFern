@@ -68,14 +68,10 @@ function moveTabFernViewToWindow(reference_cwin)
 // When the icon is clicked in Chrome
 let onClickedListener = function(tab) {
 
-    return; // TODO
-    // If viewWindowId is undefined then there isn't a popup currently open.
-    if (typeof me.viewWindowId === "undefined") {        // Open the popup
-        loadView();
-    } else {                                // There's currently a popup open
-     // Bring it to the front so the user can see it
-        chrome.windows.update(me.viewWindowId, { "focused": true });
-    }
+    // Bring it to the front so the user can see it
+    MainWindow.raiseOrLoadView();
+
+    return; // XXX
 
     // Set a timer to bring the window to the front on another click
     // that follows fairly shortly.

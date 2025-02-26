@@ -173,4 +173,5 @@ function handleStartup()
 
 module.exports = {
     handleStartup,
+    raiseOrLoadView,
 }
