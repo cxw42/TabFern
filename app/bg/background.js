@@ -109,41 +109,7 @@ let onCommandListener = function(cmd) {
 chrome.commands.onCommand.addListener(onCommandListener);
 
 //////////////////////////////////////////////////////////////////////////
-// Messages //
-
-function messageListener(request, sender, sendResponse)
-{
-    console.log({'bg got message':request,from:sender});
-    if(!request || !request.msg) {
-        console.log('bg   Bad request');
-        return;
-    }
-
-    // For now, only accept messages from our extension
-    if(!sender.id || sender.id !== chrome.runtime.id) {
-        console.log(`bg   Bad id ${sender.id} (ours ${chrome.runtime.id})`);
-        return;
-    }
-
-    if(request.msg === MSG_GET_VIEW_WIN_ID && !request.response) {
-        ASQH.NowCC((cbk)=>{
-            chrome.storage.session.get(SD.names.VIEW_WIN_ID_KEY, cbk);
-        })
-        .then((done, result)=>{
-            const winId = result[SD.names.VIEW_WIN_ID_KEY];
-            console.log('Responding with window ID ' + winId.toString());
-            // If the window getting closed is the popup we created
-            sendResponse({msg: request.msg, response: true, id: winId});
-        })
-        ;
-
-        return true;    // tell Chrome we'll be responding asynchronously
-    }
-
-
-} //messageListener
-
-chrome.runtime.onMessage.addListener(messageListener);
+// Main //
 
 chrome.runtime.onInstalled.addListener((details)=>{
     SetupContextMenu();

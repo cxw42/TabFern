@@ -37,12 +37,13 @@ function loadView()
             cbk
         );
     })
+    .val((cwin)=> {
+        chrome.windows.update(cwin.id, {focused:true}, ignore_chrome_error);
+    })
     .or((err)=>{
         console.error(`Could not open TF window: ${err}`);
     })
-    .val((winId)=> {
-        chrome.windows.update(winId, {focused:true}, ignore_chrome_error);
-    });
+    ;
 } //loadView()
 
 // Focus the view if it's open, or else load the view.
