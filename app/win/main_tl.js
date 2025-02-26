@@ -2801,7 +2801,7 @@ function hamSettings()
 {
     // Actually open the window
     let url =
-        chrome.extension.getURL( '/settings/index.html' +
+        chrome.runtime.getURL( '/settings/index.html' +
                                 (ShowWhatIsNew ? '#open=last' : ''));
     if(url) {
         K.openWindowForURL(url);
@@ -2917,7 +2917,7 @@ function hamSorter(compare_fn)
 
 function hamRunJasmineTests()
 {
-    let url = chrome.extension.getURL('/t/index.html');  // from /static/t
+    let url = chrome.runtime.getURL('/t/index.html');  // from /static/t
     if(url) {
         K.openWindowForURL(url);
     } else {
