@@ -4280,8 +4280,7 @@ function initTreeFinal(done)
 /// Save the tree if TF is hidden
 function saveTreeOnHide()
 {   // This appears to be called reliably.  This will also remove any open,
-    // unsaved windows from the save data so they won't be reported as crashed
-    // once #23 is implemented.
+    // unsaved windows from the save data so they won't be reported as crashed.
 
     // // A bit of logging -
     // // from https://stackoverflow.com/a/3840852/2877364
@@ -4298,25 +4297,10 @@ function saveTreeOnHide()
         try {
             saveTree(false);    // false => don't save visible, non-saved windows
         } catch(e) {
-            console.warn(`Could not save tree: ${e}`);
+            // console.warn(`Could not save tree: ${e}`);
             // Nothing else we can do here --- we're on the way out.
-
-            if(String(e).includes('Extension context invalidated')) {
-                // This catches, e.g., "extension context invalidated" errors
-                // on extension reload.
-                if(my_winid) {
-                    console.warn(`closing window ${my_winid}`);
-                    ASQH.NowCC((cbk)=>{
-                        chrome.windows.remove(my_winid, cbk);
-                    }).val(()=>{
-                        console.warn("after closing window");
-                    })
-                    .or((err)=>{
-                        console.error(`Could not open TF window: ${err}`);
-                    })
-                    ;
-                }
-            }
+            // This catches, e.g., "extension context invalidated" errors
+            // on extension reload.
         }
     }
 } //saveTreeOnHide()
@@ -4364,10 +4348,6 @@ function main()
 
     // Main events
     document.addEventListener('visibilitychange', saveTreeOnHide);
-    document.addEventListener('beforeunload', ()=>{console.warn('doc beforeunload');});
-    document.addEventListener('unload', ()=>{console.warn('doc unload');});
-    window.addEventListener('beforeunload', ()=>{console.warn('win beforeunload');});
-    window.addEventListener('unload', ()=>{console.warn('win unload');});
     window.addEventListener('resize', eventOnResize);
         // This doesn't detect window movement without a resize, which is why
         // we have timedMoveDetector above.
