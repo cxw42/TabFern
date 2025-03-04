@@ -40,4 +40,16 @@ function reportSettings()
 
 reportSettings();
 
+addEventListener("visibilitystate", ()=>{
+    console.log(`Visibility state changed: ${document.visibilityState}, hidden ${document.hidden}`);
+});
+
+addEventListener("unload", ()=>{
+    console.log("unload");
+});
+
+chrome.runtime.onSuspend.addListener(()=>{
+    console.log("suspend");
+});
+
 console.log("Done running mv3-converter.js");

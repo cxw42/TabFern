@@ -34,8 +34,8 @@ function loadView()
             cbk
         );
     })
-    .val((cwin)=> {
-        chrome.windows.update(cwin.id, {focused:true}, ignore_chrome_error);
+    .then((done, cwin)=> {
+        chrome.windows.update(cwin.id, {focused:true}, ASQH.CC(done));
     })
     .or((err)=>{
         console.error(`Could not open TF window: ${err}`);
@@ -46,12 +46,14 @@ function loadView()
 // Focus the view if it's open, or else load the view.
 function raiseOrLoadView()
 {
+    debugger;
     ASQH.NowCC((cbk) => {
         console.log("TabFern: Raising or opening view");
         chrome.tabs.query({windowType: "popup"}, cbk)
     })
     .then((done, tabs) => {
         for(const tab of tabs) {
+            console.log(tab.url);
             if(tab.url === WIN_URL) {
                 chrome.windows.update(tab.windowId, {focused: true}, ignore_chrome_error);
                 return;
@@ -60,6 +62,10 @@ function raiseOrLoadView()
 
         // Not already open --- let loadView do the work.
         loadView();
+        done();
+    })
+    .or((err)=>{
+        console.error(`Could not open TF window: ${err}`);
     })
     ;
 } //raiseOrLoadView()

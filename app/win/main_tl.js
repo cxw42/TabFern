@@ -4302,6 +4302,7 @@ function saveTreeOnHide()
             // Nothing else we can do here --- we're on the way out.
             // This catches, e.g., "extension context invalidated" errors
             // on extension reload.
+            debugger;
         }
     }
 } //saveTreeOnHide()
