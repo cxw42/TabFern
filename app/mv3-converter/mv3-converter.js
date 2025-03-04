@@ -20,9 +20,11 @@ for(let opt in S.defaults) {
 /// Tell the background page values from localSettings it needs to know.
 function reportSettings()
 {
+    console.log('Reporting settings');
     const shouldOpenPopup = S.getBool(S.POPUP_ON_STARTUP);
     chrome.runtime.sendMessage(
         {msg: MSG_REPORT_POPUP_SETTING, shouldOpenPopup},
+
         // This callback is only for debugging --- all the action happens in
         // the receiver.
         function(resp){
@@ -38,4 +40,4 @@ function reportSettings()
 
 reportSettings();
 
-console.log("Goodbye from mv3-converter.js");
+console.log("Done running mv3-converter.js");
