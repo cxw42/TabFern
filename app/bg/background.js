@@ -16,9 +16,6 @@ if(false) { // Vendor files - listed here only so they'll be bundled
     require('process/browser');
 }
 
-let ASQH = require('lib/asq-helpers');
-const SD = require('common/setting-definitions');
-
 const SetupContextMenu = require('bg/context-menu');
 const MainWindow = require('bg/main-window');
 const SetupOffscreenDocument = require('bg/offscreen-document');
@@ -69,7 +66,7 @@ chrome.commands.onCommand.addListener(onCommandReceived);
 //////////////////////////////////////////////////////////////////////////
 // Main-window creation //
 
-// A listener that will open the main window if necessary.
+// A listener that will trigger opening the main window if necessary.
 function offscreenDocumentMessageListener(message, sender, sendResponse) {
     if(!message || !message.msg || !sender.id ||
         sender.id !== chrome.runtime.id ||
@@ -93,12 +90,7 @@ function offscreenDocumentMessageListener(message, sender, sendResponse) {
 
 chrome.runtime.onInstalled.addListener((details)=>{
     SetupContextMenu();
-    //MainWindow.handleStartup();
 });
-
-//chrome.runtime.onStartup.addListener(()=>{
-//    MainWindow.handleStartup();
-//});
 
 // Do this before loading the offscreen document
 chrome.runtime.onMessage.addListener(offscreenDocumentMessageListener);

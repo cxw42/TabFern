@@ -46,7 +46,6 @@ function loadView()
 // Focus the view if it's open, or else load the view.
 function raiseOrLoadView()
 {
-    debugger;
     ASQH.NowCC((cbk) => {
         console.log("TabFern: Raising or opening view");
         chrome.tabs.query({windowType: "popup"}, cbk)
