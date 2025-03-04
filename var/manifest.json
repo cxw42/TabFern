@@ -5,7 +5,7 @@
   "version_name": "$VERNAME$",
   "offline_enabled": true,
   "manifest_version": 3,
-  "minimum_chrome_version": "88",
+  "minimum_chrome_version": "116",
   "description": "Save and restore your tabs and windows, and navigate tabs in a vertical view.",
   "homepage_url": "https://cxw42.github.io/TabFern/",
   "icons": {
