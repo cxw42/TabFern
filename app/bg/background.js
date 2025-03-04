@@ -16,9 +16,15 @@ if(false) { // Vendor files - listed here only so they'll be bundled
     require('process/browser');
 }
 
+const ASQ = require('asynquence-contrib');
+const ASQH = require('lib/asq-helpers');
+
 const SetupContextMenu = require('bg/context-menu');
 const MainWindow = require('bg/main-window');
 const SetupOffscreenDocument = require('bg/offscreen-document');
+
+// NOTE: keep this in sycn with app/win/const.js
+const LOCN_KEY = 'tabfern-window-location';
 
 //////////////////////////////////////////////////////////////////////////
 // Action button //
@@ -80,9 +86,23 @@ function offscreenDocumentMessageListener(message, sender, sendResponse) {
     console.log('Responding to popup-setting report');
     sendResponse({msg: message.msg, response: true});
 
-    if(message.shouldOpenPopup) {
-        MainWindow.raiseOrLoadView();
+    if(!message.shouldOpenPopup) {
+        return;
     }
+
+    ASQ()
+    .try((done)=> {
+        chrome.storage.local.get(LOCN_KEY, ASQH.CC(done));
+    })
+    .then((done, items_or_err)=>{
+        console.log(items_or_err);
+        let locn;
+        if(!ASQH.is_asq_try_err(items_or_err)) {
+            locn = items_or_err[LOCN_KEY];
+        }
+        MainWindow.raiseOrLoadView(locn);
+    })
+    ;
 } //offscreenDocumentMessageListener()
 
 //////////////////////////////////////////////////////////////////////////

@@ -9,8 +9,9 @@ if(false) { // Vendor files - listed here only so they'll be bundled
 }
 
 //let ASQ = require('asynquence-contrib');
-let ASQH = require('lib/asq-helpers');
+const ASQH = require('lib/asq-helpers');
 
+const NEW_TAB_URL = 'chrome://newtab/';
 const WIN_URL = chrome.runtime.getURL('win/container.html');
 
 // Actually open the view, i.e., the main TF window
@@ -44,7 +45,8 @@ function loadView()
 } //loadView()
 
 // Focus the view if it's open, or else load the view.
-function raiseOrLoadView()
+// If close_windows_at, close any new tabs at that location.
+function raiseOrLoadView(close_windows_at = null)
 {
     ASQH.NowCC((cbk) => {
         console.log("TabFern: Raising or opening view");
@@ -56,6 +58,8 @@ function raiseOrLoadView()
             if(tab.url === WIN_URL) {
                 chrome.windows.update(tab.windowId, {focused: true}, ignore_chrome_error);
                 return;
+            } else if(close_windows_at && (tab.url == NEW_TAB_URL)) {
+                // TODO RESUME HERE debugger;
             }
         }
 

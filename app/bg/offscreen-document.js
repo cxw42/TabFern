@@ -8,8 +8,7 @@ if(false) { // Vendor files - listed here only so they'll be bundled
     require('vendor/common');
 }
 
-//let ASQ = require('asynquence-contrib');
-let ASQH = require('lib/asq-helpers');
+const ASQH = require('lib/asq-helpers');
 
 const OFFSCREEN_DOC_URL = chrome.runtime.getURL('mv3-converter/mv3-converter.html');
 

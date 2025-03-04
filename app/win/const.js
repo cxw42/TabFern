@@ -31,7 +31,7 @@
         STORAGE_KEY: 'tabfern-data',
             ///< Store the saved windows/tabs
         LOCN_KEY: 'tabfern-window-location',
-            ///< Store where the tabfern popup is
+            ///< Store where the tabfern popup is.  Keep this in sync with background.js.
         LASTVER_KEY: 'tabfern-last-version',
             ///< Store the last version used on this system, for showing a
             ///< "What's New" notification
