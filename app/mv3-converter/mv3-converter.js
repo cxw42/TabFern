@@ -1,4 +1,4 @@
-// app/mv3-converter/mv3-converter.js - convert mv2->mv3
+// app/mv3-converter/mv3-converter.js - handle localStorage in an mv3 world
 
 if(false) { // Vendor files - listed here only so they'll be bundled
     require('process/browser');
@@ -39,17 +39,5 @@ function reportSettings()
 } //reportSettings()
 
 reportSettings();
-
-addEventListener("visibilitystate", ()=>{
-    console.log(`Visibility state changed: ${document.visibilityState}, hidden ${document.hidden}`);
-});
-
-addEventListener("unload", ()=>{
-    console.log("unload");
-});
-
-chrome.runtime.onSuspend.addListener(()=>{
-    console.log("suspend");
-});
 
 console.log("Done running mv3-converter.js");

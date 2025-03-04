@@ -4300,9 +4300,23 @@ function saveTreeOnHide()
         } catch(e) {
             console.warn(`Could not save tree: ${e}`);
             // Nothing else we can do here --- we're on the way out.
-            // This catches, e.g., "extension context invalidated" errors
-            // on extension reload.
-            debugger;
+
+            if(String(e).includes('Extension context invalidated')) {
+                // This catches, e.g., "extension context invalidated" errors
+                // on extension reload.
+                if(my_winid) {
+                    console.warn(`closing window ${my_winid}`);
+                    ASQH.NowCC((cbk)=>{
+                        chrome.windows.remove(my_winid, cbk);
+                    }).val(()=>{
+                        console.warn("after closing window");
+                    })
+                    .or((err)=>{
+                        console.error(`Could not open TF window: ${err}`);
+                    })
+                    ;
+                }
+            }
         }
     }
 } //saveTreeOnHide()
@@ -4350,6 +4364,10 @@ function main()
 
     // Main events
     document.addEventListener('visibilitychange', saveTreeOnHide);
+    document.addEventListener('beforeunload', ()=>{console.warn('doc beforeunload');});
+    document.addEventListener('unload', ()=>{console.warn('doc unload');});
+    window.addEventListener('beforeunload', ()=>{console.warn('win beforeunload');});
+    window.addEventListener('unload', ()=>{console.warn('win unload');});
     window.addEventListener('resize', eventOnResize);
         // This doesn't detect window movement without a resize, which is why
         // we have timedMoveDetector above.
