@@ -206,12 +206,6 @@ function getNewTabNodeId(ctab) {
 /// @param win {DOM window} The window
 function getWindowGeometry(win)
 {
-    // || is to provide some sensible defaults - thanks to
-    // https://stackoverflow.com/a/7540412/2877364 by
-    // https://stackoverflow.com/users/113716/user113716
-
-    // Are these the right fields of #win to use?  They seem to work.
-
     return {
           'left': win.screenLeft || 0
         , 'top': win.screenTop || 0
@@ -1155,7 +1149,7 @@ function addTabNodeActions(tab_node_id)
     T.treeobj.make_group(tab_node_id, {
         selector: 'div.jstree-wholerow',
         child: true,
-        class: K.ACTION_GROUP_WIN_CLASS // + ' jstree-animated' //TODO?
+        class: K.ACTION_GROUP_WIN_CLASS
     });
 
     // Add the buttons in the layout chosen by the user (#152).
@@ -2307,7 +2301,7 @@ function initFocusHandler()
         else if(old_win_id === WINID_NONE) change_from = FC_FROM_NONE;
         else change_from = FC_FROM_OPEN;
 
-        // Uncomment if you are debugging focus-change behaviour TODO RESUME HERE
+        // Uncomment if you are debugging focus-change behaviour
         //log.info({change_from, old_win_id, change_to, win_id});
 
         let same_window = (old_win_id === win_id);
@@ -2874,7 +2868,7 @@ function hamRestoreLastDeleted()
     // v0 is convenient, and the backward-compatibility guarantee of
     // loadSavedWindowsFromData means we won't have to refactor this.
     let tabs=[];
-    // TODO RESUME HERE --- convert user-facing text to _T()
+    // TODO convert user-facing text to _T()
     for(let url of lastDeletedWindow) {
         tabs.push({text: 'Restored', url: url});
     }
@@ -4106,9 +4100,6 @@ function moveWinToLastPositionIfAny_catch(done, items_or_err)
                 // Some kind of hopefully-reasonable size
         }
 
-        // + and || are to provide some sensible defaults - thanks to
-        // https://stackoverflow.com/a/7540412/2877364 by
-        // https://stackoverflow.com/users/113716/user113716
         let size_data =
             {
                   'left': +parsed.left || 0
@@ -4294,12 +4285,6 @@ function shutdownTree()
 {   // This appears to be called reliably.  This will also remove any open,
     // unsaved windows from the save data so they won't be reported as crashed
     // once #23 is implemented.
-
-    // // A bit of logging -
-    // // from https://stackoverflow.com/a/3840852/2877364
-    // // by https://stackoverflow.com/users/449477/pauan
-    // let background = chrome.extension.getBackgroundPage();
-    // background.console.log('popup closing');
 
     if(did_init_complete) {
         saveTree(false);    // false => don't save visible, non-saved windows
