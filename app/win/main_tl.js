@@ -2795,7 +2795,7 @@ function hamSettings()
 {
     // Actually open the window
     let url =
-        chrome.extension.getURL( '/settings/index.html' +
+        chrome.runtime.getURL( '/settings/index.html' +
                                 (ShowWhatIsNew ? '#open=last' : ''));
     if(url) {
         K.openWindowForURL(url);
@@ -2911,7 +2911,7 @@ function hamSorter(compare_fn)
 
 function hamRunJasmineTests()
 {
-    let url = chrome.extension.getURL('/t/index.html');  // from /static/t
+    let url = chrome.runtime.getURL('/t/index.html');  // from /static/t
     if(url) {
         K.openWindowForURL(url);
     } else {
@@ -4025,23 +4025,11 @@ function basicInit(done)
     done();
 } //basicInit
 
-/// Called after ASQ.try(chrome.runtime.sendMessage)
-function createMainTreeIfWinIdReceived_catch(done, win_id_msg_or_error)
+// Create the jstree
+function createMainTree(done, cwin)
 {
     next_init_step('create main tree');
-    if(ASQH.is_asq_try_err(win_id_msg_or_error)) {
-        // This is fatal
-        return done.fail("Couldn't get win ID: " + win_id_msg_or_error.catch);
-        // TODO add a "couldn't load" message to the popup.
-    }
-    let msg = win_id_msg_or_error;
-    if(!msg || msg.msg !== MSG_GET_VIEW_WIN_ID || !msg.response || !msg.id) {
-        return done.fail("Couldn't get win ID from invalid message " +
-                JSON.stringify(msg));
-        // TODO report as noted above.
-    }
-
-    let win_id = win_id_msg_or_error.id;
+    const win_id = cwin.id;
     my_winid = win_id;
 
     // Init the main jstree
@@ -4069,7 +4057,7 @@ function createMainTreeIfWinIdReceived_catch(done, win_id_msg_or_error)
     Bypasser = Modules.bypasser.create(window, T.treeobj);
 
     done();
-} //createMainTreeIfWinIdReceived_catch()
+} //createMainTree()
 
 /// Called after ASQ.try(chrome.storage.local.get(LOCN_KEY))
 /// @post last_saved_size.winState === 'normal'
@@ -4276,8 +4264,7 @@ function initTreeFinal(done)
 /// listener.
 function saveTreeOnHide()
 {   // This appears to be called reliably.  This will also remove any open,
-    // unsaved windows from the save data so they won't be reported as crashed
-    // once #23 is implemented.
+    // unsaved windows from the save data so they won't be reported as crashed.
 
     if(!document.hidden) {
         // Not hiding --- nothing to do
@@ -4360,14 +4347,11 @@ function main()
     .val(spin_starter)
         // for now, always start --- loadSavedWindowsIntoTree is synchronous
 
-    .try((done)=>{
-        // Get our Chrome-extensions-API window ID from the background page.
-        // I don't know a way to get this directly from the JS window object.
-        // TODO maybe getCurrent?  Not sure if that's reliable.
+    .then((done)=>{
         next_init_step('get window ID');
-        chrome.runtime.sendMessage({msg:MSG_GET_VIEW_WIN_ID}, ASQH.CC(done));
+        chrome.windows.get(chrome.windows.WINDOW_ID_CURRENT, ASQH.CC(done));
     })
-    .then(createMainTreeIfWinIdReceived_catch)
+    .then(createMainTree)
 
     .try((done)=>{
         next_init_step('get saved location');

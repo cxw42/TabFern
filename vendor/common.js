@@ -13,8 +13,8 @@ console.log('TabFern common.js loading');
 // { msg: <one of the below constants> [, anything else] }
 // For responses, response:true is also included.
 
-const MSG_GET_VIEW_WIN_ID = 'getViewWindowId';
 const MSG_EDIT_TAB_NOTE = 'editTabNote';
+const MSG_REPORT_POPUP_SETTING = 'reportPopupSetting';
 
 ////////////////////////////////////////////////////////////////////////// }}}1
 // Cross-browser error handling, and browser tests // {{{1
@@ -26,33 +26,36 @@ const MSG_EDIT_TAB_NOTE = 'editTabNote';
 
 BROWSER_TYPE=null;  // unknown
 
-(function(win){
+const isLastError = (function getIsLastError() {
     let isLastError_chrome =
         ()=>{return (typeof(chrome.runtime.lastError) !== 'undefined');};
     let isLastError_firefox =
         ()=>{return (chrome.runtime.lastError !== null);};
 
+    let result;
     if(typeof browser !== 'undefined' && browser.runtime &&
                                             browser.runtime.getBrowserInfo) {
         browser.runtime.getBrowserInfo().then(
             (info)=>{   // fullfillment
                 if(info.name === 'Firefox') {
-                    win.isLastError = isLastError_firefox;
+                    result = isLastError_firefox;
                     BROWSER_TYPE = 'ff';
                 } else {
-                    win.isLastError = isLastError_chrome;
+                    result = isLastError_chrome;
                 }
             },
 
             ()=>{   //rejection --- assume Chrome by default
-                win.isLastError = isLastError_chrome;
+                result = isLastError_chrome;
             }
         );
     } else {    // Chrome
         BROWSER_TYPE = 'chrome';
-        win.isLastError = isLastError_chrome;
+        result = isLastError_chrome;
     }
-})(window);
+
+    return result;
+})();
 
 /// Return a string representation of an error message.
 /// @param err {Any}: The error object/message to process.
@@ -148,7 +151,14 @@ var _T;
 if(chrome && chrome.i18n && chrome.i18n.getMessage) {
     _T = chrome.i18n.getMessage;
 } else {    // #171 HACK
-    console.warn("Using #171 hack");
+
+    // Warn unless calling code told us to expect this.
+    console.log({window});
+    const expect_no_i18n = (typeof 'window' !== undefined) && window && window._TF_NO_I18N;
+    if(!expect_no_i18n) {
+        console.warn("Using #171 hack");
+    }
+
     // The following line is substituted at build time with the messages
     // from _locales/en/messages.json.  See details in brunch-config.js.
     // The "0;" is so it will not confuse the autoindent.

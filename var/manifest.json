@@ -4,8 +4,8 @@
   "version": "$VER$",
   "version_name": "$VERNAME$",
   "offline_enabled": true,
-  "manifest_version": 2,
-  "minimum_chrome_version": "54",
+  "manifest_version": 3,
+  "minimum_chrome_version": "116",
   "description": "Save and restore your tabs and windows, and navigate tabs in a vertical view.",
   "homepage_url": "https://cxw42.github.io/TabFern/",
   "icons": {
@@ -15,13 +15,10 @@
   },
   "default_locale": "en",
   "background": {
-    "scripts": [
-      "bg/background.js"
-    ],
-    "persistent": true
+    "service_worker": "bg/background.js"
   },
   "options_page": "settings/index.html",
-  "browser_action": {
+  "action": {
     "default_icon": {
       "16": "/assets/favicon.png",
       "48": "/assets/fern48.png",
@@ -30,16 +27,26 @@
     "default_title": "TabFern"
   },
   "permissions": [
-    "file://*/*",
-    "chrome://favicon/",
-    "tabs",
+    "contextMenus",
+    "favicon",
+    "offscreen",
     "storage",
-    "unlimitedStorage",
-    "contextMenus"
+    "tabs",
+    "unlimitedStorage"
+  ],
+  "optional_host_permissions": [
+    "file://*/*"
   ],
   "web_accessible_resources": [
-    "/assets/*",
-    "/t/*"
+    {
+      "resources": [
+        "/assets/*",
+        "/t/*"
+      ],
+      "matches": [
+        "*://*/*"
+      ]
+    }
   ],
   "commands": {
     "reveal-view": {
