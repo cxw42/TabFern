@@ -31,11 +31,6 @@ Outputs:
  - `public/`: The Chrome plugin, ready to be loaded unpacked or zipped up.
  - `public-ff/`: The Firefox plugin, ready to be loaded unpacked or zipped up.
 
-Other:
-
- - `doc/`: Documentation (to be created)
- - `plugin/`: Skeleton of a TabFern plugin (to be created)
-
 ## Popup
 
 The popup is the main TabFern window, and the heart of the project.  It is

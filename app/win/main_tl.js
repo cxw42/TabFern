@@ -2951,14 +2951,6 @@ function getHamburgerMenuItems(node, _unused_proxyfunc, e)
 
     // Add development-specific items, if any
     if(is_devel_mode) {
-        items.splitItem = {
-            label: _T('menuSplitTest'),
-            action: function(){
-                if(window.parent && window.parent.doSplit)
-                    window.parent.doSplit();
-            },
-        };
-
         items.jasmineItem = {
             label: _T('menuJasmineTests'),
             action: hamRunJasmineTests,
