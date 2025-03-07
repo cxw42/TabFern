@@ -162,10 +162,6 @@
 
   , "menu_text": { "message": "--------------------------------------------"
                         ,"description": "Text for the hamburger and context menus" }
-  , "menuSplitTest": {
-    "message": "Сплит тест"
-    ,"description":"The item in the hamburger (≡) menu for a split test."
-  }
   , "menuJasmineTests": {
     "message": "Запустить тесты Jasmine"
     ,"description":"The menu item to run tests using the 'Jasmine' program."

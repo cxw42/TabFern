@@ -138,6 +138,8 @@ let me = {
                     // background script (has no page)
                 'app/settings/settings.js': 'settings/settings-main.js',
                     // settings window
+                'app/mv3-converter/mv3-converter.js': 'mv3-converter/mv3-converter.js',
+                    // offscreen document to convert mv2->mv3 material
             },
 
             order: {
@@ -169,11 +171,12 @@ let me = {
     },
 
     modules: {
-        autoRequire: {
+        autoRequire: {  // When JS files are loaded, run them
             // Output file:     [ deps to autoload ]
             'bg/background.js': ['bg/background'],
             'win/container.js': ['win/container'],
             'settings/settings-main.js': ['settings/settings'],
+            'mv3-converter/mv3-converter.js': ['mv3-converter/mv3-converter'],
         },
     },
 

@@ -485,24 +485,24 @@ alphabetical order within each category.`
 setting_definitions.push(
         {
             "tab": future_i18n("What's new?"),
-            "group": `Version 0.3.2${brplain('2025-XX-XX')}`,
+            "group": `Version 0.4.0${brplain('2025-03-06')}`,
             'group_html':true,
             "type": "description",
             "text": (
 `
-<h2>Important update coming!</h2>
-<p>The next release of TabFern will update to
+<h2>\u26a0\ufe0f Major internal change! \u26a0\ufe0f</h2>
+<p>This release of TabFern updates to
 <a href="https://developer.chrome.com/docs/extensions/develop/migrate/what-is-mv3"
     target="_blank">Manifest V3</a>.
 This is required by Google for compatibility with newer Chrome versions.
-Please <b>back up your tabs</b>, and make sure you are running Chrome 88+.</p>
+Please <b>back up your tabs</b>, and report any issues you encounter.  Thanks!  ${issue(275)}</p>
 
-<p>Changes in this release:</p>
+<p>Other changes in this release:</p>
 <ul>
 <li>The prompt for confirmation when closing audible tabs now applies to
     individual tabs ${issue(306)}.</li>
-<li>Bugfixes ${issue([322,335])}</li>
-<li>Refactoring ${issue(334)}</li>
+<li>Bugfixes ${issue([321,322,335])}</li>
+<li>Refactoring ${issue([307,334])}</li>
 </ul>
 `
             ),

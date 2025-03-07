@@ -206,12 +206,6 @@ function getNewTabNodeId(ctab) {
 /// @param win {DOM window} The window
 function getWindowGeometry(win)
 {
-    // || is to provide some sensible defaults - thanks to
-    // https://stackoverflow.com/a/7540412/2877364 by
-    // https://stackoverflow.com/users/113716/user113716
-
-    // Are these the right fields of #win to use?  They seem to work.
-
     return {
           'left': win.screenLeft || 0
         , 'top': win.screenTop || 0
@@ -1155,7 +1149,7 @@ function addTabNodeActions(tab_node_id)
     T.treeobj.make_group(tab_node_id, {
         selector: 'div.jstree-wholerow',
         child: true,
-        class: K.ACTION_GROUP_WIN_CLASS // + ' jstree-animated' //TODO?
+        class: K.ACTION_GROUP_WIN_CLASS
     });
 
     // Add the buttons in the layout chosen by the user (#152).
@@ -2307,7 +2301,7 @@ function initFocusHandler()
         else if(old_win_id === WINID_NONE) change_from = FC_FROM_NONE;
         else change_from = FC_FROM_OPEN;
 
-        // Uncomment if you are debugging focus-change behaviour TODO RESUME HERE
+        // Uncomment if you are debugging focus-change behaviour
         //log.info({change_from, old_win_id, change_to, win_id});
 
         let same_window = (old_win_id === win_id);
@@ -2801,7 +2795,7 @@ function hamSettings()
 {
     // Actually open the window
     let url =
-        chrome.extension.getURL( '/settings/index.html' +
+        chrome.runtime.getURL( '/settings/index.html' +
                                 (ShowWhatIsNew ? '#open=last' : ''));
     if(url) {
         K.openWindowForURL(url);
@@ -2874,7 +2868,7 @@ function hamRestoreLastDeleted()
     // v0 is convenient, and the backward-compatibility guarantee of
     // loadSavedWindowsFromData means we won't have to refactor this.
     let tabs=[];
-    // TODO RESUME HERE --- convert user-facing text to _T()
+    // TODO convert user-facing text to _T()
     for(let url of lastDeletedWindow) {
         tabs.push({text: 'Restored', url: url});
     }
@@ -2917,7 +2911,7 @@ function hamSorter(compare_fn)
 
 function hamRunJasmineTests()
 {
-    let url = chrome.extension.getURL('/t/index.html');  // from /static/t
+    let url = chrome.runtime.getURL('/t/index.html');  // from /static/t
     if(url) {
         K.openWindowForURL(url);
     } else {
@@ -2957,14 +2951,6 @@ function getHamburgerMenuItems(node, _unused_proxyfunc, e)
 
     // Add development-specific items, if any
     if(is_devel_mode) {
-        items.splitItem = {
-            label: _T('menuSplitTest'),
-            action: function(){
-                if(window.parent && window.parent.doSplit)
-                    window.parent.doSplit();
-            },
-        };
-
         items.jasmineItem = {
             label: _T('menuJasmineTests'),
             action: hamRunJasmineTests,
@@ -4039,23 +4025,11 @@ function basicInit(done)
     done();
 } //basicInit
 
-/// Called after ASQ.try(chrome.runtime.sendMessage)
-function createMainTreeIfWinIdReceived_catch(done, win_id_msg_or_error)
+// Create the jstree
+function createMainTree(done, cwin)
 {
     next_init_step('create main tree');
-    if(ASQH.is_asq_try_err(win_id_msg_or_error)) {
-        // This is fatal
-        return done.fail("Couldn't get win ID: " + win_id_msg_or_error.catch);
-        // TODO add a "couldn't load" message to the popup.
-    }
-    let msg = win_id_msg_or_error;
-    if(!msg || msg.msg !== MSG_GET_VIEW_WIN_ID || !msg.response || !msg.id) {
-        return done.fail("Couldn't get win ID from invalid message " +
-                JSON.stringify(msg));
-        // TODO report as noted above.
-    }
-
-    let win_id = win_id_msg_or_error.id;
+    const win_id = cwin.id;
     my_winid = win_id;
 
     // Init the main jstree
@@ -4083,7 +4057,7 @@ function createMainTreeIfWinIdReceived_catch(done, win_id_msg_or_error)
     Bypasser = Modules.bypasser.create(window, T.treeobj);
 
     done();
-} //createMainTreeIfWinIdReceived_catch()
+} //createMainTree()
 
 /// Called after ASQ.try(chrome.storage.local.get(LOCN_KEY))
 /// @post last_saved_size.winState === 'normal'
@@ -4106,9 +4080,6 @@ function moveWinToLastPositionIfAny_catch(done, items_or_err)
                 // Some kind of hopefully-reasonable size
         }
 
-        // + and || are to provide some sensible defaults - thanks to
-        // https://stackoverflow.com/a/7540412/2877364 by
-        // https://stackoverflow.com/users/113716/user113716
         let size_data =
             {
                   'left': +parsed.left || 0
@@ -4289,22 +4260,28 @@ function initTreeFinal(done)
 // ---------------------------------------------- }}}2
 // Shutdown routines // {{{2
 
-/// Save the tree on window.unload
-function shutdownTree()
+/// Save the tree when TF becomes hidden.  Use this as a `visibilitychange`
+/// listener.
+function saveTreeOnHide()
 {   // This appears to be called reliably.  This will also remove any open,
-    // unsaved windows from the save data so they won't be reported as crashed
-    // once #23 is implemented.
+    // unsaved windows from the save data so they won't be reported as crashed.
 
-    // // A bit of logging -
-    // // from https://stackoverflow.com/a/3840852/2877364
-    // // by https://stackoverflow.com/users/449477/pauan
-    // let background = chrome.extension.getBackgroundPage();
-    // background.console.log('popup closing');
+    if(!document.hidden) {
+        // Not hiding --- nothing to do
+        return;
+    }
 
     if(did_init_complete) {
-        saveTree(false);    // false => don't save visible, non-saved windows
+        try {
+            saveTree(false);    // false => don't save visible, non-saved windows
+        } catch(e) {
+            console.info(`Could not save tree: ${e}`);
+            // Nothing else we can do here --- we're on the way out.
+            // This catches, e.g., "extension context invalidated" errors
+            // on extension reload.
+        }
     }
-} //shutdownTree()
+} //saveTreeOnHide()
 
 // ---------------------------------------------- }}}2
 // Error reporting // {{{2
@@ -4348,7 +4325,7 @@ function main()
     preLoadInit();
 
     // Main events
-    window.addEventListener('unload', shutdownTree, { 'once': true });
+    document.addEventListener('visibilitychange', saveTreeOnHide);
     window.addEventListener('resize', eventOnResize);
         // This doesn't detect window movement without a resize, which is why
         // we have timedMoveDetector above.
@@ -4370,14 +4347,11 @@ function main()
     .val(spin_starter)
         // for now, always start --- loadSavedWindowsIntoTree is synchronous
 
-    .try((done)=>{
-        // Get our Chrome-extensions-API window ID from the background page.
-        // I don't know a way to get this directly from the JS window object.
-        // TODO maybe getCurrent?  Not sure if that's reliable.
+    .then((done)=>{
         next_init_step('get window ID');
-        chrome.runtime.sendMessage({msg:MSG_GET_VIEW_WIN_ID}, ASQH.CC(done));
+        chrome.windows.get(chrome.windows.WINDOW_ID_CURRENT, ASQH.CC(done));
     })
-    .then(createMainTreeIfWinIdReceived_catch)
+    .then(createMainTree)
 
     .try((done)=>{
         next_init_step('get saved location');

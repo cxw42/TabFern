@@ -69,6 +69,33 @@ function getBoolSetting(setting_name, default_value = undefined)
     }
 } //getBoolSetting
 
+/// Get an integer setting from the settings page.
+/// @param setting_name     A value in CFG_NAMES
+/// @param default_value    Optional default.  If unspecified or
+///                         undefined, the default from SD.defaults
+///                         is used.
+function getIntSetting(setting_name, default_value = undefined)
+{
+    if(typeof default_value === 'undefined' && setting_name in SD.defaults) {
+        default_value = SD.defaults[setting_name];
+    }
+
+    let locStorageValue = localStorage.getItem(SETTING_PREFIX + setting_name);
+
+    if ( locStorageValue === null ) {   // nonexistent key
+        return default_value;
+    } else {
+        const str = String(locStorageValue);
+        let val = JSON.parse(locStorageValue);  // stored with double-quotes
+        val = SD.validate_int(val);
+        if (typeof val === 'undefined') {
+            return default_value;
+        } else {
+            return val;
+        }
+    }
+} //getIntSetting
+
 /// Find out whether the given setting from the settings page exists.
 /// @param setting_name     A value in SD.names
 function haveSetting(setting_name)
@@ -128,6 +155,11 @@ function setSettingIfNonexistentOrInvalid(setting_name, setting_value)
     }
 } //setSettingIfNonexistentOrInvalid
 
+/// Remove a setting
+function removeSetting(setting_name) {
+    localStorage.removeItem(SETTING_PREFIX + setting_name);
+} //removeSetting
+
 /// Custom getter for the current theme name.  This enforces known themes.
 function getThemeName()
 {
@@ -162,9 +194,11 @@ let me = {
     getRaw: getRawSetting,
     getString: getStringSetting,
     getBool: getBoolSetting,
+    getInt: getIntSetting,
     have: haveSetting,
     set: setSetting,
     setIfNonexistentOrInvalid: setSettingIfNonexistentOrInvalid,
+    remove: removeSetting,
     getThemeName,
 };
 

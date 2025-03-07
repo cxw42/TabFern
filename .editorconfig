@@ -13,3 +13,6 @@ end_of_line = crlf
 
 [/*.json]
 indent_size = 2
+
+[/var/*.json]
+indent_size = 2

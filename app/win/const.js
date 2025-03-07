@@ -72,7 +72,7 @@
             ///< Do not assume that NONE and WINDOW_ID_NONE will always be the same!
 
         // Item-type enumeration.  Here because there may be more item
-        // types in the future (e.g., dividers or plugins).  Each IT_*
+        // types in the future (e.g., dividers).  Each IT_*
         // must be truthy.  These are used as the types in multidexes.
         // They are also applied to nodes using jstree-multitype.
         IT_WIN:  'win',      // strings are used as required by multidex

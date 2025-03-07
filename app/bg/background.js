@@ -5,6 +5,8 @@ console.log('TabFern: running ' + __filename);
 if(false) { // Vendor files - listed here only so they'll be bundled
     require('vendor/validation');
     require('vendor/common');
+    require('asynquence');
+    require('asynquence-contrib');
 
     // The following require() seems to fix the 'cannot find module "process"
     // from "/"' error mentioned at
@@ -14,204 +16,93 @@ if(false) { // Vendor files - listed here only so they'll be bundled
     require('process/browser');
 }
 
-const S = require('common/setting-accessors');    // in app/
-
-/// The module exports, for use in command-line debugging
-let me = {
-    viewWindowId: undefined,    // the chrome.windows ID of our view
-    loadView: undefined,
-};
-
-module.exports = me;
-
-
-//////////////////////////////////////////////////////////////////////////
-// Helpers //
-
-// Open the view
-me.loadView = function loadView()
-{
-    console.log("TabFern: Opening view");
-    chrome.windows.create(
-        { 'url': chrome.runtime.getURL('win/container.html'),
-          'type': 'popup',
-          'left': 10,
-          'top': 10,
-          'width': 200,
-          'height': 200,
-          //'focused': true
-            // Note: `focused` is not supported on Firefox, but
-            // focused=true is usually the effect.
-            // https://bugzilla.mozilla.org/show_bug.cgi?id=1253129
-            // However, Firefox does support windows.update with focused.
-        },
-        function(win) {
-            me.viewWindowId = win.id;
-            console.log('TabFern new View ID: ' + me.viewWindowId.toString());
-            chrome.windows.update(win.id, {focused:true}, ignore_chrome_error);
-        });
-} //loadView()
+const SetupContextMenu = require('bg/context-menu');
+const MainWindow = require('bg/main-window');
+const SetupOffscreenDocument = require('bg/offscreen-document');
 
 //////////////////////////////////////////////////////////////////////////
 // Action button //
-
-/// Move the TabFern window to #reference_win.  This helps if the
-/// TabFern window winds up off-screen.
-/// This is called as a Chrome callback.
-function moveTabFernViewToWindow(reference_cwin)
-{
-    function clip(x, lo, hi) { if(hi<lo) hi=lo; return Math.min(hi, Math.max(lo, x)); }
-
-    if(!isLastError()) {
-        if(!me.viewWindowId) return;
-        chrome.windows.get(me.viewWindowId, function(view_cwin) {
-            // TODO handle Chrome error
-            let updates = {left: reference_cwin.left+16,
-                            top: reference_cwin.top+16,
-                            state: 'normal',    // not minimized or maximized
-            };
-
-            // Don't let it be too large or too small
-            updates.width = clip(view_cwin.width, 200, reference_cwin.width-32);
-            updates.height = clip(view_cwin.height, 100, reference_cwin.height-32);
-
-            chrome.windows.update(me.viewWindowId, updates
-                // TODO handle Chrome error
-                );
-        });
-    }
-} //moveTabFernViewToWindow()
 
 // Modified from https://stackoverflow.com/q/8984047/2877364 by
 // https://stackoverflow.com/users/930675/sean-bannister
 
 // When the icon is clicked in Chrome
-let onClickedListener = function(tab) {
+function onActionClicked(ctab)
+{
+    console.log({['Action clicked']: ctab});
 
-    // If viewWindowId is undefined then there isn't a popup currently open.
-    if (typeof me.viewWindowId === "undefined") {        // Open the popup
-        me.loadView();
-    } else {                                // There's currently a popup open
-     // Bring it to the front so the user can see it
-        chrome.windows.update(me.viewWindowId, { "focused": true });
+    // Bring it to the front so the user can see it
+    MainWindow.raiseOrLoadView();
+
+    if(!ctab || !ctab.windowId) {
+        // Came from onCommand --- nothing else to do
+        return;
     }
 
-    // Set a timer to bring the window to the front on another click
-    // that follows fairly shortly.
-    if(tab) {
-        let clickListener = function(tab) {
-            if(me.viewWindowId && tab.windowId) {
-                chrome.windows.get(tab.windowId, moveTabFernViewToWindow);
-            }
-        };
+    // Prepare to respond to a double-click by bringing the TF window
+    // to the current tab.
 
-        let removeClickListener = function() {
-            chrome.browserAction.onClicked.removeListener(clickListener);
-        };
+    // Enable the double-click behaviour...
+    chrome.action.onClicked.addListener(MainWindow.bringToTab);
 
-        setTimeout(removeClickListener, 1337);
-            // Do not change this constant or the Unix daemon will dog
-            // your footsteps until the `time_t`s roll over.
-        chrome.browserAction.onClicked.addListener(clickListener);
-    }
+    // ...until the following timeout fires.  It's OK to use setTimeout here
+    // per <https://github.com/w3c/webextensions/issues/196>.
+    setTimeout(
+        ()=>{ chrome.action.onClicked.removeListener(MainWindow.bringToTab); },
+        1337
+        // Do not change this constant or the Unix daemon will dog
+        // your footsteps until the `time_t`s roll over.
+    );
+} //onActionClicked()
 
-} //onClickedListener()
+// This fires for both clicks on the extension's icon and presses of
+// any keyboard shortcut assigned to "Activate the extension".
+chrome.action.onClicked.addListener(onActionClicked);
 
-chrome.browserAction.onClicked.addListener(onClickedListener);
-
-let onCommandListener = function(cmd) {
+function onCommandReceived(cmd) {
     console.log("Received command " + cmd);
     if(cmd == 'reveal-view') {
-        onClickedListener(null);    // null => no tab, so no summon
+        onActionClicked(null);  // null => no tab, so no summon
     }
-} //onCommandListener()
-chrome.commands.onCommand.addListener(onCommandListener);
+} //onCommandReceived()
 
-// When a window is closed
-chrome.windows.onRemoved.addListener(function(windowId) {
-  // If the window getting closed is the popup we created
-  if (windowId === me.viewWindowId) {
-    // Set viewWindowId to undefined so we know the popup is not open
-    me.viewWindowId = undefined;
-    console.log('Popup window was closed');
-  }
-});
+// This fires for presses of a (possibly global) hotkey assigned to
+// "Open the TabFern window".
+chrome.commands.onCommand.addListener(onCommandReceived);
 
 //////////////////////////////////////////////////////////////////////////
-// Action button context-menu items //
+// Main-window creation //
 
-function editNoteOnClick(info, tab)
-{
-    console.log({editNoteOnClick:info, tab});
-    if(!tab.id) return;
-    console.log(`Sending editNote for ${tab.id}`);
-    chrome.runtime.sendMessage({msg:MSG_EDIT_TAB_NOTE, tab_id: tab.id},
-        // This callback is only for debugging --- all the action happens in
-        // src/view/tree.js, the receiver.
-        function(resp){
-            if(isLastError()) {
-                console.log('Couldn\'t send edit-note to ' + tab.id + ': ' +
-                    lastBrowserErrorMessageString());
-            } else {
-                console.log({[`response to edit-note for ${tab.id}`]: resp});
-            }
-        }
-    );
-} //editNoteOnClick
-
-chrome.contextMenus.create({
-    id: 'editNote', title: _T('menuAddEditNoteThisTab'),
-    contexts: ['browser_action'], onclick: editNoteOnClick
-});
-
-//////////////////////////////////////////////////////////////////////////
-// Messages //
-
-function messageListener(request, sender, sendResponse)
-{
-    console.log({'bg got message':request,from:sender});
-    if(!request || !request.msg) {
-        console.log('bg   Bad request');
+// A listener that will trigger opening the main window if we hear
+// from the offscreen document that localStorage says we should.
+function offscreenDocumentMessageListener(message, sender, sendResponse) {
+    if(!message || !message.msg || !sender.id ||
+        sender.id !== chrome.runtime.id ||
+        message.msg !== MSG_REPORT_POPUP_SETTING ||
+        message.response
+    ) {
+        // Message we don't care about --- ignore
         return;
     }
 
-    // For now, only accept messages from our extension
-    if(!sender.id || sender.id !== chrome.runtime.id) {
-        console.log(`bg   Bad id ${sender.id} (ours ${chrome.runtime.id})`);
-        return;
-    }
+    console.log('Responding to popup-setting report');
+    sendResponse({msg: message.msg, response: true});
 
-    if(request.msg === MSG_GET_VIEW_WIN_ID && !request.response) {
-        console.log('Responding with window ID ' + me.viewWindowId.toString());
-        sendResponse({msg: request.msg, response: true, id: me.viewWindowId});
+    if(message.shouldOpenPopup) {
+        MainWindow.raiseOrLoadView();
     }
-} //messageListener
-
-chrome.runtime.onMessage.addListener(messageListener);
+} //offscreenDocumentMessageListener()
 
 //////////////////////////////////////////////////////////////////////////
-// MAIN //
+// Main //
 
-// Create the main window when Chrome starts
-if(true) {
-    callbackOnLoad(
-        function() {
-            console.log('TabFern: background window loaded');
-            if(S.getBool(S.POPUP_ON_STARTUP)) {
-                console.log('Opening popup window');
-                setTimeout(me.loadView, 500);
-            }
-        }
-    );
-}
+chrome.runtime.onInstalled.addListener(SetupContextMenu);
 
-// Set the defaults for the options.  The settings boilerplate from
-// extensionizr does not appear to have this facility.
-for(let opt in S.defaults) {
-    if(!opt.startsWith('_')) {
-        S.setIfNonexistentOrInvalid(opt, S.defaults[opt]);
-    }
-}
+// Do this before loading the offscreen document
+chrome.runtime.onMessage.addListener(offscreenDocumentMessageListener);
+
+// Processing continues in the offscreen document
+SetupOffscreenDocument();
 
 console.log('TabFern: done running background.js');
 
