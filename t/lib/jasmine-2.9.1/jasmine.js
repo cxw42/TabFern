@@ -2088,9 +2088,7 @@ getJasmineRequireObj().DelayedFunctionScheduler = function(j$) {
     self.scheduleFunction = function(funcToCall, millis, params, recurring, timeoutKey, runAtMillis) {
       var f;
       if (typeof(funcToCall) === 'string') {
-        /* jshint evil: true */
-        f = function() { return eval(funcToCall); };
-        /* jshint evil: false */
+        throw new TypeError("Refusing to eval string as function")
       } else {
         f = funcToCall;
       }
