@@ -74,6 +74,7 @@ class InputBox extends Setting {
         this._$contents.append(this.#$entry);
     }
 }
+
 // Factory function for settings
 function newSetting($parent, settingData) {
     const knownSettings = {
@@ -97,16 +98,11 @@ class Group {
 
     // Create a new group.  The group's name is groupName.  If groupHtml
     // is provided, use that for the group's label.
-    constructor(parent, groupName, groupHtml = undefined) {
+    constructor(parent, groupName) {
         // Each group gets its own table
         this.#$group = $('<table class="setting group">');
         let $tr = $("<tr>");
-        let $name = $('<td class="setting group-name"></td>');
-        if (groupHtml) {
-            $name.html(groupHtml);
-        } else {
-            $name.text(groupName);
-        }
+        let $name = $('<td class="setting group-name"></td>').text(groupName);
         this.#$content = $('<td class="setting group-content"></td>');
         $tr.append($name);
         $tr.append(this.#$content);
@@ -114,6 +110,11 @@ class Group {
         this.#$group.append($tr);
 
         $(parent).append(this.#$group);
+    }
+
+    // Change the group's label from its name to specified HTML
+    setHTML(html) {
+        this.#$group.find("td.group-name").html(html);
     }
 
     addSetting(settingData) {
@@ -135,10 +136,17 @@ class Tab {
         this.#$content = $('<div class="tab-content"/>');
         this.#$content.append($("<h2>").text(tab_name));
         contentParent.append(this.#$content);
+
+        this.#$tab.on("click", () => {
+            this.show();
+        });
     } // ctor
 
     show() {
+        this.#$tab.siblings("div.tab").removeClass("active");
         this.#$tab.addClass("active");
+
+        this.#$content.siblings("div.tab-content").removeClass("show");
         this.#$content.addClass("show");
     } // show()
 
@@ -222,6 +230,9 @@ class SettingsPage {
 
         let tab = this.addOrGetTab(settingData.tab);
         let group = tab.addOrGetGroup(settingData.group);
+        if (settingData.group_html) {
+            group.setHTML(settingData.group);
+        }
 
         group.addSetting(settingData);
     } // _addSetting()
