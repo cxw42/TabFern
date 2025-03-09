@@ -141,16 +141,16 @@ class Checkbox extends Setting {
         super($parent, settingData);
 
         const id = getUniqueId();
+        const storedValue = Boolean(STORE.get(settingData.name));
         let $checkbox = $(
             '<input class="setting element checkbox" type="checkbox">'
         );
         $checkbox.attr("id", id);
-        const storedValue = Boolean(STORE.get(settingData.name));
         $checkbox.prop("checked", storedValue);
 
         let $label = $('<label class="setting label checkbox">');
         $label.attr("for", id);
-        $label.text(settingData.label);
+        $label.html(settingData.label);
 
         this._$contents.append($checkbox);
         this._$contents.append($label);
@@ -179,7 +179,7 @@ class RadioButtons extends Setting {
         // Create the radio buttons.  Select the first unless a different
         // value is stored.
         const buttonSetID = getUniqueId();
-        const storedValue = String(STORE.get(settingData.name));
+        const storedValue = String(STORE.get(settingData.name) || "");
         let first = true;
         for (const button of settingData.options || []) {
             const buttonID = getUniqueId();
@@ -236,7 +236,7 @@ class Dropdown extends Setting {
             $option.attr("value", option.value);
             $select.append($option);
         }
-        const storedValue = String(STORE.get(settingData.name));
+        const storedValue = String(STORE.get(settingData.name) || "");
         if (storedValue) {
             $select.prop("value", storedValue);
         }
@@ -254,8 +254,11 @@ class InputBox extends Setting {
         let $label = $('<label class="setting label text">').text(
             settingData.label
         );
-        this.#$entry = $('<input class="setting element text" type="text">');
         this._$contents.append($label);
+
+        const storedValue = String(STORE.get(settingData.name) || "");
+        this.#$entry = $('<input class="setting element text" type="text">');
+        this.#$entry.prop("value", storedValue);
         this._$contents.append(this.#$entry);
     }
 } // class InputBox
