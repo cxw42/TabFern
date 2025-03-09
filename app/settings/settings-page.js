@@ -10,23 +10,45 @@ if(false) { // bundle these
 
 let $ = require('jquery');
 
+class Group
+{
+    #$group;
+
+    constructor(parent, group_name)
+    {
+        this.#$group = $('<table class="setting group">');
+        $(parent).append(this.#$group);
+    }
+}
+
 class Tab
 {
-    #tab;
-    #content;
+    #$tab;
+    #$content;
+    #groups = new Map();
 
     constructor(tab_parent, content_parent, tab_name)
     {
         console.log({Adding_tab: tab_name});
-        this.#tab = $('<div class="tab"></div>');
-        this.#tab.text(tab_name);
-        tab_parent.append(this.#tab);
+        this.#$tab = $('<div class="tab"></div>');
+        this.#$tab.text(tab_name);
+        tab_parent.append(this.#$tab);
 
-        this.#content = $('<div class="tab-content"/>');
-        this.#content.append($('<hr>'));
-        this.#content.append($('<h1>').text(tab_name));
-        content_parent.append(this.#content);
-    }
+        this.#$content = $('<div class="tab-content"/>');
+        this.#$content.append($('<h2>').text(tab_name));
+        content_parent.append(this.#$content);
+    } // ctor
+
+    show()
+    {
+        this.#$tab.addClass('active');
+        this.#$content.addClass('show');
+    } // show()
+
+    addOrGetGroup(group_name)
+    {
+
+    } // addOrGetGroup()
 
 } // class Tab
 
@@ -34,7 +56,7 @@ class SettingsPage
 {
     #$parent;   // parent element, as jquery
     #manifest;
-    #tabs = {};
+    #tabs = new Map();
 
     constructor(parent, manifest)
     {
@@ -55,6 +77,11 @@ class SettingsPage
 
         for(const setting of (manifest.settings || [])) {
             this._addSetting(setting);
+        }
+
+        // Show the first group
+        if(this.#tabs.size > 0) {
+            this.#tabs.values().next().value.show()
         }
     } // ctor
 
@@ -79,14 +106,14 @@ class SettingsPage
     _addSetting(setting) {
         console.log({Adding: setting});
 
-        if(!(setting.tab in this.#tabs)) {
-            this.#tabs[setting.tab] = new Tab(
+        if(!this.#tabs.has(setting.tab)) {
+            this.#tabs.set(setting.tab, new Tab(
                 $('#tab-container'), $('#content'), setting.tab
-            );
+            ));
         }
-        let tab = this.#tabs[setting.tab];
+        let tab = this.#tabs.get(setting.tab);
 
-        // TODO RESUME HERE --- add group if it's missing
+        group = tab.addOrGetGroup(setting.group);
     } // addSetting()
 
 } // class SettingsPage
