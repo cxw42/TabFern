@@ -11,29 +11,78 @@ if (false) {
 
 let $ = require("jquery");
 
+// Storage ///////////////////////////////////////////////////////////////
+// TODO!
+
+// Individual settings ///////////////////////////////////////////////////
+
+// Base class for an individual setting
 class Setting {
-    #$setting;
-    #$contents; // for subclasses to fill in
+    _name; // The name of the setting in the store
+    #type; // The type of the setting
+    #$setting; // The top-level JQuery element of this setting
+    _$contents; // for subclasses to fill in
 
-    constructor($parent) {
+    constructor($parent, settingData) {
+        this._name = settingData.name;
+        this.#type = settingData.type;
+
         this.#$setting = $('<div class="setting bundle"/>');
-        this.#$contents = $('<div class="setting container"/>');
-        this.#$setting.append(this.#$contents);
-        $parent.append(this.#$setting);
+        this.#$setting.addClass(this.#type);
+        this._$contents = $('<div class="setting container"/>');
+        this._$contents.addClass(this.#type);
 
-        this.#$contents.text("???");
+        this.#$setting.append(this._$contents);
+
+        $parent.append(this.#$setting);
     }
 } // class Setting
+
+class Description extends Setting {
+    //#text;
+
+    constructor($parent, settingData) {
+        super($parent, settingData);
+        //this.#text = settingData.text;
+        this._$contents.append(
+            $('<p class="setting element description">').html(settingData.text)
+        );
+    }
+}
+
+// Factory function for settings
+function newSetting($parent, settingData) {
+    const knownSettings = {
+        button: Setting, // XXX
+        checkbox: Setting, // XXX
+        description: Description,
+        radioButtons: Setting, // XXX
+        popupButton: Setting, // XXX
+        text: Setting, // XXX
+    };
+
+    const klass = knownSettings[settingData.type];
+    return new klass($parent, settingData);
+}
+
+// Groups and tabs ///////////////////////////////////////////////////////
 
 class Group {
     #$group;
     #$content;
 
-    constructor(parent, groupName) {
+    // Create a new group.  The group's name is groupName.  If groupHtml
+    // is provided, use that for the group's label.
+    constructor(parent, groupName, groupHtml = undefined) {
         // Each group gets its own table
         this.#$group = $('<table class="setting group">');
         let $tr = $("<tr>");
-        let $name = $('<td class="setting group-name"></td>').text(groupName);
+        let $name = $('<td class="setting group-name"></td>');
+        if (groupHtml) {
+            $name.html(groupHtml);
+        } else {
+            $name.text(groupName);
+        }
         this.#$content = $('<td class="setting group-content"></td>');
         $tr.append($name);
         $tr.append(this.#$content);
@@ -44,9 +93,9 @@ class Group {
     }
 
     addSetting(settingData) {
-        let setting = new Setting(this.#$content);
+        let setting = newSetting(this.#$content, settingData);
     }
-}
+} // class Group
 
 class Tab {
     #$tab;
@@ -77,6 +126,8 @@ class Tab {
         return this.#groups.get(groupName);
     } // addOrGetGroup()
 } // class Tab
+
+// Top-level class ///////////////////////////////////////////////////////
 
 class SettingsPage {
     #$parent;
@@ -142,14 +193,14 @@ class SettingsPage {
         return this.#tabs.get(tabName);
     }
 
-    _addSetting(setting) {
-        console.log({ Adding: setting });
+    _addSetting(settingData) {
+        console.log({ Adding: settingData });
 
-        let tab = this.addOrGetTab(setting.tab);
-        let group = tab.addOrGetGroup(setting.group);
+        let tab = this.addOrGetTab(settingData.tab);
+        let group = tab.addOrGetGroup(settingData.group);
 
-        group.addSetting(setting);
-    } // addSetting()
+        group.addSetting(settingData);
+    } // _addSetting()
 } // class SettingsPage
 
 module.exports = SettingsPage;
