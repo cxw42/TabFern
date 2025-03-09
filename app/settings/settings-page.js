@@ -88,6 +88,48 @@ class Description extends Setting {
     }
 }
 
+class RadioButtons extends Setting {
+    constructor($parent, settingData) {
+        super($parent, settingData);
+
+        if (settingData.label) {
+            let $label = $('<label class="setting label radio-buttons">');
+            $label.text(settingData.label);
+            this._$contents.append($label);
+        }
+
+        const buttonSetID = getUniqueId();
+        for (const button of settingData.options || []) {
+            const buttonID = getUniqueId();
+
+            let $div = $('<div class="setting container radio-buttons">');
+
+            let $button = $(
+                '<input class="setting element radio-buttons" type="radio">'
+            );
+            $button.attr("id", buttonID);
+            $button.attr("name", buttonSetID);
+
+            let $label = $(
+                '<label class="setting element-label radio-buttons">'
+            );
+            $label.attr("for", buttonID);
+            if ("html" in button) {
+                $label.html(button.html);
+            } else {
+                $label.text(button.text);
+            }
+
+            $div.append($button);
+            $div.append($label);
+
+            // TODO button onClick
+
+            this._$contents.append($div);
+        }
+    }
+}
+
 class InputBox extends Setting {
     #$entry;
 
@@ -109,7 +151,7 @@ function newSetting($parent, settingData) {
         button: Button,
         checkbox: Checkbox,
         description: Description,
-        radioButtons: Setting, // XXX
+        radioButtons: RadioButtons,
         popupButton: Setting, // XXX
         text: InputBox,
     };
