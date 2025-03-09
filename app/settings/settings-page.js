@@ -11,6 +11,16 @@ if (false) {
 
 let $ = require("jquery");
 
+// Utilities /////////////////////////////////////////////////////////////
+
+// Unique ID
+
+let UID = Date.now();
+
+function getUniqueId() {
+    return "id" + (UID++).toString(36);
+}
+
 // Storage ///////////////////////////////////////////////////////////////
 // TODO!
 
@@ -51,6 +61,24 @@ class Button extends Setting {
     }
 }
 
+class Checkbox extends Setting {
+    constructor($parent, settingData) {
+        super($parent, settingData);
+
+        const id = getUniqueId();
+        let $checkbox = $(
+            '<input class="setting element checkbox" type="checkbox">'
+        );
+        $checkbox.attr("id", id);
+        let $label = $('<label class="setting label checkbox">');
+        $label.attr("for", id);
+        $label.text(settingData.label);
+
+        this._$contents.append($checkbox);
+        this._$contents.append($label);
+    }
+}
+
 class Description extends Setting {
     constructor($parent, settingData) {
         super($parent, settingData);
@@ -79,7 +107,7 @@ class InputBox extends Setting {
 function newSetting($parent, settingData) {
     const knownSettings = {
         button: Button,
-        checkbox: Setting, // XXX
+        checkbox: Checkbox,
         description: Description,
         radioButtons: Setting, // XXX
         popupButton: Setting, // XXX
