@@ -38,27 +38,51 @@ class Setting {
     }
 } // class Setting
 
-class Description extends Setting {
-    //#text;
+class Button extends Setting {
+    constructor($parent, settingData, onClick) {
+        super($parent, settingData);
 
+        let $button = $('<input class="setting element button" type="button">');
+        $button.attr("id", settingData.id);
+        $button.attr("value", settingData.text);
+        $button.on("click", onClick);
+
+        this._$contents.append($button);
+    }
+}
+
+class Description extends Setting {
     constructor($parent, settingData) {
         super($parent, settingData);
-        //this.#text = settingData.text;
         this._$contents.append(
             $('<p class="setting element description">').html(settingData.text)
         );
     }
 }
 
+class InputBox extends Setting {
+    #$entry;
+
+    constructor($parent, settingData) {
+        super($parent, settingData);
+
+        let $label = $('<label class="setting label text">').text(
+            settingData.label
+        );
+        this.#$entry = $('<input class="setting element text" type="text">');
+        this._$contents.append($label);
+        this._$contents.append(this.#$entry);
+    }
+}
 // Factory function for settings
 function newSetting($parent, settingData) {
     const knownSettings = {
-        button: Setting, // XXX
+        button: Button,
         checkbox: Setting, // XXX
         description: Description,
         radioButtons: Setting, // XXX
         popupButton: Setting, // XXX
-        text: Setting, // XXX
+        text: InputBox,
     };
 
     const klass = knownSettings[settingData.type];
