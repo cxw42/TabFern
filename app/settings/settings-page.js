@@ -1,6 +1,7 @@
 /// settings-page.js: Create a settings page
-/// Copyright (c) 2018, 2025 Chris White.  Based on
-/// https://github.com/frankkohlhepp/store-js,
+/// Copyright (c) 2018, 2025 Chris White.  Ported from Mootools
+/// https://github.com/frankkohlhepp/store-js
+/// and https://github.com/frankkohlhepp/fancy-settings
 /// Copyright (c) 2011 Frank Kohlhepp.
 /// SPDX-License-Identifier: MIT
 
@@ -23,6 +24,80 @@ function getUniqueId() {
 
 // Storage ///////////////////////////////////////////////////////////////
 // TODO!
+
+// Singleton implemented using MDN's
+// <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes/Private_properties#simulating_private_constructors>
+class Store {
+    static #instance = null;
+    static #constructing = false;
+
+    // --- Singleton support ---
+
+    constructor() {
+        if (!Store.#constructing) {
+            throw new Error(
+                "Use `Store.getInstance()` instead of `new Store()`"
+            );
+        }
+        Store.#constructing = false;
+    } // ctor
+
+    // Get the singleton instance
+    static getInstance(name) {
+        if (!Store.#instance) {
+            Store.#constructing = true;
+            Store.#instance = new Store();
+        }
+        return Store.#instance;
+    } // getInstance()
+
+    // --- Instance methods ---
+
+    // Get the name in localStorage for setting `name`.
+    static #itemName(name) {
+        // Static so brunch can handle it
+        return `store.settings.${name}`;
+    }
+
+    get(name) {
+        const itemName = this.#itemName(name);
+        const value = localStorage.getItem(itemName);
+        if (value === null) {
+            return undefined;
+        }
+        try {
+            return JSON.parse(value);
+        } catch (e) {
+            return null;
+        }
+    } // get()
+
+    set(name, value) {
+        const itemName = this.#itemName(name);
+        if (value === undefined) {
+            this.remove(itemName);
+        } else {
+            if (typeof value === "function") {
+                value = null;
+            } else {
+                try {
+                    value = JSON.stringify(value);
+                } catch (e) {
+                    value = null;
+                }
+            }
+
+            localStorage.setItem(itemName, value);
+        }
+    }
+
+    remove(name) {
+        const itemName = this.#itemName(name);
+        localStorage.removeItem(itemName);
+    };
+}
+
+let STORE = Store.getInstance();
 
 // Individual settings ///////////////////////////////////////////////////
 
@@ -48,7 +123,7 @@ class Setting {
     }
 } // class Setting
 
-class Button extends Setting {
+class Pushbutton extends Setting {
     constructor($parent, settingData, onClick) {
         super($parent, settingData);
 
@@ -59,7 +134,7 @@ class Button extends Setting {
 
         this._$contents.append($button);
     }
-}
+} // class Pushbutton
 
 class Checkbox extends Setting {
     constructor($parent, settingData) {
@@ -77,7 +152,7 @@ class Checkbox extends Setting {
         this._$contents.append($checkbox);
         this._$contents.append($label);
     }
-}
+} // class Checkbox
 
 class Description extends Setting {
     constructor($parent, settingData) {
@@ -86,7 +161,7 @@ class Description extends Setting {
             $('<p class="setting element description">').html(settingData.text)
         );
     }
-}
+} // class Description
 
 class RadioButtons extends Setting {
     constructor($parent, settingData) {
@@ -128,7 +203,7 @@ class RadioButtons extends Setting {
             this._$contents.append($div);
         }
     }
-}
+} // class RadioButtons
 
 class Dropdown extends Setting {
     constructor($parent, settingData) {
@@ -150,7 +225,7 @@ class Dropdown extends Setting {
 
         this._$contents.append($select);
     }
-}
+} // class Dropdown
 
 class InputBox extends Setting {
     #$entry;
@@ -165,12 +240,12 @@ class InputBox extends Setting {
         this._$contents.append($label);
         this._$contents.append(this.#$entry);
     }
-}
+} // class InputBox
 
 // Factory function for settings
 function newSetting($parent, settingData) {
     const knownSettings = {
-        button: Button,
+        button: Pushbutton,
         checkbox: Checkbox,
         description: Description,
         radioButtons: RadioButtons,
