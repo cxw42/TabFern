@@ -11,6 +11,20 @@ if (false) {
 
 let $ = require("jquery");
 
+class Setting {
+    #$setting;
+    #$contents; // for subclasses to fill in
+
+    constructor($parent) {
+        this.#$setting = $('<div class="setting bundle"/>');
+        this.#$contents = $('<div class="setting container"/>');
+        this.#$setting.append(this.#$contents);
+        $parent.append(this.#$setting);
+
+        this.#$contents.text("???");
+    }
+} // class Setting
+
 class Group {
     #$group;
     #$content;
@@ -20,16 +34,18 @@ class Group {
         this.#$group = $('<table class="setting group">');
         let $tr = $("<tr>");
         let $name = $('<td class="setting group-name"></td>').text(groupName);
-        let $content = $('<td class="setting group-content"></td>').text('???');
+        this.#$content = $('<td class="setting group-content"></td>');
         $tr.append($name);
-        $tr.append($content);
+        $tr.append(this.#$content);
 
         this.#$group.append($tr);
 
         $(parent).append(this.#$group);
     }
 
-    addSetting(setting) {}
+    addSetting(settingData) {
+        let setting = new Setting(this.#$content);
+    }
 }
 
 class Tab {
