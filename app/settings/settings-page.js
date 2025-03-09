@@ -13,11 +13,23 @@ let $ = require("jquery");
 
 class Group {
     #$group;
+    #$content;
 
     constructor(parent, groupName) {
+        // Each group gets its own table
         this.#$group = $('<table class="setting group">');
+        let $tr = $("<tr>");
+        let $name = $('<td class="setting group-name"></td>').text(groupName);
+        let $content = $('<td class="setting group-content"></td>').text('???');
+        $tr.append($name);
+        $tr.append($content);
+
+        this.#$group.append($tr);
+
         $(parent).append(this.#$group);
     }
+
+    addSetting(setting) {}
 }
 
 class Tab {
@@ -43,6 +55,7 @@ class Tab {
 
     addOrGetGroup(groupName) {
         if (!this.#groups.has(groupName)) {
+            this.#groups.set(groupName, new Group(this.#$content, groupName));
         }
 
         return this.#groups.get(groupName);
@@ -50,7 +63,7 @@ class Tab {
 } // class Tab
 
 class SettingsPage {
-    #$parent; // parent element, as jquery
+    #$parent;
     #manifest;
     #tabs = new Map();
 
@@ -98,18 +111,28 @@ class SettingsPage {
         `);
     }
 
+    addOrGetTab(tabName) {
+        if (!this.#tabs.has(tabName)) {
+            this.#tabs.set(
+                tabName,
+                new Tab(
+                    $("#tab-container", this.#$parent),
+                    $("#content", this.#$parent),
+                    tabName
+                )
+            );
+        }
+
+        return this.#tabs.get(tabName);
+    }
+
     _addSetting(setting) {
         console.log({ Adding: setting });
 
-        if (!this.#tabs.has(setting.tab)) {
-            this.#tabs.set(
-                setting.tab,
-                new Tab($("#tab-container"), $("#content"), setting.tab)
-            );
-        }
-        let tab = this.#tabs.get(setting.tab);
+        let tab = this.addOrGetTab(setting.tab);
+        let group = tab.addOrGetGroup(setting.group);
 
-        group = tab.addOrGetGroup(setting.group);
+        group.addSetting(setting);
     } // addSetting()
 } // class SettingsPage
 
