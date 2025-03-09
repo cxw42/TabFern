@@ -60,7 +60,7 @@ class Store {
     }
 
     get(name) {
-        const itemName = this.#itemName(name);
+        const itemName = Store.#itemName(name);
         const value = localStorage.getItem(itemName);
         if (value === null) {
             return undefined;
@@ -73,7 +73,7 @@ class Store {
     } // get()
 
     set(name, value) {
-        const itemName = this.#itemName(name);
+        const itemName = Store.#itemName(name);
         if (value === undefined) {
             this.remove(itemName);
         } else {
@@ -92,9 +92,9 @@ class Store {
     }
 
     remove(name) {
-        const itemName = this.#itemName(name);
+        const itemName = Store.#itemName(name);
         localStorage.removeItem(itemName);
-    };
+    }
 }
 
 let STORE = Store.getInstance();
@@ -145,6 +145,9 @@ class Checkbox extends Setting {
             '<input class="setting element checkbox" type="checkbox">'
         );
         $checkbox.attr("id", id);
+        const storedValue = Boolean(STORE.get(settingData.name));
+        $checkbox.prop("checked", storedValue);
+
         let $label = $('<label class="setting label checkbox">');
         $label.attr("for", id);
         $label.text(settingData.label);
@@ -173,7 +176,11 @@ class RadioButtons extends Setting {
             this._$contents.append($label);
         }
 
+        // Create the radio buttons.  Select the first unless a different
+        // value is stored.
         const buttonSetID = getUniqueId();
+        const storedValue = String(STORE.get(settingData.name));
+        let first = true;
         for (const button of settingData.options || []) {
             const buttonID = getUniqueId();
 
@@ -182,8 +189,15 @@ class RadioButtons extends Setting {
             let $button = $(
                 '<input class="setting element radio-buttons" type="radio">'
             );
+
             $button.attr("id", buttonID);
             $button.attr("name", buttonSetID);
+            $button.attr("value", button.value);
+
+            if (first || button.value === storedValue) {
+                $button.prop("checked", true);
+            }
+            first = false;
 
             let $label = $(
                 '<label class="setting element-label radio-buttons">'
@@ -221,6 +235,10 @@ class Dropdown extends Setting {
             $option.text(option.text);
             $option.attr("value", option.value);
             $select.append($option);
+        }
+        const storedValue = String(STORE.get(settingData.name));
+        if (storedValue) {
+            $select.prop("value", storedValue);
         }
 
         this._$contents.append($select);
@@ -295,7 +313,7 @@ class Tab {
     #groups = new Map();
 
     constructor(tabParent, contentParent, tab_name) {
-        console.log({ Adding_tab: tab_name });
+        console.debug({ Adding_tab: tab_name });
         this.#$tab = $('<div class="tab"></div>');
         this.#$tab.text(tab_name);
         tabParent.append(this.#$tab);
@@ -393,7 +411,7 @@ class SettingsPage {
     }
 
     _addSetting(settingData) {
-        console.log({ Adding: settingData });
+        console.debug({ Adding: settingData });
 
         let tab = this.addOrGetTab(settingData.tab);
         let group = tab.addOrGetGroup(settingData.group);
