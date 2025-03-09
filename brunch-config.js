@@ -138,6 +138,8 @@ let me = {
                     // background script (has no page)
                 'app/settings/settings.js': 'settings/settings-main.js',
                     // settings window
+                'app/settings/settings2.js': 'settings/settings2-main.js',
+                    // settings window
                 'app/mv3-converter/mv3-converter.js': 'mv3-converter/mv3-converter.js',
                     // offscreen document to convert mv2->mv3 material
             },
@@ -176,6 +178,7 @@ let me = {
             'bg/background.js': ['bg/background'],
             'win/container.js': ['win/container'],
             'settings/settings-main.js': ['settings/settings'],
+            'settings/settings2-main.js': ['settings/settings2'],
             'mv3-converter/mv3-converter.js': ['mv3-converter/mv3-converter'],
         },
     },

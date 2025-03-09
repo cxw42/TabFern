@@ -32,29 +32,49 @@ class Tab
 
 class SettingsPage
 {
-    #parent;
+    #$parent;   // parent element, as jquery
     #manifest;
     #tabs = {};
 
     constructor(parent, manifest)
     {
-        this.#parent = parent;
+        this.#$parent = $(parent);
         this.#manifest = manifest;
 
+        this._createSkeleton(this.#$parent);
+
         if(manifest.title) {
-            parent.getDocument().title = manifest.title;
+            this.#$parent[0].ownerDocument.title = manifest.title;
         }
         if(manifest.label) {
-            $('#settings-label', parent).text(manifest.label);
+            $('#settings-label', this.#$parent).text(manifest.label);
         }
         if(manifest.icon) {
-            $('#icon', parent).attr('src', manifest.icon);
+            $('#icon', this.#$parent).attr('src', manifest.icon);
         }
 
         for(const setting of (manifest.settings || [])) {
             this._addSetting(setting);
         }
     } // ctor
+
+    _createSkeleton($parent) {
+        $parent.html(`
+            <div id="sidebar" class="fancy">
+                <img id="icon" src="" alt=""><h1 id="settings-label"></h1>
+                <div id="tab-container">
+                    <div id="search-container" class="tab">
+                        <input id="search" type="search" placeholder="">
+                    </div>
+                </div>
+            </div>
+            <div id="content">
+                <div id="search-result-container" class="tab-content">
+                    <h2 id="search-label"></h2>
+                </div>
+            </div>
+        `)
+    }
 
     _addSetting(setting) {
         console.log({Adding: setting});
