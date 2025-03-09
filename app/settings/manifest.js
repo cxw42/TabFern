@@ -936,6 +936,7 @@ and Expand All/Collapse All.</li></ul>`
 let manifest = {
     "name":
         `${_T('wsSettings')} - ${_T('wsShortName')} (v${TABFERN_VERSION})`,
+    "label": _T('wsSettings'),
 
     "icon": "/assets/fern128.png",
     //"settingsLabel":'',
@@ -943,6 +944,7 @@ let manifest = {
     //"nothingFoundMessage":'',
     "settings": setting_definitions,
 };
+manifest.title = manifest.name; // TODO squashme
 
 module.exports = manifest;
 // vi: set fdm=marker foldenable fdl=1: //

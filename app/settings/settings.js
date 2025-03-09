@@ -22,6 +22,9 @@ if(false) {
 const ExportFile = require('lib/export-file');
 const ImportFile = require('lib/import-file');
 
+// TODO not yet used
+const SettingsPage = require('./settings-page');
+
 /// jQuery alias, since $ and $$ are mootools
 const $j = require('jquery');
 
@@ -288,7 +291,8 @@ function main()
 
 } //main()
 
-window.addEvent("domready", main);
+// XXX window.addEvent("domready", main);
+window.addEvent("domready", ()=>{new SettingsPage(document, manifest);})
 // }}}1
 
 // vi: set ts=4 sts=4 sw=4 et ai foldmethod=marker: //

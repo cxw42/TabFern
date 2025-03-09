@@ -107,10 +107,10 @@ body.searching #tab-container .tab.active {
 }
 
 .tab-content {
-    display: none;
-    position: absolute;
+    display: block !important; /* TODO clean up */
+    /* position: absolute; */
     width: 840px;
-    top: 0;
+    /* top: 0; */
     left: 0;
     bottom: 0;
     padding: 20px;
