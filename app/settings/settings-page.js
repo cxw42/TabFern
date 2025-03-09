@@ -130,6 +130,28 @@ class RadioButtons extends Setting {
     }
 }
 
+class Dropdown extends Setting {
+    constructor($parent, settingData) {
+        super($parent, settingData);
+
+        if (settingData.label) {
+            let $label = $('<label class="setting label popup-button">');
+            $label.text(settingData.label);
+            this._$contents.append($label);
+        }
+
+        let $select = $('<select class="setting element popup-button">');
+        for (const option of settingData.options || []) {
+            let $option = $("<option>");
+            $option.text(option.text);
+            $option.attr("value", option.value);
+            $select.append($option);
+        }
+
+        this._$contents.append($select);
+    }
+}
+
 class InputBox extends Setting {
     #$entry;
 
@@ -152,7 +174,7 @@ function newSetting($parent, settingData) {
         checkbox: Checkbox,
         description: Description,
         radioButtons: RadioButtons,
-        popupButton: Setting, // XXX
+        popupButton: Dropdown,
         text: InputBox,
     };
 
