@@ -226,7 +226,6 @@ function finishInit(settingsPage) {
     $("#import-settings").on("click", importSettings);
     $("#export-settings").on("click", exportSettings);
 
-    /*
     let is_settings_load = false;
     if (S.getBool(S.SETTINGS_LOADED_OK)) {
         is_settings_load = true;
@@ -234,7 +233,6 @@ function finishInit(settingsPage) {
         $("#import-settings").after(elem);
         S.set(S.SETTINGS_LOADED_OK, false);
     }
-    */
 
     // ----------------------------
     // open tab specified in a query parm, if known.

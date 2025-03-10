@@ -360,6 +360,7 @@ class SettingsPage {
     #manifest;
     #tabs = new Map();
 
+    // callback is called asynchronously after completion and passed `this`.
     constructor(parent, manifest, callback = undefined) {
         this.#$parent = $(parent);
         this.#manifest = manifest;
@@ -386,7 +387,7 @@ class SettingsPage {
         }
 
         if (callback) {
-            callback(this);
+            window.setTimeout(callback, 0, this);
         }
     } // ctor
 
