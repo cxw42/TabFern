@@ -20,10 +20,10 @@ const $ = require("jquery");
 const log = require("loglevel");
 const spectrum = require("spectrum-colorpicker");
 const Spinner = require("spin.js").Spinner;
-const tinycolor = require("tinycolor2");
 
 const S = require("common/setting-accessors"); // in app/
 
+// The settings themselves
 const manifest = require("./manifest");
 
 // Color picker //////////////////////////////////////////////////// {{{1
@@ -56,17 +56,17 @@ function createPicker() {
     $picker.on("change.spectrum", (e, newcolor) => {
         let colorstring;
         if (!newcolor || !newcolor.toString) {
-            console.log("New color: default");
+            log.info("New color: default");
             colorstring = S.defaults[S.S_SCROLLBAR_COLOR];
         } else {
-            console.log({ "New color": newcolor.toString() });
+            log.info({ "New color": newcolor.toString() });
             colorstring = String(newcolor.toString());
         }
 
         if (!colorstring || Validation.isValidColor(colorstring)) {
             S.set(S.S_SCROLLBAR_COLOR, colorstring);
         } else {
-            console.log("Invalid color");
+            log.info("Invalid color");
             $picker.spectrum("set", orig_color);
         }
     });

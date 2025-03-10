@@ -15,23 +15,20 @@ let $ = require("jquery");
 // Utilities /////////////////////////////////////////////////////////////
 
 // Unique ID
-
 let UID = Date.now();
-
 function getUniqueId() {
     return "id" + (UID++).toString(36);
 }
 
 // Storage ///////////////////////////////////////////////////////////////
-// TODO!
 
-// Singleton implemented using MDN's
+// Singleton implemented using example from MDN:
 // <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes/Private_properties#simulating_private_constructors>
 class Store {
+    // --- Singleton support ---
+
     static #instance = null;
     static #constructing = false;
-
-    // --- Singleton support ---
 
     constructor() {
         if (!Store.#constructing) {
@@ -95,9 +92,7 @@ class Store {
         const itemName = Store.#itemName(name);
         localStorage.removeItem(itemName);
     }
-}
-
-let STORE = Store.getInstance();
+} // class Store
 
 // Individual settings ///////////////////////////////////////////////////
 
@@ -125,6 +120,10 @@ class Setting {
 
 class Pushbutton extends Setting {
     constructor($parent, settingData) {
+        if (!settingData.id) {
+            throw new Error(`Button must have an ID (${settingData})`);
+        }
+
         super($parent, settingData);
 
         let $button = $('<input class="setting element button" type="button">');
@@ -136,23 +135,33 @@ class Pushbutton extends Setting {
 } // class Pushbutton
 
 class Checkbox extends Setting {
+    #$checkbox;
+
     constructor($parent, settingData) {
         super($parent, settingData);
 
         const id = getUniqueId();
-        const storedValue = Boolean(STORE.get(settingData.name));
-        let $checkbox = $(
+        const storedValue = Boolean(Store.getInstance().get(this._name));
+        this.#$checkbox = $(
             '<input class="setting element checkbox" type="checkbox">'
         );
-        $checkbox.attr("id", id);
-        $checkbox.prop("checked", storedValue);
+        this.#$checkbox.attr("id", id);
+        this.#$checkbox.prop("checked", storedValue);
+        this.#$checkbox.on("change", () => {
+            this._onChange();
+        });
 
         let $label = $('<label class="setting label checkbox">');
         $label.attr("for", id);
         $label.html(settingData.label);
 
-        this._$contents.append($checkbox);
+        this._$contents.append(this.#$checkbox);
         this._$contents.append($label);
+    }
+
+    _onChange() {
+        const isClicked = Boolean(this.#$checkbox.prop("checked"));
+        Store.getInstance().set(this._name, isClicked);
     }
 } // class Checkbox
 
@@ -178,7 +187,9 @@ class RadioButtons extends Setting {
         // Create the radio buttons.  Select the first unless a different
         // value is stored.
         const buttonSetID = getUniqueId();
-        const storedValue = String(STORE.get(settingData.name) || "");
+        const storedValue = String(
+            Store.getInstance().get(settingData.name) || ""
+        );
         let first = true;
         for (const button of settingData.options || []) {
             const buttonID = getUniqueId();
@@ -235,7 +246,9 @@ class Dropdown extends Setting {
             $option.attr("value", option.value);
             $select.append($option);
         }
-        const storedValue = String(STORE.get(settingData.name) || "");
+        const storedValue = String(
+            Store.getInstance().get(settingData.name) || ""
+        );
         if (storedValue) {
             $select.prop("value", storedValue);
         }
@@ -262,7 +275,9 @@ class InputBox extends Setting {
             this.#$entry.attr("id", settingData.id);
         }
 
-        const storedValue = String(STORE.get(settingData.name) || "");
+        const storedValue = String(
+            Store.getInstance().get(settingData.name) || ""
+        );
         this.#$entry.prop("value", storedValue);
 
         this._$contents.append(this.#$entry);
