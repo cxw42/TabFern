@@ -409,6 +409,18 @@ class SettingsPage {
         `);
     }
 
+    _addSetting(settingData) {
+        console.debug({ Adding: settingData });
+
+        let tab = this.addOrGetTab(settingData.tab);
+        let group = tab.addOrGetGroup(settingData.group);
+        if (settingData.group_html) {
+            group.setHTML(settingData.group);
+        }
+
+        group.addSetting(settingData);
+    } // _addSetting()
+
     addOrGetTab(tabName) {
         if (!this.#tabs.has(tabName)) {
             this.#tabs.set(
@@ -422,19 +434,39 @@ class SettingsPage {
         }
 
         return this.#tabs.get(tabName);
-    }
+    } // addOrGetTab()
 
-    _addSetting(settingData) {
-        console.debug({ Adding: settingData });
+    // Given a tab index 0..ntabs-1, switch to that tab.
+    // The string "last" is an alias for `ntabs-1`.
+    // On error, does nothing.
+    activateTab(indexOrKeyword) {
+        const allTabs = [...this.#tabs.values()];
 
-        let tab = this.addOrGetTab(settingData.tab);
-        let group = tab.addOrGetGroup(settingData.group);
-        if (settingData.group_html) {
-            group.setHTML(settingData.group);
+        let whichTab = -1; // If other than -1, select that tab
+
+        do /* once */ {
+            if (String(indexOrKeyword).toLowerCase() === "last") {
+                whichTab = allTabs.length - 1;
+                break;
+            }
+
+            // Check for a tab number
+            let tabnum = Number(indexOrKeyword);
+            if (isNaN(tabnum)) {
+                break;
+            }
+
+            tabnum = tabnum | 0;
+            if (tabnum >= 0 && tabnum < allTabs.length) {
+                whichTab = tabnum;
+                break;
+            }
+        } while (0);
+
+        if (whichTab !== -1) {
+            allTabs[whichTab].show();
         }
-
-        group.addSetting(settingData);
-    } // _addSetting()
+    } // activateTab()
 } // class SettingsPage
 
 module.exports = SettingsPage;

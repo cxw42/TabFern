@@ -244,33 +244,11 @@ function finishInit(settingsPage) {
     // tabs.  Load-settings is on the first tab, which is the
     // one activated by default.
 
-    /*
     let searchParams = new URLSearchParams(window.location.hash.slice(1));
-    if(!is_settings_load && searchParams.has('open')) {
-        let whichtab = -1;  // If other than -1, select that tab
-
-        let openval = String(searchParams.get('open'));     // Do we need the explicit String()?
-        let tabNames = Object.keys(settingsobj.tabs);
-            // These come out in definition order, as far as I know
-
-        // Check for a tab number
-        let tabnum = Number(openval);
-        if(!isNaN(tabnum) && (tabnum|0)>=0 && (tabnum|0)<tabNames.length) {
-            whichtab = (tabnum|0);
-        }
-
-        // Check for "last" as a special value
-        if(whichtab === -1 && openval.toLowerCase()==='last') {
-            whichtab = tabNames.length-1;
-        }
-
-        // Jump to that tab.
-        if(whichtab !== -1) {
-            settingsobj.tabs[tabNames[whichtab]].bundle.activate();
-        }
-
+    if (!is_settings_load && searchParams.has("open")) {
+        let openval = searchParams.get("open");
+        settingsPage.activateTab(openval);
     } //endif #open=... parameter specified
-    */
 } // finishInit()
 
 function main() {
