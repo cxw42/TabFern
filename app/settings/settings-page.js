@@ -124,13 +124,12 @@ class Setting {
 } // class Setting
 
 class Pushbutton extends Setting {
-    constructor($parent, settingData, onClick) {
+    constructor($parent, settingData) {
         super($parent, settingData);
 
         let $button = $('<input class="setting element button" type="button">');
         $button.attr("id", settingData.id);
         $button.attr("value", settingData.text);
-        $button.on("click", onClick);
 
         this._$contents.append($button);
     }
@@ -251,14 +250,21 @@ class InputBox extends Setting {
     constructor($parent, settingData) {
         super($parent, settingData);
 
-        let $label = $('<label class="setting label text">').text(
-            settingData.label
-        );
-        this._$contents.append($label);
+        if (settingData.label) {
+            let $label = $('<label class="setting label text">').text(
+                settingData.label
+            );
+            this._$contents.append($label);
+        }
+
+        this.#$entry = $('<input class="setting element text" type="text">');
+        if (settingData.id) {
+            this.#$entry.attr("id", settingData.id);
+        }
 
         const storedValue = String(STORE.get(settingData.name) || "");
-        this.#$entry = $('<input class="setting element text" type="text">');
         this.#$entry.prop("value", storedValue);
+
         this._$contents.append(this.#$entry);
     }
 } // class InputBox
@@ -354,7 +360,7 @@ class SettingsPage {
     #manifest;
     #tabs = new Map();
 
-    constructor(parent, manifest) {
+    constructor(parent, manifest, callback = undefined) {
         this.#$parent = $(parent);
         this.#manifest = manifest;
 
@@ -377,6 +383,10 @@ class SettingsPage {
         // Show the first group
         if (this.#tabs.size > 0) {
             this.#tabs.values().next().value.show();
+        }
+
+        if (callback) {
+            callback(this);
         }
     } // ctor
 
