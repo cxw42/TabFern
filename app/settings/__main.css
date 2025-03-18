@@ -81,7 +81,7 @@
     width: 130px;
 }
 
-#tab-container .tab.active, body.searching #search-container {
+#tab-container .tab.active, .searching #search-container {
     background-color: #D4D4D4;
     border-color: #BFBFBF;
     color: black;
@@ -89,7 +89,7 @@
     box-shadow: inset -12px 0 30px -30px black;
 }
 
-body.searching #tab-container .tab.active {
+.searching #tab-container .tab.active {
     background-color: transparent;
     border-color: transparent;
     color: #808080;
@@ -117,11 +117,11 @@ body.searching #tab-container .tab.active {
     padding-top: 15px;
 }
 
-body.searching .tab-content {
+.searching .tab-content {
     display: none !important;
 }
 
-body.searching #search-result-container {
+.searching #search-result-container {
     display: block !important;
 }
 
