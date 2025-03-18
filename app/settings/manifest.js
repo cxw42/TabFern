@@ -61,7 +61,6 @@ vote at ${issue(125,true)}.
         {
             "tab": future_i18n("Welcome / Help"),
             "group": future_i18n("Import/Export"),
-            "name": "export-settings",
             "id": "export-settings",
             "type": "button",
             "text": "Save settings to a file"
@@ -69,7 +68,6 @@ vote at ${issue(125,true)}.
         {
             "tab": future_i18n("Welcome / Help"),
             "group": future_i18n("Import/Export"),
-            "name": "import-settings",
             "id": "import-settings",
             "type": "button",
             "text": "Load settings from a file"
@@ -77,7 +75,6 @@ vote at ${issue(125,true)}.
         {
             "tab": future_i18n("Welcome / Help"),
             "group": future_i18n("Legal"),
-            "name": "legal",
             "type": "description",
             "text": "The TabFern name, logo, and icons are trademarks of Chris White."
         },
@@ -949,6 +946,7 @@ and Expand All/Collapse All.</li></ul>`
 let manifest = {
     "name":
         `${_T('wsSettings')} - ${_T('wsShortName')} (v${TABFERN_VERSION})`,
+    "label": _T('wsSettings'),
 
     "icon": "/assets/fern128.png",
     //"settingsLabel":'',
@@ -956,6 +954,7 @@ let manifest = {
     //"nothingFoundMessage":'',
     "settings": setting_definitions,
 };
+manifest.title = manifest.name; // TODO squashme
 
 module.exports = manifest;
 // vi: set fdm=marker foldenable fdl=1: //
