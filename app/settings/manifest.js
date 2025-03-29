@@ -491,6 +491,7 @@ setting_definitions.push(
             "text":
 `
 <ul>
+<li>Bugfix: Open the TF window when the browser starts ${issue(342)}</li>
 <li>Internal changes ${issue([343])}</li>
 </ul>
 `
