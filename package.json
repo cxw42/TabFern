@@ -3,12 +3,16 @@
   "version": "0.4.1-pre.1",
   "description": "Google Chrome extension for displaying, saving, and managing tabs",
   "main": "src/view/main.js",
+  "engines": {
+    "node": ">=10"
+  },
   "directories": {
     "test": "test"
   },
   "scripts": {
     "build": "npx brunch build",
     "ff": "sh -c 'npx brunch b ; node tools/ffize.js'",
+    "format": "npx prettier --write .",
     "rebuild": "sh -c 'rm -rf public ; npx brunch b ; find public'",
     "debug": "sh -c 'LOGGY_STACKS=1 npx brunch b -d 2>&1 |less -R'",
     "watch": "npx brunch watch",
@@ -74,6 +78,7 @@
     "minimist": "^1.2.8",
     "mixin-deep": "^1.3.2",
     "path-parse": "^1.0.7",
+    "prettier": "2.8.8",
     "replacer-brunch": "^1.1.1",
     "replacestream": "^4.0.3",
     "sass-brunch": "^2.10.8",

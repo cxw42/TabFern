@@ -491,6 +491,7 @@ setting_definitions.push(
             "text":
 `
 <ul>
+<li>Internal changes ${issue([343])}</li>
 </ul>
 `
         },

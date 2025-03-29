@@ -21,6 +21,11 @@ SE has not provided information I need about licenses to SE-hosted
 content.  I would like to avoid introducing any ambiguity into the TabFern code
 base if at all possible.  Thank you for your understanding!
 
+## Style
+
+- Use an [EditorConfig](https://editorconfig.org) plugin in your editor.
+- Say `npm run format` to auto-format JavaScript code.
+
 ## Getting started
 
 1. Install Git.
