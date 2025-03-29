@@ -37,7 +37,6 @@ let setting_definitions = [
         {
             "tab": future_i18n("Welcome / Help"),
             "group": future_i18n("Introduction"),
-            "name": "welcome-intro",
             "type": "description",
             "text": "<p>Welcome to TabFern!  Each Chrome window you have open "+
                     "or saved is represented in the TabFern window.  "+
@@ -61,7 +60,6 @@ vote at ${issue(125,true)}.
         {
             "tab": future_i18n("Welcome / Help"),
             "group": future_i18n("Import/Export"),
-            "name": "export-settings",
             "id": "export-settings",
             "type": "button",
             "text": "Save settings to a file"
@@ -69,7 +67,6 @@ vote at ${issue(125,true)}.
         {
             "tab": future_i18n("Welcome / Help"),
             "group": future_i18n("Import/Export"),
-            "name": "import-settings",
             "id": "import-settings",
             "type": "button",
             "text": "Load settings from a file"
@@ -77,7 +74,6 @@ vote at ${issue(125,true)}.
         {
             "tab": future_i18n("Welcome / Help"),
             "group": future_i18n("Legal"),
-            "name": "legal",
             "type": "description",
             "text": "The TabFern name, logo, and icons are trademarks of Chris White."
         },
@@ -492,7 +488,7 @@ setting_definitions.push(
 `
 <ul>
 <li>Bugfix: Open the TF window when the browser starts ${issue(342)}</li>
-<li>Internal changes ${issue([343])}</li>
+<li>Internal changes ${issue([341,343])}</li>
 </ul>
 `
         },
@@ -947,8 +943,9 @@ and Expand All/Collapse All.</li></ul>`
         );
 
 let manifest = {
-    "name":
+    "title":
         `${_T('wsSettings')} - ${_T('wsShortName')} (v${TABFERN_VERSION})`,
+    "label": _T('wsSettings'),
 
     "icon": "/assets/fern128.png",
     //"settingsLabel":'',
