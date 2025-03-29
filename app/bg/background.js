@@ -17,7 +17,7 @@ if (false) {
     require("process/browser");
 }
 
-const SetupContextMenu = require("bg/context-menu");
+const ContextMenu = require("bg/context-menu");
 const MainWindow = require("bg/main-window");
 const SetupOffscreenDocument = require("bg/offscreen-document");
 
@@ -99,9 +99,15 @@ function offscreenDocumentMessageListener(message, sender, sendResponse) {
 } //offscreenDocumentMessageListener()
 
 //////////////////////////////////////////////////////////////////////////
-// Main //
+// Context menu //
 
-chrome.runtime.onInstalled.addListener(SetupContextMenu);
+// Add the onClick listener here unconditionally per
+// <https://developer.chrome.com/docs/extensions/develop/migrate/to-service-workers#register-listeners>.
+chrome.contextMenus.onClicked.addListener(ContextMenu.onClick);
+chrome.runtime.onInstalled.addListener(ContextMenu.setup);
+
+//////////////////////////////////////////////////////////////////////////
+// Main //
 
 // Do this before loading the offscreen document
 chrome.runtime.onMessage.addListener(offscreenDocumentMessageListener);

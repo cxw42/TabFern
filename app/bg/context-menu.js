@@ -1,4 +1,5 @@
-// app/bg/context-menu.js: service-worker code for context menu
+// app/bg/context-menu.js: service-worker code for context menu.
+// CAUTION: the caller must register the onClick handler.
 // CC-BY-SA 3.0
 
 let ASQ = require("asynquence-contrib");
@@ -29,7 +30,7 @@ function _handleEditNote(tab) {
     );
 } // _handleEditNote()
 
-function _contextMenuClicked(info, tab) {
+function contextMenuClicked(info, tab) {
     console.log({ contextMenuClicked: info, tab });
 
     switch (info.menuItemId) {
@@ -40,14 +41,12 @@ function _contextMenuClicked(info, tab) {
             console.warn(`Unknown menu item ${info.menuItemId}`);
             break;
     }
-} //_contextMenuClicked
+} //contextMenuClicked
 
 // May be used as a chrome.runtime.onInstalled listener or not,
 // so takes no args.
 function setupContextMenu() {
-    // Add this unconditionally per
-    // <https://developer.chrome.com/docs/extensions/develop/migrate/to-service-workers#register-listeners>
-    chrome.contextMenus.onClicked.addListener(_contextMenuClicked);
+    console.log("Setting up context menu");
 
     ASQ()
         .try((done) => {
@@ -70,10 +69,10 @@ function setupContextMenu() {
         .or((err) => {
             // Just log --- there's no way for us to recover.
             console.error(`Could not create context-menu item: ${err}`);
-
-            // Do, however, unregister a listener that will never be used.
-            chrome.contextMenus.onClicked.removeListener(_contextMenuClicked);
         });
 } //setupContextMenu
 
-module.exports = setupContextMenu;
+module.exports = {
+    onClick: contextMenuClicked,
+    setup: setupContextMenu,
+};
