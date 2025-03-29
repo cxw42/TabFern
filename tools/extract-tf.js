@@ -12,16 +12,16 @@
 // https://superuser.com/a/1088579/269989 by
 // https://superuser.com/users/219095/daniel-b
 
-var levelup = require('levelup')
-var leveldown = require('leveldown')
+var levelup = require("levelup");
+var leveldown = require("leveldown");
 
 // 1) Create our store
-var db = levelup(leveldown('./data'))
+var db = levelup(leveldown("./data"));
 
 // 3) Fetch by key
-db.get('tabfern-data', function (err, value) {
-    if (err) return console.log('Ooops!', err) // likely the key was not found
+db.get("tabfern-data", function (err, value) {
+    if (err) return console.log("Ooops!", err); // likely the key was not found
 
     // Ta da!
-    console.log(value.toString('utf8')) // since value is a Buffer
-})
+    console.log(value.toString("utf8")); // since value is a Buffer
+});
