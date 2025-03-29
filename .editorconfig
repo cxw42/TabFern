@@ -11,7 +11,7 @@ insert_final_newline = true
 [static/_locales/**/*.json]
 end_of_line = crlf
 
-[/*.json]
+[/{*.json,.prettierrc}]
 indent_size = 2
 
 [/var/*.json]

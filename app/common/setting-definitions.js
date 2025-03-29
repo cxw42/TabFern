@@ -23,17 +23,21 @@ let _DEF = { __proto__: null };
 let _VAL = { __proto__: null };
 
 /// The default validator for bool values
-let _vbool = (v)=>{ return ((typeof v === 'boolean')?v:undefined)};
+let _vbool = (v) => {
+    return typeof v === "boolean" ? v : undefined;
+};
 
 /// The default validator for integer values.  Accepts both integers
 /// and string representations of integers (e.g., in an <input>).
-let _vint = (v)=>{
-    if(Number.isInteger(v)) {   // real int
+let _vint = (v) => {
+    if (Number.isInteger(v)) {
+        // real int
         return v;
     }
 
     v = parseInt(v, 10);
-    if(Number.isInteger(v)) {   // stringified int
+    if (Number.isInteger(v)) {
+        // stringified int
         return v;
     }
 
@@ -41,31 +45,31 @@ let _vint = (v)=>{
 };
 
 // Booleans {{{2
-_NAM.CFG_POPUP_ON_STARTUP = 'open-popup-on-chrome-startup';
+_NAM.CFG_POPUP_ON_STARTUP = "open-popup-on-chrome-startup";
 _DEF[_NAM.CFG_POPUP_ON_STARTUP] = true;
 _VAL[_NAM.CFG_POPUP_ON_STARTUP] = _vbool;
 
-_NAM.CFG_ENB_CONTEXT_MENU = 'ContextMenu.Enabled';
+_NAM.CFG_ENB_CONTEXT_MENU = "ContextMenu.Enabled";
 _DEF[_NAM.CFG_ENB_CONTEXT_MENU] = true;
 _VAL[_NAM.CFG_ENB_CONTEXT_MENU] = _vbool;
 
-_NAM.CFG_RESTORE_ON_LAST_DELETED = 'open-tree-on-restore-last-deleted';
+_NAM.CFG_RESTORE_ON_LAST_DELETED = "open-tree-on-restore-last-deleted";
 _DEF[_NAM.CFG_RESTORE_ON_LAST_DELETED] = false;
 _VAL[_NAM.CFG_RESTORE_ON_LAST_DELETED] = _vbool;
 
-_NAM.CFG_JUMP_WITH_SORT_OPEN_TOP = 'jump-to-top-when-sort-open-to-top';
+_NAM.CFG_JUMP_WITH_SORT_OPEN_TOP = "jump-to-top-when-sort-open-to-top";
 _DEF[_NAM.CFG_JUMP_WITH_SORT_OPEN_TOP] = true;
 _VAL[_NAM.CFG_JUMP_WITH_SORT_OPEN_TOP] = _vbool;
 
-_NAM.CFG_COLLAPSE_ON_STARTUP = 'collapse-trees-on-startup';
+_NAM.CFG_COLLAPSE_ON_STARTUP = "collapse-trees-on-startup";
 _DEF[_NAM.CFG_COLLAPSE_ON_STARTUP] = true;
 _VAL[_NAM.CFG_COLLAPSE_ON_STARTUP] = _vbool;
 
-_NAM.CFG_OPEN_TOP_ON_STARTUP = 'open-to-top-on-startup';
+_NAM.CFG_OPEN_TOP_ON_STARTUP = "open-to-top-on-startup";
 _DEF[_NAM.CFG_OPEN_TOP_ON_STARTUP] = false;
 _VAL[_NAM.CFG_OPEN_TOP_ON_STARTUP] = _vbool;
 
-_NAM.CFG_COLLAPSE_ON_WIN_CLOSE = 'collapse-tree-on-window-close';
+_NAM.CFG_COLLAPSE_ON_WIN_CLOSE = "collapse-tree-on-window-close";
 _DEF[_NAM.CFG_COLLAPSE_ON_WIN_CLOSE] = true;
 _VAL[_NAM.CFG_COLLAPSE_ON_WIN_CLOSE] = _vbool;
 
@@ -73,55 +77,57 @@ _VAL[_NAM.CFG_COLLAPSE_ON_WIN_CLOSE] = _vbool;
 //_DEF[_NAM.CFG_COLLAPSE_ON_PARTIAL_WIN_CLOSE] = true;
 //_VAL[_NAM.CFG_COLLAPSE_ON_PARTIAL_WIN_CLOSE] = _vbool;
 
-_NAM.CFG_HIDE_HORIZONTAL_SCROLLBARS = 'hide-horizontal-scrollbars';
+_NAM.CFG_HIDE_HORIZONTAL_SCROLLBARS = "hide-horizontal-scrollbars";
 _DEF[_NAM.CFG_HIDE_HORIZONTAL_SCROLLBARS] = true;
 _VAL[_NAM.CFG_HIDE_HORIZONTAL_SCROLLBARS] = _vbool;
 
-_NAM.CFG_SKINNY_SCROLLBARS = 'skinny-scrollbars';
+_NAM.CFG_SKINNY_SCROLLBARS = "skinny-scrollbars";
 _DEF[_NAM.CFG_SKINNY_SCROLLBARS] = false;
 _VAL[_NAM.CFG_SKINNY_SCROLLBARS] = _vbool;
 
-_NAM.CFG_NEW_WINS_AT_TOP = 'open-new-windows-at-top';
+_NAM.CFG_NEW_WINS_AT_TOP = "open-new-windows-at-top";
 _DEF[_NAM.CFG_NEW_WINS_AT_TOP] = true;
 _VAL[_NAM.CFG_NEW_WINS_AT_TOP] = _vbool;
 
-_NAM.CFG_SHOW_TREE_LINES = 'show-tree-lines';
+_NAM.CFG_SHOW_TREE_LINES = "show-tree-lines";
 _DEF[_NAM.CFG_SHOW_TREE_LINES] = false;
 _VAL[_NAM.CFG_SHOW_TREE_LINES] = _vbool;
 
-_NAM.CFG_CONFIRM_DEL_OF_SAVED = 'confirm-del-of-saved-wins';
+_NAM.CFG_CONFIRM_DEL_OF_SAVED = "confirm-del-of-saved-wins";
 _DEF[_NAM.CFG_CONFIRM_DEL_OF_SAVED] = true;
 _VAL[_NAM.CFG_CONFIRM_DEL_OF_SAVED] = _vbool;
 
-_NAM.CFG_CONFIRM_DEL_OF_UNSAVED = 'confirm-del-of-unsaved-wins';
+_NAM.CFG_CONFIRM_DEL_OF_UNSAVED = "confirm-del-of-unsaved-wins";
 _DEF[_NAM.CFG_CONFIRM_DEL_OF_UNSAVED] = false;
 _VAL[_NAM.CFG_CONFIRM_DEL_OF_UNSAVED] = _vbool;
 
-_NAM.CFG_CONFIRM_DEL_OF_SAVED_TABS = 'confirm-del-of-saved-tabs';
+_NAM.CFG_CONFIRM_DEL_OF_SAVED_TABS = "confirm-del-of-saved-tabs";
 _DEF[_NAM.CFG_CONFIRM_DEL_OF_SAVED_TABS] = true;
 _VAL[_NAM.CFG_CONFIRM_DEL_OF_SAVED_TABS] = _vbool;
 
-_NAM.CFG_CONFIRM_DEL_OF_UNSAVED_TABS = 'confirm-del-of-unsaved-tabs';
+_NAM.CFG_CONFIRM_DEL_OF_UNSAVED_TABS = "confirm-del-of-unsaved-tabs";
 _DEF[_NAM.CFG_CONFIRM_DEL_OF_UNSAVED_TABS] = false;
 _VAL[_NAM.CFG_CONFIRM_DEL_OF_UNSAVED_TABS] = _vbool;
 
-_NAM.CFG_CONFIRM_DEL_OF_AUDIBLE_TABS = 'confirm-del-of-audible-tabs';
+_NAM.CFG_CONFIRM_DEL_OF_AUDIBLE_TABS = "confirm-del-of-audible-tabs";
 _DEF[_NAM.CFG_CONFIRM_DEL_OF_AUDIBLE_TABS] = false;
 _VAL[_NAM.CFG_CONFIRM_DEL_OF_AUDIBLE_TABS] = _vbool;
 
-_NAM.CFG_URL_IN_TOOLTIP = 'tooltip-has-url';
+_NAM.CFG_URL_IN_TOOLTIP = "tooltip-has-url";
 _DEF[_NAM.CFG_URL_IN_TOOLTIP] = false;
 _VAL[_NAM.CFG_URL_IN_TOOLTIP] = _vbool;
 
-_NAM.CFG_TITLE_IN_TOOLTIP = 'tooltip-has-title';
+_NAM.CFG_TITLE_IN_TOOLTIP = "tooltip-has-title";
 _DEF[_NAM.CFG_TITLE_IN_TOOLTIP] = false;
 _VAL[_NAM.CFG_TITLE_IN_TOOLTIP] = _vbool;
 
 /// Not actually a setting, but an indicator that we loaded settings OK.
 /// Used by src/settings/main.js.
-_NAM.SETTINGS_LOADED_OK = '__settings_loaded_OK';
+_NAM.SETTINGS_LOADED_OK = "__settings_loaded_OK";
 _DEF[_NAM.SETTINGS_LOADED_OK] = false;
-_VAL[_NAM.SETTINGS_LOADED_OK] = ()=>{return undefined;}
+_VAL[_NAM.SETTINGS_LOADED_OK] = () => {
+    return undefined;
+};
 
 // }}}2
 // Strings and limited-choice controls such as radio buttons and dropdowns. {{{2
@@ -130,54 +136,56 @@ _VAL[_NAM.SETTINGS_LOADED_OK] = ()=>{return undefined;}
 const CFG_TRUE_S = "yep";
 const CFG_FALSE_S = "nope";
 
-_NAM.CFGS_BACKGROUND = 'window-background';
-_DEF[_NAM.CFGS_BACKGROUND] = '';
-_VAL[_NAM.CFGS_BACKGROUND] = (v)=>{
-    if(!v) return '';
-    if(Validation.isValidColor(v)) return v;
-    if(Validation.isValidURL(v,
-                    ['file', 'https', 'data', 'chrome-extension'])) return v;
+_NAM.CFGS_BACKGROUND = "window-background";
+_DEF[_NAM.CFGS_BACKGROUND] = "";
+_VAL[_NAM.CFGS_BACKGROUND] = (v) => {
+    if (!v) return "";
+    if (Validation.isValidColor(v)) return v;
+    if (Validation.isValidURL(v, ["file", "https", "data", "chrome-extension"]))
+        return v;
     return undefined;
 };
 
-_NAM.CFGS_THEME_NAME = 'theme-name';
-_DEF[_NAM.CFGS_THEME_NAME] = 'default-dark';
-_VAL[_NAM.CFGS_THEME_NAME] = (v)=>{
-    return (( v === 'default-dark' || v === 'default' ) ? v : undefined);
+_NAM.CFGS_THEME_NAME = "theme-name";
+_DEF[_NAM.CFGS_THEME_NAME] = "default-dark";
+_VAL[_NAM.CFGS_THEME_NAME] = (v) => {
+    return v === "default-dark" || v === "default" ? v : undefined;
 };
 
-_NAM.CFGS_SCROLLBAR_COLOR = 'skinny-scrollbar-color';
-_DEF[_NAM.CFGS_SCROLLBAR_COLOR] = '';
-_VAL[_NAM.CFGS_SCROLLBAR_COLOR] = (v)=>{
-    if(!v) return '';
-    return ((Validation.isValidColor(v)) ? v : undefined);
+_NAM.CFGS_SCROLLBAR_COLOR = "skinny-scrollbar-color";
+_DEF[_NAM.CFGS_SCROLLBAR_COLOR] = "";
+_VAL[_NAM.CFGS_SCROLLBAR_COLOR] = (v) => {
+    if (!v) return "";
+    return Validation.isValidColor(v) ? v : undefined;
 };
 
 // #35.  Whether to open closed tabs when you click on the tree item
 // for a partially-open window.  This is string, not bool, because the
 // fancy-settings radio-button control provides a string value, not a Boolean.
-_NAM.CFGS_OPEN_REST_ON_CLICK = 'open-rest-on-win-click';
+_NAM.CFGS_OPEN_REST_ON_CLICK = "open-rest-on-win-click";
 _DEF[_NAM.CFGS_OPEN_REST_ON_CLICK] = CFG_FALSE_S;
-_VAL[_NAM.CFGS_OPEN_REST_ON_CLICK] = (v)=>{
-    return (( v === CFG_TRUE_S || v === CFG_FALSE_S ) ? v : undefined);
+_VAL[_NAM.CFGS_OPEN_REST_ON_CLICK] = (v) => {
+    return v === CFG_TRUE_S || v === CFG_FALSE_S ? v : undefined;
 };
 
 // #152.  Which order of action buttons to use for tabs.
-_NAM.CFGS_WIN_ACTION_ORDER = 'win-button-action-order';
-_DEF[_NAM.CFGS_WIN_ACTION_ORDER] = 'ecd';
-_VAL[_NAM.CFGS_WIN_ACTION_ORDER] = (v)=>{
-    return (( v === 'ecd' || v === 'edc' || v === 'ced' ) ? v : undefined);
+_NAM.CFGS_WIN_ACTION_ORDER = "win-button-action-order";
+_DEF[_NAM.CFGS_WIN_ACTION_ORDER] = "ecd";
+_VAL[_NAM.CFGS_WIN_ACTION_ORDER] = (v) => {
+    return v === "ecd" || v === "edc" || v === "ced" ? v : undefined;
 };
 
 // #196.  Where to get favicons from.
-const FAVICON_SITE = 'actual';
-const FAVICON_CHROME = 'chrome';
-const FAVICON_DDG = 'ddg';
+const FAVICON_SITE = "actual";
+const FAVICON_CHROME = "chrome";
+const FAVICON_DDG = "ddg";
 
-_NAM.CFGS_FAVICON_SOURCE = 'favicon-source';
-_DEF[_NAM.CFGS_FAVICON_SOURCE] = 'actual';
-_VAL[_NAM.CFGS_FAVICON_SOURCE] = (v)=>{
-    return (( v === FAVICON_SITE || v === FAVICON_CHROME || v === FAVICON_DDG ) ? v : undefined);
+_NAM.CFGS_FAVICON_SOURCE = "favicon-source";
+_DEF[_NAM.CFGS_FAVICON_SOURCE] = "actual";
+_VAL[_NAM.CFGS_FAVICON_SOURCE] = (v) => {
+    return v === FAVICON_SITE || v === FAVICON_CHROME || v === FAVICON_DDG
+        ? v
+        : undefined;
 };
 
 // }}}2

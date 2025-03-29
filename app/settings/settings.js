@@ -1,38 +1,38 @@
 /// settings.js: Main file for TabFern settings page
 /// Copyright (c) 2017--2018 Chris White
 
-console.log('TabFern: running ' + __filename);
+console.log("TabFern: running " + __filename);
 
 // A static require statement that brunch will pick up on, but that will never
 // actually run.  This is what tells Brunch to include these top-level modules.
-if(false) {
-    require('vendor/validation');
-    require('vendor/common');
+if (false) {
+    require("vendor/validation");
+    require("vendor/common");
 
     // Hack the fixed order using the filenames because I don't want to
     // clutter the Brunch config with this page-specific material.
-    require('vendor/settings/0_store.js');
-    require('vendor/settings/1_mootools-core.js');
-    require('vendor/settings/2_tab.js');
-    require('vendor/settings/3_setting.js');
-    require('vendor/settings/4_search.js');
-    require('vendor/settings/5_fancy-settings.js');
+    require("vendor/settings/0_store.js");
+    require("vendor/settings/1_mootools-core.js");
+    require("vendor/settings/2_tab.js");
+    require("vendor/settings/3_setting.js");
+    require("vendor/settings/4_search.js");
+    require("vendor/settings/5_fancy-settings.js");
 }
 
-const ExportFile = require('lib/export-file');
-const ImportFile = require('lib/import-file');
+const ExportFile = require("lib/export-file");
+const ImportFile = require("lib/import-file");
 
 /// jQuery alias, since $ and $$ are mootools
-const $j = require('jquery');
+const $j = require("jquery");
 
-const log = require('loglevel');
-const spectrum = require('spectrum-colorpicker');
-const Spinner = require('spin.js').Spinner;
-const tinycolor = require('tinycolor2');
+const log = require("loglevel");
+const spectrum = require("spectrum-colorpicker");
+const Spinner = require("spin.js").Spinner;
+const tinycolor = require("tinycolor2");
 
-const S = require('common/setting-accessors');    // in app/
+const S = require("common/setting-accessors"); // in app/
 
-const manifest = require('./manifest');
+const manifest = require("./manifest");
 window.manifest = manifest; //because fancy-settings pulls from there
 
 /// An object to hold the settings for later programmatic access
@@ -42,44 +42,44 @@ let settingsobj;
 
 /// Create the color picker for the scrollbar color.
 let createPicker = function createPicker() {
-    let picker = $j('#scrollbar-color-picker-label');
+    let picker = $j("#scrollbar-color-picker-label");
 
     let orig_color = S.getString(S.S_SCROLLBAR_COLOR);
-    if(!Validation.isValidColor(orig_color)) {
+    if (!Validation.isValidColor(orig_color)) {
         orig_color = S.defaults[S.S_SCROLLBAR_COLOR];
     }
 
     // Replace the manifest entry with the color picker
     $j(picker).spectrum({
         showInput: true,
-        allowEmpty:true,
+        allowEmpty: true,
         showInitial: true,
-        preferredFormat: 'hex',
+        preferredFormat: "hex",
         color: orig_color,
     });
 
     // Add the text that would otherwise have gone in the manifest
-    let newlabel = $j('<span>').text(
-            'Skinny-scrollbar color ("X" for the default): ')   // TODO i18n
-        .addClass('setting label');
+    let newlabel = $j("<span>")
+        .text('Skinny-scrollbar color ("X" for the default): ') // TODO i18n
+        .addClass("setting label");
     $j(picker).before(newlabel);
 
     // Handle updates
-    $j(picker).on('change.spectrum', (e, newcolor)=>{
+    $j(picker).on("change.spectrum", (e, newcolor) => {
         let colorstring;
-        if(!newcolor || !newcolor.toString) {
-            console.log('New color: default');
+        if (!newcolor || !newcolor.toString) {
+            console.log("New color: default");
             colorstring = S.defaults[S.S_SCROLLBAR_COLOR];
         } else {
-            console.log({'New color': newcolor.toString()});
+            console.log({ "New color": newcolor.toString() });
             colorstring = String(newcolor.toString());
         }
 
-        if(!colorstring || Validation.isValidColor(colorstring)) {
+        if (!colorstring || Validation.isValidColor(colorstring)) {
             S.set(S.S_SCROLLBAR_COLOR, colorstring);
         } else {
-            console.log('Invalid color');
-            $j(picker).spectrum('set',orig_color);
+            console.log("Invalid color");
+            $j(picker).spectrum("set", orig_color);
         }
     });
 }; //createPicker
@@ -89,23 +89,21 @@ let createPicker = function createPicker() {
 
 /// Pack the settings into an object to export.
 /// TODO automate keeping this in sync with common.js.
-function saveSettingsToObject()
-{
+function saveSettingsToObject() {
     let retval = { __proto__: null };
-    for(let key in S.defaults) {
+    for (let key in S.defaults) {
         retval[key] = S.getRaw(key);
     }
     return Object.seal(retval);
 } //saveSettingsToObject
 
 /// Export the settings
-function exportSettings(evt_unused)
-{
-    let date_tag = new Date().toISOString().replace(/:/g,'.');
-        // DOS filenames can't include colons.
-        // TODO use local time - maybe
-        // https://www.npmjs.com/package/dateformat ?
-    let filename = 'TabFern settings backup ' + date_tag + '.tabfern_settings';
+function exportSettings(evt_unused) {
+    let date_tag = new Date().toISOString().replace(/:/g, ".");
+    // DOS filenames can't include colons.
+    // TODO use local time - maybe
+    // https://www.npmjs.com/package/dateformat ?
+    let filename = "TabFern settings backup " + date_tag + ".tabfern_settings";
 
     let saved_info = saveSettingsToObject();
     ExportFile(document, JSON.stringify(saved_info), filename);
@@ -115,18 +113,21 @@ function exportSettings(evt_unused)
 /// TODO automate keeping this in sync with common.js.
 function loadSettingsFromObject(obj) {
     let ok = true;
-    let errmsgs = '';
-    function stash(m) { errmsgs += `<li>${m}</li>`; }
+    let errmsgs = "";
+    function stash(m) {
+        errmsgs += `<li>${m}</li>`;
+    }
 
-    log.info({'Loading settings from':obj});
+    log.info({ "Loading settings from": obj });
 
-    for(let key in S.defaults) {
-        if(!obj[key]) {
+    for (let key in S.defaults) {
+        if (!obj[key]) {
             log.info(`Setting ${key} not found - skipping`);
-            continue;   // not an error
+            continue; // not an error
         }
 
-        if(key === S.SETTINGS_LOADED_OK) {  // Not a real setting
+        if (key === S.SETTINGS_LOADED_OK) {
+            // Not a real setting
             continue;
         }
 
@@ -134,7 +135,7 @@ function loadSettingsFromObject(obj) {
         let val;
         try {
             val = JSON.parse(String(obj[key]));
-        } catch(e) {
+        } catch (e) {
             let m = `Non-JSON value for ${key} - skipping`;
             log.warn(m);
             stash(m);
@@ -143,9 +144,10 @@ function loadSettingsFromObject(obj) {
         }
 
         // Confirm its type
-        if(typeof val !== typeof S.defaults[key]) {
-            let m = `Setting ${key}: value is a ${typeof val} but should be `+
-                    `a ${typeof S.defaults[key]} - skipping`;
+        if (typeof val !== typeof S.defaults[key]) {
+            let m =
+                `Setting ${key}: value is a ${typeof val} but should be ` +
+                `a ${typeof S.defaults[key]} - skipping`;
             log.warn(m);
             stash(m);
             ok = false;
@@ -153,9 +155,9 @@ function loadSettingsFromObject(obj) {
         }
 
         // Run value-specific checks, e.g., for well-formedness.
-        if(S.validators[key]) {
+        if (S.validators[key]) {
             let val_output = S.validators[key](val);
-            if(val_output === undefined) {
+            if (val_output === undefined) {
                 let m = `Setting ${key}: Value ${val} failed validation`;
                 log.warn(m);
                 //stash(m); // Not user-facing
@@ -166,86 +168,87 @@ function loadSettingsFromObject(obj) {
         }
 
         // Set the value
-        if(typeof val === 'boolean' || typeof val === 'string') {
+        if (typeof val === "boolean" || typeof val === "string") {
             // We already checked that val is of the correct type above,
             // so we can go ahead and set it.
             S.set(key, val);
-        } else {    // This shouldn't happen, so it's a log.error if it does.
+        } else {
+            // This shouldn't happen, so it's a log.error if it does.
             let m = `Unexpected type ${typeof val} for ${key} - skipping`;
             log.error(m);
             stash(m);
             ok = false;
             continue;
         }
-
     } //foreach key
 
-    return {ok, errmsgs};
+    return { ok, errmsgs };
 } //loadSettingsFromObject
 
 /// Import the settings
-function importSettings(evt_unused)
-{
+function importSettings(evt_unused) {
     function processFile(text, filename) {
         let spinner;
         try {
-            spinner = new Spinner().spin(
-                $j('#import-settings').parent()[0]
-            );
+            spinner = new Spinner().spin($j("#import-settings").parent()[0]);
             let parsed = JSON.parse(text);
-            let {ok, errmsgs} = loadSettingsFromObject(parsed);
-            if(!ok) {
-                let elem = $j('<div>').html(
-                    '<p>I encountered error(s) while loading the file ' +
-                    `'${filename}':</p><ul>${errmsgs}</ul>`);
-                $j('#import-settings').after(elem);
-
-            } else {    // success
+            let { ok, errmsgs } = loadSettingsFromObject(parsed);
+            if (!ok) {
+                let elem = $j("<div>").html(
+                    "<p>I encountered error(s) while loading the file " +
+                        `'${filename}':</p><ul>${errmsgs}</ul>`
+                );
+                $j("#import-settings").after(elem);
+            } else {
+                // success
                 // Let ourselves know, after reload, that it worked
                 S.set(S.SETTINGS_LOADED_OK, true);
 
                 // refresh all the controls by reloading
                 window.location.reload(true);
             }
-
-        } catch(e) {
-            window.alert("File " + filename + ' is not something I can '+
-                'understand as a TabFern settings file.  ' +
-                'Parse error code was: ' + e);
+        } catch (e) {
+            window.alert(
+                "File " +
+                    filename +
+                    " is not something I can " +
+                    "understand as a TabFern settings file.  " +
+                    "Parse error code was: " +
+                    e
+            );
         }
-        if(spinner) spinner.stop();
+        if (spinner) spinner.stop();
     } //processFile()
 
     S.set(S.SETTINGS_LOADED_OK, false);
-    let importer = ImportFile(document, '.tabfern_settings');
+    let importer = ImportFile(document, ".tabfern_settings");
     importer.getFileAsString(processFile);
 } //importSettings()
 
 // }}}1
 // Main //////////////////////////////////////////////////////////// {{{1
 
-function main()
-{
+function main() {
     // Option 1: Use the manifest:
     new FancySettings.initWithManifest(function (settings) {
-        $j('#settings-label').text(_T('wsSettings'));
+        $j("#settings-label").text(_T("wsSettings"));
 
         settingsobj = settings;
 
         // ----------------------------
         // Finish creating the page
-        createPicker();   // Skinny-scrollbar color picker
+        createPicker(); // Skinny-scrollbar color picker
 
         // ----------------------------
         // Hook up events
-        $j('#import-settings').on('click', importSettings);
-        $j('#export-settings').on('click', exportSettings);
+        $j("#import-settings").on("click", importSettings);
+        $j("#export-settings").on("click", exportSettings);
 
         let is_settings_load = false;
-        if(S.getBool(S.SETTINGS_LOADED_OK)) {
+        if (S.getBool(S.SETTINGS_LOADED_OK)) {
             is_settings_load = true;
-            let elem = $j('<div>').text("Settings loaded");
-            $j('#import-settings').after(elem);
+            let elem = $j("<div>").text("Settings loaded");
+            $j("#import-settings").after(elem);
             S.set(S.SETTINGS_LOADED_OK, false);
         }
 
@@ -260,32 +263,34 @@ function main()
         // one activated by default.
 
         let searchParams = new URLSearchParams(window.location.hash.slice(1));
-        if(!is_settings_load && searchParams.has('open')) {
-            let whichtab = -1;  // If other than -1, select that tab
+        if (!is_settings_load && searchParams.has("open")) {
+            let whichtab = -1; // If other than -1, select that tab
 
-            let openval = String(searchParams.get('open'));     // Do we need the explicit String()?
+            let openval = String(searchParams.get("open")); // Do we need the explicit String()?
             let tabNames = Object.keys(settingsobj.tabs);
-                // These come out in definition order, as far as I know
+            // These come out in definition order, as far as I know
 
             // Check for a tab number
             let tabnum = Number(openval);
-            if(!isNaN(tabnum) && (tabnum|0)>=0 && (tabnum|0)<tabNames.length) {
-                whichtab = (tabnum|0);
+            if (
+                !isNaN(tabnum) &&
+                (tabnum | 0) >= 0 &&
+                (tabnum | 0) < tabNames.length
+            ) {
+                whichtab = tabnum | 0;
             }
 
             // Check for "last" as a special value
-            if(whichtab === -1 && openval.toLowerCase()==='last') {
-                whichtab = tabNames.length-1;
+            if (whichtab === -1 && openval.toLowerCase() === "last") {
+                whichtab = tabNames.length - 1;
             }
 
             // Jump to that tab.
-            if(whichtab !== -1) {
+            if (whichtab !== -1) {
                 settingsobj.tabs[tabNames[whichtab]].bundle.activate();
             }
-
         } //endif #open=... parameter specified
     });
-
 } //main()
 
 window.addEvent("domready", main);

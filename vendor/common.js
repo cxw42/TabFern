@@ -5,7 +5,7 @@
 // ** TODO split this into UMD modules so the pieces can be loaded with or
 //    without require.js.
 
-console.log('TabFern common.js loading');
+console.log("TabFern common.js loading");
 
 // Messages between parts of TabFern // {{{1
 
@@ -13,8 +13,8 @@ console.log('TabFern common.js loading');
 // { msg: <one of the below constants> [, anything else] }
 // For responses, response:true is also included.
 
-const MSG_EDIT_TAB_NOTE = 'editTabNote';
-const MSG_REPORT_POPUP_SETTING = 'reportPopupSetting';
+const MSG_EDIT_TAB_NOTE = "editTabNote";
+const MSG_REPORT_POPUP_SETTING = "reportPopupSetting";
 
 ////////////////////////////////////////////////////////////////////////// }}}1
 // Cross-browser error handling, and browser tests // {{{1
@@ -24,33 +24,41 @@ const MSG_REPORT_POPUP_SETTING = 'reportPopupSetting';
 // Chrome code.  Hopefully in the future I can test for null/undefined
 // in either browser, and get rid of this block.
 
-BROWSER_TYPE=null;  // unknown
+BROWSER_TYPE = null; // unknown
 
 const isLastError = (function getIsLastError() {
-    let isLastError_chrome =
-        ()=>{return (typeof(chrome.runtime.lastError) !== 'undefined');};
-    let isLastError_firefox =
-        ()=>{return (chrome.runtime.lastError !== null);};
+    let isLastError_chrome = () => {
+        return typeof chrome.runtime.lastError !== "undefined";
+    };
+    let isLastError_firefox = () => {
+        return chrome.runtime.lastError !== null;
+    };
 
     let result;
-    if(typeof browser !== 'undefined' && browser.runtime &&
-                                            browser.runtime.getBrowserInfo) {
+    if (
+        typeof browser !== "undefined" &&
+        browser.runtime &&
+        browser.runtime.getBrowserInfo
+    ) {
         browser.runtime.getBrowserInfo().then(
-            (info)=>{   // fullfillment
-                if(info.name === 'Firefox') {
+            (info) => {
+                // fullfillment
+                if (info.name === "Firefox") {
                     result = isLastError_firefox;
-                    BROWSER_TYPE = 'ff';
+                    BROWSER_TYPE = "ff";
                 } else {
                     result = isLastError_chrome;
                 }
             },
 
-            ()=>{   //rejection --- assume Chrome by default
+            () => {
+                //rejection --- assume Chrome by default
                 result = isLastError_chrome;
             }
         );
-    } else {    // Chrome
-        BROWSER_TYPE = 'chrome';
+    } else {
+        // Chrome
+        BROWSER_TYPE = "chrome";
         result = isLastError_chrome;
     }
 
@@ -60,16 +68,16 @@ const isLastError = (function getIsLastError() {
 /// Return a string representation of an error message.
 /// @param err {Any}: The error object/message to process.
 function ErrorMessageString(err) {
-    if(!err) {
+    if (!err) {
         return "<no error>";
     }
 
     try {
-        if(typeof err !== 'object') {
+        if (typeof err !== "object") {
             return `${err}`;
         }
         return err.message || err.description || err.toString();
-    } catch(e) {
+    } catch (e) {
         return `Error that I could not stringify (meta-error = ${e})`;
     }
 } // ErrorMessageString()
@@ -93,11 +101,15 @@ function lastBrowserErrorMessageString() {
 /// @param {String} url URL of script to load
 /// @param {String} [type] Type of Script tag. Default: text/javascript
 /// @param {Function} callback Set as callback for BOTH onreadystatechange and onload
-function asyncAppendScriptToHead(document, url, callback, type = 'text/javascript')
-{
+function asyncAppendScriptToHead(
+    document,
+    url,
+    callback,
+    type = "text/javascript"
+) {
     // Adding the script tag to the head as suggested before
-    var head = document.getElementsByTagName('head')[0];
-    var script = document.createElement('script');
+    var head = document.getElementsByTagName("head")[0];
+    var script = document.createElement("script");
     script.type = type;
     script.src = url;
 
@@ -113,14 +125,19 @@ function asyncAppendScriptToHead(document, url, callback, type = 'text/javascrip
 
 /// Invoke a callback only when the document is loaded.  Does not pass any
 /// parameters to the callback.
-function callbackOnLoad(callback)
-{
-    if(document.readyState !== 'complete') {
+function callbackOnLoad(callback) {
+    if (document.readyState !== "complete") {
         // Thanks to https://stackoverflow.com/a/28093606/2877364 by
         // https://stackoverflow.com/users/4483389/matthias-samsel
-        window.addEventListener('load', ()=>{ callback(); }, { 'once': true });
+        window.addEventListener(
+            "load",
+            () => {
+                callback();
+            },
+            { once: true }
+        );
     } else {
-        window.setTimeout(callback, 0);    //always async
+        window.setTimeout(callback, 0); //always async
     }
 } //callbackOnLoad
 
@@ -136,7 +153,7 @@ function loadCSS(doc, url, before) {
     link.rel = "stylesheet";
     link.href = url;
     let head = document.getElementsByTagName("head")[0];
-    if(before) {
+    if (before) {
         head.insertBefore(link, before);
     } else {
         head.appendChild(link);
@@ -148,34 +165,38 @@ function loadCSS(doc, url, before) {
 
 /// Shortcut for i18n.  Call _T("name") to pull the localized "name".
 var _T;
-if(chrome && chrome.i18n && chrome.i18n.getMessage) {
+if (chrome && chrome.i18n && chrome.i18n.getMessage) {
     _T = chrome.i18n.getMessage;
-} else {    // #171 HACK
+} else {
+    // #171 HACK
 
     // Warn unless calling code told us to expect this.
-    console.log({window});
-    const expect_no_i18n = (typeof 'window' !== undefined) && window && window._TF_NO_I18N;
-    if(!expect_no_i18n) {
+    console.log({ window });
+    const expect_no_i18n =
+        typeof "window" !== undefined && window && window._TF_NO_I18N;
+    if (!expect_no_i18n) {
         console.warn("Using #171 hack");
     }
 
     // The following line is substituted at build time with the messages
     // from _locales/en/messages.json.  See details in brunch-config.js.
     // The "0;" is so it will not confuse the autoindent.
-    let _messages = 0;///I18N_MESSAGES/// ;
+    let _messages = 0; ///I18N_MESSAGES/// ;
 
     _T = function _T_hack(messageName, substitutions_IGNORED) {
-        if(_messages && _messages[messageName]) {
+        if (_messages && _messages[messageName]) {
             return _messages[messageName];
         } else {
             return "Unknown message (issue 171): " + messageName;
         }
-    } //_T()
+    }; //_T()
 } //endif !chrome.i18n.getMessage
 
 /// Ignore a Chrome callback error, and suppress Chrome's
 /// `runtime.lastError` diagnostic.  Use this as a Chrome callback.
-function ignore_chrome_error() { void chrome.runtime.lastError; }
+function ignore_chrome_error() {
+    void chrome.runtime.lastError;
+}
 
 /// Deep-compare two objects for memberwise equality.  However, if either
 /// object contains a pointer to the other, this will return false rather
@@ -187,7 +208,7 @@ function ignore_chrome_error() { void chrome.runtime.lastError; }
 /// Modified from https://gist.github.com/nicbell/6081098 by
 /// https://gist.github.com/nicbell
 function ObjectCompare(obj1, obj2) {
-    if( (typeof obj1 !== 'object') || (typeof obj2 !== 'object') ) {
+    if (typeof obj1 !== "object" || typeof obj2 !== "object") {
         return obj1 === obj2;
     }
 
@@ -196,20 +217,21 @@ function ObjectCompare(obj1, obj2) {
         //Check property exists on both objects
         if (obj1.hasOwnProperty(p) !== obj2.hasOwnProperty(p)) return false;
 
-        switch (typeof (obj1[p])) {
-
+        switch (typeof obj1[p]) {
             //Deep compare objects
-            case 'object':
+            case "object":
                 //Check for circularity
-                if( (obj1[p]===obj2) || (obj2[p]===obj1) ) return false;
+                if (obj1[p] === obj2 || obj2[p] === obj1) return false;
 
                 if (!ObjectCompare(obj1[p], obj2[p])) return false;
                 break;
 
             //Compare function code
-            case 'function':
-                if (typeof (obj2[p]) == 'undefined' ||
-                    (obj1[p].toString() !== obj2[p].toString())) {
+            case "function":
+                if (
+                    typeof obj2[p] == "undefined" ||
+                    obj1[p].toString() !== obj2[p].toString()
+                ) {
                     return false;
                 }
                 break;
@@ -222,7 +244,7 @@ function ObjectCompare(obj1, obj2) {
 
     //Check object 2 for any extra properties
     for (var p in obj2) {
-        if (typeof (obj1[p]) === 'undefined') return false;
+        if (typeof obj1[p] === "undefined") return false;
     }
     return true;
 } //ObjectCompare
