@@ -1,5 +1,7 @@
-// background.js: background script for TabFern.  Runs as a module.
+// background.js: background script for TabFern.
+// Required globals: self ([object ServiceWorkerGlobalScope])
 // CC-BY-SA 3.0
+
 console.log("TabFern: running " + __filename);
 
 if (false) {
@@ -17,7 +19,7 @@ if (false) {
     require("process/browser");
 }
 
-const SetupContextMenu = require("bg/context-menu");
+const ContextMenu = require("bg/context-menu");
 const MainWindow = require("bg/main-window");
 const SetupOffscreenDocument = require("bg/offscreen-document");
 
@@ -90,7 +92,7 @@ function offscreenDocumentMessageListener(message, sender, sendResponse) {
         return;
     }
 
-    console.log("Responding to popup-setting report");
+    console.log({ ["Received popup-setting report"]: message });
     sendResponse({ msg: message.msg, response: true });
 
     if (message.shouldOpenPopup) {
@@ -99,16 +101,34 @@ function offscreenDocumentMessageListener(message, sender, sendResponse) {
 } //offscreenDocumentMessageListener()
 
 //////////////////////////////////////////////////////////////////////////
-// Main //
+// Context menu //
 
-chrome.runtime.onInstalled.addListener(SetupContextMenu);
+// Add the onClick listener here unconditionally per
+// <https://developer.chrome.com/docs/extensions/develop/migrate/to-service-workers#register-listeners>.
+chrome.contextMenus.onClicked.addListener(ContextMenu.onClick);
+
+// Set up the context menu in `install` rather than `runtime.onInstalled`
+// because the latter does not fire when an extension is disabled and then
+// re-enabled.
+self.addEventListener("install", ContextMenu.setup);
+
+//////////////////////////////////////////////////////////////////////////
+// Main (offscreen document) //
+
+// Processing will continue in the offscreen document, but we have to
+// make sure it gets loaded.
 
 // Do this before loading the offscreen document
 chrome.runtime.onMessage.addListener(offscreenDocumentMessageListener);
 
-// Processing continues in the offscreen document
-SetupOffscreenDocument();
+// Set up the offscreen document when Chrome starts if the extension is
+// installed and enabled.
+chrome.runtime.onStartup.addListener(SetupOffscreenDocument);
 
-console.log("TabFern: done running background.js");
+// Set up the offscreen document when the extension is reloaded or
+// goes from disabled to enabled.
+self.addEventListener("activate", SetupOffscreenDocument);
+
+console.log("TabFern: done running " + __filename);
 
 // vi: set ts=4 sts=4 sw=4 et ai fo-=o: //
