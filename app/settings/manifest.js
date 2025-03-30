@@ -212,6 +212,15 @@ setting_definitions.push(
             "type": "checkbox",
             "label": future_i18n('Prompt for confirmation before closing or deleting a tab that is currently playing audio (<i class="fa fa-music"></i>)'),
         },
+        {
+            "tab": future_i18n("Behaviour"),
+            "group": future_i18n("Autoremember"),
+            "name": S.S_AUTOREMEMBER_MINUTES,
+            "type": "text",
+            "label": future_i18n('If this is an integer <tt>I</tt> &gt;= 0, automatically '
+                + 'remember all open windows/tabs every <tt>I</tt> minutes.  Refresh the '
+                + 'TabFern window to apply changes to this option.'),
+        },
 
         // Appearance
         {
@@ -486,8 +495,20 @@ setting_definitions.push(
             "type": "description",
             "text":
 `
+<h4>TF needs developers!</h4>
+<p>As you may have noticed, my time to work on TabFern is limited \u{1f605}.
+If you are a JavaScript developer, could you contribute some code?  I'm happy
+to help you get started!  If you aren't a JS dev, but know someone who is,
+could you please pass the word?  Much appreciated!  You can get in touch via
+<a href="https://github.com/cxw42/TabFern/discussions">GitHub discussions</a>.
+</p>
+
+<h4>Changes in this release</h4>
 <ul>
 <li>Bugfix: Open the TF window when the browser starts ${issue(342)}</li>
+<li>TabFern can now automatically mark windows as remembered on a timer.
+    Set the timer you want in ${settings} Behaviour ${gt} Autoremember
+    ${issue(316)}.</li>
 <li>Internal changes ${issue([341,343])}</li>
 </ul>
 `
