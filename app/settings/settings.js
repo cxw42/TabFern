@@ -1,56 +1,47 @@
-/// settings.js: Main file for TabFern settings page
-/// Copyright (c) 2017--2018 Chris White
+/// app/settings/settings.js: Main file for TabFern settings page
+/// Copyright (c) 2017--2018, 2025 Chris White
 
 console.log("TabFern: running " + __filename);
 
-// A static require statement that brunch will pick up on, but that will never
-// actually run.  This is what tells Brunch to include these top-level modules.
 if (false) {
+    // Bundle these
     require("vendor/validation");
     require("vendor/common");
-
-    // Hack the fixed order using the filenames because I don't want to
-    // clutter the Brunch config with this page-specific material.
-    require("vendor/settings/0_store.js");
-    require("vendor/settings/1_mootools-core.js");
-    require("vendor/settings/2_tab.js");
-    require("vendor/settings/3_setting.js");
-    require("vendor/settings/4_search.js");
-    require("vendor/settings/5_fancy-settings.js");
 }
 
 const ExportFile = require("lib/export-file");
 const ImportFile = require("lib/import-file");
 
-/// jQuery alias, since $ and $$ are mootools
-const $j = require("jquery");
+const $ = require("jquery");
+const FancySettings = require("lib/fancy-settings-jquery");
 
 const log = require("loglevel");
 const spectrum = require("spectrum-colorpicker");
 const Spinner = require("spin.js").Spinner;
-const tinycolor = require("tinycolor2");
 
 const S = require("common/setting-accessors"); // in app/
 
+// The settings themselves
 const manifest = require("./manifest");
-window.manifest = manifest; //because fancy-settings pulls from there
-
-/// An object to hold the settings for later programmatic access
-let settingsobj;
 
 // Color picker //////////////////////////////////////////////////// {{{1
 
 /// Create the color picker for the scrollbar color.
-let createPicker = function createPicker() {
-    let picker = $j("#scrollbar-color-picker-label");
+function createPicker() {
+    let $picker = $("#scrollbar-color-picker-label");
 
+    // The picker is an <input> so may have a value persisted by the browser.
+    // Make sure we don't use that value...
+    $picker.val("");
+
+    // ...but instead use the value from localStorage.
     let orig_color = S.getString(S.S_SCROLLBAR_COLOR);
     if (!Validation.isValidColor(orig_color)) {
         orig_color = S.defaults[S.S_SCROLLBAR_COLOR];
     }
 
     // Replace the manifest entry with the color picker
-    $j(picker).spectrum({
+    $picker.spectrum({
         showInput: true,
         allowEmpty: true,
         showInitial: true,
@@ -59,30 +50,30 @@ let createPicker = function createPicker() {
     });
 
     // Add the text that would otherwise have gone in the manifest
-    let newlabel = $j("<span>")
+    let newlabel = $("<span>")
         .text('Skinny-scrollbar color ("X" for the default): ') // TODO i18n
         .addClass("setting label");
-    $j(picker).before(newlabel);
+    $picker.before(newlabel);
 
     // Handle updates
-    $j(picker).on("change.spectrum", (e, newcolor) => {
+    $picker.on("change.spectrum", (e, newcolor) => {
         let colorstring;
         if (!newcolor || !newcolor.toString) {
-            console.log("New color: default");
+            log.info("New color: default");
             colorstring = S.defaults[S.S_SCROLLBAR_COLOR];
         } else {
-            console.log({ "New color": newcolor.toString() });
+            log.info({ "New color": newcolor.toString() });
             colorstring = String(newcolor.toString());
         }
 
         if (!colorstring || Validation.isValidColor(colorstring)) {
             S.set(S.S_SCROLLBAR_COLOR, colorstring);
         } else {
-            console.log("Invalid color");
-            $j(picker).spectrum("set", orig_color);
+            log.info("Invalid color");
+            $picker.spectrum("set", orig_color);
         }
     });
-}; //createPicker
+} // createPicker()
 
 // }}}1
 // Export/Import Settings ////////////////////////////////////////// {{{1
@@ -190,15 +181,15 @@ function importSettings(evt_unused) {
     function processFile(text, filename) {
         let spinner;
         try {
-            spinner = new Spinner().spin($j("#import-settings").parent()[0]);
+            spinner = new Spinner().spin($("#import-settings").parent()[0]);
             let parsed = JSON.parse(text);
             let { ok, errmsgs } = loadSettingsFromObject(parsed);
             if (!ok) {
-                let elem = $j("<div>").html(
+                let elem = $("<div>").html(
                     "<p>I encountered error(s) while loading the file " +
                         `'${filename}':</p><ul>${errmsgs}</ul>`
                 );
-                $j("#import-settings").after(elem);
+                $("#import-settings").after(elem);
             } else {
                 // success
                 // Let ourselves know, after reload, that it worked
@@ -228,72 +219,46 @@ function importSettings(evt_unused) {
 // }}}1
 // Main //////////////////////////////////////////////////////////// {{{1
 
+function finishInit(settingsPage) {
+    // ----------------------------
+    // Finish creating the page
+    createPicker(); // Skinny-scrollbar color picker
+
+    // ----------------------------
+    // Hook up events
+    $("#import-settings").on("click", importSettings);
+    $("#export-settings").on("click", exportSettings);
+
+    let is_settings_load = false;
+    if (S.getBool(S.SETTINGS_LOADED_OK)) {
+        is_settings_load = true;
+        let elem = $("<div>").text("Settings loaded");
+        $("#import-settings").after(elem);
+        S.set(S.SETTINGS_LOADED_OK, false);
+    }
+
+    // ----------------------------
+    // open tab specified in a query parm, if known.
+    // See https://stackoverflow.com/a/12151322/2877364
+    // Use location.hash instead of location.search since Chrome doesn't
+    // seem to navigate to chrome-extension://...&... .
+    //
+    // Note: if we have come from a settings-load event, don't change
+    // tabs.  Load-settings is on the first tab, which is the
+    // one activated by default.
+
+    let searchParams = new URLSearchParams(window.location.hash.slice(1));
+    if (!is_settings_load && searchParams.has("open")) {
+        let openval = searchParams.get("open");
+        settingsPage.activateTab(openval);
+    } //endif #open=... parameter specified
+} // finishInit()
+
 function main() {
-    // Option 1: Use the manifest:
-    new FancySettings.initWithManifest(function (settings) {
-        $j("#settings-label").text(_T("wsSettings"));
+    new FancySettings($("#main-container"), manifest, finishInit);
+} // main()
 
-        settingsobj = settings;
-
-        // ----------------------------
-        // Finish creating the page
-        createPicker(); // Skinny-scrollbar color picker
-
-        // ----------------------------
-        // Hook up events
-        $j("#import-settings").on("click", importSettings);
-        $j("#export-settings").on("click", exportSettings);
-
-        let is_settings_load = false;
-        if (S.getBool(S.SETTINGS_LOADED_OK)) {
-            is_settings_load = true;
-            let elem = $j("<div>").text("Settings loaded");
-            $j("#import-settings").after(elem);
-            S.set(S.SETTINGS_LOADED_OK, false);
-        }
-
-        // ----------------------------
-        // open tab specified in a query parm, if known.
-        // See https://stackoverflow.com/a/12151322/2877364
-        // Use location.hash instead of location.search since Chrome doesn't
-        // seem to navigate to chrome-extension://...&... .
-        //
-        // Note: if we have come from a settings-load event, don't change
-        // tabs.  Load-settings is on the first tab, which is the
-        // one activated by default.
-
-        let searchParams = new URLSearchParams(window.location.hash.slice(1));
-        if (!is_settings_load && searchParams.has("open")) {
-            let whichtab = -1; // If other than -1, select that tab
-
-            let openval = String(searchParams.get("open")); // Do we need the explicit String()?
-            let tabNames = Object.keys(settingsobj.tabs);
-            // These come out in definition order, as far as I know
-
-            // Check for a tab number
-            let tabnum = Number(openval);
-            if (
-                !isNaN(tabnum) &&
-                (tabnum | 0) >= 0 &&
-                (tabnum | 0) < tabNames.length
-            ) {
-                whichtab = tabnum | 0;
-            }
-
-            // Check for "last" as a special value
-            if (whichtab === -1 && openval.toLowerCase() === "last") {
-                whichtab = tabNames.length - 1;
-            }
-
-            // Jump to that tab.
-            if (whichtab !== -1) {
-                settingsobj.tabs[tabNames[whichtab]].bundle.activate();
-            }
-        } //endif #open=... parameter specified
-    });
-} //main()
-
-window.addEvent("domready", main);
+callbackOnLoad(main);
 // }}}1
 
 // vi: set ts=4 sts=4 sw=4 et ai foldmethod=marker: //
