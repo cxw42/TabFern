@@ -188,6 +188,11 @@ _VAL[_NAM.CFGS_FAVICON_SOURCE] = (v) => {
         : undefined;
 };
 
+// #316.  How often to autoremember.  Empty or <= 0 == don't autosave
+_NAM.CFGS_AUTOREMEMBER_MINUTES = "autoremember-timer-minutes";
+_DEF[_NAM.CFGS_AUTOREMEMBER_MINUTES] = "0";
+_VAL[_NAM.CFGS_AUTOREMEMBER_MINUTES] = _vint;
+
 // }}}2
 
 // The exportable format of the above objects
