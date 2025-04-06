@@ -488,7 +488,8 @@ setting_definitions.push(
 `
 <ul>
 <li>Bugfix: Open the TF window when the browser starts ${issue(342)}</li>
-<li>Internal changes ${issue([341,343])}</li>
+<li>Simplify the implementation of the Settings window ${issue(341)}</li>
+<li>Internal changes ${issue([343])}</li>
 </ul>
 `
         },
