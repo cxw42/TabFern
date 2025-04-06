@@ -291,6 +291,7 @@ me.plugins.replacer = {
     // Permit using __filename in modules
     dict: [
         { key: kFN },
+        { key: /\bTABFERN_GIT_HASH\b/, value: `'${git_hash}'` },
         { key: /\bTABFERN_VERSION\b/, value: `'${VER_NAME}'` },
         {
             key: "0;///I18N_MESSAGES///",
