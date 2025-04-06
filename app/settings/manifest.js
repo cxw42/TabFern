@@ -30,6 +30,14 @@ var saveImg = icon('fff-picture-delete tf-action-button');
 let settings = `${ham} ${gt} Settings ${gt}`;
 let refresh_message = " (refresh the TabFern window after you change this to make the change take effect)";
 
+let about_message = "This is TabFern version " + TABFERN_VERSION;
+if(TABFERN_GIT_HASH) {
+    let hash = TABFERN_GIT_HASH;
+    about_message += ', built from commit ';
+    about_message += `<a href="https://github.com/cxw42/TabFern/commit/${hash}">${hash}</a>`;
+    console.log(about_message);
+}
+
 // Settings {{{2
 let setting_definitions = [
 
@@ -76,6 +84,12 @@ vote at ${issue(125,true)}.
             "group": future_i18n("Legal"),
             "type": "description",
             "text": "The TabFern name, logo, and icons are trademarks of Chris White."
+        },
+        {
+            "tab": future_i18n("Welcome / Help"),
+            "group": future_i18n("About"),
+            "type": "description",
+            "text": about_message
         },
 
         // Behaviour.  Yeah, there's a "u" in there!
@@ -498,6 +512,8 @@ could you please pass the word?  Much appreciated!  You can get in touch via
 <h4>Changes in this release</h4>
 <ul>
 <li>Bugfix: Open the TF window when the browser starts ${issue(342)}</li>
+<li>Add an "About" section to ${ham} ${gt} Settings ${gt} Welcome / Help
+    ${issue(347)}</li>
 <li>Simplify the implementation of the Settings window ${issue(341)}</li>
 <li>Internal changes ${issue([343])}</li>
 </ul>
