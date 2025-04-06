@@ -61,45 +61,45 @@ if (matches[5] == null) {
     matches[5] = 1337;
 }
 const IS_DEV = matches[5] < 1337;
+const VER_TUPLE = matches.slice(1, 4).join(".") + `.${matches[5]}`; // x.y.z.w
 
 // Check the git status
-let repo_version = "";
-while (IS_DEV) {
-    // do once
-    repo_version = " (development)"; // default if no git info is available
+let git_status;
+try {
+    git_status = child_process.execSync("git s --porcelain=v2 -b -v -u");
+} catch (err) {
+    console.warn(`Could not get git status: ${err}`);
+}
 
-    let git_status;
-    try {
-        git_status = child_process.execSync("git s --porcelain=v2 -b -v -u");
-    } catch (err) {
-        break;
-    }
-
-    let hash;
+let git_hash;
+let git_is_dirty;
+if (git_status) {
     let hash_re = /^# branch.oid (.{7}).+$/m;
     let matches = hash_re.exec(git_status);
     if (matches && matches[1]) {
-        hash = matches[1];
+        git_hash = matches[1];
     }
-
-    let dirty = /^[^#]/m.test(git_status) ? "-dirty" : "";
-
-    repo_version = " (" + (hash ? hash : "development") + dirty + ")";
-
-    break;
+    git_is_dirty = /^[^#]/m.test(git_status);
 }
 
-let ver_tuple = matches.slice(1, 4).join(".") + `.${matches[5]}`; // x.y.z.w
-let ver_name =
+// Format the version number
+let repo_version = "";
+if (IS_DEV) {
+    let dirty_msg = git_is_dirty ? "-dirty" : "";
+    repo_version =
+        " (" + (git_hash ? git_hash : "development") + dirty_msg + ")";
+}
+
+const VER_NAME =
     (matches[4] == null ? matches.slice(1, 4).join(".") : pkg_json.version) +
     repo_version;
 
-console.log(`TF version ${pkg_json.version} -> ${ver_tuple} ("${ver_name}")`);
+console.log(`TF version ${pkg_json.version} -> ${VER_TUPLE} ("${VER_NAME}")`);
 
 // Copy app/manifest.json->public/manifest.json and fill in versions
 fs.createReadStream(path.join(__dirname, "var", "manifest.json"))
-    .pipe(replaceStream("$VER$", ver_tuple))
-    .pipe(replaceStream("$VERNAME$", ver_name))
+    .pipe(replaceStream("$VER$", VER_TUPLE))
+    .pipe(replaceStream("$VERNAME$", VER_NAME))
     .pipe(
         fs.createWriteStream(path.join(__dirname, "public", "manifest.json"))
     );
@@ -291,7 +291,7 @@ me.plugins.replacer = {
     // Permit using __filename in modules
     dict: [
         { key: kFN },
-        { key: /\bTABFERN_VERSION\b/, value: `'${ver_name}'` },
+        { key: /\bTABFERN_VERSION\b/, value: `'${VER_NAME}'` },
         {
             key: "0;///I18N_MESSAGES///",
             value: JSON.stringify(messages_en_trimmed),
