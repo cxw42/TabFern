@@ -486,6 +486,16 @@ setting_definitions.push(
             "type": "description",
             "text":
 `
+<h4>TF needs developers!</h4>
+<p>As you may have noticed, my time to work on TabFern is limited \u{1f605}.
+If you are a JavaScript developer, could you contribute some code?  I'm happy
+to help you get started!</p>
+<p>If you aren't a JS dev, but know someone who is,
+could you please pass the word?  Much appreciated!  You can get in touch via
+<a href="https://github.com/cxw42/TabFern/discussions">GitHub discussions</a>.
+</p>
+
+<h4>Changes in this release</h4>
 <ul>
 <li>Bugfix: Open the TF window when the browser starts ${issue(342)}</li>
 <li>Simplify the implementation of the Settings window ${issue(341)}</li>
