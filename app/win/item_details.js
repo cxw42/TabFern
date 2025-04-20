@@ -6,57 +6,26 @@
 // Copyright (c) 2017 Chris White, Jasmine Hegman.
 // Copyright (c) 2018--2020 Chris White
 
-// Boilerplate and require()s {{{1
-(function (root, factory) {
-    if (typeof define === "function" && define.amd) {
-        // AMD
-        define([
-            "jquery",
-            "lib/jstree",
-            "loglevel",
-            "lib/multidex",
-            "./const",
-        ], factory);
-    } else if (typeof exports === "object") {
-        // Node, CommonJS-like
-        module.exports = factory(
-            require("jquery"),
-            require("lib/jstree"),
-            require("loglevel"),
-            require("lib/multidex"),
-            require("./const")
-        );
-    } else {
-        // Browser globals (root is `window`)
-        root.D = factory(
-            root.$,
-            root.$.jstree,
-            root.log,
-            root.multidex,
-            root.K
-        );
-    }
-})(this, function ($, _unused_jstree_placeholder_, log, multidex, K) {
-    "use strict";
-    // }}}1
+    const $ = require("jquery");
+    require("lib/jstree");
+    const log = require("loglevel");
+    const multidex = require("lib/multidex");
+    const K = require("./const");
 
     function loginfo(...args) {
         log.info("TabFern view/item_details.js: ", ...args);
     }
 
-    /// The module we are creating
-    let module = {};
-
     // == Data structures ====================================================
 
-    // Design decisions for both module.tabs and module.windows:
+    // Design decisions for both tabs and windows:
     // - No fields named `parent` so I can distinguish jstree node
     //   records from multidex values.
     // - No fields named `id` --- those exist in ctab and cwin records
     // - All types of records have `raw_title` and `isOpen` fields.
 
     /// Map between open-tab IDs and node IDs.
-    module.tabs = multidex(
+    tabs = multidex(
         K.IT_TAB, //type
         [
             //keys
@@ -89,7 +58,7 @@
 
     /// Map between open-window IDs and node IDs.
     /// Design decisions: see above
-    module.windows = multidex(
+    windows = multidex(
         K.IT_WIN, //type
         [
             //keys
@@ -123,44 +92,51 @@
     ///                         this module does not depend on item_tree.
     /// @return ret {object} the value, or ===false if the node wasn't found.
     ///                         val.ty holds the type.
-    module.val_by_node_id = function (node_id) {
+    function val_by_node_id(node_id) {
         if (typeof node_id !== "string") return false;
 
         // Check each piece of the model in turn
         let val;
-        val = module.windows.by_node_id(node_id);
+        val = windows.by_node_id(node_id);
         if (val) return val;
 
-        val = module.tabs.by_node_id(node_id);
+        val = tabs.by_node_id(node_id);
         if (val) return val;
 
         return false; //not found
-    }; //val_by_node_id
+    } //val_by_node_id()
 
     /// Find a tab in the model by its Chrome idx
-    module.val_by_ctabid = function val_by_ctabid(ctabid) {
-        return module.tabs.by_tab_id(ctabid);
-    };
+    function val_by_ctabid(ctabid) {
+        return tabs.by_tab_id(ctabid);
+    }
 
     /// Find a window in the model by its Chrome idx
-    module.val_by_cwinid = function val_by_cwinid(cwinid) {
-        return module.windows.by_win_id(cwinid);
-    };
+    function val_by_cwinid(cwinid) {
+        return windows.by_win_id(cwinid);
+    }
 
     /// The above functions, indexed by ty
     const finder_functions = {
-        [K.IT_TAB]: module.val_by_ctabid,
-        [K.IT_WIN]: module.val_by_cwinid,
+        [K.IT_TAB]: val_by_ctabid,
+        [K.IT_WIN]: val_by_cwinid,
     };
 
     /// Find an item in the model by its Chrome ID, indirected by type.
-    module.val_by_cid = function val_by_cid(cid, ty) {
+    function val_by_cid(cid, ty) {
         const finder = finder_functions[ty];
         if (!finder) return false;
         return finder(cid);
-    };
+    }
 
-    return module;
-});
+    module.exports = {
+        tabs,
+        windows,
+        val_by_node_id,
+        val_by_ctabid,
+        val_by_cwinid,
+        finder_functions,
+        val_by_cid,
+    };
 
 // vi: set ts=4 sts=4 sw=4 et ai fo-=o fo-=r fdm=marker: //
