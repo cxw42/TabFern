@@ -1,40 +1,17 @@
-// view/const.js: constants and generic helpers for the TabFern view.
-// The functions are here for historical reasons - they could be elsewhere
-// if desired.
-// Copyright (c) 2017--2020 Chris White and TabFern contributors
-
-(function (root, factory) {
-    if (typeof define === "function" && define.amd) {
-        // AMD
-        define([
-            "jquery",
-            "lib/jstree",
-            "loglevel",
-            "asynquence-contrib",
-            "lib/asq-helpers",
-        ], factory);
-    } else if (typeof exports === "object") {
-        // Node, CommonJS-like
-        module.exports = factory(
-            require("jquery"),
-            require("lib/jstree"),
-            require("loglevel"),
-            require("asynquence-contrib"),
-            require("lib/asq-helpers")
-        );
-    } else {
-        // Browser globals (root is `window`)
-        root.K = factory(root.$, root.$.jstree, root.log, root.ASQ, root.ASQH);
-    }
-})(this, function ($, _unused_jstree_placeholder_, log_orig, ASQ, ASQH) {
     "use strict";
+
+    const $ = require('jquery');
+    require("lib/jstree");
+    const log_orig = require("loglevel");
+    const ASQ = require("asynquence-contrib");
+    const ASQH = require("lib/asq-helpers");
 
     function loginfo(...args) {
         log_orig.info("TabFern view/const.js: ", ...args);
     }
 
     /// The module we are creating
-    let module = {
+    module.exports = {
         STORAGE_KEY: "tabfern-data",
         ///< Store the saved windows/tabs
         LOCN_KEY: "tabfern-window-location",
@@ -92,11 +69,16 @@
         NST_RECOVERED: "recovered", // Present on windows recovered from a crash
 
         NST_TOP_BORDER: "top-bordered", // Present on tabs that have a top border
+
+        // Functions
+        nextTickRunner,
+        openWindowForURL,
+        dups,
     };
 
     /// Make a callback function that will forward to #fn on a later tick.
     /// @param fn {function} the function to call
-    module.nextTickRunner = function (fn) {
+    function nextTickRunner(fn) {
         function inner(...args) {
             // the actual callback
             // TODO use ASQ() instead
@@ -107,13 +89,13 @@
             // actual callback (inner()) got.
         }
         return inner;
-    }; //nextTickRunner()
+    } //nextTickRunner()
 
     /// Open a new window with a given URL.  Also remove the default
     /// tab that appears because we are letting the window open at the
     /// default size.  Yes, this is a bit like a FOUC, but oh well.
     /// @return An ASQ instance
-    module.openWindowForURL = function (desired_url) {
+    function openWindowForURL(desired_url) {
         let win_id; // TODO is there a better way to pass data down
         // the sequence?
 
@@ -167,14 +149,14 @@
         // instead of just ASQ().  Then, to fire it off, `seq.unpause();`.
 
         return seq;
-    }; //openWindowForURL
+    } //openWindowForURL()
 
     /// Shallow-copy an object.  This is used, e.g., to force evaluation of
     /// and object at the time of logging rather than at the time the log
     /// message is expanded in the developer console.
     /// Returns the new object, or a string error message beginning with '!'
     /// on failure.
-    module.dups = function (obj) {
+    function dups(obj) {
         let retval;
         if (!obj || typeof obj !== "object") {
             // null or undefined, or scalar
@@ -187,9 +169,6 @@
             }
             return retval;
         }
-    }; //dups
-
-    return Object.freeze(module); // all fields constant
-});
+    } //dups()
 
 // vi: set ts=4 sts=4 sw=4 et ai fo-=o fo-=r: //
