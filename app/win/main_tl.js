@@ -2021,7 +2021,7 @@ function onTreeSelect(evt_unused, evt_data, options = {}) {
     }
 
     if (action === ActionTy.activate_tab) {
-        if (BROWSER_TYPE === "ff") {
+        if (browser_type() === "ff") {
             ASQ()
                 .promise(browser.tabs.update(node_val.tab_id, { active: true }))
                 .or((err) => {
@@ -2089,7 +2089,7 @@ function onTreeSelect(evt_unused, evt_data, options = {}) {
             width: newWinSize.width,
             height: newWinSize.height,
         };
-        if (BROWSER_TYPE !== "ff") {
+        if (browser_type() !== "ff") {
             create_data.focused = true;
         }
 

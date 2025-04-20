@@ -18,51 +18,47 @@ const MSG_REPORT_POPUP_SETTING = "reportPopupSetting";
 
 ////////////////////////////////////////////////////////////////////////// }}}1
 // Cross-browser error handling, and browser tests // {{{1
-// Not sure if I need this, but I'm playing it safe for now.  Firefox returns
+// Not sure if I need this, but I'm playing it safe for now.  Firefox puts
 // null rather than undefined in chrome.runtime.lastError when there is
 // no error.  This is to test for null in Firefox without changing my
 // Chrome code.  Hopefully in the future I can test for null/undefined
 // in either browser, and get rid of this block.
 
-BROWSER_TYPE = null; // unknown
+function _isLastError_chrome() {
+    return typeof chrome.runtime.lastError !== "undefined";
+}
+function _isLastError_firefox() {
+    return chrome.runtime.lastError !== null;
+}
 
-const isLastError = (function getIsLastError() {
-    let isLastError_chrome = () => {
-        return typeof chrome.runtime.lastError !== "undefined";
-    };
-    let isLastError_firefox = () => {
-        return chrome.runtime.lastError !== null;
-    };
+// Assume Chrome
+let isLastError = _isLastError_chrome;
 
-    let result;
+let browser_type = (function () {
+    _BROWSER_TYPE = "chrome";
+
     if (
         typeof browser !== "undefined" &&
         browser.runtime &&
         browser.runtime.getBrowserInfo
     ) {
         browser.runtime.getBrowserInfo().then(
+            // fullfillment
             (info) => {
-                // fullfillment
                 if (info.name === "Firefox") {
-                    result = isLastError_firefox;
-                    BROWSER_TYPE = "ff";
-                } else {
-                    result = isLastError_chrome;
+                    isLastError = _isLastError_firefox;
+                    _BROWSER_TYPE = "ff";
                 }
             },
-
-            () => {
-                //rejection --- assume Chrome by default
-                result = isLastError_chrome;
-            }
+            // rejection --- nothing to do
+            () => {}
         );
-    } else {
-        // Chrome
-        BROWSER_TYPE = "chrome";
-        result = isLastError_chrome;
     }
 
-    return result;
+    // return from the IIFE
+    return function browser_type_impl() {
+        return _BROWSER_TYPE;
+    };
 })();
 
 /// Return a string representation of an error message.
