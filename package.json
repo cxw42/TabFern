@@ -40,51 +40,30 @@
   },
   "homepage": "https://cxw42.github.io/TabFern/",
   "dependencies": {
-    "anymatch": "3.1.2",
     "asynquence": "^0.10.2",
     "asynquence-contrib": "^0.28.2",
     "blake2s-js": "^1.3.0",
     "buffer": "^5.7.1",
     "font-awesome": "github:FortAwesome/font-awesome#4.x",
-    "install": "^0.12.2",
     "jquery": "^3.7.1",
     "keypress.js": "^2.1.5",
     "loglevel": "^1.9.2",
     "path-browserify": "^1.0.1",
     "process": "*",
-    "requirejs": "^2.3.8",
     "rmodal": "^1.1.0",
     "signals": "^1.0.0",
     "spectrum-colorpicker": "^1.8.1",
     "spin.js": "^4.1.2",
     "tinycolor2": "^1.6.0"
   },
-  "overrides": {
-    "anymatch": "<= 3.1.2",
-    "brunch": {
-      "anymatch": "3.1.2"
-    }
-  },
   "devDependencies": {
-    "acorn": "^5.7.4",
-    "archiver": "^3.1.1",
     "assetsmanager-brunch": "^1.8.1",
     "babel-brunch": "^7.0.1",
     "benchmark": "^2.1.4",
-    "brunch": "github:cxw42/brunch#1527",
+    "brunch": "^4.0.2",
     "fs-extra": "^7.0.1",
-    "fstream": "^1.0.12",
-    "lodash.mergewith": "^4.6.2",
-    "minimist": "^1.2.8",
-    "mixin-deep": "^1.3.2",
-    "path-parse": "^1.0.7",
     "prettier": "2.8.8",
-    "replacer-brunch": "^1.1.1",
-    "replacestream": "^4.0.3",
-    "sass-brunch": "^2.10.8",
-    "seedrandom": "^2.4.3",
-    "set-value": "^2.0.1",
-    "tar": "^2.2.2",
-    "uglify-es-brunch": "^1.0.5"
+    "replacer-brunch": "github:cxw42/replacer-brunch",
+    "replacestream": "^4.0.3"
   }
 }

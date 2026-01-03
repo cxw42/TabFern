@@ -33,8 +33,8 @@ base if at all possible.  Thank you for your understanding!
      found [Think Like a Git](http://think-like-a-git.net/) very helpful.
      Remember that whatever you do on your local copy won't mess up anyone
      else, so you can relax :) .
-1. Install [node.js](https://nodejs.org/) v10+.
-1. Install [npm](https://docs.npmjs.com/cli/v6) v6+.  It comes with node.js on
+1. Install [node.js](https://nodejs.org/) v12.
+1. Install [npm](https://docs.npmjs.com/cli/v6) v6.  It comes with node.js on
    some systems and is a separate package on others.
 1. At a command line, `npm install -g npx`.
 1. Fork this repo and clone your fork to your local machine.
@@ -150,20 +150,3 @@ A good example is [this commit](https://github.com/cxw42/TabFern/commit/3ac0f274
 - If you add a name ending with `id` (in any case), and it's not all
   upper-case, please spell it `Id` rather than `ID` or `id`.  That will help
   avoid bugs like #304.  Thanks!
-
-## Notes about dependencies
-
-The following dev dependencies are listed in `package.json` but **not used**
-directly by TF itself.  They are listed to increase the minimum required
-version satisfying an indirect dependency.  If you add such a dependency to
-`package.json`, please also add it here.
-
-- acorn
-- archiver
-- fstream
-- lodash
-- minimist
-- mixin-deep
-- path-parse
-- set-value
-- tar
