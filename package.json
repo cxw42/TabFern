@@ -4,7 +4,7 @@
   "description": "Google Chrome extension for displaying, saving, and managing tabs",
   "main": "src/view/main.js",
   "engines": {
-    "node": ">=10"
+    "node": ">=18"
   },
   "directories": {
     "test": "test"
