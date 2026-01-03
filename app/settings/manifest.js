@@ -513,7 +513,7 @@ setting_definitions.push(
 <li>TabFern can now automatically mark windows as remembered on a timer.
     Set the timer you want in ${settings} Behaviour ${gt} Autoremember
     ${issue(316)}.</li>
-<li>Internal changes ${issue([350])}</li>
+<li>Internal changes ${issue([350, 356])}</li>
 </ul>
 `
         },

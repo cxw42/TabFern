@@ -64,6 +64,7 @@
     "fs-extra": "^7.0.1",
     "prettier": "2.8.8",
     "replacer-brunch": "github:cxw42/replacer-brunch",
-    "replacestream": "^4.0.3"
+    "replacestream": "^4.0.3",
+    "sass-brunch": "^3.0.1"
   }
 }

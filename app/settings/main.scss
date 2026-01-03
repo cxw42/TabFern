@@ -4,20 +4,20 @@
  */
 
 /* === default === */
-@import "__default";
+@use "__default";
 
 /* === main === */
-@import "__main";
+@use "__main";
 
 /* === setting === */
-@import "__setting";
+@use "__setting";
 
 /* === custom === */
-@import "__custom";
+@use "__custom";
 
 /* === spin.js === */
-@import "spin.js/spin";
+@use "spin.js/spin";
 
 /* === spectrum === */
-@import "spectrum-colorpicker/spectrum";
+@use "spectrum-colorpicker/spectrum";
 
