@@ -4,14 +4,14 @@
  */
 
 /* === rmodal === */
-@import "__rmodal";
+@use "__rmodal";
 
 /* === custom-scrollbars === */
-@import "__custom-scrollbars";
+@use "__custom-scrollbars";
     // TODO load dynamically only if needed?
 
 /* === spin.js === */
-@import "spin.js/spin";
+@use "spin.js/spin";
 
 /* === custom === */
 

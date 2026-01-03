@@ -8,6 +8,7 @@ if (false) {
     // Vendor files - listed here only so they'll be bundled
     require("vendor/validation");
     require("vendor/common");
+    require("path-browserify");
     require("./lib/jasmine-2.9.1/jasmine");
     require("./lib/jasmine-2.9.1/jasmine-html");
     require("./lib/jasmine-2.9.1/boot");

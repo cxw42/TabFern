@@ -31,6 +31,7 @@ module.exports = {
     justhtmlescape: require("lib/justhtmlescape"),
     loglevel: require("loglevel"),
     multidex: require("lib/multidex"),
+    path: require("path-browserify"),
     rmodal: require("rmodal"),
     signals: require("signals"),
     spin: require("spin.js"),
